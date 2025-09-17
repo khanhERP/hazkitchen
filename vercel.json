@@ -5,7 +5,7 @@
     { "src": "package.json", "use": "@vercel/static-build" }
   ],
   "routes": [
-    { "src": "https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/(.*)", "dest": "/server/index.js" },
+    { "src": "/api/(.*)", "dest": "/server/index.js" },
     { "src": "/(.*)", "dest": "/dist/index.html" }
   ]
 }
