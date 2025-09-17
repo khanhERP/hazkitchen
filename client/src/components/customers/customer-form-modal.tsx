@@ -46,7 +46,7 @@ export function CustomerFormModal({ isOpen, onClose, customer }: CustomerFormMod
   // Generate customer ID for new customers
   const generateCustomerId = async () => {
     try {
-      const response = await apiRequest("GET", "https://66622521-d7f0-4a33-aadd-c50d66665c71-00-wqfql649629t.pike.replit.dev/api/customers/next-id");
+      const response = await apiRequest("GET", "https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/customers/next-id");
       const data = await response.json();
       return data.nextId;
     } catch (error) {
@@ -105,11 +105,11 @@ export function CustomerFormModal({ isOpen, onClose, customer }: CustomerFormMod
 
   const createMutation = useMutation({
     mutationFn: async (data: CustomerFormData) => {
-      const response = await apiRequest("POST", "https://66622521-d7f0-4a33-aadd-c50d66665c71-00-wqfql649629t.pike.replit.dev/api/customers", data);
+      const response = await apiRequest("POST", "https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/customers", data);
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["https://66622521-d7f0-4a33-aadd-c50d66665c71-00-wqfql649629t.pike.replit.dev/api/customers"] });
+      queryClient.invalidateQueries({ queryKey: ["https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/customers"] });
       toast({
         title: t('common.success'),
         description: customer ? "고객 정보가 업데이트되었습니다." : "새 고객이 추가되었습니다.",
@@ -128,11 +128,11 @@ export function CustomerFormModal({ isOpen, onClose, customer }: CustomerFormMod
 
   const updateMutation = useMutation({
     mutationFn: async (data: CustomerFormData) => {
-      const response = await apiRequest("PUT", `https://66622521-d7f0-4a33-aadd-c50d66665c71-00-wqfql649629t.pike.replit.dev/api/customers/${customer!.id}`, data);
+      const response = await apiRequest("PUT", `https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/customers/${customer!.id}`, data);
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["https://66622521-d7f0-4a33-aadd-c50d66665c71-00-wqfql649629t.pike.replit.dev/api/customers"] });
+      queryClient.invalidateQueries({ queryKey: ["https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/customers"] });
       toast({
         title: t('common.success'),
         description: "고객 정보가 업데이트되었습니다.",

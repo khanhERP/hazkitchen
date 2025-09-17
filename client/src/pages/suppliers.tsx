@@ -25,24 +25,24 @@ export default function SuppliersPage() {
   const queryClient = useQueryClient();
 
   const { data: suppliers, isLoading } = useQuery({
-    queryKey: ['https://66622521-d7f0-4a33-aadd-c50d66665c71-00-wqfql649629t.pike.replit.dev/api/suppliers', { status: selectedStatus, search: searchQuery }],
+    queryKey: ['https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/suppliers', { status: selectedStatus, search: searchQuery }],
     queryFn: async () => {
       const params = new URLSearchParams();
       if (selectedStatus !== 'all') params.append('status', selectedStatus);
       if (searchQuery) params.append('search', searchQuery);
       
-      const response = await apiRequest('GET', `https://66622521-d7f0-4a33-aadd-c50d66665c71-00-wqfql649629t.pike.replit.dev/api/suppliers?${params}`);
+      const response = await apiRequest('GET', `https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/suppliers?${params}`);
       return response.json();
     },
   });
 
   const deleteSupplierMutation = useMutation({
     mutationFn: async (id: number) => {
-      const response = await apiRequest('DELETE', `https://66622521-d7f0-4a33-aadd-c50d66665c71-00-wqfql649629t.pike.replit.dev/api/suppliers/${id}`);
+      const response = await apiRequest('DELETE', `https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/suppliers/${id}`);
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['https://66622521-d7f0-4a33-aadd-c50d66665c71-00-wqfql649629t.pike.replit.dev/api/suppliers'] });
+      queryClient.invalidateQueries({ queryKey: ['https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/suppliers'] });
       toast({
         title: t('suppliers.deleteSuccess'),
         description: t('suppliers.deleteSuccessDesc'),

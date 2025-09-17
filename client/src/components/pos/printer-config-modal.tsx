@@ -56,9 +56,9 @@ export function PrinterConfigModal({ isOpen, onClose }: PrinterConfigModalProps)
 
   // Fetch printer configurations
   const { data: printerConfigs = [], isLoading } = useQuery({
-    queryKey: ["https://66622521-d7f0-4a33-aadd-c50d66665c71-00-wqfql649629t.pike.replit.dev/api/printer-configs"],
+    queryKey: ["https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/printer-configs"],
     queryFn: async () => {
-      const response = await apiRequest("GET", "https://66622521-d7f0-4a33-aadd-c50d66665c71-00-wqfql649629t.pike.replit.dev/api/printer-configs");
+      const response = await apiRequest("GET", "https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/printer-configs");
       return response.json();
     },
     enabled: isOpen,
@@ -69,13 +69,13 @@ export function PrinterConfigModal({ isOpen, onClose }: PrinterConfigModalProps)
   // Create printer config mutation
   const createConfigMutation = useMutation({
     mutationFn: async (configData: any) => {
-      const response = await apiRequest("POST", "https://66622521-d7f0-4a33-aadd-c50d66665c71-00-wqfql649629t.pike.replit.dev/api/printer-configs", configData);
+      const response = await apiRequest("POST", "https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/printer-configs", configData);
       return response.json();
     },
     onSuccess: () => {
       // Force refetch data
-      queryClient.invalidateQueries({ queryKey: ["https://66622521-d7f0-4a33-aadd-c50d66665c71-00-wqfql649629t.pike.replit.dev/api/printer-configs"] });
-      queryClient.refetchQueries({ queryKey: ["https://66622521-d7f0-4a33-aadd-c50d66665c71-00-wqfql649629t.pike.replit.dev/api/printer-configs"] });
+      queryClient.invalidateQueries({ queryKey: ["https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/printer-configs"] });
+      queryClient.refetchQueries({ queryKey: ["https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/printer-configs"] });
       toast({ title: "Thành công", description: "Đã thêm cấu hình máy in" });
       resetForm();
     },
@@ -87,13 +87,13 @@ export function PrinterConfigModal({ isOpen, onClose }: PrinterConfigModalProps)
   // Update printer config mutation
   const updateConfigMutation = useMutation({
     mutationFn: async ({ id, data }: { id: number; data: any }) => {
-      const response = await apiRequest("PUT", `https://66622521-d7f0-4a33-aadd-c50d66665c71-00-wqfql649629t.pike.replit.dev/api/printer-configs/${id}`, data);
+      const response = await apiRequest("PUT", `https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/printer-configs/${id}`, data);
       return response.json();
     },
     onSuccess: () => {
       // Force refetch data
-      queryClient.invalidateQueries({ queryKey: ["https://66622521-d7f0-4a33-aadd-c50d66665c71-00-wqfql649629t.pike.replit.dev/api/printer-configs"] });
-      queryClient.refetchQueries({ queryKey: ["https://66622521-d7f0-4a33-aadd-c50d66665c71-00-wqfql649629t.pike.replit.dev/api/printer-configs"] });
+      queryClient.invalidateQueries({ queryKey: ["https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/printer-configs"] });
+      queryClient.refetchQueries({ queryKey: ["https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/printer-configs"] });
       toast({ title: "Thành công", description: "Đã cập nhật cấu hình máy in" });
       resetForm();
     },
@@ -105,12 +105,12 @@ export function PrinterConfigModal({ isOpen, onClose }: PrinterConfigModalProps)
   // Delete printer config mutation
   const deleteConfigMutation = useMutation({
     mutationFn: async (id: number) => {
-      await apiRequest("DELETE", `https://66622521-d7f0-4a33-aadd-c50d66665c71-00-wqfql649629t.pike.replit.dev/api/printer-configs/${id}`);
+      await apiRequest("DELETE", `https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/printer-configs/${id}`);
     },
     onSuccess: () => {
       // Force refetch data
-      queryClient.invalidateQueries({ queryKey: ["https://66622521-d7f0-4a33-aadd-c50d66665c71-00-wqfql649629t.pike.replit.dev/api/printer-configs"] });
-      queryClient.refetchQueries({ queryKey: ["https://66622521-d7f0-4a33-aadd-c50d66665c71-00-wqfql649629t.pike.replit.dev/api/printer-configs"] });
+      queryClient.invalidateQueries({ queryKey: ["https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/printer-configs"] });
+      queryClient.refetchQueries({ queryKey: ["https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/printer-configs"] });
       toast({ title: "Thành công", description: "Đã xóa cấu hình máy in" });
     },
     onError: () => {
@@ -121,7 +121,7 @@ export function PrinterConfigModal({ isOpen, onClose }: PrinterConfigModalProps)
   // Test printer connection mutation
   const testConnectionMutation = useMutation({
     mutationFn: async (id: number) => {
-      const response = await apiRequest("POST", `https://66622521-d7f0-4a33-aadd-c50d66665c71-00-wqfql649629t.pike.replit.dev/api/printer-configs/${id}/test`);
+      const response = await apiRequest("POST", `https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/printer-configs/${id}/test`);
       return response.json();
     },
     onSuccess: (data) => {

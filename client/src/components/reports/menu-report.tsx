@@ -108,10 +108,10 @@ function MenuReport() {
 
   // Query categories
   const { data: categories = [] } = useQuery({
-    queryKey: ["https://66622521-d7f0-4a33-aadd-c50d66665c71-00-wqfql649629t.pike.replit.dev/api/categories"],
+    queryKey: ["https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/categories"],
     queryFn: async () => {
       try {
-        const response = await apiRequest("GET", "https://66622521-d7f0-4a33-aadd-c50d66665c71-00-wqfql649629t.pike.replit.dev/api/categories");
+        const response = await apiRequest("GET", "https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/categories");
         if (!response.ok) throw new Error("Failed to fetch categories");
         const data = await response.json();
         return Array.isArray(data) ? data : [];
@@ -125,7 +125,7 @@ function MenuReport() {
 
   // Query products
   const { data: products = [] } = useQuery({
-    queryKey: ["https://66622521-d7f0-4a33-aadd-c50d66665c71-00-wqfql649629t.pike.replit.dev/api/products", selectedCategory, productType, productSearch],
+    queryKey: ["https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/products", selectedCategory, productType, productSearch],
     queryFn: async () => {
       try {
         const searchParam = productSearch
@@ -133,7 +133,7 @@ function MenuReport() {
           : "";
         const response = await apiRequest(
           "GET",
-          `https://66622521-d7f0-4a33-aadd-c50d66665c71-00-wqfql649629t.pike.replit.dev/api/products/${selectedCategory}/${productType}/${searchParam}`,
+          `https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/products/${selectedCategory}/${productType}/${searchParam}`,
         );
         if (!response.ok) throw new Error("Failed to fetch products");
         const data = await response.json();
@@ -153,7 +153,7 @@ function MenuReport() {
     error: analysisError,
     refetch,
   } = useQuery({
-    queryKey: ["https://66622521-d7f0-4a33-aadd-c50d66665c71-00-wqfql649629t.pike.replit.dev/api/menu-analysis", startDate, endDate, selectedCategory],
+    queryKey: ["https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/menu-analysis", startDate, endDate, selectedCategory],
     queryFn: async () => {
       try {
         const params = new URLSearchParams({
@@ -164,7 +164,7 @@ function MenuReport() {
 
         const response = await apiRequest(
           "GET",
-          `https://66622521-d7f0-4a33-aadd-c50d66665c71-00-wqfql649629t.pike.replit.dev/api/menu-analysis?${params.toString()}`,
+          `https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/menu-analysis?${params.toString()}`,
         );
         if (!response.ok) {
           console.error(
@@ -260,8 +260,8 @@ function MenuReport() {
 
   const handleRefresh = () => {
     // Refresh both orders and order items data
-    queryClient.invalidateQueries({ queryKey: ["https://66622521-d7f0-4a33-aadd-c50d66665c71-00-wqfql649629t.pike.replit.dev/api/orders/date-range"] });
-    queryClient.invalidateQueries({ queryKey: ["https://66622521-d7f0-4a33-aadd-c50d66665c71-00-wqfql649629t.pike.replit.dev/api/order-items"] });
+    queryClient.invalidateQueries({ queryKey: ["https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/orders/date-range"] });
+    queryClient.invalidateQueries({ queryKey: ["https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/order-items"] });
   };
 
   if (analysisError) {
@@ -750,7 +750,7 @@ function MenuReport() {
             <Button
               onClick={() => {
                 refetch();
-                queryClient.invalidateQueries({ queryKey: ["https://66622521-d7f0-4a33-aadd-c50d66665c71-00-wqfql649629t.pike.replit.dev/api/menu-analysis"] });
+                queryClient.invalidateQueries({ queryKey: ["https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/menu-analysis"] });
               }}
               variant="outline"
               size="sm"

@@ -44,16 +44,16 @@ export function SupplierReport() {
   const [debtTo, setDebtTo] = useState<string>("");
 
   const { data: suppliers } = useQuery({
-    queryKey: ["https://66622521-d7f0-4a33-aadd-c50d66665c71-00-wqfql649629t.pike.replit.dev/api/suppliers"],
+    queryKey: ["https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/suppliers"],
   });
 
   const { data: supplierDebts } = useQuery({
-    queryKey: ["https://66622521-d7f0-4a33-aadd-c50d66665c71-00-wqfql649629t.pike.replit.dev/api/supplier-debts"],
+    queryKey: ["https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/supplier-debts"],
     enabled: concernType === "debt",
   });
 
   const { data: supplierPurchases } = useQuery({
-    queryKey: ["https://66622521-d7f0-4a33-aadd-c50d66665c71-00-wqfql649629t.pike.replit.dev/api/supplier-purchases"],
+    queryKey: ["https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/supplier-purchases"],
     enabled: concernType === "purchase" || concernType === "purchaseBySupplier",
   });
 

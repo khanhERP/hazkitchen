@@ -229,7 +229,7 @@ export function ShoppingCart({
   const { data: products } = useQuery<any[]>({
     queryKey: ["products"],
     queryFn: async () => {
-      const response = await fetch("https://66622521-d7f0-4a33-aadd-c50d66665c71-00-wqfql649629t.pike.replit.dev/api/products");
+      const response = await fetch("https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/products");
       if (!response.ok) {
         throw new Error("Failed to fetch products");
       }
@@ -243,7 +243,7 @@ export function ShoppingCart({
   useEffect(() => {
     console.log("📡 Shopping Cart: Initializing single WebSocket connection");
     const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-    const wsUrl = `https://66622521-d7f0-4a33-aadd-c50d66665c71-00-wqfql649629t.pike.replit.dev/ws`;
+    const wsUrl = `https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/ws`;
 
     let reconnectTimer: NodeJS.Timeout | null = null;
     let shouldReconnect = true;
@@ -554,7 +554,7 @@ export function ShoppingCart({
       // Send WebSocket signal for refresh
       try {
         const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-        const wsUrl = `https://66622521-d7f0-4a33-aadd-c50d66665c71-00-wqfql649629t.pike.replit.dev/ws`;
+        const wsUrl = `https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/ws`;
         const ws = new WebSocket(wsUrl);
 
         ws.onopen = () => {
@@ -1760,7 +1760,7 @@ export function ShoppingCart({
                 // Fallback WebSocket connection if main one is not available
                 const protocol =
                   window.location.protocol === "https:" ? "wss:" : "ws:";
-                const wsUrl = `https://66622521-d7f0-4a33-aadd-c50d66665c71-00-wqfql649629t.pike.replit.dev/ws`;
+                const wsUrl = `https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/ws`;
                 const fallbackWs = new WebSocket(wsUrl);
 
                 fallbackWs.onopen = () => {
