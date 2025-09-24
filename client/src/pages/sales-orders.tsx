@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
+import { POSHeader } from "@/components/pos/header";
 import { RightSidebar } from "@/components/ui/right-sidebar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -63,6 +64,11 @@ interface Invoice {
   tableId?: number;
   orderedAt?: string;
   discount?: string; // Added discount field
+  date?: string; // Added missing date field
+  employeeId?: number; // Added missing employeeId field
+  customerCode?: string; // Added missing customerCode field
+  paymentStatus?: string; // Added missing paymentStatus field
+  exactDiscount?: string; // Added missing exactDiscount field
 }
 
 interface InvoiceItem {
@@ -380,7 +386,7 @@ export default function SalesOrders() {
           results.push({ orderId, success: true });
         } catch (error) {
           console.error(`Error canceling order ${orderId}:`, error);
-          results.push({ orderId, success: false, error: error.message });
+          results.push({ orderId, success: false, error: (error as Error).message });
         }
       }
       return results;
@@ -512,13 +518,13 @@ export default function SalesOrders() {
         } catch (updateError) {
           console.error("❌ Error updating order after publish:", {
             error: updateError,
-            message: updateError?.message,
-            stack: updateError?.stack,
+            message: (updateError as Error)?.message,
+            stack: (updateError as Error)?.stack,
           });
 
           const errorMessage =
-            updateError?.message ||
-            updateError?.toString() ||
+            (updateError as Error)?.message ||
+            (updateError as Error)?.toString() ||
             "Lỗi không xác định";
           alert(
             `Hóa đơn đã phát hành nhưng không thể cập nhật trạng thái: ${errorMessage}`,
@@ -530,7 +536,7 @@ export default function SalesOrders() {
     },
     onError: (error) => {
       console.error("❌ Error publishing invoice:", error);
-      alert(`Lỗi phát hành hóa đơn: ${error.message}`);
+      alert(`Lỗi phát hành hóa đơn: ${(error as Error).message}`);
     },
   });
 
@@ -695,9 +701,9 @@ export default function SalesOrders() {
 
   const getInvoiceStatusBadge = (status: number) => {
     const statusLabels = {
-      1: t("common.comboValues.completed"),
-      2: t("common.comboValues.serving"),
-      3: t("common.comboValues.cancelled"),
+      1: "Hoàn thành",
+      2: "Đang phục vụ",
+      3: "Đã hủy",
     };
 
     const statusColors = {
@@ -712,7 +718,7 @@ export default function SalesOrders() {
           statusColors[status as keyof typeof statusColors] || statusColors[1]
         }
       >
-        {statusLabels[status as keyof typeof statusColors] || t("common.comboValues.completed")}
+        {statusLabels[status as keyof typeof statusLabels] || "Hoàn thành"}
       </Badge>
     );
   };
@@ -753,8 +759,6 @@ export default function SalesOrders() {
         invoiceDate: order.orderedAt,
         einvoiceStatus: order.einvoiceStatus || 0,
         // Ensure all fields from Invoice interface are present, even if null/empty
-        invoiceNumber:
-          order.orderNumber || `ORD-${String(order.id).padStart(8, "0")}`,
         templateNumber: order.templateNumber || "",
         customerEmail: order.customerEmail || "",
         subtotal: order.subtotal || "0",
@@ -1201,11 +1205,15 @@ export default function SalesOrders() {
   const totals = calculateTotals();
 
   return (
-    <div className="min-h-screen bg-green-50">
+    <div className="min-h-screen bg-green-50 grocery-bg">
+      {/* Header */}
+      <POSHeader />
+
+      {/* Right Sidebar */}
       <RightSidebar />
 
-      <div className="main-content p-6">
-        <div className="max-w-full mx-auto">
+      <div className="main-content pt-16 px-6">
+        <div className="max-w-full mx-auto py-8">
           <div className="mb-6">
             <div className="flex items-center gap-2 mb-4">
               <FileText className="w-6 h-6 text-green-600" />
@@ -1287,9 +1295,6 @@ export default function SalesOrders() {
             <Card>
               <CardHeader>
                 <div className="flex items-center justify-between">
-                  <CardTitle className="text-lg">
-                    {t("common.orderList")}
-                  </CardTitle>
                   <div className="flex gap-2">
                     <Button
                       size="sm"
@@ -1448,8 +1453,8 @@ export default function SalesOrders() {
                               </td>
                             </tr>
                           ) : (
-                            filteredInvoices.map((item, index) => {
-                              const customerCode = item.customerCode || item.customerTaxCode || `KH000${String(index + 1).padStart(3, "0")}`;
+                            filteredInvoices.map((item) => {
+                              const customerCode = item.customerCode || item.customerTaxCode || `KH000${String(item.id).padStart(3, "0")}`;
                               const customerName = item.customerName || "Khách hàng lẻ";
                               const discount = parseFloat(item.discount || "0");
                               const tax = parseFloat(item.tax || "0");
@@ -1575,27 +1580,9 @@ export default function SalesOrders() {
                                     </td>
                                     <td className="px-3 py-3 text-right">
                                       <div className="text-sm font-medium">
-                                        {(() => {
-                                          // Calculate correct final total: subtotal + tax - discount
-                                          const subtotal = parseFloat(
-                                            item.subtotal || "0",
-                                          );
-                                          const tax = parseFloat(
-                                            item.tax || "0",
-                                          );
-                                          const discountAmount = parseFloat(
-                                            item.discount || "0",
-                                          );
-
-                                          // Final total = subtotal + tax - discount
-                                          const finalTotal = Math.max(
-                                            0,
-                                            subtotal + tax - discountAmount,
-                                          );
-                                          return formatCurrency(
-                                            Math.floor(finalTotal),
-                                          );
-                                        })()}
+                                        {formatCurrency(
+                                          parseFloat(item.total || "0")
+                                        )}
                                       </div>
                                     </td>
                                     <td className="px-3 py-3">
@@ -1654,44 +1641,31 @@ export default function SalesOrders() {
                                                       <tbody>
                                                         <tr>
                                                           <td className="py-1 pr-4 font-medium whitespace-nowrap">
-                                                            {t(
-                                                              "common.orderCode",
-                                                            )}
-                                                            :
+                                                            Số đơn bán:
                                                           </td>
                                                           <td className="py-1 pr-6 text-blue-600 font-medium">
                                                             {isEditing &&
                                                             editableInvoice ? (
                                                               <Input
                                                                 value={
-                                                                  editableInvoice.tradeNumber ||
-                                                                  editableInvoice.invoiceNumber ||
                                                                   editableInvoice.orderNumber ||
                                                                   ""
                                                                 }
                                                                 onChange={(e) =>
                                                                   updateEditableInvoiceField(
-                                                                    getItemType(
-                                                                      selectedInvoice,
-                                                                    ) ===
-                                                                      "order"
-                                                                      ? "orderNumber"
-                                                                      : "tradeNumber",
-                                                                    e.target
-                                                                      .value,
+                                                                    "orderNumber",
+                                                                    e.target.value,
                                                                   )
                                                                 }
                                                                 className="w-32"
                                                               />
                                                             ) : (
+                                                              selectedInvoice.orderNumber ||
                                                               selectedInvoice.displayNumber
                                                             )}
                                                           </td>
                                                           <td className="py-1 pr-4 font-medium whitespace-nowrap">
-                                                            {t(
-                                                              "common.orderDate",
-                                                            )}
-                                                            :
+                                                            Ngày:
                                                           </td>
                                                           <td className="py-1 pr-6">
                                                             {isEditing &&
@@ -1699,61 +1673,47 @@ export default function SalesOrders() {
                                                               <Input
                                                                 type="date"
                                                                 value={
-                                                                  (
-                                                                    editableInvoice.invoiceDate ||
-                                                                    editableInvoice.orderedAt
-                                                                  )?.split(
-                                                                    "T",
-                                                                  )[0]
+                                                                  editableInvoice.orderedAt?.split("T")[0] ||
+                                                                  ""
                                                                 }
                                                                 onChange={(e) =>
                                                                   updateEditableInvoiceField(
-                                                                    getItemType(
-                                                                      selectedInvoice,
-                                                                    ) ===
-                                                                      "order"
-                                                                      ? "orderedAt"
-                                                                      : "invoiceDate",
-                                                                    e.target
-                                                                      .value,
+                                                                    "orderedAt",
+                                                                    e.target.value,
                                                                   )
                                                                 }
                                                                 className="w-32"
                                                               />
                                                             ) : (
-                                                              formatDate(
-                                                                selectedInvoice.date,
-                                                              )
+                                                              formatDate(selectedInvoice.orderedAt)
                                                             )}
                                                           </td>
                                                           <td className="py-1 pr-4 font-medium whitespace-nowrap">
-                                                            {t(
-                                                              "common.customer",
-                                                            )}
-                                                            :
+                                                            Khách hàng:
                                                           </td>
                                                           <td className="py-1 pr-6 text-blue-600 font-medium">
                                                             {isEditing &&
                                                             editableInvoice ? (
                                                               <Input
                                                                 value={
-                                                                  editableInvoice.customerName
+                                                                  editableInvoice.customerName ||
+                                                                  ""
                                                                 }
                                                                 onChange={(e) =>
                                                                   updateEditableInvoiceField(
                                                                     "customerName",
-                                                                    e.target
-                                                                      .value,
+                                                                    e.target.value,
                                                                   )
                                                                 }
                                                                 className="w-40"
                                                               />
                                                             ) : (
-                                                              selectedInvoice.customerName
+                                                              selectedInvoice.customerName ||
+                                                              "Khách hàng"
                                                             )}
                                                           </td>
                                                           <td className="py-1 pr-4 font-medium whitespace-nowrap">
-                                                            {t("common.phone")}:
+                                                            Điện thoại:
                                                           </td>
                                                           <td className="py-1 pr-6">
                                                             {isEditing &&
@@ -1766,8 +1726,7 @@ export default function SalesOrders() {
                                                                 onChange={(e) =>
                                                                   updateEditableInvoiceField(
                                                                     "customerPhone",
-                                                                    e.target
-                                                                      .value,
+                                                                    e.target.value,
                                                                   )
                                                                 }
                                                                 className="w-32"
@@ -1778,81 +1737,49 @@ export default function SalesOrders() {
                                                             )}
                                                           </td>
                                                           <td className="py-1 pr-4 font-medium whitespace-nowrap">
-                                                            {t("common.status")}
-                                                            :
+                                                            Trạng thái:
                                                           </td>
                                                           <td className="py-1">
-                                                            {getInvoiceStatusBadge(
-                                                              selectedInvoice.displayStatus,
-                                                            )}
+                                                            {(() => {
+                                                              const statusLabels = {
+                                                                1: "Hoàn thành",
+                                                                2: "Đang phục vụ", 
+                                                                3: "Đã hủy"
+                                                              };
+                                                              return statusLabels[selectedInvoice.displayStatus] || "Đang phục vụ";
+                                                            })()}
                                                           </td>
                                                         </tr>
                                                         <tr>
                                                           <td className="py-1 pr-4 font-medium whitespace-nowrap">
-                                                            {t(
-                                                              "common.cashier",
-                                                            )}
-                                                            :
+                                                            Thu ngân:
                                                           </td>
                                                           <td className="py-1 pr-6">
-                                                            Nguyễn Văn A
+                                                            Phạm Vân Duy
                                                           </td>
                                                           <td className="py-1 pr-4 font-medium whitespace-nowrap">
-                                                            {t(
-                                                              "common.salesType",
-                                                            )}
-                                                            :
+                                                            Hình thức bán:
                                                           </td>
                                                           <td className="py-1 pr-6">
                                                             {(() => {
-                                                              const salesChannel =
-                                                                selectedInvoice.salesChannel;
-                                                              if (
-                                                                salesChannel ===
-                                                                "table"
-                                                              )
-                                                                return t(
-                                                                  "common.dineIn",
-                                                                );
-                                                              if (
-                                                                salesChannel ===
-                                                                "pos"
-                                                              )
-                                                                return t("common.comboValues.pos");
-                                                              if (
-                                                                salesChannel ===
-                                                                "online"
-                                                              )
-                                                                return t("common.comboValues.online");
-                                                              if (
-                                                                salesChannel ===
-                                                                "delivery"
-                                                              )
-                                                                return t("common.comboValues.delivery");
-                                                              return t("common.comboValues.pos"); // default
+                                                              const salesChannel = selectedInvoice.salesChannel;
+                                                              if (salesChannel === "table") return "Ăn tại chỗ";
+                                                              if (salesChannel === "pos") return "Bán tại quầy";
+                                                              if (salesChannel === "online") return "Bán online";
+                                                              if (salesChannel === "delivery") return "Giao hàng";
+                                                              return "Ăn tại chỗ";
                                                             })()}
                                                           </td>
                                                           <td className="py-1 pr-4 font-medium whitespace-nowrap">
-                                                            {t(
-                                                              "common.tableOrder",
-                                                            )}
-                                                            :
+                                                            Bàn:
                                                           </td>
                                                           <td className="py-1 pr-6">
-                                                            {selectedInvoice.salesChannel ===
-                                                              "table" &&
-                                                            selectedInvoice.tableId
+                                                            {selectedInvoice.salesChannel === "table" && selectedInvoice.tableId
                                                               ? `Bàn ${selectedInvoice.tableId}`
-                                                              : selectedInvoice.salesChannel ===
-                                                                  "table"
-                                                                ? "Bàn"
-                                                                : "-"}
+                                                              : "-"}
                                                           </td>
                                                           <td className="py-1 pr-4 font-medium whitespace-nowrap">
-                                                            {t(
-                                                              "common.invoiceSymbol",
-                                                            )}
-                                                            :
+                                                            Ký hiệu hóa đơn:
                                                           </td>
                                                           <td className="py-1 pr-6">
                                                             {isEditing &&
@@ -1865,25 +1792,17 @@ export default function SalesOrders() {
                                                                 onChange={(e) =>
                                                                   updateEditableInvoiceField(
                                                                     "symbol",
-                                                                    e.target
-                                                                      .value,
+                                                                    e.target.value,
                                                                   )
                                                                 }
                                                                 className="w-24"
                                                               />
-                                                            ) : selectedInvoice.einvoiceStatus !==
-                                                              0 ? (
-                                                              selectedInvoice.symbol ||
-                                                              ""
                                                             ) : (
-                                                              "-"
+                                                              selectedInvoice.symbol || "-"
                                                             )}
                                                           </td>
                                                           <td className="py-1 pr-4 font-medium whitespace-nowrap">
-                                                            {t(
-                                                              "common.invoiceNumber",
-                                                            )}
-                                                            :
+                                                            Số hóa đơn:
                                                           </td>
                                                           <td className="py-1 pr-6">
                                                             {isEditing &&
@@ -1896,29 +1815,37 @@ export default function SalesOrders() {
                                                                 onChange={(e) =>
                                                                   updateEditableInvoiceField(
                                                                     "invoiceNumber",
-                                                                    e.target
-                                                                      .value,
+                                                                    e.target.value,
                                                                   )
                                                                 }
                                                                 className="w-32"
                                                               />
                                                             ) : (
                                                               selectedInvoice.invoiceNumber ||
-                                                              String(
-                                                                selectedInvoice.id,
-                                                              ).padStart(8, "0")
+                                                              selectedInvoice.orderNumber ||
+                                                              String(selectedInvoice.id).padStart(8, "0")
                                                             )}
                                                           </td>
                                                           <td className="py-1 pr-4 font-medium whitespace-nowrap">
-                                                            {t(
-                                                              "common.invoiceStatusLabel",
-                                                            )}
+                                                            Trạng thái HĐ:
                                                           </td>
                                                           <td className="py-1">
-                                                            {getEInvoiceStatusBadge(
-                                                              selectedInvoice.einvoiceStatus ||
-                                                                0,
-                                                            )}
+                                                            {(() => {
+                                                              const statusLabels = {
+                                                                0: "Chưa phát hành",
+                                                                1: "Đã phát hành",
+                                                                2: "Tạo nháp",
+                                                                3: "Đã duyệt",
+                                                                4: "Đã bị thay thế (hủy)",
+                                                                5: "Thay thế tạm",
+                                                                6: "Thay thế",
+                                                                7: "Đã bị điều chỉnh",
+                                                                8: "Điều chỉnh tạm",
+                                                                9: "Điều chỉnh",
+                                                                10: "Đã hủy"
+                                                              };
+                                                              return statusLabels[selectedInvoice.einvoiceStatus || 0] || "Chưa phát hành";
+                                                            })()}
                                                           </td>
                                                         </tr>
                                                       </tbody>
@@ -2132,8 +2059,13 @@ export default function SalesOrders() {
                                                             "0",
                                                         );
 
+                                                       const discount =  parseFloat(
+                                                          selectedInvoice.discount ||
+                                                            "0",
+                                                        );
+
                                                         const totalPayment =
-                                                          subtotal + tax;
+                                                          subtotal + tax + discount;
                                                         return (
                                                           <>
                                                             <div className="flex justify-between">
@@ -2212,23 +2144,14 @@ export default function SalesOrders() {
                                                             "paid" ||
                                                           selectedInvoice.paymentStatus ===
                                                             "paid";
-                                                        let paidAmount = isPaid
-                                                          ? parseFloat(
-                                                              selectedInvoice.total ||
-                                                                "0",
-                                                            )
-                                                          : 0;
-
-                                                        const discount =
-                                                          parseFloat(
-                                                            selectedInvoice.discount ||
-                                                              "0",
-                                                          );
-
-                                                        paidAmount = Math.max(
-                                                          0,
-                                                          paidAmount - discount,
-                                                        );
+                                                        
+                                                        // Calculate the actual total amount (subtotal + tax - discount)
+                                                        const subtotal = parseFloat(selectedInvoice.subtotal || "0");
+                                                        const tax = parseFloat(selectedInvoice.tax || "0");
+                                                        const discount = parseFloat(selectedInvoice.discount || "0");
+                                                        const totalAmount = Math.max(0, subtotal + tax);
+                                                        
+                                                        let paidAmount = isPaid ? totalAmount : 0;
                                                         const paymentMethod =
                                                           selectedInvoice.paymentMethod;
 

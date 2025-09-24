@@ -11,6 +11,7 @@ import {
   Package,
   Settings as SettingsIcon,
   Building2,
+  ClipboardCheck,
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import logoPath from "@assets/EDPOS_1753091767028.png";
@@ -198,11 +199,16 @@ export function POSHeader({ onLogout }: POSHeaderProps) {
               src={logoPath}
               alt="EDPOS Logo"
               className="h-12 cursor-pointer"
-              onClick={() => (window.location.href = "/pos")}
+              onClick={() => (window.location.href = "/tables")}
             />
           </div>
-          <div className="opacity-90 font-semibold text-[20px]">
-            {storeSettings?.storeName || t("common.restaurant")}
+          <div className="flex flex-col">
+            <div className="opacity-90 font-semibold text-[20px]">
+              {storeSettings?.storeName || "EDPOS 레스토랑"}
+            </div>
+            <div className="text-sm opacity-75 text-right font-extrabold text-[#ffffff]">
+              POS 위치: {storeSettings?.defaultFloor || "1층"}-{storeSettings?.defaultZone || "A"}
+            </div>
           </div>
         </div>
 
@@ -217,6 +223,7 @@ export function POSHeader({ onLogout }: POSHeaderProps) {
             <div className="text-sm opacity-90">{t("common.time")}</div>
             <div className="font-medium">{formatTime(currentTime)}</div>
           </div>
+          <LanguageSwitcher />
           {/* Navigation Menu */}
           <nav className="flex items-center space-x-4">
             <div className="relative pos-dropdown">
@@ -231,6 +238,7 @@ export function POSHeader({ onLogout }: POSHeaderProps) {
                     "/employees",
                     "/attendance",
                     "/suppliers",
+                    "/purchases",
                     "/settings",
                   ].includes(location)
                     ? "bg-white bg-opacity-20"
@@ -248,21 +256,25 @@ export function POSHeader({ onLogout }: POSHeaderProps) {
               {/* Dropdown Menu */}
               {posMenuOpen && (
                 <div className="absolute top-full right-0 mt-1 bg-white rounded-xl shadow-lg border border-gray-200 py-2 min-w-48 z-50">
-                  {/* Only show Tables option for restaurant business type */}
+                  {/* 테이블 추가/관리 - 맨 위에 위치 */}
                   {storeSettings?.businessType === "restaurant" && (
-                    <Link href="/tables">
-                      <button
-                        className={`w-full flex items-center px-4 py-2 text-left hover:bg-green-50 transition-colors ${
-                          location === "/tables"
-                            ? "bg-green-50 text-green-600"
-                            : "text-gray-700"
-                        }`}
-                        onClick={() => setPosMenuOpen(false)}
-                      >
-                        <Utensils className="w-4 h-4 mr-3" />
-                        {t("nav.tablesSales")}
-                      </button>
-                    </Link>
+                    <>
+                      <Link href="/tables">
+                        <button
+                          className={`w-full flex items-center px-4 py-2 text-left hover:bg-green-50 transition-colors ${
+                            location === "/tables"
+                              ? "bg-green-50 text-green-600"
+                              : "text-gray-700"
+                          }`}
+                          onClick={() => setPosMenuOpen(false)}
+                          data-testid="button-nav-tables"
+                        >
+                          <Utensils className="w-4 h-4 mr-3" />
+                          {t("nav.tablesSales")}
+                        </button>
+                      </Link>
+                      <div className="border-t border-gray-200 my-2"></div>
+                    </>
                   )}
 
                   <Link href="/pos">
@@ -279,7 +291,54 @@ export function POSHeader({ onLogout }: POSHeaderProps) {
                     </button>
                   </Link>
 
+
+
+                  <Link href="/sales-orders">
+                    <button
+                      className={`w-full flex items-center px-4 py-2 text-left hover:bg-green-50 transition-colors ${
+                        location === "/sales-orders"
+                          ? "bg-green-50 text-green-600"
+                          : "text-gray-700"
+                      }`}
+                      onClick={() => setPosMenuOpen(false)}
+                    >
+                      <ShoppingCart className="w-4 h-4 mr-3" />
+                      {t("orders.orderList")}
+                    </button>
+                  </Link>
+
+
                   <div className="border-t border-gray-200 my-2"></div>
+                  <Link href="/suppliers">
+                    <button
+                      className={`w-full flex items-center px-4 py-2 text-left hover:bg-green-50 transition-colors ${
+                        location === "/suppliers"
+                          ? "bg-green-50 text-green-600"
+                          : "text-gray-700"
+                      }`}
+                      onClick={() => setPosMenuOpen(false)}
+                    >
+                      <Building2 className="w-4 h-4 mr-3" />
+                      {t("nav.suppliers")}
+                    </button>
+                  </Link>
+                  
+
+                  
+                  <Link href="/purchases">
+                    <button
+                      className={`w-full flex items-center px-4 py-2 text-left hover:bg-green-50 transition-colors ${
+                        location === "/purchases"
+                          ? "bg-green-50 text-green-600"
+                          : "text-gray-700"
+                      }`}
+                      onClick={() => setPosMenuOpen(false)}
+                      data-testid="button-nav-purchases"
+                    >
+                      <ClipboardCheck className="w-4 h-4 mr-3" />
+                      {t("nav.purchases")}
+                    </button>
+                  </Link>
 
                   <Link href="/inventory">
                     <button
@@ -294,6 +353,38 @@ export function POSHeader({ onLogout }: POSHeaderProps) {
                       {t("nav.inventory")}
                     </button>
                   </Link>
+
+                  <div className="border-t border-gray-200 my-2"></div>
+                  <Link href="/employees">
+                    <button
+                      className={`w-full flex items-center px-4 py-2 text-left hover:bg-green-50 transition-colors ${
+                        location === "/employees"
+                          ? "bg-green-50 text-green-600"
+                          : "text-gray-700"
+                      }`}
+                      onClick={() => setPosMenuOpen(false)}
+                    >
+                      <Users className="w-4 h-4 mr-3" />
+                      {t("nav.employees")}
+                    </button>
+                  </Link>
+
+                  <Link href="/attendance">
+                    <button
+                      className={`w-full flex items-center px-4 py-2 text-left hover:bg-green-50 transition-colors ${
+                        location === "/attendance"
+                          ? "bg-green-50 text-green-600"
+                          : "text-gray-700"
+                      }`}
+                      onClick={() => setPosMenuOpen(false)}
+                    >
+                      <Clock className="w-4 h-4 mr-3" />
+                      {t("nav.attendance")}
+                    </button>
+                  </Link>
+
+                  <div className="border-t border-gray-200 my-2"></div>
+
                   <div
                     className="relative"
                     onMouseLeave={handleReportsContainerMouseLeave}
@@ -426,66 +517,6 @@ export function POSHeader({ onLogout }: POSHeaderProps) {
                     )}
                   </div>
 
-                  <div className="border-t border-gray-200 my-2"></div>
-
-                  <Link href="/sales-orders">
-                    <button
-                      className={`w-full flex items-center px-4 py-2 text-left hover:bg-green-50 transition-colors ${
-                        location === "/sales-orders"
-                          ? "bg-green-50 text-green-600"
-                          : "text-gray-700"
-                      }`}
-                      onClick={() => setPosMenuOpen(false)}
-                    >
-                      <ShoppingCart className="w-4 h-4 mr-3" />
-                      Danh sách đơn hàng
-                    </button>
-                  </Link>
-
-                  <Link href="/employees">
-                    <button
-                      className={`w-full flex items-center px-4 py-2 text-left hover:bg-green-50 transition-colors ${
-                        location === "/employees"
-                          ? "bg-green-50 text-green-600"
-                          : "text-gray-700"
-                      }`}
-                      onClick={() => setPosMenuOpen(false)}
-                    >
-                      <Users className="w-4 h-4 mr-3" />
-                      {t("nav.employees")}
-                    </button>
-                  </Link>
-
-                  <Link href="/attendance">
-                    <button
-                      className={`w-full flex items-center px-4 py-2 text-left hover:bg-green-50 transition-colors ${
-                        location === "/attendance"
-                          ? "bg-green-50 text-green-600"
-                          : "text-gray-700"
-                      }`}
-                      onClick={() => setPosMenuOpen(false)}
-                    >
-                      <Clock className="w-4 h-4 mr-3" />
-                      {t("nav.attendance")}
-                    </button>
-                  </Link>
-
-                  <Link href="/suppliers">
-                    <button
-                      className={`w-full flex items-center px-4 py-2 text-left hover:bg-green-50 transition-colors ${
-                        location === "/suppliers"
-                          ? "bg-green-50 text-green-600"
-                          : "text-gray-700"
-                      }`}
-                      onClick={() => setPosMenuOpen(false)}
-                    >
-                      <Building2 className="w-4 h-4 mr-3" />
-                      {t("nav.suppliers")}
-                    </button>
-                  </Link>
-
-                  <div className="border-t border-gray-200 my-2"></div>
-
                   <Link href="/settings">
                     <button
                       className={`w-full flex items-center px-4 py-2 text-left hover:bg-green-50 transition-colors ${
@@ -549,7 +580,7 @@ export function POSHeader({ onLogout }: POSHeaderProps) {
                     }}
                   >
                     <Users className="w-4 h-4 mr-3" />
-                    Màn hình khách hàng
+                    {t("nav.customerDisplay")}
                   </a>
 
                   <div className="border-t border-gray-200 my-2"></div>
@@ -562,7 +593,7 @@ export function POSHeader({ onLogout }: POSHeaderProps) {
                     }}
                   >
                     <LogOut className="w-4 h-4 mr-3" />
-                    Đăng xuất
+                    {t("nav.logout")}
                   </button>
                 </div>
               )}
@@ -572,9 +603,6 @@ export function POSHeader({ onLogout }: POSHeaderProps) {
 
           </div>
 
-        <div className="flex items-center space-x-4">
-          <LanguageSwitcher />
-        </div>
       </div>
       {showProductManager && (
         <ProductManagerModal
@@ -588,7 +616,6 @@ export function POSHeader({ onLogout }: POSHeaderProps) {
           onClose={() => setShowInvoiceManagement(false)}
         />
       )}
-
       {showPrinterConfig && (
         <PrinterConfigModal
           isOpen={showPrinterConfig}

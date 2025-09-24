@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { X, Plus, Upload, Download, Edit, Trash2 } from "lucide-react";
+import { X, Plus, Upload, Download, Edit, Trash2, Link, FileImage } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -38,6 +38,7 @@ import { z } from "zod";
 import { useTranslation } from "@/lib/i18n";
 import { BulkImportModal } from "./bulk-import-modal";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import * as XLSX from "xlsx";
 
 interface ProductManagerModalProps {
@@ -71,12 +72,26 @@ export function ProductManagerModal({
       const num = parseFloat(val.replace(/\./g, ''));
       return !isNaN(num) && num > 0 && num < 100000000;
     }, "After tax price must be a valid positive number and less than 100,000,000"),
+    floor: z.string().optional(),
+    zone: z.string().optional(),
   });
   const [showAddForm, setShowAddForm] = useState(false);
   const [showBulkImport, setShowBulkImport] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
+  const [imageInputMethod, setImageInputMethod] = useState<"url" | "file">("url");
+  const [selectedImageFile, setSelectedImageFile] = useState<File | null>(null);
   const { toast } = useToast();
+
+  // 파일을 Base64로 변환하는 함수
+  const convertFileToBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = error => reject(error);
+    });
+  };
 
   const {
     data: products = [],
@@ -94,11 +109,24 @@ export function ProductManagerModal({
 
   const createProductMutation = useMutation({
     mutationFn: async (data: z.infer<typeof productFormSchema>) => {
-      console.log("Sending product data:", data);
+      let finalData = { ...data };
+      
+      // 파일 업로드가 선택되고 파일이 있는 경우 Base64로 변환
+      if (imageInputMethod === "file" && selectedImageFile) {
+        try {
+          const base64Image = await convertFileToBase64(selectedImageFile);
+          finalData.imageUrl = base64Image;
+        } catch (error) {
+          console.error("파일 변환 오류:", error);
+          throw new Error("이미지 파일 처리 중 오류가 발생했습니다.");
+        }
+      }
+      
+      console.log("Sending product data:", finalData);
       const response = await fetch("https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/products", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
+        body: JSON.stringify(finalData),
       });
 
       if (!response.ok) {
@@ -113,6 +141,9 @@ export function ProductManagerModal({
       queryClient.invalidateQueries({ queryKey: ["https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/products/active"] });
       setShowAddForm(false);
       resetForm();
+      // 파일 상태 초기화
+      setSelectedImageFile(null);
+      setImageInputMethod("url");
       toast({
         title: "Success",
         description: "Product created successfully",
@@ -146,10 +177,23 @@ export function ProductManagerModal({
       id: number;
       data: Partial<z.infer<typeof productFormSchema>>;
     }) => {
+      let finalData = { ...data };
+      
+      // 파일 업로드가 선택되고 파일이 있는 경우 Base64로 변환
+      if (imageInputMethod === "file" && selectedImageFile) {
+        try {
+          const base64Image = await convertFileToBase64(selectedImageFile);
+          finalData.imageUrl = base64Image;
+        } catch (error) {
+          console.error("파일 변환 오류:", error);
+          throw new Error("이미지 파일 처리 중 오류가 발생했습니다.");
+        }
+      }
+      
       const response = await fetch(`https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/products/${id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
+        body: JSON.stringify(finalData),
       });
       if (!response.ok) throw new Error("Failed to update product");
       return response.json();
@@ -158,6 +202,9 @@ export function ProductManagerModal({
       queryClient.invalidateQueries({ queryKey: ["https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/products"] });
       queryClient.invalidateQueries({ queryKey: ["https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/products/active"] });
       setEditingProduct(null);
+      // 파일 상태 초기화
+      setSelectedImageFile(null);
+      setImageInputMethod("url");
       toast({
         title: "Success",
         description: "Product updated successfully",
@@ -211,6 +258,8 @@ export function ProductManagerModal({
       taxRate: "8.00",
       priceIncludesTax: false,
       afterTaxPrice: "",
+      floor: "1층",
+      zone: "A구역",
     },
   });
 
@@ -275,9 +324,19 @@ export function ProductManagerModal({
       trackInventory: data.trackInventory !== false,
       imageUrl: data.imageUrl?.trim() || null,
       taxRate: data.taxRate.toString(),
-      priceIncludesTax: data.priceIncludesTax || false,
-      afterTaxPrice: data.afterTaxPrice ? data.afterTaxPrice.toString() : null
+      priceIncludesTax: Boolean(data.priceIncludesTax), // Explicitly convert to boolean
+      afterTaxPrice: data.afterTaxPrice ? data.afterTaxPrice.toString() : undefined,
+      floor: data.floor || "1층",
+      zone: data.zone || "A구역"
     };
+
+    console.log("PriceIncludesTax submission debug:", {
+      originalValue: data.priceIncludesTax,
+      originalType: typeof data.priceIncludesTax,
+      transformedValue: transformedData.priceIncludesTax,
+      transformedType: typeof transformedData.priceIncludesTax,
+      booleanConversion: Boolean(data.priceIncludesTax)
+    });
 
     console.log("Transformed data:", transformedData);
 
@@ -301,15 +360,23 @@ export function ProductManagerModal({
       imageUrl: product.imageUrl || "",
       trackInventory: product.trackInventory !== false,
       taxRate: product.taxRate || "8.00",
-      priceIncludesTax: product.priceIncludesTax || false,
+      priceIncludesTax: Boolean(product.priceIncludesTax), // Ensure boolean type
       // Use saved after-tax price if available, otherwise calculate
       afterTaxPrice: product.afterTaxPrice || (() => {
         const basePrice = parseFloat(product.price);
         const taxRate = parseFloat(product.taxRate || "8.00");
         return Math.round(basePrice + (basePrice * taxRate / 100)).toString();
       })(),
+      floor: product.floor || "1층",
+      zone: product.zone || "A구역",
     });
     setShowAddForm(true);
+    
+    console.log("Editing product with priceIncludesTax:", {
+      productId: product.id,
+      priceIncludesTax: product.priceIncludesTax,
+      formValue: Boolean(product.priceIncludesTax)
+    });
   };
 
   const handleDelete = (id: number) => {
@@ -321,6 +388,9 @@ export function ProductManagerModal({
   const resetForm = () => {
     setShowAddForm(false);
     setEditingProduct(null);
+    // 파일 상태 초기화
+    setSelectedImageFile(null);
+    setImageInputMethod("url");
     form.reset({
       name: "",
       sku: "",
@@ -331,9 +401,13 @@ export function ProductManagerModal({
       imageUrl: "",
       trackInventory: true,
       taxRate: "8.00",
-      priceIncludesTax: false,
+      priceIncludesTax: false, // Explicitly set to false for new products
       afterTaxPrice: "",
+      floor: "1층",
+      zone: "A구역",
     });
+    
+    console.log("Form reset with priceIncludesTax: false");
   };
 
   const getCategoryName = (categoryId: number) => {
@@ -373,13 +447,13 @@ export function ProductManagerModal({
 
     products.forEach((product, index) => {
       exportData.push([
-        index + 1,
+        (index + 1).toString(),
         product.name,
         product.sku,
         getCategoryName(product.categoryId),
-        parseFloat(product.price),
+        parseFloat(product.price).toString(),
         product.taxRate || "8.00",
-        product.stock,
+        product.stock.toString(),
         product.imageUrl || "",
       ]);
     });
@@ -432,6 +506,9 @@ export function ProductManagerModal({
       }
       // Reset form completely when opening modal
       if (!editingProduct) {
+        // 새 상품 추가 시 초기화
+        setSelectedImageFile(null);
+        setImageInputMethod("url");
         form.reset({
           name: "",
           sku: "",
@@ -444,7 +521,18 @@ export function ProductManagerModal({
           taxRate: "8.00",
           priceIncludesTax: false,
           afterTaxPrice: "",
+          floor: "1층",
+          zone: "A구역",
         });
+      } else {
+        // 편집 모드에서 기존 이미지 URL이 있는지 확인
+        if (editingProduct.imageUrl && editingProduct.imageUrl.trim() !== "") {
+          setImageInputMethod("url");
+          setSelectedImageFile(null);
+        } else {
+          setImageInputMethod("url"); // 기본은 URL 방식
+          setSelectedImageFile(null);
+        }
       }
     }
   }, [isOpen, refetch, editingProduct, initialSearchSKU]);
@@ -482,6 +570,8 @@ export function ProductManagerModal({
       taxRate: "8.00",
       priceIncludesTax: false,
       afterTaxPrice: "",
+      floor: "1층",
+      zone: "A구역",
     });
     onClose();
   };
@@ -582,9 +672,6 @@ export function ProductManagerModal({
                           {t("tables.taxRate")}
                         </th>
                         <th className="text-left py-3 px-4 font-medium pos-text-primary">
-                          {t("common.comboValues.afterTaxPrice")}
-                        </th>
-                        <th className="text-left py-3 px-4 font-medium pos-text-primary">
                           {t("tables.stock")}
                         </th>
                         <th className="text-left py-3 px-4 font-medium pos-text-primary">
@@ -628,19 +715,6 @@ export function ProductManagerModal({
                           </td>
                           <td className="py-3 px-4 pos-text-secondary">
                             {product.taxRate || "8.00"}%
-                          </td>
-                          <td className="py-3 px-4 font-medium">
-                            {(() => {
-                              // Use saved after-tax price if available, otherwise calculate
-                              if (product.afterTaxPrice) {
-                                return Math.round(parseFloat(product.afterTaxPrice)).toLocaleString("vi-VN", { maximumFractionDigits: 0 });
-                              } else {
-                                const basePrice = parseFloat(product.price);
-                                const taxRate = parseFloat(product.taxRate || "8.00");
-                                const afterTaxPrice = basePrice + (basePrice * taxRate / 100);
-                                return Math.round(afterTaxPrice).toLocaleString("vi-VN", { maximumFractionDigits: 0 });
-                              }
-                            })()} ₫
                           </td>
                           <td className="py-3 px-4">
                             <span
@@ -750,10 +824,11 @@ export function ProductManagerModal({
                               {...field}
                               type="text"
                               placeholder={t("common.comboValues.pricePlaceholder")}
+                              value={field.value ? parseInt(field.value).toLocaleString('ko-KR') : ''}
                               onChange={(e) => {
                                 const value = e.target.value;
-                                // Only allow numbers
-                                const sanitized = value.replace(/[^0-9]/g, '');
+                                // Only allow numbers and commas
+                                const sanitized = value.replace(/[^0-9,]/g, '').replace(/,/g, '');
                                 
                                 // Check if the number would exceed the limit
                                 const num = parseInt(sanitized);
@@ -762,7 +837,7 @@ export function ProductManagerModal({
                                   return;
                                 }
                                 
-                                // Store the integer value
+                                // Store the integer value (without commas)
                                 field.onChange(sanitized);
                                 
                                 // Calculate after tax price from base price
@@ -813,51 +888,6 @@ export function ProductManagerModal({
                                   
                                   // Update the after tax price field
                                   form.setValue("afterTaxPrice", afterTaxPrice.toString());
-                                }
-                              }}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={form.control}
-                      name="afterTaxPrice"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>{t("common.comboValues.afterTaxPrice")}</FormLabel>
-                          <FormControl>
-                            <Input
-                              {...field}
-                              type="text"
-                              placeholder="4320"
-                              onChange={(e) => {
-                                const value = e.target.value;
-                                // Only allow numbers
-                                const sanitized = value.replace(/[^0-9]/g, '');
-                                
-                                // Check if the number would exceed the limit
-                                const num = parseInt(sanitized);
-                                if (!isNaN(num) && num >= 100000000) {
-                                  // Don't allow input that would exceed the limit
-                                  return;
-                                }
-                                
-                                // Store the integer value
-                                field.onChange(sanitized);
-                                
-                                // Calculate base price from after tax price
-                                if (sanitized && !isNaN(parseInt(sanitized))) {
-                                  const afterTaxPrice = parseInt(sanitized);
-                                  const taxRate = parseFloat(form.getValues("taxRate") || "8.00");
-                                  
-                                  // Calculate base price: basePrice = afterTaxPrice / (1 + taxRate/100)
-                                  const basePrice = Math.round(afterTaxPrice / (1 + taxRate / 100));
-                                  
-                                  // Update the price field
-                                  form.setValue("price", basePrice.toString());
                                 }
                               }}
                             />
@@ -954,22 +984,183 @@ export function ProductManagerModal({
                     />
                   </div>
 
-                  <FormField
-                    control={form.control}
-                    name="imageUrl"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>{t("tables.imageUrlOptional")}</FormLabel>
-                        <FormControl>
-                          <Input
-                            {...field}
-                            placeholder={t("tables.imageUrl")}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                  {/* 층과 구역 선택 */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="floor"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>{t("tables.floorLabel")}</FormLabel>
+                          <Select
+                            onValueChange={field.onChange}
+                            value={field.value}
+                          >
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue
+                                  placeholder={t("tables.floorPlaceholder")}
+                                />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value="1층">1층</SelectItem>
+                              <SelectItem value="2층">2층</SelectItem>
+                              <SelectItem value="3층">3층</SelectItem>
+                              <SelectItem value="4층">4층</SelectItem>
+                              <SelectItem value="5층">5층</SelectItem>
+                              <SelectItem value="6층">6층</SelectItem>
+                              <SelectItem value="7층">7층</SelectItem>
+                              <SelectItem value="8층">8층</SelectItem>
+                              <SelectItem value="9층">9층</SelectItem>
+                              <SelectItem value="10층">10층</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="zone"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>{t("tables.zoneLabel")}</FormLabel>
+                          <Select
+                            onValueChange={field.onChange}
+                            value={field.value}
+                          >
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue
+                                  placeholder={t("tables.zonePlaceholder")}
+                                />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value="전체구역">전체구역</SelectItem>
+                              <SelectItem value="A구역">A구역</SelectItem>
+                              <SelectItem value="B구역">B구역</SelectItem>
+                              <SelectItem value="C구역">C구역</SelectItem>
+                              <SelectItem value="D구역">D구역</SelectItem>
+                              <SelectItem value="E구역">E구역</SelectItem>
+                              <SelectItem value="F구역">F구역</SelectItem>
+                              <SelectItem value="VIP구역">VIP구역</SelectItem>
+                              <SelectItem value="테라스구역">테라스구역</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+
+                  {/* 이미지 입력 방식 선택 */}
+                  <div className="space-y-3">
+                    <Label className="text-sm font-medium">
+                      {t("tables.imageUrlOptional")}
+                    </Label>
+                    <Tabs 
+                      value={imageInputMethod} 
+                      onValueChange={(value) => setImageInputMethod(value as "url" | "file")}
+                      className="w-full"
+                    >
+                      <TabsList className="grid w-full grid-cols-2">
+                        <TabsTrigger value="url" className="flex items-center gap-2">
+                          <Link className="w-4 h-4" />
+                          URL 입력
+                        </TabsTrigger>
+                        <TabsTrigger value="file" className="flex items-center gap-2">
+                          <FileImage className="w-4 h-4" />
+                          파일 업로드
+                        </TabsTrigger>
+                      </TabsList>
+                      
+                      <TabsContent value="url" className="mt-3">
+                        <FormField
+                          control={form.control}
+                          name="imageUrl"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormControl>
+                                <Input
+                                  {...field}
+                                  value={field.value || ''}
+                                  placeholder={t("tables.imageUrl")}
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </TabsContent>
+                      
+                      <TabsContent value="file" className="mt-3">
+                        <div className="space-y-2">
+                          <div className="flex items-center justify-center w-full">
+                            <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100">
+                              <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                                {selectedImageFile ? (
+                                  <>
+                                    <FileImage className="w-8 h-8 mb-2 text-green-500" />
+                                    <p className="text-sm text-gray-700 font-medium">
+                                      {selectedImageFile.name}
+                                    </p>
+                                    <p className="text-xs text-gray-500">
+                                      {(selectedImageFile.size / 1024).toFixed(1)} KB
+                                    </p>
+                                  </>
+                                ) : (
+                                  <>
+                                    <Upload className="w-8 h-8 mb-2 text-gray-400" />
+                                    <p className="mb-2 text-sm text-gray-500">
+                                      <span className="font-semibold">이미지 파일을 선택하거나</span>
+                                    </p>
+                                    <p className="text-xs text-gray-500">드래그엤드롭으로 업로드</p>
+                                  </>
+                                )}
+                              </div>
+                              <input
+                                type="file"
+                                className="hidden"
+                                accept="image/*"
+                                onChange={(e) => {
+                                  const file = e.target.files?.[0];
+                                  if (file) {
+                                    // 이미지 파일 크기 제한 (5MB)
+                                    if (file.size > 5 * 1024 * 1024) {
+                                      toast({
+                                        title: "오류",
+                                        description: "이미지 크기는 5MB를 초과할 수 없습니다.",
+                                        variant: "destructive",
+                                      });
+                                      return;
+                                    }
+                                    setSelectedImageFile(file);
+                                    // imageUrl 필드를 비워서 URL과 중복되지 않도록 함
+                                    form.setValue("imageUrl", "");
+                                  }
+                                }}
+                              />
+                            </label>
+                          </div>
+                          {selectedImageFile && (
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setSelectedImageFile(null)}
+                              className="w-full"
+                            >
+                              <X className="w-4 h-4 mr-2" />
+                              파일 제거
+                            </Button>
+                          )}
+                        </div>
+                      </TabsContent>
+                    </Tabs>
+                  </div>
 
                   <div className="space-y-4">
                     <FormField
@@ -992,25 +1183,7 @@ export function ProductManagerModal({
                       )}
                     />
 
-                    <FormField
-                      control={form.control}
-                      name="priceIncludesTax"
-                      render={({ field }) => (
-                        <FormItem className="flex flex-row items-start space-x-3 space-y-0">
-                          <FormControl>
-                            <Checkbox
-                              checked={field.value || false}
-                              onCheckedChange={field.onChange}
-                            />
-                          </FormControl>
-                          <div className="space-y-1 leading-none">
-                            <FormLabel>
-                              {t("common.comboValues.priceIncludesTax")}
-                            </FormLabel>
-                          </div>
-                        </FormItem>
-                      )}
-                    />
+                    
                   </div>
 
                   <div className="flex justify-end">

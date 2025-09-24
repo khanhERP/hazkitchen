@@ -1,21 +1,25 @@
 
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { POSHeader } from "@/components/pos/header";
 import { RightSidebar } from "@/components/ui/right-sidebar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Building2, Search, Plus, Edit, Trash2, Phone, Mail, MapPin } from "lucide-react";
+import { Building2, Search, Plus, Edit, Trash2, Phone, Mail, MapPin, ShoppingCart } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { useTranslation } from "@/lib/i18n";
 import type { Supplier } from "@shared/schema";
 import { SupplierFormModal } from "@/components/suppliers/supplier-form-modal";
 
-export default function SuppliersPage() {
+interface SuppliersPageProps {
+  onLogout: () => void;
+}
+
+export default function SuppliersPage({ onLogout }: SuppliersPageProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedStatus, setSelectedStatus] = useState<string>("all");
   const [showForm, setShowForm] = useState(false);
@@ -32,6 +36,15 @@ export default function SuppliersPage() {
       if (searchQuery) params.append('search', searchQuery);
       
       const response = await apiRequest('GET', `https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/suppliers?${params}`);
+      return response.json();
+    },
+  });
+
+  // Fetch purchase order statistics for suppliers
+  const { data: supplierStats } = useQuery({
+    queryKey: ['https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/purchase-orders/supplier-stats'],
+    queryFn: async () => {
+      const response = await apiRequest('GET', 'https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/purchase-orders/supplier-stats');
       return response.json();
     },
   });
@@ -73,6 +86,18 @@ export default function SuppliersPage() {
     setEditingSupplier(null);
   };
 
+  const [, navigate] = useLocation();
+
+  const handleCreatePurchaseOrder = (supplier: Supplier) => {
+    // Navigate to purchase order creation with pre-selected supplier
+    navigate(`/purchases?action=create&supplierId=${supplier.id}`);
+  };
+
+  const getSupplierMetrics = (supplierId: number) => {
+    if (!supplierStats) return { totalOrders: 0, onTimeDelivery: 0, averageRating: 0 };
+    return supplierStats[supplierId] || { totalOrders: 0, onTimeDelivery: 0, averageRating: 0 };
+  };
+
   const filteredSuppliers = suppliers || [];
 
   return (
@@ -93,11 +118,6 @@ export default function SuppliersPage() {
                 <Plus className="w-4 h-4 mr-2" />
                 {t('suppliers.addSupplier')}
               </Button>
-              <Link href="/">
-                <Button variant="outline">
-                  {t('common.backToPOS')}
-                </Button>
-              </Link>
             </div>
           </div>
 
@@ -151,9 +171,9 @@ export default function SuppliersPage() {
               </CardContent>
             </Card>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {filteredSuppliers.map((supplier: Supplier) => (
-                <Card key={supplier.id}>
+                <Card key={supplier.id} className="h-full flex flex-col">
                   <CardHeader>
                     <div className="flex justify-between items-start">
                       <div>
@@ -165,7 +185,7 @@ export default function SuppliersPage() {
                       </Badge>
                     </div>
                   </CardHeader>
-                  <CardContent>
+                  <CardContent className="p-6 pt-0 flex flex-col flex-1">
                     <div className="space-y-2">
                       {supplier.contactPerson && (
                         <div className="flex items-center text-sm text-gray-600">
@@ -198,11 +218,51 @@ export default function SuppliersPage() {
                       )}
                     </div>
                     
-                    <div className="flex gap-2 mt-4">
+                    {/* Purchase Metrics */}
+                    <div className="mt-4 pt-3 border-t border-gray-100">
+                      <div className="grid grid-cols-3 gap-2 text-center">
+                        <div>
+                          <div className="text-lg font-bold text-green-600">
+                            {getSupplierMetrics(supplier.id).totalOrders}
+                          </div>
+                          <div className="text-xs text-gray-500">
+                            {t('purchases.totalOrders')}
+                          </div>
+                        </div>
+                        <div>
+                          <div className="text-lg font-bold text-blue-600">
+                            {getSupplierMetrics(supplier.id).onTimeDelivery}%
+                          </div>
+                          <div className="text-xs text-gray-500">
+                            {t('purchases.onTime')}
+                          </div>
+                        </div>
+                        <div>
+                          <div className="text-lg font-bold text-yellow-600">
+                            {getSupplierMetrics(supplier.id).averageRating.toFixed(1)}
+                          </div>
+                          <div className="text-xs text-gray-500">
+                            {t('purchases.rating')}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex justify-center gap-2 mt-auto pt-4 border-t border-gray-100">
+                      <Button
+                        size="sm"
+                        onClick={() => handleCreatePurchaseOrder(supplier)}
+                        className="bg-green-600 hover:bg-green-700 text-white"
+                        data-testid={`button-create-po-${supplier.id}`}
+                      >
+                        <ShoppingCart className="w-3 h-3 mr-1" />
+                        {t('purchases.createOrder')}
+                      </Button>
                       <Button
                         size="sm"
                         variant="outline"
                         onClick={() => handleEdit(supplier)}
+                        data-testid={`button-edit-supplier-${supplier.id}`}
                       >
                         <Edit className="w-3 h-3 mr-1" />
                         {t('common.edit')}
@@ -212,6 +272,7 @@ export default function SuppliersPage() {
                         variant="outline"
                         onClick={() => handleDelete(supplier.id)}
                         className="text-red-600 hover:text-red-700"
+                        data-testid={`button-delete-supplier-${supplier.id}`}
                       >
                         <Trash2 className="w-3 h-3 mr-1" />
                         {t('common.delete')}

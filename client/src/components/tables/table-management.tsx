@@ -50,6 +50,8 @@ const createTableFormSchema = (t: any) =>
     tableNumber: z.string().min(1, t("tables.tableNumberRequired")),
     capacity: z.number().min(1, t("tables.capacityMinimum")),
     status: z.enum(["available", "occupied", "reserved", "maintenance"]),
+    floor: z.string().min(1, "층 정보는 필수입니다"),
+    zone: z.string().min(1, "구역 정보는 필수입니다"),
     qrCode: z.string().optional(),
   });
 
@@ -57,6 +59,8 @@ type TableFormData = {
   tableNumber: string;
   capacity: number;
   status: "available" | "occupied" | "reserved" | "maintenance";
+  floor: string;
+  zone: string;
   qrCode?: string;
 };
 
@@ -105,6 +109,8 @@ export function TableManagement() {
       tableNumber: "",
       capacity: 1,
       status: "available",
+      floor: "1층",
+      zone: "A구역",
       qrCode: "",
     },
   });
@@ -178,6 +184,8 @@ export function TableManagement() {
           | "occupied"
           | "reserved"
           | "maintenance",
+        floor: table.floor || "1층",
+        zone: (table as any).zone || "A구역",
         qrCode: table.qrCode || "",
       });
     } else {
@@ -186,6 +194,8 @@ export function TableManagement() {
         tableNumber: "",
         capacity: 1,
         status: "available",
+        floor: "1층",
+        zone: "A구역",
         qrCode: "",
       });
     }
@@ -266,6 +276,8 @@ export function TableManagement() {
             <TableHeader>
               <TableRow>
                 <TableHead>{t("tables.tableNumberLabel")}</TableHead>
+                <TableHead>{t("tables.floorLabel")}</TableHead>
+                <TableHead>{t("tables.zoneLabel")}</TableHead>
                 <TableHead>{t("tables.capacityLabel")}</TableHead>
                 <TableHead>{t("tables.statusLabel")}</TableHead>
                 <TableHead>{t("tables.qrCodeLabel")}</TableHead>
@@ -281,6 +293,16 @@ export function TableManagement() {
                     <TableRow key={table.id}>
                       <TableCell className="font-medium">
                         {table.tableNumber}
+                      </TableCell>
+                      <TableCell>
+                        <span className="text-sm font-medium text-blue-600">
+                          {table.floor || "1층"}
+                        </span>
+                      </TableCell>
+                      <TableCell>
+                        <span className="text-sm font-medium text-green-600">
+                          {(table as any).zone || "A구역"}
+                        </span>
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-1">
@@ -334,7 +356,7 @@ export function TableManagement() {
               ) : (
                 <TableRow>
                   <TableCell
-                    colSpan={6}
+                    colSpan={7}
                     className="text-center py-8 text-gray-500"
                   >
                     {t("tables.noTables")}
@@ -395,6 +417,74 @@ export function TableManagement() {
                         }
                       />
                     </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="floor"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{t("tables.floorLabel")}</FormLabel>
+                    <Select
+                      onValueChange={field.onChange}
+                      value={field.value}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue
+                            placeholder={t("tables.floorPlaceholder")}
+                          />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="1층">1층</SelectItem>
+                        <SelectItem value="2층">2층</SelectItem>
+                        <SelectItem value="3층">3층</SelectItem>
+                        <SelectItem value="4층">4층</SelectItem>
+                        <SelectItem value="5층">5층</SelectItem>
+                        <SelectItem value="6층">6층</SelectItem>
+                        <SelectItem value="7층">7층</SelectItem>
+                        <SelectItem value="8층">8층</SelectItem>
+                        <SelectItem value="9층">9층</SelectItem>
+                        <SelectItem value="10층">10층</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="zone"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{t("tables.zoneLabel")}</FormLabel>
+                    <Select
+                      onValueChange={field.onChange}
+                      value={field.value}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue
+                            placeholder={t("tables.zonePlaceholder")}
+                          />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="A구역">A구역</SelectItem>
+                        <SelectItem value="B구역">B구역</SelectItem>
+                        <SelectItem value="C구역">C구역</SelectItem>
+                        <SelectItem value="D구역">D구역</SelectItem>
+                        <SelectItem value="E구역">E구역</SelectItem>
+                        <SelectItem value="F구역">F구역</SelectItem>
+                        <SelectItem value="VIP구역">VIP구역</SelectItem>
+                        <SelectItem value="테라스구역">테라스구역</SelectItem>
+                      </SelectContent>
+                    </Select>
                     <FormMessage />
                   </FormItem>
                 )}

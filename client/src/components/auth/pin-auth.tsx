@@ -1,6 +1,11 @@
-
 import { useState, useEffect } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -8,23 +13,36 @@ import { useToast } from "@/hooks/use-toast";
 import { Shield, Lock, Eye, EyeOff } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
+import { useTranslation } from "@/lib/i18n";
 
 interface PinAuthProps {
   onAuthSuccess: () => void;
 }
 
 export function PinAuth({ onAuthSuccess }: PinAuthProps) {
+  const { t } = useTranslation();
   const [pin, setPin] = useState("");
   const [showPin, setShowPin] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
 
+
   // Fetch store settings để lấy PIN
   const { data: storeData } = useQuery({
     queryKey: ["https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/store-settings"],
     queryFn: async () => {
-      const response = await apiRequest("GET", "https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/store-settings");
-      return response.json();
+      try {
+        const response = await apiRequest("GET", "https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/store-settings");
+        if (!response.ok) {
+          throw new Error('Network response was not ok');
+        }
+        const data = await response.json(); // Chờ lấy JSON
+        console.log("Store settings:", data);
+        return data;
+      } catch (error) {
+        console.error("Failed to fetch store settings:", error);
+        throw error; // Ném lỗi để query có thể xử lý tiếp
+      }
     },
   });
 
@@ -38,7 +56,7 @@ export function PinAuth({ onAuthSuccess }: PinAuthProps) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!pin.trim()) {
       toast({
         title: "Lỗi",
@@ -51,16 +69,18 @@ export function PinAuth({ onAuthSuccess }: PinAuthProps) {
     setIsLoading(true);
 
     try {
+      console.log("Submitting PIN:", pin);
+      console.log("storeData:", storeData);
       // Kiểm tra PIN với dữ liệu từ store settings
       if (storeData?.pinCode && pin === storeData.pinCode) {
         // Lưu trạng thái đăng nhập vào sessionStorage
         sessionStorage.setItem("pinAuthenticated", "true");
-        
+
         toast({
           title: "Đăng nhập thành công",
           description: "Chào mừng bạn đến với hệ thống POS",
         });
-        
+
         onAuthSuccess();
       } else {
         toast({
@@ -82,14 +102,14 @@ export function PinAuth({ onAuthSuccess }: PinAuthProps) {
   };
 
   const handlePinChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value.replace(/\D/g, ''); // Chỉ cho phép số
+    const value = e.target.value.replace(/\D/g, ""); // Chỉ cho phép số
     if (value.length <= 6) {
       setPin(value);
     }
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
+    if (e.key === "Enter") {
       handleSubmit(e as any);
     }
   };
@@ -128,7 +148,10 @@ export function PinAuth({ onAuthSuccess }: PinAuthProps) {
         <CardContent className="space-y-6 pt-4">
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="pin" className="text-sm font-medium text-gray-700">
+              <Label
+                htmlFor="pin"
+                className="text-sm font-medium text-gray-700"
+              >
                 Mã PIN
               </Label>
               <div className="relative">
@@ -195,7 +218,7 @@ export function PinAuth({ onAuthSuccess }: PinAuthProps) {
                 className="h-12 text-lg font-semibold"
                 onClick={() => {
                   if (pin.length < 6) {
-                    setPin(prev => prev + num);
+                    setPin((prev) => prev + num);
                   }
                 }}
                 disabled={isLoading || pin.length >= 6}
@@ -218,7 +241,7 @@ export function PinAuth({ onAuthSuccess }: PinAuthProps) {
               className="h-12 text-lg font-semibold"
               onClick={() => {
                 if (pin.length < 6) {
-                  setPin(prev => prev + "0");
+                  setPin((prev) => prev + "0");
                 }
               }}
               disabled={isLoading || pin.length >= 6}
@@ -229,7 +252,7 @@ export function PinAuth({ onAuthSuccess }: PinAuthProps) {
               type="button"
               variant="outline"
               className="h-12 text-lg font-semibold text-red-600"
-              onClick={() => setPin(prev => prev.slice(0, -1))}
+              onClick={() => setPin((prev) => prev.slice(0, -1))}
               disabled={isLoading || pin.length === 0}
             >
               ←

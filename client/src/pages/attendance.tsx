@@ -10,7 +10,11 @@ import { Calendar, Clock, Users, ShoppingCart } from "lucide-react";
 import { Link } from "wouter";
 import { useTranslation } from "@/lib/i18n";
 
-export default function AttendancePage() {
+interface AttendancePageProps {
+  onLogout: () => void;
+}
+
+export default function AttendancePage({ onLogout }: AttendancePageProps) {
   const { t } = useTranslation();
   const [selectedDate, setSelectedDate] = useState<string>(
     new Date().toISOString().split('T')[0]
@@ -48,7 +52,7 @@ export default function AttendancePage() {
                   {t('employees.employeeManagement')}
                 </Button>
               </Link>
-              <Link href="/">
+              <Link href="/sales-orders">
                 <Button variant="outline">
                   <ShoppingCart className="w-4 h-4 mr-2" />
                   {t('common.comboValues.backToSales')}

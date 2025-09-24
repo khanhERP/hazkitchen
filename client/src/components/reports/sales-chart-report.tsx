@@ -73,6 +73,8 @@ export function SalesChartReport() {
   const [endDate, setEndDate] = useState<string>(
     new Date().toISOString().split("T")[0],
   );
+  const [startTime, setStartTime] = useState<string>("00:00");
+  const [endTime, setEndTime] = useState<string>("23:59");
   const [salesMethod, setSalesMethod] = useState("all");
   const [salesChannel, setSalesChannel] = useState("all");
 
@@ -101,23 +103,50 @@ export function SalesChartReport() {
   const [showProductManager, setShowProductManager] = useState(false);
   const [searchSKU, setSearchSKU] = useState("");
 
-  // Query orders by date range - using proper order data
+  // Query store settings for priceIncludesTax
+  const { data: storeSettings } = useQuery({
+    queryKey: ["https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/store-settings"],
+    queryFn: async () => {
+      const response = await fetch("https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/store-settings");
+      if (!response.ok) {
+        throw new Error("Failed to fetch store settings");
+      }
+      return response.json();
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+
+  // Query orders by date range - using proper order data with datetime
   const {
     data: orders = [],
     isLoading: ordersLoading,
     error: ordersError,
   } = useQuery({
-    queryKey: ["https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/orders/date-range", startDate, endDate],
+    queryKey: [
+      "https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/orders/date-range",
+      startDate,
+      endDate,
+      startTime,
+      endTime,
+    ],
     queryFn: async () => {
       try {
+        // Create full datetime strings
+        const startDateTime = `${startDate}T${startTime}:00.000Z`;
+        const endDateTime = `${endDate}T${endTime}:59.999Z`;
+
         const response = await fetch(
-          `https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/orders/date-range/${startDate}/${endDate}`,
+          `https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/orders/date-range/${encodeURIComponent(startDateTime)}/${encodeURIComponent(endDateTime)}`,
         );
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
         const data = await response.json();
-        // console.log("Sales Chart - Orders loaded:", data?.length || 0);
+        console.log("Sales Chart - Orders loaded with datetime:", {
+          count: data?.length || 0,
+          startDateTime,
+          endDateTime,
+        });
         return Array.isArray(data) ? data : [];
       } catch (error) {
         console.error("Sales Chart - Error fetching orders:", error);
@@ -202,8 +231,8 @@ export function SalesChartReport() {
     useQuery({
       queryKey: [
         "https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/product-analysis",
-        startDate,
-        endDate,
+        startDate, // Use startDate for consistency
+        endDate, // Use endDate for consistency
         selectedCategory,
         productType,
         productSearch,
@@ -531,11 +560,13 @@ export function SalesChartReport() {
       created_at:
         order.orderedAt || order.createdAt || order.created_at || order.paidAt,
       customerName: order.customerName,
+      tax: order.tax || 0,
       customerId: order.customerId,
       cashierName: order.employeeName || order.cashierName,
       employeeId: order.employeeId,
       items: order.items || [],
       status: order.status,
+      priceIncludeTax: order.priceIncludeTax, // Include priceIncludeTax
     }));
 
     // Calculate daily sales from filtered completed orders
@@ -589,19 +620,36 @@ export function SalesChartReport() {
           };
         }
 
-        // Use EXACT database values without recalculation
-        const orderTotal = Number(order.total || 0); // Tổng tiền (đã bao gồm thuế)
-        const orderSubtotal = Number(order.subtotal || 0); // Tiền hàng (chưa thuế) = Thành tiền
-        const orderDiscount = Number(order.discount || 0); // Giảm giá
-        const orderTax = orderTotal - orderSubtotal; // Thuế = total - subtotal
-        const actualRevenue = orderSubtotal; // Doanh thu = Thành tiền (subtotal)
+        // Check priceIncludeTax setting from order
+        const orderPriceIncludeTax = order.priceIncludeTax === true;
+        const orderSubtotal = Number(order.subtotal || 0);
+        const orderDiscount = Number(order.discount || 0);
+        const orderTax = Number(order.tax || 0);
+        const orderTotal = Number(order.total || 0);
+
+        // Fix calculation logic based on priceIncludeTax
+        let thanhTien, doanhThu;
+
+        if (orderPriceIncludeTax) {
+          // When priceIncludeTax = true:
+          // - Thành tiền = subtotal + discount
+          // - Doanh thu = subtotal (already net of discount)
+          thanhTien = orderSubtotal + orderDiscount;
+          doanhThu = orderSubtotal;
+        } else {
+          // When priceIncludeTax = false:
+          // - Thành tiền = subtotal
+          // - Doanh thu = subtotal - discount
+          thanhTien = orderSubtotal;
+          doanhThu = orderSubtotal - orderDiscount;
+        }
 
         dailySales[dateStr].orders += 1;
-        dailySales[dateStr].revenue += actualRevenue; // Doanh thu = Thành tiền (subtotal)
+        dailySales[dateStr].revenue += doanhThu; // Doanh thu
         dailySales[dateStr].customers += Number(order.customerCount || 1);
         dailySales[dateStr].discount += orderDiscount; // Giảm giá từ DB
-        dailySales[dateStr].tax += orderTax; // Thuế = total - subtotal
-        dailySales[dateStr].subtotal += orderSubtotal; // Subtotal từ DB
+        dailySales[dateStr].tax += orderTax; // Thuế
+        dailySales[dateStr].subtotal += thanhTien; // Thành tiền
 
         console.log("Processing order:", {
           id: order.id,
@@ -610,7 +658,9 @@ export function SalesChartReport() {
           subtotal: orderSubtotal,
           discount: orderDiscount,
           tax: orderTax,
-          revenue: actualRevenue,
+          revenue: doanhThu,
+          thanhTien: thanhTien,
+          priceIncludeTax: orderPriceIncludeTax,
         });
       } catch (error) {
         console.warn("Error processing order for daily sales:", error, order);
@@ -846,13 +896,12 @@ export function SalesChartReport() {
                         );
 
                         return paginatedEntries.map(([date, data]) => {
-                          const paymentAmount = data.subtotal; // Thành tiền (chưa thuế)
-                          const discount = data.discount; // Use the tracked discount
-                          const actualRevenue = data.revenue; // Doanh thu = Thành tiền (subtotal)
-                          const tax = data.tax || 0; // Use stored tax, default to 0
-                          const customerPayment = actualRevenue; // Khách thanh toán = doanh thu
+                          // Recalculate based on priceIncludeTax for this row
+                          let rowPaymentAmount = 0; // Thành tiền
+                          let rowActualRevenue = 0; // Doanh thu
+                          let rowTax = 0; // Thuế
+                          let rowCustomerPayment = 0; // Khách thanh toán
 
-                          // Get transactions for this date
                           const dateTransactions = filteredTransactions.filter(
                             (transaction: any) => {
                               const transactionDate = new Date(
@@ -871,6 +920,41 @@ export function SalesChartReport() {
                             },
                           );
 
+                          dateTransactions.forEach((transaction: any) => {
+                            const orderPriceIncludeTax =
+                              transaction.priceIncludeTax === true;
+                            const transactionSubtotal = Number(
+                              transaction.subtotal || 0,
+                            );
+                            const transactionDiscount = Number(
+                              transaction.discount || 0,
+                            );
+                            const transactionTax = Number(transaction.tax || 0);
+                            const transactionTotal = Number(
+                              transaction.total || 0,
+                            );
+
+                            // Fix calculation based on priceIncludeTax
+                            let thanhTien, doanhThu;
+
+                            if (orderPriceIncludeTax) {
+                              // When priceIncludeTax = true: thành tiền = subtotal + discount
+                              thanhTien =
+                                transactionSubtotal + transactionDiscount;
+                              doanhThu = transactionSubtotal; // Doanh thu = subtotal (already net of discount)
+                            } else {
+                              // When priceIncludeTax = false: thành tiền = subtotal
+                              thanhTien = transactionSubtotal;
+                              doanhThu =
+                                transactionSubtotal - transactionDiscount; // Doanh thu = subtotal - discount
+                            }
+
+                            rowPaymentAmount += thanhTien;
+                            rowActualRevenue += doanhThu;
+                            rowTax += transactionTax;
+                            rowCustomerPayment += transactionTotal;
+                          });
+
                           const isExpanded = expandedRows[date] || false;
 
                           return (
@@ -878,13 +962,19 @@ export function SalesChartReport() {
                               <TableRow key={date} className="hover:bg-gray-50">
                                 <TableCell className="text-center border-r w-12">
                                   <button
-                                    onClick={() =>
+                                    onClick={(e) => {
+                                      e.preventDefault();
+                                      e.stopPropagation();
                                       setExpandedRows((prev) => ({
                                         ...prev,
                                         [date]: !prev[date],
-                                      }))
+                                      }));
+                                    }}
+                                    className="w-8 h-8 flex items-center justify-center hover:bg-gray-200 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    type="button"
+                                    aria-label={
+                                      isExpanded ? "Thu gọn" : "Mở rộng"
                                     }
-                                    className="w-8 h-8 flex items-center justify-center hover:bg-gray-200 rounded text-sm"
                                   >
                                     {isExpanded ? "−" : "+"}
                                   </button>
@@ -896,29 +986,60 @@ export function SalesChartReport() {
                                   {data.orders.toLocaleString()}
                                 </TableCell>
                                 <TableCell className="text-right border-r min-w-[140px] px-4">
-                                  {formatCurrency(paymentAmount)}
+                                  {(() => {
+                                    // Tính thành tiền theo logic đúng với priceIncludeTax
+                                    let totalThanhTien = 0;
+                                    dateTransactions.forEach(
+                                      (transaction: any) => {
+                                        const orderPriceIncludeTax =
+                                          transaction.priceIncludeTax === true;
+                                        const transactionSubtotal = Number(
+                                          transaction.subtotal || 0,
+                                        );
+                                        const transactionDiscount = Number(
+                                          transaction.discount || 0,
+                                        );
+
+                                        let thanhTien;
+                                        if (orderPriceIncludeTax) {
+                                          // Khi priceIncludeTax = true:
+                                          // thành tiền = subtotal + discount (giá đã bao gồm thuế từ đầu)
+                                          thanhTien =
+                                            transactionSubtotal +
+                                            transactionDiscount;
+                                        } else {
+                                          // Khi priceIncludeTax = false:
+                                          // thành tiền = subtotal (giá chưa bao gồm thuế)
+                                          thanhTien = transactionSubtotal;
+                                        }
+                                        totalThanhTien += thanhTien;
+                                      },
+                                    );
+
+                                    return formatCurrency(totalThanhTien);
+                                  })()}
                                 </TableCell>
                                 {analysisType !== "employee" && (
                                   <TableCell className="text-right border-r text-red-600 min-w-[120px] px-4">
-                                    {formatCurrency(discount)}
+                                    {formatCurrency(data.discount)}
                                   </TableCell>
                                 )}
                                 <TableCell className="text-right border-r text-green-600 font-medium min-w-[140px] px-4">
                                   {formatCurrency(
-                                    Math.max(0, paymentAmount - discount),
+                                    Math.max(0, rowActualRevenue),
                                   )}
                                 </TableCell>
                                 <TableCell className="text-right border-r min-w-[120px] px-4">
-                                  {formatCurrency(tax)}
+                                  {formatCurrency(rowTax)}
                                 </TableCell>
                                 <TableCell className="text-right border-r font-bold text-blue-600 min-w-[140px] px-4">
                                   {formatCurrency(
-                                    Math.max(0, paymentAmount - discount) + tax,
+                                    Math.max(0, rowActualRevenue) + rowTax,
                                   )}
                                 </TableCell>
                                 {(() => {
                                   // Group orders by payment method for this date
-                                  const paymentMethods: {
+                                  const paymentMethodsForDate: {
                                     [method: string]: number;
                                   } = {};
                                   dateTransactions.forEach(
@@ -926,20 +1047,29 @@ export function SalesChartReport() {
                                       const method =
                                         transaction.paymentMethod || "cash";
                                       // Use revenue + tax formula for customer payment
-                                      const transactionRevenue = Math.max(
-                                        0,
-                                        Number(transaction.subtotal || 0) -
-                                          Number(transaction.discount || 0),
+                                      const transactionSubtotal = Number(
+                                        transaction.subtotal || 0,
                                       );
-                                      const transactionTax =
-                                        Number(transaction.total || 0) -
-                                        Number(transaction.subtotal || 0);
-                                      const customerPayment =
-                                        transactionRevenue + transactionTax;
+                                      const transactionDiscount = Number(
+                                        transaction.discount || 0,
+                                      );
+                                      const transactionTax = Number(
+                                        transaction.tax || 0,
+                                      );
+                                      const transactionTotal = Number(
+                                        transaction.total || 0,
+                                      );
 
-                                      paymentMethods[method] =
-                                        (paymentMethods[method] || 0) +
-                                        customerPayment;
+                                      const transactionCustomerPayment =
+                                        transaction.priceIncludeTax === true
+                                          ? transactionTotal
+                                          : transactionSubtotal -
+                                            transactionDiscount +
+                                            transactionTax;
+
+                                      paymentMethodsForDate[method] =
+                                        (paymentMethodsForDate[method] || 0) +
+                                        transactionCustomerPayment;
                                     },
                                   );
 
@@ -961,7 +1091,7 @@ export function SalesChartReport() {
                                   const paymentMethodsArray =
                                     Array.from(allPaymentMethods).sort();
                                   const totalCustomerPayment = Object.values(
-                                    paymentMethods,
+                                    paymentMethodsForDate,
                                   ).reduce(
                                     (sum: number, amount: number) =>
                                       sum + amount,
@@ -973,7 +1103,7 @@ export function SalesChartReport() {
                                       {paymentMethodsArray.map(
                                         (method: any) => {
                                           const amount =
-                                            paymentMethods[method] || 0;
+                                            paymentMethodsForDate[method] || 0;
                                           return (
                                             <TableCell
                                               key={method}
@@ -1040,9 +1170,33 @@ export function SalesChartReport() {
                                         </button>
                                       </TableCell>
                                       <TableCell className="text-right border-r text-sm min-w-[140px] px-4">
-                                        {formatCurrency(
-                                          Number(transaction.subtotal || 0),
-                                        )}
+                                        {(() => {
+                                          // Tính thành tiền cho từng giao dịch
+                                          const orderPriceIncludeTax =
+                                            transaction.priceIncludeTax ===
+                                            true;
+                                          const transactionSubtotal = Number(
+                                            transaction.subtotal || 0,
+                                          );
+                                          const transactionDiscount = Number(
+                                            transaction.discount || 0,
+                                          );
+
+                                          let thanhTien;
+                                          if (orderPriceIncludeTax) {
+                                            // Khi priceIncludeTax = true:
+                                            // thành tiền = subtotal + discount (giá gốc trước khi áp dụng discount)
+                                            thanhTien =
+                                              transactionSubtotal +
+                                              transactionDiscount;
+                                          } else {
+                                            // Khi priceIncludeTax = false:
+                                            // thành tiền = subtotal (giá đã tính với số lượng)
+                                            thanhTien = transactionSubtotal;
+                                          }
+
+                                          return formatCurrency(thanhTien);
+                                        })()}
                                       </TableCell>
                                       {analysisType !== "employee" && (
                                         <TableCell className="text-right border-r text-red-600 min-w-[120px] px-4">
@@ -1052,38 +1206,118 @@ export function SalesChartReport() {
                                         </TableCell>
                                       )}
                                       <TableCell className="text-right border-r text-green-600 font-medium text-sm min-w-[140px] px-4">
-                                        {formatCurrency(
-                                          Math.max(
-                                            0,
-                                            Number(transaction.subtotal || 0) -
-                                              Number(transaction.discount || 0),
-                                          ),
-                                        )}
+                                        {(() => {
+                                          const transactionSubtotal = Number(
+                                            transaction.subtotal || 0,
+                                          );
+                                          const transactionDiscount = Number(
+                                            transaction.discount || 0,
+                                          );
+
+                                          // Check priceIncludeTax from transaction or order
+                                          const orderPriceIncludeTax =
+                                            transaction.priceIncludeTax ===
+                                            true;
+
+                                          if (orderPriceIncludeTax) {
+                                            // When priceIncludeTax = true: doanh thu = subtotal (already includes tax, net of discount)
+                                            return formatCurrency(
+                                              transactionSubtotal,
+                                            );
+                                          } else {
+                                            // When priceIncludeTax = false: doanh thu = subtotal - discount
+                                            return formatCurrency(
+                                              Math.max(
+                                                0,
+                                                transactionSubtotal -
+                                                  transactionDiscount,
+                                              ),
+                                            );
+                                          }
+                                        })()}
                                       </TableCell>
                                       <TableCell className="text-right border-r text-sm min-w-[120px] px-4">
                                         {formatCurrency(
-                                          Number(transaction.total || 0) -
-                                            Number(transaction.subtotal || 0),
+                                          Number(transaction.tax || 0),
                                         )}
                                       </TableCell>
                                       <TableCell className="text-right border-r font-bold text-blue-600 text-sm min-w-[140px] px-4">
-                                        {formatCurrency(
-                                          Math.max(
-                                            0,
-                                            Number(transaction.subtotal || 0) -
-                                              Number(transaction.discount || 0),
-                                          ) +
-                                            (Number(transaction.total || 0) -
-                                              Number(
-                                                transaction.subtotal || 0,
-                                              )),
-                                        )}
+                                        {(() => {
+                                          const transactionSubtotal = Number(
+                                            transaction.subtotal || 0,
+                                          );
+                                          const transactionDiscount = Number(
+                                            transaction.discount || 0,
+                                          );
+                                          const transactionTax = Number(
+                                            transaction.tax || 0,
+                                          );
+                                          const transactionTotal = Number(
+                                            transaction.total || 0,
+                                          );
+
+                                          // Check priceIncludeTax from transaction or order
+                                          const orderPriceIncludeTax =
+                                            transaction.priceIncludeTax ===
+                                            true;
+
+                                          if (orderPriceIncludeTax) {
+                                            // When priceIncludeTax = true: total = total from DB
+                                            return formatCurrency(
+                                              transactionTotal,
+                                            );
+                                          } else {
+                                            // When priceIncludeTax = false: total = doanh thu + tax
+                                            const revenue = Math.max(
+                                              0,
+                                              transactionSubtotal -
+                                                transactionDiscount,
+                                            );
+                                            return formatCurrency(
+                                              revenue + transactionTax,
+                                            );
+                                          }
+                                        })()}
                                       </TableCell>
                                       {(() => {
-                                        const transactionMethod =
-                                          transaction.paymentMethod || "cash";
-                                        const amount = Number(
-                                          transaction.total,
+                                        // Calculate payment methods for this individual transaction
+                                        const expandedPaymentMethodsForDate: {
+                                          [method: string]: number;
+                                        } = {};
+
+                                        // Group orders by payment method for this date
+                                        dateTransactions.forEach(
+                                          (trans: any) => {
+                                            const method =
+                                              trans.paymentMethod || "cash";
+                                            // Use revenue + tax formula for customer payment
+                                            const transSubtotal = Number(
+                                              trans.subtotal || 0,
+                                            );
+                                            const transDiscount = Number(
+                                              trans.discount || 0,
+                                            );
+                                            const transTax = Number(
+                                              trans.tax || 0,
+                                            );
+                                            const transTotal = Number(
+                                              trans.total || 0,
+                                            );
+
+                                            const transCustomerPayment =
+                                              trans.priceIncludeTax === true
+                                                ? transTotal
+                                                : transSubtotal -
+                                                  transDiscount +
+                                                  transTax;
+
+                                            expandedPaymentMethodsForDate[
+                                              method
+                                            ] =
+                                              (expandedPaymentMethodsForDate[
+                                                method
+                                              ] || 0) + transCustomerPayment;
+                                          },
                                         );
 
                                         // Get all unique payment methods from all transactions
@@ -1105,7 +1339,9 @@ export function SalesChartReport() {
                                         const paymentMethodsArray =
                                           Array.from(allPaymentMethods).sort();
                                         const totalCustomerPayment =
-                                          Object.values(paymentMethods).reduce(
+                                          Object.values(
+                                            expandedPaymentMethodsForDate,
+                                          ).reduce(
                                             (sum: number, amount: number) =>
                                               sum + amount,
                                             0,
@@ -1114,36 +1350,59 @@ export function SalesChartReport() {
                                         return (
                                           <>
                                             {paymentMethodsArray.map(
-                                              (method: any) => (
-                                                <TableCell
-                                                  key={method}
-                                                  className="text-right border-r text-sm min-w-[130px] px-4"
-                                                >
-                                                  {transactionMethod === method
-                                                    ? formatCurrency(
-                                                        Math.max(
-                                                          0,
+                                              (method: any) => {
+                                                const currentTransactionMethod =
+                                                  transaction.paymentMethod ||
+                                                  "cash";
+                                                const isCurrentMethod =
+                                                  method ===
+                                                  currentTransactionMethod;
+
+                                                // For individual transaction row, only show amount for its payment method
+                                                const transactionAmount =
+                                                  isCurrentMethod
+                                                    ? (() => {
+                                                        const transSubtotal =
                                                           Number(
                                                             transaction.subtotal ||
                                                               0,
-                                                          ) -
-                                                            Number(
-                                                              transaction.discount ||
-                                                                0,
-                                                            ),
-                                                        ) +
-                                                          (Number(
+                                                          );
+                                                        const transDiscount =
+                                                          Number(
+                                                            transaction.discount ||
+                                                              0,
+                                                          );
+                                                        const transTax = Number(
+                                                          transaction.tax || 0,
+                                                        );
+                                                        const transTotal =
+                                                          Number(
                                                             transaction.total ||
                                                               0,
-                                                          ) -
-                                                            Number(
-                                                              transaction.subtotal ||
-                                                                0,
-                                                            )),
-                                                      )
-                                                    : "-"}
-                                                </TableCell>
-                                              ),
+                                                          );
+
+                                                        return transaction.priceIncludeTax ===
+                                                          true
+                                                          ? transTotal
+                                                          : transSubtotal -
+                                                              transDiscount +
+                                                              transTax;
+                                                      })()
+                                                    : 0;
+
+                                                return (
+                                                  <TableCell
+                                                    key={method}
+                                                    className="text-right border-r text-sm min-w-[130px] px-4"
+                                                  >
+                                                    {transactionAmount > 0
+                                                      ? formatCurrency(
+                                                          transactionAmount,
+                                                        )
+                                                      : "-"}
+                                                  </TableCell>
+                                                );
+                                              },
                                             )}
                                           </>
                                         );
@@ -1180,31 +1439,77 @@ export function SalesChartReport() {
                           )}
                         </TableCell>
                         <TableCell className="text-right border-r min-w-[140px] px-4">
-                          {formatCurrency(
-                            Object.values(dailySales).reduce(
-                              (sum, data) => sum + data.revenue,
-                              0,
-                            ),
-                          )}
+                          {(() => {
+                            // Tính tổng thành tiền cho tất cả giao dịch
+                            let totalThanhTien = 0;
+                            filteredTransactions.forEach((transaction: any) => {
+                              const orderPriceIncludeTax =
+                                transaction.priceIncludeTax === true;
+                              const transactionSubtotal = Number(
+                                transaction.subtotal || 0,
+                              );
+                              const transactionDiscount = Number(
+                                transaction.discount || 0,
+                              );
+
+                              let thanhTien;
+                              if (orderPriceIncludeTax) {
+                                // Khi priceIncludeTax = true:
+                                // thành tiền = subtotal + discount (khôi phục giá gốc)
+                                thanhTien =
+                                  transactionSubtotal + transactionDiscount;
+                              } else {
+                                // Khi priceIncludeTax = false:
+                                // thành tiền = subtotal (giá đã nhân số lượng)
+                                thanhTien = transactionSubtotal;
+                              }
+                              totalThanhTien += thanhTien;
+                            });
+
+                            return formatCurrency(totalThanhTien);
+                          })()}
                         </TableCell>
                         {analysisType !== "employee" && (
                           <TableCell className="text-right border-r text-red-600 min-w-[120px] px-4">
                             {formatCurrency(
                               Object.values(dailySales).reduce(
-                                (sum, data) => sum + data.discount, // Use the tracked discount
+                                (sum, data) => sum + data.discount,
                                 0,
                               ),
                             )}
                           </TableCell>
                         )}
                         <TableCell className="text-right border-r min-w-[140px] px-4">
-                          {formatCurrency(
-                            Object.values(dailySales).reduce(
-                              (sum, data) =>
-                                Math.max(0, data.revenue - data.discount),
-                              0,
-                            ),
-                          )}
+                          {(() => {
+                            // Tính tổng doanh thu từ tất cả giao dịch theo đúng logic như từng dòng
+                            let totalRevenue = 0;
+                            filteredTransactions.forEach((transaction: any) => {
+                              const transactionSubtotal = Number(
+                                transaction.subtotal || 0,
+                              );
+                              const transactionDiscount = Number(
+                                transaction.discount || 0,
+                              );
+                              const orderPriceIncludeTax =
+                                transaction.priceIncludeTax === true;
+
+                              let doanhThu;
+                              if (orderPriceIncludeTax) {
+                                // When priceIncludeTax = true: doanh thu = subtotal (already net of discount)
+                                doanhThu = transactionSubtotal;
+                              } else {
+                                // When priceIncludeTax = false: doanh thu = subtotal - discount
+                                doanhThu = Math.max(
+                                  0,
+                                  transactionSubtotal - transactionDiscount,
+                                );
+                              }
+
+                              totalRevenue += doanhThu;
+                            });
+
+                            return formatCurrency(totalRevenue);
+                          })()}
                         </TableCell>
                         <TableCell className="text-right border-r min-w-[120px] px-4">
                           {formatCurrency(
@@ -1215,15 +1520,41 @@ export function SalesChartReport() {
                           )}
                         </TableCell>
                         <TableCell className="text-right border-r text-blue-600 min-w-[140px] px-4">
-                          {formatCurrency(
-                            Object.values(dailySales).reduce(
-                              (sum, data) =>
-                                sum +
-                                Math.max(0, data.revenue - data.discount) +
-                                (data.tax || 0),
-                              0,
-                            ),
-                          )}
+                          {(() => {
+                            // Tính tổng tiền từ tất cả giao dịch theo đúng logic như từng dòng
+                            let totalCustomerPayment = 0;
+                            filteredTransactions.forEach((transaction: any) => {
+                              const transactionSubtotal = Number(
+                                transaction.subtotal || 0,
+                              );
+                              const transactionDiscount = Number(
+                                transaction.discount || 0,
+                              );
+                              const transactionTax = Number(
+                                transaction.tax || 0,
+                              );
+                              const transactionTotal = Number(
+                                transaction.total || 0,
+                              );
+
+                              // Áp dụng cùng logic như từng dòng giao dịch
+                              const orderPriceIncludeTax =
+                                transaction.priceIncludeTax === true;
+
+                              let customerPayment;
+                              if (orderPriceIncludeTax) {
+                                // When priceIncludeTax = true: tổng tiền = total từ DB
+                                customerPayment =
+                                  transactionSubtotal + transactionDiscount;
+                              } else {
+                                customerPayment = transactionSubtotal;
+                              }
+
+                              totalCustomerPayment += customerPayment;
+                            });
+
+                            return formatCurrency(totalCustomerPayment);
+                          })()}
                         </TableCell>
                         {(() => {
                           // Calculate total payment methods across all dates
@@ -1232,9 +1563,29 @@ export function SalesChartReport() {
                           } = {};
                           filteredTransactions.forEach((transaction: any) => {
                             const method = transaction.paymentMethod || "cash";
+
+                            const transactionSubtotal = Number(
+                              transaction.subtotal || 0,
+                            );
+                            const transactionDiscount = Number(
+                              transaction.discount || 0,
+                            );
+                            const transactionTax = Number(transaction.tax || 0);
+                            const transactionTotal = Number(
+                              transaction.total || 0,
+                            );
+
+                            const customerPayment =
+                              transaction.priceIncludeTax === true
+                                ? transactionSubtotal +
+                              transactionTax
+                                : transactionSubtotal -
+                                  transactionDiscount +
+                                  transactionTax;
+
                             totalPaymentMethods[method] =
                               (totalPaymentMethods[method] || 0) +
-                              Number(transaction.total);
+                              customerPayment;
                           });
 
                           // Get all unique payment methods from all completed orders
@@ -1262,34 +1613,12 @@ export function SalesChartReport() {
                             <>
                               {paymentMethodsArray.map((method: any) => {
                                 const total = totalPaymentMethods[method] || 0;
-                                // Calculate total customer payment = total revenue + total tax for this method
-                                const totalRevenue = Object.values(
-                                  dailySales,
-                                ).reduce(
-                                  (sum, data) =>
-                                    sum +
-                                    Math.max(0, data.revenue - data.discount),
-                                  0,
-                                );
-                                const totalTax = Object.values(
-                                  dailySales,
-                                ).reduce(
-                                  (sum, data) => sum + (data.tax || 0),
-                                  0,
-                                );
-                                const totalCustomerPaymentForMethod =
-                                  total > 0 ? totalRevenue + totalTax : 0;
-
                                 return (
                                   <TableCell
                                     key={method}
                                     className="text-right border-r font-bold text-green-600 min-w-[130px] px-4"
                                   >
-                                    {total > 0
-                                      ? formatCurrency(
-                                          totalCustomerPaymentForMethod,
-                                        )
-                                      : "-"}
+                                    {total > 0 ? formatCurrency(total) : "-"}
                                   </TableCell>
                                 );
                               })}
@@ -1548,7 +1877,7 @@ export function SalesChartReport() {
         customerName: order.customerName || "Khách lẻ",
         totalAmount: orderSubtotal, // Thành tiền từ DB
         discount: orderDiscount, // Giảm giá từ DB
-        revenue: orderRevenue, // Doanh thu = thành tiền - giảm giá
+        revenue: orderRevenue, // Doanh thu = thành tiền - giwem giá
         tax: orderTax, // Thuế từ DB
         vat: orderTax, // VAT = thuế
         totalMoney: orderTotal, // Tổng tiền từ DB
@@ -1595,7 +1924,7 @@ export function SalesChartReport() {
                 const itemDiscount = orderDiscount * itemDiscountRatio; // Giảm giá theo tỷ lệ
                 const itemTax = orderTax * itemDiscountRatio; // Thuế theo tỷ lệ
                 const itemRevenue = itemTotal - itemDiscount; // Doanh thu = thành tiền - giảm giá
-                const itemTotalMoney = itemTotal + itemTax; // Tổng tiền = thành tiền + thuế
+                const itemTotalMoney = itemRevenue + itemTax; // Tổng tiền = doanh thu + thuế
 
                 // Get tax rate from product database, default to 0 if not available
                 const product = Array.isArray(products)
@@ -1616,7 +1945,7 @@ export function SalesChartReport() {
                   revenue: itemRevenue, // Doanh thu = thành tiền - giảm giá
                   tax: itemTax, // Thuế phân bổ
                   vat: itemTax, // VAT = thuế
-                  totalMoney: itemTotalMoney, // Tổng tiền = thành tiền + thuế
+                  totalMoney: itemTotalMoney, // Tổng tiền = doanh thu + thuế
                   productGroup: item.categoryName || "Chưa phân loại",
                   taxRate: itemTaxRate,
                 };
@@ -2004,7 +2333,7 @@ export function SalesChartReport() {
                                 key={`${order.orderNumber}-item-${itemIndex}`}
                                 className="bg-blue-50/50 border-l-4 border-l-blue-400"
                               >
-                                <TableCell className="text-center font-medium min-w-[100px] px-2">
+                                <TableCell className="text-center border-r bg-blue-50 w-12">
                                   <div className="flex items-center gap-2 pl-6 text-center">
                                     <span className="text-gray-400 text-xs flex-shrink-0 w-6 text-center">
                                       └
@@ -2064,7 +2393,7 @@ export function SalesChartReport() {
                                   })()}
                                 </TableCell>
                                 <TableCell className="text-right min-w-[100px] px-2">
-                                  {formatCurrency(item.vat)}
+                                  {formatCurrency(item.tax)}
                                 </TableCell>
                                 <TableCell className="text-right font-bold text-blue-600 min-w-[120px] px-2">
                                   {formatCurrency(item.totalMoney)}
@@ -2364,11 +2693,11 @@ export function SalesChartReport() {
           }
 
           const stats = employeeSales[employeeKey];
-          const orderTotal = Number(order.total || 0);
           const orderSubtotal = Number(order.subtotal || 0);
           const orderDiscount = Number(order.discount || 0);
-          const revenue = Math.max(0, orderSubtotal - orderDiscount);
-          const tax = Math.max(0, orderTotal - orderSubtotal);
+          const revenue = Math.max(0, orderSubtotal - orderDiscount); // Doanh thu = subtotal - discount
+          const tax = Number(order.tax || 0); // Use tax from database first, fallback to calculation
+          const orderTotal = Number(order.total || 0);
 
           stats.orderCount += 1;
           stats.revenue += revenue;
@@ -2444,20 +2773,10 @@ export function SalesChartReport() {
                         "Khách hàng": order.customerName || "Khách lẻ",
                         "Số đơn": 1,
                         "Doanh thu": formatCurrency(
-                          Math.max(
-                            0,
-                            Number(order.subtotal || 0) -
-                              Number(order.discount || 0),
-                          ),
+                          Math.max(0, Number(order.subtotal || 0)),
                         ),
                         "Giảm giá": formatCurrency(Number(order.discount || 0)),
-                        Thuế: formatCurrency(
-                          Math.max(
-                            0,
-                            Number(order.total || 0) -
-                              Number(order.subtotal || 0),
-                          ),
-                        ),
+                        Thuế: formatCurrency(Number(order.tax || 0)),
                         "Tổng cộng": formatCurrency(Number(order.total || 0)),
                         "Phương thức thanh toán": getPaymentMethodLabel(
                           order.paymentMethod || "cash",
@@ -2703,13 +3022,10 @@ export function SalesChartReport() {
                                           ) {
                                             const orderRevenue = Math.max(
                                               0,
-                                              Number(order.subtotal || 0) -
-                                                Number(order.discount || 0),
+                                              Number(order.subtotal || 0),
                                             );
-                                            const orderTax = Math.max(
-                                              0,
-                                              Number(order.total || 0) -
-                                                Number(order.subtotal || 0),
+                                            const orderTax = Number(
+                                              order.tax || 0,
                                             );
                                             customerPaymentForMethod +=
                                               orderRevenue + orderTax;
@@ -2741,7 +3057,9 @@ export function SalesChartReport() {
                               item.orders.map(
                                 (order: any, orderIndex: number) => (
                                   <TableRow
-                                    key={`${item.employeeCode}-order-${order.id || orderIndex}`}
+                                    key={`${item.employeeCode}-order-${
+                                      order.id || orderIndex
+                                    }`}
                                     className="bg-blue-50/50 border-l-4 border-l-blue-400"
                                   >
                                     <TableCell className="text-center border-r bg-blue-50 w-12">
@@ -2794,8 +3112,7 @@ export function SalesChartReport() {
                                       {formatCurrency(
                                         Math.max(
                                           0,
-                                          Number(order.subtotal || 0) -
-                                            Number(order.discount || 0),
+                                          Number(order.subtotal || 0),
                                         ),
                                       )}
                                     </TableCell>
@@ -2805,26 +3122,14 @@ export function SalesChartReport() {
                                       )}
                                     </TableCell>
                                     <TableCell className="text-right border-r text-sm min-w-[120px] px-4">
-                                      {formatCurrency(
-                                        Math.max(
-                                          0,
-                                          Number(order.total || 0) -
-                                            Number(order.subtotal || 0),
-                                        ),
-                                      )}
+                                      {formatCurrency(Number(order.tax || 0))}
                                     </TableCell>
                                     <TableCell className="text-right border-r font-bold text-blue-600 text-sm min-w-[140px] px-4">
                                       {formatCurrency(
                                         Math.max(
                                           0,
-                                          Number(order.subtotal || 0) -
-                                            Number(order.discount || 0),
-                                        ) +
-                                          Math.max(
-                                            0,
-                                            Number(order.total || 0) -
-                                              Number(order.subtotal || 0),
-                                          ),
+                                          Number(order.subtotal || 0),
+                                        ) + Number(order.tax || 0),
                                       )}
                                     </TableCell>
                                     {(() => {
@@ -2855,14 +3160,9 @@ export function SalesChartReport() {
                                       // Calculate customer payment = revenue + tax for this order
                                       const orderRevenue = Math.max(
                                         0,
-                                        Number(order.subtotal || 0) -
-                                          Number(order.discount || 0),
+                                        Number(order.subtotal || 0),
                                       );
-                                      const orderTax = Math.max(
-                                        0,
-                                        Number(order.total || 0) -
-                                          Number(order.subtotal || 0),
-                                      );
+                                      const orderTax = Number(order.tax || 0);
                                       const customerPayment =
                                         orderRevenue + orderTax;
 
@@ -2994,14 +3294,9 @@ export function SalesChartReport() {
                                       ) {
                                         const orderRevenue = Math.max(
                                           0,
-                                          Number(order.subtotal || 0) -
-                                            Number(order.discount || 0),
+                                          Number(order.subtotal || 0),
                                         );
-                                        const orderTax = Math.max(
-                                          0,
-                                          Number(order.total || 0) -
-                                            Number(order.subtotal || 0),
-                                        );
+                                        const orderTax = Number(order.tax || 0);
                                         totalCustomerPaymentForMethod +=
                                           orderRevenue + orderTax;
                                       }
@@ -3670,7 +3965,6 @@ export function SalesChartReport() {
                                   );
                                   return orderSum + orderRevenue;
                                 },
-                                0,
                               ) || customer.revenue;
                             return sum + customerRevenue;
                           }, 0),
@@ -4527,9 +4821,9 @@ export function SalesChartReport() {
                 const isDineIn = order.tableId && order.tableId !== null;
                 const method = isDineIn ? "Ăn tại chỗ" : "Mang về";
 
-                const orderSubtotal = Number(order.subtotal || 0);
+                const orderRevenue = Number(order.subtotal || 0);
                 const orderDiscount = Number(order.discount || 0);
-                const revenue = Math.max(0, orderSubtotal - orderDiscount);
+                const revenue = Math.max(0, orderRevenue - orderDiscount);
 
                 if (order.status === "cancelled") {
                   salesMethodData[method].cancelledCount += 1;
@@ -4633,10 +4927,15 @@ export function SalesChartReport() {
                     "Mã hàng": product.productSku,
                     "Tên hàng": product.productName,
                     "Đơn vị tính": t("common.perUnit"),
-                    "Số lượng bán": product.totalQuantity,
-                    "Thành tiền": formatCurrency(product.totalRevenue),
+                    "Số lượng bán": product.quantity,
+                    "Thành tiền": formatCurrency(
+                      (product.unitPrice || 0) * (product.quantity || 1),
+                    ),
                     "Giảm giá": formatCurrency(product.discount),
-                    "Doanh thu": formatCurrency(product.totalRevenue),
+                    "Doanh thu": formatCurrency(
+                      (product.unitPrice || 0) * (product.quantity || 1) -
+                        (product.discount || 0),
+                    ),
                     "Nhóm hàng": product.categoryName,
                   })),
                   // Add summary row
@@ -4736,12 +5035,12 @@ export function SalesChartReport() {
                           {t("common.perUnit")}
                         </TableCell>
                         <TableCell className="text-center">
-                          <Badge variant="outline">
-                            {product.totalQuantity}
-                          </Badge>
+                          <Badge variant="outline">{product.quantity}</Badge>
                         </TableCell>
                         <TableCell className="text-right font-semibold">
-                          {formatCurrency(product.totalRevenue)}
+                          {formatCurrency(
+                            (product.unitPrice || 0) * (product.quantity || 1),
+                          )}
                         </TableCell>
                         {analysisType !== "employee" && (
                           <TableCell className="text-right text-red-600">
@@ -4750,7 +5049,7 @@ export function SalesChartReport() {
                         )}
                         <TableCell className="text-right font-semibold text-green-600">
                           {formatCurrency(
-                            (product.totalRevenue || 0) -
+                            (product.unitPrice || 0) * (product.quantity || 1) -
                               (product.discount || 0),
                           )}
                         </TableCell>
@@ -5220,7 +5519,7 @@ export function SalesChartReport() {
         <div className="flex justify-center py-8">
           <div className="text-red-500">
             <p>Có lỗi xảy ra khi hiển thị báo cáo</p>
-            <p className="text-sm">{error.message}</p>
+            <p className="text-sm">{error?.message || "Unknown error"}</p>
           </div>
         </div>
       );
@@ -5289,10 +5588,19 @@ export function SalesChartReport() {
                   {t("reports.startDate")}
                 </Label>
                 <Input
-                  type="date"
-                  value={startDate}
-                  onChange={(e) => setStartDate(e.target.value)}
+                  type="datetime-local"
+                  value={
+                    startDate && startTime ? `${startDate}T${startTime}` : ""
+                  }
+                  onChange={(e) => {
+                    if (e.target.value) {
+                      const [date, time] = e.target.value.split("T");
+                      setStartDate(date);
+                      setStartTime(time || "00:00");
+                    }
+                  }}
                   className="h-10 text-sm border-gray-200 hover:border-green-300 focus:border-green-500 transition-colors"
+                  placeholder="dd/MM/yyyy HH:mm"
                 />
               </div>
 
@@ -5302,10 +5610,17 @@ export function SalesChartReport() {
                   {t("reports.endDate")}
                 </Label>
                 <Input
-                  type="date"
-                  value={endDate}
-                  onChange={(e) => setEndDate(e.target.value)}
+                  type="datetime-local"
+                  value={endDate && endTime ? `${endDate}T${endTime}` : ""}
+                  onChange={(e) => {
+                    if (e.target.value) {
+                      const [date, time] = e.target.value.split("T");
+                      setEndDate(date);
+                      setEndTime(time || "23:59");
+                    }
+                  }}
                   className="h-10 text-sm border-gray-200 hover:border-green-300 focus:border-green-500 transition-colors"
+                  placeholder="dd/MM/yyyy HH:mm"
                 />
               </div>
 
@@ -5324,6 +5639,7 @@ export function SalesChartReport() {
                     {t("reports.employeeFilter")}
                   </Label>
                   <div className="relative">
+                    {" "}
                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
                     <Input
                       placeholder={t("reports.employeeFilterPlaceholder")}

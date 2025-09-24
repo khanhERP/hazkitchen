@@ -45,7 +45,7 @@ export default function POS({ onLogout }: POSPageProps) {
     const connectWebSocket = () => {
       try {
         const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-        const wsUrl = `https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/ws`;
+        const wsUrl = `${protocol}//${window.location.host}/ws`;
         ws = new WebSocket(wsUrl);
 
         ws.onopen = () => {
@@ -311,7 +311,7 @@ export default function POS({ onLogout }: POSPageProps) {
             // Send popup close signal via WebSocket to trigger other components to refresh
             try {
               const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-              const wsUrl = `https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/ws`;
+              const wsUrl = `${protocol}//${window.location.host}/ws`;
               const ws = new WebSocket(wsUrl);
 
               ws.onopen = () => {

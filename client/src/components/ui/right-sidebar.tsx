@@ -1,18 +1,20 @@
 import { useState, useEffect } from "react";
 import { Link, useLocation } from "wouter";
-import { 
-  Home, 
-  Utensils, 
-  Users, 
-  Clock, 
-  BarChart3, 
-  Settings, 
+import {
+  Home,
+  Utensils,
+  Users,
+  Clock,
+  BarChart3,
+  Settings,
   ChevronRight,
   ChevronLeft,
   Menu,
   Package,
   ShoppingCart,
-  FileText
+  FileText,
+  ClipboardCheck,
+  Building2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -47,48 +49,58 @@ export function RightSidebar() {
   const baseMenuItems: MenuItem[] = [
     {
       icon: Utensils,
-      label: t('nav.tablesSales'),
+      label: t("nav.tablesSales"),
       href: "/tables",
     },
     {
       icon: ShoppingCart,
-      label: t('nav.directSales'),
+      label: t("nav.directSales"),
       href: "/pos",
     },
     {
       icon: FileText,
-      label: t('nav.salesOrders'),
+      label: t("nav.salesOrders"),
       href: "/sales-orders",
     },
     {
+      icon: Building2,
+      label: t("nav.suppliers"),
+      href: "/suppliers",
+    },
+    {
+      icon: ClipboardCheck,
+      label: t("nav.purchases"),
+      href: "/purchases",
+    },
+    {
       icon: Package,
-      label: t('nav.inventory'),
+      label: t("nav.inventory"),
       href: "/inventory",
     },
     {
-      icon: BarChart3,
-      label: t('nav.reports'),
-      href: "/reports",
-    },
-    {
       icon: Users,
-      label: t('nav.employees'),
+      label: t("nav.employees"),
       href: "/employees",
     },
     {
       icon: Clock,
-      label: t('nav.attendance'),
+      label: t("nav.attendance"),
       href: "/attendance",
     },
     {
+      icon: BarChart3,
+      label: t("nav.reports"),
+      href: "/reports",
+    },
+    {
       icon: Settings,
-      label: t('settings.title'),
+      label: t("settings.title"),
       href: "/settings",
     },
   ];
 
   // Filter menu items based on business type
-  const menuItems = baseMenuItems.filter(item => {
+  const menuItems = baseMenuItems.filter((item) => {
     // Hide tables (Bán theo bàn) for retail business type
     if (item.href === "/tables" && storeSettings?.businessType === "retail") {
       return false;
@@ -99,18 +111,18 @@ export function RightSidebar() {
   // Update CSS custom property for responsive margin
   useEffect(() => {
     document.documentElement.style.setProperty(
-      '--sidebar-width', 
-      isExpanded ? '256px' : '64px'
+      "--sidebar-width",
+      isExpanded ? "256px" : "64px",
     );
   }, [isExpanded]);
 
-  
-
   return (
-    <div className={cn(
-      "fixed left-0 top-16 bottom-0 bg-white border-r border-green-200 shadow-lg transition-all duration-300 z-40",
-      isExpanded ? "w-64" : "w-16"
-    )}>
+    <div
+      className={cn(
+        "fixed left-0 top-16 bottom-0 bg-white border-r border-green-200 shadow-lg transition-all duration-300 z-40",
+        isExpanded ? "w-64" : "w-16",
+      )}
+    >
       {/* Toggle Button */}
       <div className="p-4 border-b border-green-200 bg-green-50 mt-2">
         <Button
@@ -130,7 +142,7 @@ export function RightSidebar() {
           {isExpanded ? (
             <>
               <ChevronLeft className="w-4 h-4 mr-2" />
-              <span>{t('collapse')}</span>
+              <span>{t("common.collapse")}</span>
             </>
           ) : (
             <Menu className="w-4 h-4" />
@@ -144,14 +156,11 @@ export function RightSidebar() {
           const Icon = item.icon;
           const isActive = location === item.href;
           const showText = isExpanded && !isNavCollapsed;
-          
+
           return (
-            <div 
+            <div
               key={item.href}
-              className={cn(
-                "relative",
-                isNavCollapsed && "group-hover:w-64"
-              )}
+              className={cn("relative", isNavCollapsed && "group-hover:w-64")}
             >
               <Link href={item.href}>
                 <Button
@@ -161,11 +170,19 @@ export function RightSidebar() {
                     "bg-gradient-to-r from-gray-50 to-white hover:from-green-50 hover:to-green-100 hover:border-green-200 hover:text-green-700 hover:shadow-xl",
                     "focus:outline-none focus:ring-0 focus-visible:ring-0 focus-visible:outline-none",
                     showText ? "px-4" : "px-3",
-                    isActive && "bg-gradient-to-r from-green-100 to-green-50 text-green-800 border-green-300 shadow-lg font-bold",
-                    isNavCollapsed && !showText && "hover:w-64 group"
+                    isActive &&
+                      "bg-gradient-to-r from-green-100 to-green-50 text-green-800 border-green-300 shadow-lg font-bold",
+                    isNavCollapsed && !showText && "hover:w-64 group",
                   )}
+                  data-testid={`link${item.href.replace("/", "-")}`}
                 >
-                  <Icon className={cn("w-6 h-6 flex-shrink-0", showText && "mr-4", isActive && "text-green-700")} />
+                  <Icon
+                    className={cn(
+                      "w-6 h-6 flex-shrink-0",
+                      showText && "mr-4",
+                      isActive && "text-green-700",
+                    )}
+                  />
                   {showText && (
                     <span className="font-semibold text-base">
                       {item.label}
@@ -176,7 +193,7 @@ export function RightSidebar() {
                       {item.label}
                     </span>
                   )}
-                  
+
                   {showText && item.badge && (
                     <span className="ml-auto bg-red-600 text-white text-xs font-bold rounded-full px-3 py-1 shadow-md">
                       {item.badge}
@@ -184,10 +201,6 @@ export function RightSidebar() {
                   )}
                 </Button>
               </Link>
-              {/* Add separator after first item (기본 POS) and before employee section */}
-              {(index === 0 || index === 3) && showText && (
-                <div className="border-t border-gray-200 my-3 mx-4"></div>
-              )}
             </div>
           );
         })}
@@ -198,7 +211,7 @@ export function RightSidebar() {
         <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-green-200 bg-green-50">
           <div className="text-sm text-gray-500 text-center">
             <div className="font-medium">EDPOS System</div>
-            <div className="text-xs opacity-75">18/09/2025</div>
+            <div className="text-xs opacity-75">22/09/2025</div>
           </div>
         </div>
       )}

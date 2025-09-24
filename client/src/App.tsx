@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Switch, Route } from "wouter";
+import { useState, useEffect } from "react";
+import { Switch, Route, useLocation } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
@@ -12,6 +12,8 @@ import InventoryPage from "@/pages/inventory";
 import ReportsPage from "@/pages/reports";
 import SettingsPage from "@/pages/settings";
 import SuppliersPage from "@/pages/suppliers";
+import PurchasesPage from "@/pages/purchases";
+import PurchaseFormPage from "@/pages/purchase-form";
 import AttendancePage from "@/pages/attendance";
 import AttendanceQRPage from "./pages/attendance-qr";
 import CustomerDisplay from "@/pages/customer-display";
@@ -19,6 +21,16 @@ import SalesOrders from "@/pages/sales-orders";
 import NotFoundPage from "./pages/not-found";
 
 function Router({ onLogout }: { onLogout: () => void }) {
+  const RedirectToSales = () => {
+    const [, setLocation] = useLocation();
+    
+    useEffect(() => {
+      setLocation('/sales-orders', { replace: true });
+    }, [setLocation]);
+    
+    return null;
+  };
+
   return (
     <Switch>
       <Route path="/" component={() => <TablesPage onLogout={onLogout} />} />
@@ -48,11 +60,23 @@ function Router({ onLogout }: { onLogout: () => void }) {
         component={() => <SuppliersPage onLogout={onLogout} />}
       />
       <Route
+        path="/purchases"
+        component={() => <PurchasesPage onLogout={onLogout} />}
+      />
+      <Route
+        path="/purchases/create"
+        component={() => <PurchaseFormPage onLogout={onLogout} />}
+      />
+      <Route
+        path="/purchases/:id/edit"
+        component={({ params }) => <PurchaseFormPage id={params.id} onLogout={onLogout} />}
+      />
+      <Route
         path="/attendance"
         component={() => <AttendancePage onLogout={onLogout} />}
       />
       <Route path="/attendance-qr" component={AttendanceQRPage} />
-      <Route path="/inventory" component={InventoryPage} />
+      <Route path="/inventory" component={() => <InventoryPage onLogout={onLogout} />} />
       <Route path="/customer-display" component={CustomerDisplay} />
       <Route path="/sales-orders" component={SalesOrders} />
       <Route path="*" component={NotFoundPage} />

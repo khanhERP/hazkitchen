@@ -18,6 +18,7 @@ export const commonTranslations: { [key: string]: CommonTranslations } = {
     displayingInvoiceForPrint: "인쇄를 위해 송장을 표시하는 중입니다",
     invoiceSavedSuccess: "송장이 성공적으로 저장되었습니다",
     search: "검색",
+    successTitle: "성공",
     confirm: "확인",
     yes: "예",
     no: "아니오",
@@ -231,6 +232,9 @@ export const commonTranslations: { [key: string]: CommonTranslations } = {
     customerGroup: "고객 그룹",
     walkInCustomer: "일반 고객",
     backToPOS: "POS로 돌아가기",
+    description: "설명",
+    previous: "이전",
+    next: "다음",
 
     // Payment method modal
     selectPaymentMethod: "결제 방법 선택",
@@ -274,9 +278,10 @@ export const commonTranslations: { [key: string]: CommonTranslations } = {
     grabpayWallet: "GrabPay 전자지갑",
     paymentMethodGeneric: "결제 방법",
     paid: "결제 완료",
+    changeAmount: "거스름돈",
 
     // Subtotal
-    subtotalLabel: "소계:",
+    subtotalLabel: "���계:",
 
     // Usage status
     usageStatus: "사용 상태:",
@@ -305,6 +310,7 @@ export const commonTranslations: { [key: string]: CommonTranslations } = {
       male: "남성",
       female: "여성",
       other: "기타",
+      posPaymentNote: "POS 현금 결제 - 금액: {amount}, 거스름돈: {change}",
 
       // Size options
       small: "소",
@@ -458,7 +464,7 @@ export const commonTranslations: { [key: string]: CommonTranslations } = {
 
     // Spending thresholds
     editSpendingThreshold: "멤버십 등급 기준 수정",
-    saveSpendingThreshold: "멤버십 등급 기준 저장",
+    saveSpendingThreshold: "멤버십 등급 기p�� 저장",
 
     // Stock status
     inStock: "재고 있음",
@@ -484,6 +490,12 @@ export const commonTranslations: { [key: string]: CommonTranslations } = {
 
     // Unit indicators
     perUnit: "개당",
+    invoiceprintingcompleted:
+      "송장 인쇄가 완료되었습니다. 데이터가 업데이트되었습니다.",
+    newPaymentMethod: "새 결제 방법",
+    templateUsage: "템플릿 사용",
+    paymentInvoice: "결제 송장",
+    provisionalVoucher: "임시 영수증",
   },
   en: {
     save: "Save",
@@ -503,6 +515,7 @@ export const commonTranslations: { [key: string]: CommonTranslations } = {
     import: "Import",
     loading: "Loading...",
     noData: "No Data",
+    templateUsage: "Template Usage",
     confirm: "Confirm",
     yes: "Yes",
     no: "No",
@@ -557,6 +570,8 @@ export const commonTranslations: { [key: string]: CommonTranslations } = {
     items: " items",
     filters: "Filters",
     collapse: "Collapse",
+    expand: "Expand",
+    upgrade: "Upgrade",
     customerPaid: "Customer Paid",
     bankTransfer: "Bank Transfer",
     itemName: "Item Name",
@@ -720,6 +735,7 @@ export const commonTranslations: { [key: string]: CommonTranslations } = {
     grabpayWallet: "GrabPay Wallet",
     paymentMethodGeneric: "Payment Method",
     paid: "Paid",
+    changeAmount: "Change",
 
     // Subtotal
     subtotalLabel: "Subtotal:",
@@ -746,6 +762,7 @@ export const commonTranslations: { [key: string]: CommonTranslations } = {
       // Size options
       small: "Small",
       medium: "Medium",
+      posPaymentNote: "POS Cash Payment - Amount: {amount}, Change: {change}",
       large: "Large",
       extraLarge: "Extra Large",
 
@@ -794,6 +811,8 @@ export const commonTranslations: { [key: string]: CommonTranslations } = {
       cashier: "Cashier",
       waiter: "Waiter",
       chef: "Chef",
+      invoiceprintingcompleted:
+        "Invoice printing completed. Data has been updated.",
       cleaner: "Cleaner",
 
       // Product pricing
@@ -865,9 +884,13 @@ export const commonTranslations: { [key: string]: CommonTranslations } = {
     service: "Service",
     create: "Create",
     update: "Update",
+    successTitle: "Success",
 
     // Unit indicators
     perUnit: "per item",
+    newPaymentMethod: "New Payment Method",
+    paymentInvoice: "Payment Invoice",
+    provisionalVoucher: "Provisional Voucher",
   },
   vi: {
     save: "Lưu",
@@ -893,14 +916,15 @@ export const commonTranslations: { [key: string]: CommonTranslations } = {
     close: "Đóng",
     amountShortfall: "Thiếu",
     open: "Mở",
+    invoiceprintingcompleted: "In hóa đơn hoàn tất. Dữ liệu đã được cập nhật.",
     view: "Xem",
     print: "In",
     download: "Tải xuống",
     upload: "Tải lên",
     refresh: "Làm mới",
     back: "Quay lại",
-    next: "Tiếp theo",
-    previous: "Trước đó",
+    next: "Sau",
+    previous: "Trước",
     all: "Tất cả",
     none: "Không có",
     other: "Khác",
@@ -1070,6 +1094,7 @@ export const commonTranslations: { [key: string]: CommonTranslations } = {
     grabpayWallet: "GrabPay Wallet",
     paymentMethodGeneric: "Phương thức thanh toán",
     paid: "Đã thanh toán",
+    changeAmount: "Tiền thối",
 
     // Subtotal
     subtotalLabel: "Tổng phụ:",
@@ -1132,6 +1157,8 @@ export const commonTranslations: { [key: string]: CommonTranslations } = {
       partiallyPaid: "Thanh toán một phần",
       fullyPaid: "Đã thanh toán đủ",
       refunded: "Đã hoàn tiền",
+      posPaymentNote:
+        "Thanh toán bằng tiền mặt tại POS - Số tiền: {amount}, Tiền thừa: {change}",
 
       // Stock levels
       inStock: "Còn hàng",
@@ -1179,6 +1206,7 @@ export const commonTranslations: { [key: string]: CommonTranslations } = {
       noTemplatesFound: "Chưa có mẫu số HĐĐT nào",
       clickAddTemplateToStart: "Nhấn 'Thêm mẫu số' để bắt đầu",
       loadingData: "Đang tải dữ liệu...",
+      templateUsage: "Trạng thái sử dụng",
       searchKeyword: "Thử tìm kiếm với từ khóa khác",
       addFirstEmployee: "Thêm nhân viên đầu tiên để bắt đầu",
       noEmployeesFound: "Không tìm thấy nhân viên nào phù hợp",
@@ -1235,9 +1263,14 @@ export const commonTranslations: { [key: string]: CommonTranslations } = {
     customerGroup: "Nhóm khách hàng",
     walkInCustomer: "Khách hàng vãng lai",
     backToPOS: "Quay lại POS",
+    successTitle: "Thành công",
     description: "Mô tả",
     successTitle: "Thành công",
+    collapse: "Thu gọn",
     templateUsage: "Trạng thái sử dụng",
     areyouremoteorder: "Bạn có chắc chắn muốn xóa đơn hàng này?",
+    newPaymentMethod: "Phương thức thanh toán mới",
+    paymentInvoice: "Hóa đơn thanh toán",
+    provisionalVoucher: "Phiếu tạm tính",
   },
 };

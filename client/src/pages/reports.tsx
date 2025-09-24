@@ -34,7 +34,11 @@ import { EmployeeReport } from "@/components/reports/employee-report";
 import { SalesChannelReport } from "@/components/reports/sales-channel-report";
 import { FinancialReport } from "@/components/reports/financial-report";
 
-export default function ReportsPage() {
+interface ReportsPageProps {
+  onLogout: () => void;
+}
+
+export default function ReportsPage({ onLogout }: ReportsPageProps) {
   const { t } = useTranslation();
   const search = useSearch();
   const [activeTab, setActiveTab] = useState("overview");
@@ -68,7 +72,7 @@ export default function ReportsPage() {
               <p className="mt-2 text-gray-600">{t("reports.description")}</p>
             </div>
             <div className="flex gap-4">
-              <Link href="/">
+              <Link href="/sales-orders">
                 <Button variant="outline">
                   <ShoppingCart className="w-4 h-4 mr-2" />
                   {t("nav.pos")}

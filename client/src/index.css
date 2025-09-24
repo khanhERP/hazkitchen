@@ -98,13 +98,20 @@
 
   .receipt-print {
     font-family: 'Courier New', monospace;
-    font-size: 12px;
-    line-height: 1.2;
+    font-size: 16px;
+    font-weight: bold;
+    line-height: 1.4;
   }
 
   .btn-primary {
     @apply bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200;
     background-color: var(--primary-blue);
+  }
+
+  .invoice_title {
+    text-transform: uppercase;
+    font-size: 20px;
+    font-weight: 600;
   }
 
   .btn-primary:hover {

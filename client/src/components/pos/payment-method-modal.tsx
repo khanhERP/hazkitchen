@@ -22,6 +22,7 @@ import { ReceiptModal } from "./receipt-modal";
 import { usePopupSignal } from "@/hooks/use-popup-signal";
 import VirtualKeyboard from "@/components/ui/virtual-keyboard";
 import { useToast } from "@/hooks/use-toast";
+import { useQuery } from "@tanstack/react-query";
 import { PrintDialog } from "./print-dialog"; // Assuming PrintDialog is in the same directory
 
 // Helper function for API requests (assuming it exists and handles headers, etc.)
@@ -51,6 +52,7 @@ interface PaymentMethodModalProps {
     quantity: number;
     sku?: string;
     taxRate?: number;
+    discount?: number;
     afterTaxPrice?: number | string | null | "";
   }>;
   orderForPayment?: any; // Add orderForPayment prop for exact values
@@ -86,6 +88,19 @@ export function PaymentMethodModal({
     products: products?.length || 0,
     timestamp: new Date().toISOString(),
   });
+
+  // Query store settings to get dynamic address - ALWAYS CALL THIS HOOK
+  const { data: storeSettings } = useQuery({
+    queryKey: ["https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/store-settings"],
+    queryFn: async () => {
+      const response = await apiRequest("GET", "https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/store-settings");
+      return response.json();
+    },
+    enabled: isOpen, // Only fetch when modal is open
+  });
+
+  // Get priceIncludesTax setting from store settings
+  let priceIncludesTax = storeSettings?.priceIncludesTax === true;
 
   // Validate orderForPayment exists or create fallback order info
   const orderInfo = orderForPayment || {
@@ -349,6 +364,7 @@ export function PaymentMethodModal({
         // Use exact total with proper priority and discount consideration
         const baseTotal =
           receipt?.exactTotal ??
+          orderForPayment?.exactTotal ??
           orderInfo?.exactTotal ??
           orderInfo?.total ??
           total ??
@@ -356,11 +372,31 @@ export function PaymentMethodModal({
 
         // Get discount amount
         const discountAmount = Math.floor(
-          parseFloat(receipt?.discount || orderInfo?.discount || "0"),
+          parseFloat(receipt?.discount || orderForPayment?.discount || "0"),
         );
 
         // Calculate final total after discount
-        const orderTotal = Math.max(0, baseTotal - discountAmount);
+        let orderTotal;
+        if (priceIncludesTax) {
+          const subtotal =
+            receipt?.exactSubtotal ??
+            orderInfo?.exactSubtotal ??
+            orderForPayment.subtotal ??
+            0;
+          const tax =
+            receipt?.exactTax ??
+            orderForPayment.tax ??
+            orderInfo?.exactTax ??
+            0;
+          orderTotal = Math.max(
+            0,
+            parseFloat(subtotal || "0") -
+              parseFloat(tax || "0") -
+              discountAmount,
+          );
+        } else {
+          orderTotal = Math.max(0, baseTotal - discountAmount);
+        }
 
         const qrRequest: CreateQRPosRequest = {
           transactionUuid,
@@ -428,7 +464,7 @@ export function PaymentMethodModal({
             try {
               const protocol =
                 window.location.protocol === "https:" ? "wss:" : "ws:";
-              const wsUrl = `https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/ws`;
+              const wsUrl = `${protocol}//${window.location.host}/ws`;
               console.log(
                 "🎯 QR Payment: Connecting to WebSocket for customer display:",
                 wsUrl,
@@ -563,7 +599,7 @@ export function PaymentMethodModal({
             try {
               const protocol =
                 window.location.protocol === "https:" ? "wss:" : "ws:";
-              const wsUrl = `https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/ws`;
+              const wsUrl = `${protocol}//${window.location.host}/ws`;
               console.log(
                 "Fallback QR Payment: Attempting to connect to WebSocket:",
                 wsUrl,
@@ -626,14 +662,34 @@ export function PaymentMethodModal({
         console.error("Error calling CreateQRPos API:", error);
         // Fallback to VietQR format on error
         try {
-          const orderTotal =
-            receipt?.exactTotal ??
-            orderInfo?.exactTotal ??
-            orderInfo?.total ??
-            total ??
+          // Get base values
+          const exactSubtotal =
+            receipt?.exactSubtotal ||
+            orderForPayment?.exactSubtotal ||
+            parseFloat(receipt?.subtotal || "0") ||
+            parseFloat(orderForPayment?.subtotal || "0") ||
             0;
+
+          const exactTax =
+            receipt?.exactTax ||
+            (orderForPayment?.tax ??
+              orderInfo?.exactTax ??
+              parseFloat(receipt?.tax || "0") ??
+              0);
+
+          const discount = parseFloat(
+            receipt?.discount || orderForPayment?.discount || "0",
+          );
+
+          let finalTotal;
+          if (priceIncludesTax) {
+            finalTotal = Math.max(0, exactSubtotal - exactTax - discount);
+          } else {
+            // When priceIncludesTax = false: total = subtotal + tax - discount
+            finalTotal = Math.max(0, exactSubtotal + exactTax - discount);
+          }
           // Generate a valid VietQR format string
-          const fallbackQrData = `00020101021238630010A000000727013300069711330119NPIPIFPHAN0100004190208QRIBFTTA53037045408${Math.floor(orderTotal)}.005802VN6304`;
+          const fallbackQrData = `00020101021238630010A000000727013300069711330119NPIPIFPHAN0100004190208QRIBFTTA53037045408${Math.floor(finalTotal)}.005802VN6304`;
           console.log("📄 Using error fallback VietQR data:", fallbackQrData);
 
           const qrUrl = await QRCodeLib.toDataURL(fallbackQrData, {
@@ -667,18 +723,37 @@ export function PaymentMethodModal({
           0;
 
         // Get discount amount from multiple sources
-        const discountAmount = Math.floor(
-          parseFloat(
-            receipt?.discount ||
-              receipt?.exactDiscount ||
-              orderForPayment?.discount ||
-              orderInfo?.discount ||
-              "0",
-          ),
+        let discountAmount = parseFloat(
+          receipt?.discount || orderForPayment?.discount || "0",
         );
+        // Add further logic for the payment
+        if (discountAmount < 0) {
+          discountAmount = 0; // Ensure discount is non-negative
+        }
 
         // Calculate final total after discount
-        const orderTotal = Math.max(0, baseTotal - discountAmount);
+        let orderTotal;
+        if (priceIncludesTax) {
+          const subtotal =
+            receipt?.exactSubtotal ??
+            orderInfo?.exactSubtotal ??
+            orderForPayment.subtotal ??
+            0;
+          const tax =
+            receipt?.exactTax ??
+            orderForPayment.tax ??
+            orderInfo?.exactTax ??
+            0;
+          orderTotal = Math.max(
+            0,
+            parseFloat(subtotal || "0") -
+              parseFloat(tax || "0") -
+              discountAmount,
+          );
+        } else {
+          orderTotal = Math.max(0, baseTotal - discountAmount);
+        }
+
         const qrData = `Payment via ${method}\nAmount: ${Math.floor(orderTotal).toLocaleString("vi-VN")} ₫\nTime: ${new Date().toLocaleString("vi-VN")}`;
         const qrUrl = await QRCodeLib.toDataURL(qrData, {
           width: 256,
@@ -695,7 +770,7 @@ export function PaymentMethodModal({
         try {
           const protocol =
             window.location.protocol === "https:" ? "wss:" : "ws:";
-          const wsUrl = `https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/ws`;
+          const wsUrl = `${protocol}//${window.location.host}/ws`;
           const ws = new WebSocket(wsUrl);
 
           ws.onopen = () => {
@@ -765,15 +840,14 @@ export function PaymentMethodModal({
         );
 
         // Get discount amount from multiple sources
-        const discountAmount = Math.floor(
-          parseFloat(
-            receipt?.discount ||
-              receipt?.exactDiscount ||
-              orderForPayment?.discount ||
-              orderInfo?.discount ||
-              "0",
-          ),
+        let discountAmount = parseFloat(
+          receipt?.discount || orderForPayment?.discount || "0",
         );
+        // Add further logic for the payment
+        if (discountAmount < 0) {
+          discountAmount = 0; // Ensure discount is non-negative
+        }
+
         console.log(`💰 ${method} Discount amount:`, discountAmount);
 
         // Prepare order items with discount distribution
@@ -934,7 +1008,7 @@ export function PaymentMethodModal({
               },
             );
 
-            // Update table status if order has a table
+            // Update order status if order has a table
             if (updatedOrder.tableId) {
               try {
                 console.log(
@@ -1084,7 +1158,7 @@ export function PaymentMethodModal({
               parseFloat(item.price || "0") * parseInt(item.quantity || "1")
             ).toString(),
           notes: null,
-          discount: "0.00", // Will be calculated below
+          discount: item.discount || "0", // Will be calculated below
         }),
       );
 
@@ -1105,7 +1179,6 @@ export function PaymentMethodModal({
           orderItems = orderItems.map((item, index) => {
             const unitPrice = Number(item.unitPrice || 0);
             const quantity = Number(item.quantity || 0);
-            const itemTotal = unitPrice * quantity;
 
             let itemDiscount = 0;
 
@@ -1115,11 +1188,13 @@ export function PaymentMethodModal({
             } else {
               // Calculate proportional discount
               const proportionalDiscount =
-                (discountAmount * itemTotal) / totalAmount;
+                (discountAmount * unitPrice) / totalAmount;
               itemDiscount = Math.round(proportionalDiscount);
               allocatedDiscount += itemDiscount;
             }
 
+            const itemTotal = unitPrice * quantity - itemDiscount;
+            item.total = itemTotal.toString();
             return {
               ...item,
               discount: itemDiscount.toFixed(2),
@@ -1262,7 +1337,7 @@ export function PaymentMethodModal({
     // Send message to customer display to clear QR payment
     try {
       const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-      const wsUrl = `https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/ws`;
+      const wsUrl = `${protocol}//${window.location.host}/ws`;
       const ws = new WebSocket(wsUrl);
 
       ws.onopen = () => {
@@ -1285,17 +1360,52 @@ export function PaymentMethodModal({
   const handleCashPaymentComplete = async () => {
     const receivedAmount = parseFloat(cashAmountInput || "0");
 
-    // Use exact total from previous screen
-    const orderTotal =
-      receipt?.exactTotal ??
-      orderForPayment?.exactTotal ??
-      orderForPayment?.total ??
-      orderInfo?.exactTotal ??
-      orderInfo?.total ??
-      total ??
-      0;
+    // Use exact total from previous screen with correct logic
+    const exactSubtotal =
+      receipt?.exactSubtotal ??
+      orderInfo?.exactSubtotal ??
+      orderForPayment?.subtotal ??
+      parseFloat(receipt?.subtotal || "0");
 
-    // Tính tiền thối: Tiền khách đưa - Tiền cần thanh toán
+    const exactTax =
+      receipt?.exactTax ??
+      orderForPayment?.tax ??
+      orderInfo?.exactTax ??
+      parseFloat(receipt?.tax || "0");
+
+    const discount = Math.floor(
+      parseFloat(
+        receipt?.discount ||
+          receipt?.exactDiscount ||
+          orderForPayment?.discount ||
+          orderInfo?.discount ||
+          "0",
+      ),
+    );
+
+    let orderTotal;
+    if (priceIncludesTax) {
+      // When priceIncludesTax = true: total = subtotal - discount (subtotal already includes tax)
+      orderTotal = Math.max(0, exactSubtotal - discount);
+    } else {
+      // When priceIncludesTax = false: total = subtotal + tax - discount
+      orderTotal = Math.max(0, exactSubtotal + exactTax - discount);
+    }
+
+    // Get discount amount and calculate distribution for cash payment
+    let discountAmount = Math.floor(
+      parseFloat(
+        receipt?.discount ||
+          receipt?.exactDiscount ||
+          orderForPayment?.discount ||
+          orderInfo?.discount ||
+          "0",
+      ),
+    );
+
+    console.log("💰 Cash Order Creation: Discount amount:", discountAmount);
+
+    // Calculate tiền thối: Tiền khách đưa - Tiền cần thanh toán
     const changeAmount = receivedAmount - orderTotal;
     const finalChange = changeAmount >= 0 ? changeAmount : 0;
 
@@ -1320,19 +1430,6 @@ export function PaymentMethodModal({
         `🔄 TEMPORARY ORDER DETECTED - using receipt preview data for cash payment ${orderInfo.id}`,
       );
 
-      // Get discount amount and calculate distribution for cash payment
-      const discountAmount = Math.floor(
-        parseFloat(
-          receipt?.discount ||
-            receipt?.exactDiscount ||
-            orderForPayment?.discount ||
-            orderInfo?.discount ||
-            "0",
-        ),
-      );
-
-      console.log("💰 Cash Order Creation: Discount amount:", discountAmount);
-
       // Prepare order items with discount distribution
       let orderItems = (orderInfo.items || cartItems || []).map(
         (item: any) => ({
@@ -1345,7 +1442,7 @@ export function PaymentMethodModal({
               parseFloat(item.price || "0") * parseInt(item.quantity || "1")
             ).toString(),
           notes: null,
-          discount: "0.00", // Will be calculated below
+          discount: item.discount || "0", // Will be calculated below
         }),
       );
 
@@ -1572,7 +1669,7 @@ export function PaymentMethodModal({
       }
 
       // Don't close payment modal, show receipt modal directly
-      console.log("📄 SHOWING RECEIPT MODAL immediately");
+      console.log("p: � SHOWING RECEIPT MODAL immediately");
       setShowReceiptModal(true);
     } else {
       // Even if no receipt data, still show success and close payment flow
@@ -1657,13 +1754,30 @@ export function PaymentMethodModal({
   const handleVirtualEnter = () => {
     // Hide keyboard on enter and try to complete payment if amount is sufficient
     setShowVirtualKeyboard(false);
-    const orderTotal =
-      receipt?.exactTotal ??
-      parseFloat(receipt?.total || "0") ??
-      orderInfo?.exactTotal ??
-      orderInfo?.total ??
-      total;
-    if (parseFloat(cashAmountInput) >= orderTotal) {
+    // Get base values
+    const exactSubtotal =
+      receipt?.exactSubtotal ||
+      orderForPayment?.exactSubtotal ||
+      parseFloat(receipt?.subtotal || "0") ||
+      parseFloat(orderForPayment?.subtotal || "0") ||
+      0;
+
+    const exactTax =
+      receipt?.exactTax ??
+      orderForPayment?.tax ??
+      orderInfo?.exactTax ??
+      parseFloat(receipt?.tax || "0") ??
+      0;
+
+    const discount = parseFloat(
+      receipt?.discount || orderForPayment?.discount || "0",
+    );
+
+    // Use stored total directly from order
+    const finalTotal =
+      Math.floor(Number(orderInfo?.total || receipt?.total || total || 0)) -
+      discount;
+    if (parseFloat(cashAmountInput) >= finalTotal) {
       handleCashPaymentComplete();
     }
   };
@@ -1699,7 +1813,7 @@ export function PaymentMethodModal({
         try {
           const protocol =
             window.location.protocol === "https:" ? "wss:" : "ws:";
-          const wsUrl = `https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/ws`;
+          const wsUrl = `${protocol}//${window.location.host}/ws`;
           const ws = new WebSocket(wsUrl);
 
           ws.onopen = () => {
@@ -1801,7 +1915,7 @@ export function PaymentMethodModal({
             try {
               const protocol =
                 window.location.protocol === "https:" ? "wss:" : "ws:";
-              const wsUrl = `https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/ws`;
+              const wsUrl = `${protocol}//${window.location.host}/ws`;
               const ws = new WebSocket(wsUrl);
 
               ws.onopen = () => {
@@ -1862,7 +1976,19 @@ export function PaymentMethodModal({
                     {t("common.totalAmount")}
                   </p>
                   <p className="text-2xl font-bold text-blue-600">
-                    {Math.floor(Number(total || 0)).toLocaleString("vi-VN")} ₫
+                    {(() => {
+                      // Use total from orderInfo or orderForPayment or receipt with priority
+                      const orderTotal =
+                        orderInfo?.total ||
+                        orderForPayment?.total ||
+                        receipt?.total ||
+                        total ||
+                        "0";
+                      return Math.floor(
+                        parseFloat(orderTotal.toString()),
+                      ).toLocaleString("vi-VN");
+                    })()}
+                    ₫
                   </p>
                 </div>
 
@@ -1919,7 +2045,7 @@ export function PaymentMethodModal({
                     try {
                       const protocol =
                         window.location.protocol === "https:" ? "wss:" : "ws:";
-                      const wsUrl = `https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/ws`;
+                      const wsUrl = `${protocol}//${window.location.host}/ws`;
                       const ws = new WebSocket(wsUrl);
 
                       ws.onopen = () => {
@@ -1964,7 +2090,18 @@ export function PaymentMethodModal({
                       {t("common.amountToPay")}
                     </p>
                     <p className="text-2xl font-bold text-blue-600">
-                      {Math.floor(Number(total || 0)).toLocaleString("vi-VN")} ₫
+                      {(() => {
+                        const orderTotal =
+                          orderInfo?.total ||
+                          orderForPayment?.total ||
+                          receipt?.total ||
+                          total ||
+                          "0";
+                        return Math.floor(
+                          parseFloat(orderTotal.toString()),
+                        ).toLocaleString("vi-VN");
+                      })()}
+                      ₫
                     </p>
                   </div>
 
@@ -1995,7 +2132,7 @@ export function PaymentMethodModal({
                           window.location.protocol === "https:"
                             ? "wss:"
                             : "ws:";
-                        const wsUrl = `https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/ws`;
+                        const wsUrl = `${protocol}//${window.location.host}/ws`;
                         const ws = new WebSocket(wsUrl);
 
                         ws.onopen = () => {
@@ -2041,7 +2178,7 @@ export function PaymentMethodModal({
                           window.location.protocol === "https:"
                             ? "wss:"
                             : "ws:";
-                        const wsUrl = `https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/ws`;
+                        const wsUrl = `${protocol}//${window.location.host}/ws`;
                         const ws = new WebSocket(wsUrl);
 
                         ws.onopen = () => {
@@ -2096,7 +2233,18 @@ export function PaymentMethodModal({
                       {t("common.amountToPay")}
                     </p>
                     <p className="text-2xl font-bold text-blue-600">
-                      {Math.floor(Number(total || 0)).toLocaleString("vi-VN")} ₫
+                      {(() => {
+                        const orderTotal =
+                          orderInfo?.total ||
+                          orderForPayment?.total ||
+                          receipt?.total ||
+                          total ||
+                          "0";
+                        return Math.floor(
+                          parseFloat(orderTotal.toString()),
+                        ).toLocaleString("vi-VN");
+                      })()}
+                      ₫
                     </p>
                   </div>
 
@@ -2145,7 +2293,9 @@ export function PaymentMethodModal({
                             const receivedAmount = parseFloat(
                               cashAmountInput || "0",
                             );
-                            const orderTotal = Math.floor(Number(total || 0));
+                            const orderTotal = parseFloat(
+                              orderInfo?.total || total || "0",
+                            );
                             const changeAmount = receivedAmount - orderTotal;
                             return changeAmount >= 0
                               ? "bg-green-50 border-green-200"
@@ -2158,8 +2308,8 @@ export function PaymentMethodModal({
                                 const receivedAmount = parseFloat(
                                   cashAmountInput || "0",
                                 );
-                                const orderTotal = Math.floor(
-                                  Number(total || 0),
+                                const orderTotal = parseFloat(
+                                  orderInfo?.total || total || "0",
                                 );
                                 const changeAmount =
                                   receivedAmount - orderTotal;
@@ -2172,49 +2322,18 @@ export function PaymentMethodModal({
                                 const receivedAmount = parseFloat(
                                   cashAmountInput || "0",
                                 );
-                                const orderTotal = Math.floor(
-                                  Number(total || 0),
+                                const orderTotal = parseFloat(
+                                  orderInfo?.total || total || "0",
                                 );
                                 const changeAmount =
                                   receivedAmount - orderTotal;
-                                return changeAmount >= 0
-                                  ? t("pos.change") + ":"
-                                  : t("common.amountShortfall") + ":";
+
+                                if (changeAmount >= 0) {
+                                  return `${t("common.changeAmount")}: ${Math.floor(changeAmount).toLocaleString("vi-VN")} ₫`;
+                                } else {
+                                  return `Còn thiếu: ${Math.floor(Math.abs(changeAmount)).toLocaleString("vi-VN")} ₫`;
+                                }
                               })()}
-                            </span>
-                            <span
-                              className={`text-lg font-bold ${(() => {
-                                const receivedAmount = parseFloat(
-                                  cashAmountInput || "0",
-                                );
-                                const orderTotal = Math.floor(
-                                  Number(total || 0),
-                                );
-                                const changeAmount =
-                                  receivedAmount - orderTotal;
-                                return changeAmount >= 0
-                                  ? "text-green-600"
-                                  : "text-red-600";
-                              })()}`}
-                            >
-                              {(() => {
-                                const receivedAmount = parseFloat(
-                                  cashAmountInput || "0",
-                                );
-                                const orderTotal = Math.floor(
-                                  Number(total || 0),
-                                );
-                                const changeAmount =
-                                  receivedAmount - orderTotal;
-                                const displayAmount =
-                                  changeAmount >= 0
-                                    ? changeAmount
-                                    : Math.abs(changeAmount);
-                                return Math.floor(displayAmount).toLocaleString(
-                                  "vi-VN",
-                                );
-                              })()}{" "}
-                              ₫
                             </span>
                           </div>
                         </div>
@@ -2245,7 +2364,7 @@ export function PaymentMethodModal({
                           window.location.protocol === "https:"
                             ? "wss:"
                             : "ws:";
-                        const wsUrl = `https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/ws`;
+                        const wsUrl = `${protocol}//${window.location.host}/ws`;
                         const ws = new WebSocket(wsUrl);
 
                         ws.onopen = () => {
@@ -2282,7 +2401,7 @@ export function PaymentMethodModal({
                           window.location.protocol === "https:"
                             ? "wss:"
                             : "ws:";
-                        const wsUrl = `https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/ws`;
+                        const wsUrl = `${protocol}//${window.location.host}/ws`;
                         const ws = new WebSocket(wsUrl);
 
                         ws.onopen = () => {
@@ -2310,7 +2429,38 @@ export function PaymentMethodModal({
                     disabled={
                       !cashAmountInput ||
                       parseFloat(cashAmountInput) <
-                        Math.floor(Number(total || 0))
+                        (() => {
+                          // Get base values
+                          const exactSubtotal =
+                            receipt?.exactSubtotal ||
+                            orderForPayment?.exactSubtotal ||
+                            parseFloat(receipt?.subtotal || "0") ||
+                            parseFloat(orderForPayment?.subtotal || "0") ||
+                            0;
+                          const exactTax =
+                            receipt?.exactTax ??
+                            orderForPayment?.tax ??
+                            orderInfo?.exactTax ??
+                            parseFloat(receipt?.tax || "0") ??
+                            0;
+                          const discount = parseFloat(
+                            receipt?.discount ||
+                              orderForPayment?.discount ||
+                              "0",
+                          );
+                          let finalTotal;
+                          if (priceIncludesTax) {
+                            // When priceIncludesTax = true: total = subtotal - discount (subtotal already includes tax)
+                            finalTotal = Math.max(0, exactSubtotal - discount);
+                          } else {
+                            // When priceIncludesTax = false: total = subtotal + tax - discount
+                            finalTotal = Math.max(
+                              0,
+                              exactSubtotal + exactTax - discount,
+                            );
+                          }
+                          return Math.floor(Number(finalTotal));
+                        })()
                     }
                     className="flex-1 bg-green-600 hover:bg-green-700 text-white transition-colors duration-200 disabled:bg-gray-400"
                   >
@@ -2332,7 +2482,7 @@ export function PaymentMethodModal({
                 "📧 E-Invoice confirmed from Payment Method Modal:",
                 invoiceData,
               );
-
+              invoiceData.receipt = receipt;
               // Always call handleEInvoiceComplete to ensure proper processing
               handleEInvoiceComplete(invoiceData);
 
@@ -2350,62 +2500,23 @@ export function PaymentMethodModal({
               });
             }}
             total={(() => {
-              // Debug current data to understand the issue
-              console.log(
-                "🔥RENDERING E-INVOICE MODAL - Payment Modal EInvoice Total Debug:",
-                {
-                  showEInvoice: showEInvoice,
-                  selectedPaymentMethod: selectedPaymentMethod,
-                  orderForPayment: orderForPayment,
-                  receipt: receipt,
-                  propTotal: total,
-                  orderInfoTotal: orderInfo?.total,
-                  orderInfoExactTotal: orderInfo?.exactTotal,
-                  receiptTotal: receipt?.total,
-                  receiptExactTotal: receipt?.exactTotal,
-                },
-              );
+              // Use the exact total that was passed to this modal
+              const exactTotal =
+                receipt?.exactTotal ||
+                orderForPayment?.exactTotal ||
+                orderInfo?.exactTotal ||
+                total ||
+                0;
 
-              // Priority: orderInfo data first, then receipt, then fallback to prop total
-              let calculatedTotal = 0;
+              console.log("🔥 E-INVOICE MODAL: Using exact total:", {
+                receiptExactTotal: receipt?.exactTotal,
+                orderForPaymentExactTotal: orderForPayment?.exactTotal,
+                orderInfoExactTotal: orderInfo?.exactTotal,
+                propTotal: total,
+                finalTotal: exactTotal,
+              });
 
-              if (orderInfo?.total) {
-                calculatedTotal = parseFloat(orderInfo.total.toString());
-                console.log(
-                  "💰 Using orderInfo.total for EInvoice:",
-                  calculatedTotal,
-                );
-              } else if (orderInfo?.exactTotal) {
-                calculatedTotal = parseFloat(orderInfo.exactTotal.toString());
-                console.log(
-                  "💰 Using orderInfo.exactTotal for EInvoice:",
-                  calculatedTotal,
-                );
-              } else if (receipt?.exactTotal) {
-                calculatedTotal = parseFloat(receipt.exactTotal.toString());
-                console.log(
-                  "💰 Using receipt.exactTotal for EInvoice:",
-                  calculatedTotal,
-                );
-              } else if (receipt?.total) {
-                calculatedTotal = parseFloat(receipt.total.toString());
-                console.log(
-                  "💰 Using receipt.total for EInvoice:",
-                  calculatedTotal,
-                );
-              } else {
-                calculatedTotal = parseFloat(total?.toString() || "0");
-                console.log(
-                  "💰 Using fallback total for EInvoice:",
-                  calculatedTotal,
-                );
-              }
-
-              console.log(
-                "💰 Final calculated total for EInvoice:",
-                calculatedTotal,
-              );
-              return Math.floor(calculatedTotal || 0);
+              return Math.floor(Number(exactTotal));
             })()}
             selectedPaymentMethod={selectedPaymentMethod}
             cartItems={(() => {
@@ -2441,6 +2552,7 @@ export function PaymentMethodModal({
                   productName: item.productName,
                   unitPrice: item.unitPrice,
                   quantity: item.quantity,
+                  discount: item.discount,
                   total: item.total,
                   taxRate: product?.taxRate || item.taxRate || 0,
                 });
@@ -2450,6 +2562,7 @@ export function PaymentMethodModal({
                   name: item.productName || item.name,
                   price: parseFloat(item.unitPrice || item.price || "0"),
                   quantity: parseInt(item.quantity?.toString() || "1"),
+                  discount: parseFloat(item.discount || "0"),
                   sku:
                     product?.sku ||
                     item.sku ||

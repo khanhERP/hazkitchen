@@ -87,6 +87,7 @@ export interface CommonTranslations {
   startDate: string;
   endDate: string;
   dateRange: string;
+  filters: string;
 
   // Status translations
   statuses: {
@@ -137,6 +138,7 @@ export interface NavigationTranslations {
   employees: string;
   attendance: string;
   suppliers: string;
+  purchases: string;
   salesReports: string;
   inventoryReports: string;
   expensesReports: string;
@@ -275,6 +277,11 @@ export interface SettingsTranslations {
   processing: string;
   complete: string;
   failed: string;
+  pinCodeLabel: string;
+  pinCodePlaceholder: string;
+  priceIncludesTax: string;
+  priceIncludesTaxDesc: string;
+  loginIdLabel: string;
 }
 
 // Tables translations interface
@@ -2161,6 +2168,130 @@ export interface SuppliersTranslations {
   requiredFields: string;
 }
 
+// Purchases translations interface
+export interface PurchasesTranslations {
+  title: string;
+  dashboard: string;
+  overview: string;
+  newPurchaseOrder: string;
+  searchPurchaseOrders: string;
+  purchaseOrder: string;
+  purchaseOrders: string;
+  poNumber: string;
+  createPurchaseOrder: string;
+  editPurchaseOrder: string;
+  deletePurchaseOrder: string;
+  duplicatePurchaseOrder: string;
+  orderDate: string;
+  expectedDelivery: string;
+  actualDelivery: string;
+  supplier: string;
+  supplierName: string;
+  supplierContact: string;
+  deliveryAddress: string;
+  notes: string;
+  internalNotes: string;
+  status: string;
+  pending: string;
+  confirmed: string;
+  ordered: string;
+  partiallyReceived: string;
+  received: string;
+  cancelled: string;
+  overdue: string;
+  items: string;
+  itemDetails: string;
+  addItem: string;
+  removeItem: string;
+  product: string;
+  productName: string;
+  sku: string;
+  description: string;
+  unitPrice: string;
+  quantity: string;
+  orderedQuantity: string;
+  receivedQuantity: string;
+  remainingQuantity: string;
+  totalAmount: string;
+  subtotal: string;
+  tax: string;
+  taxRate: string;
+  discount: string;
+  shippingCost: string;
+  totalCost: string;
+  receiveGoods: string;
+  receiveItems: string;
+  receiveAll: string;
+  partialReceipt: string;
+  receiptDate: string;
+  receivedBy: string;
+  qualityCheck: string;
+  damageReport: string;
+  documents: string;
+  attachments: string;
+  uploadDocument: string;
+  deleteDocument: string;
+  downloadDocument: string;
+  invoice: string;
+  deliveryNote: string;
+  packingList: string;
+  certificate: string;
+  filterBy: string;
+  filterByStatus: string;
+  filterBySupplier: string;
+  filterByDate: string;
+  dateRange: string;
+  fromDate: string;
+  toDate: string;
+  view: string;
+  edit: string;
+  delete: string;
+  duplicate: string;
+  approve: string;
+  reject: string;
+  cancel: string;
+  save: string;
+  submit: string;
+  confirm: string;
+  orderCreated: string;
+  orderUpdated: string;
+  orderDeleted: string;
+  orderCancelled: string;
+  goodsReceived: string;
+  inventoryUpdated: string;
+  documentUploaded: string;
+  orderNotFound: string;
+  supplierRequired: string;
+  itemsRequired: string;
+  invalidQuantity: string;
+  exceededQuantity: string;
+  uploadFailed: string;
+  totalOrders: string;
+  pendingOrders: string;
+  completedOrders: string;
+  totalValue: string;
+  averageOrderValue: string;
+  topSuppliers: string;
+  exportToExcel: string;
+  exportToPDF: string;
+  printOrder: string;
+  purchaseReport: string;
+  supplierReport: string;
+  backToList: string;
+  previousPage: string;
+  nextPage: string;
+  itemsPerPage: string;
+  noOrders: string;
+  noItems: string;
+  loading: string;
+  recurring: string;
+  template: string;
+  approval: string;
+  workflow: string;
+  reminder: string;
+  notification: string;
+}
+
 export interface TablesTranslations {
   title: string;
   description: string;
@@ -2296,121 +2427,284 @@ export interface TablesTranslations {
   deleteorder: string;
 }
 
-// Supported languages
-export type Language = "ko" | "en" | "vi";
-
-// Common translations interface
-export interface CommonTranslations {
-  loading: string;
-  save: string;
-  cancel: string;
-  delete: string;
-  edit: string;
-  add: string;
-  update: string;
-  create: string;
-  remove: string;
-  confirm: string;
-  yes: string;
-  no: string;
-  search: string;
-  filter: string;
-  clear: string;
-  reset: string;
-  submit: string;
-  close: string;
-  open: string;
-  select: string;
-  total: string;
-  quantity: string;
-  price: string;
-  amount: string;
-  date: string;
-  time: string;
-  name: string;
+// Inventory translations interface
+export interface InventoryTranslations {
+  title: string;
   description: string;
-  notes: string;
+  inventoryManagement: string;
+  addInventoryItem: string;
+  editInventoryItem: string;
+  deleteInventoryItem: string;
+  searchPlaceholder: string;
+  itemName: string;
+  sku: string;
+  category: string;
+  currentStock: string;
+  lowStockThreshold: string;
+  unitPrice: string;
+  totalCost: string;
+  supplier: string;
+  supplierContact: string;
+  lastUpdated: string;
+  actions: string;
+  noInventoryItems: string;
+  confirmDelete: string;
+  itemNameRequired: string;
+  skuRequired: string;
+  categoryRequired: string;
+  currentStockMinimum: string;
+  lowStockThresholdMinimum: string;
+  unitPriceMinimum: string;
+  inventoryItemUpdateError: string;
+  inventoryItemCreated: string;
+  inventoryItemUpdated: string;
+  inventoryItemDeleted: string;
+  inventoryItemError: string;
+  itemNamePlaceholder: string;
+  skuPlaceholder: string;
+  currentStockPlaceholder: string;
+  lowStockThresholdPlaceholder: string;
+  unitPricePlaceholder: string;
+  supplierPlaceholder: string;
+  supplierContactPlaceholder: string;
+  inventoryItemDeleteError: string;
+  createInventoryItem: string;
+  updateInventoryItem: string;
+  cancel: string;
+  inventoryManagementDesc: string;
+  stockCount: string;
+  stockLevel: string;
+  lowStock: string;
+  inStock: string;
+  outOfStock: string;
+  stockAdjustment: string;
+  adjustStock: string;
+  addStock: string;
+  removeStock: string;
+  adjustmentQuantity: string;
+  adjustmentReason: string;
+  adjustmentReasonPlaceholder: string;
+  stockAdjusted: string;
+  stockAdjustmentFailed: string;
+  inventoryHistory: string;
+  inventoryValue: string;
+  totalInventoryValue: string;
+  averageItemPrice: string;
+  itemsBelowThreshold: string;
+  itemsOutOfStock: string;
+  stockMovement: string;
+  incomingStock: string;
+  outgoingStock: string;
+  stockTransfers: string;
+  transferTo: string;
+  transferFrom: string;
+  transferQuantity: string;
+  transferReason: string;
+  transferReasonPlaceholder: string;
+  stockTransferred: string;
+  stockTransferFailed: string;
+  inventoryReport: string;
+  stockReport: string;
+  lowStockReport: string;
+  outOfStockReport: string;
+  inventoryValuationReport: string;
+  inventoryAudit: string;
+  auditDate: string;
+  auditedBy: string;
+  auditResult: string;
+  auditNotes: string;
+  auditNotesPlaceholder: string;
+  auditCompleted: string;
+  auditFailed: string;
+  inventorySettings: string;
+  stockUnits: string;
+  stockUnitsPlaceholder: string;
+  stockUnitRequired: string;
+  multipleStockUnits: string;
+  defaultStockUnit: string;
+  manageStockUnits: string;
+  addStockUnit: string;
+  editStockUnit: string;
+  deleteStockUnit: string;
+  stockUnitCreated: string;
+  stockUnitUpdated: string;
+  stockUnitDeleted: string;
+  stockUnitError: string;
+  stockUnitNamePlaceholder: string;
+  stockUnitAbbreviationPlaceholder: string;
+  stockUnitNameRequired: string;
+  stockUnitAbbreviationRequired: string;
+  inventoryImport: string;
+  inventoryExport: string;
+  exportToExcel: string;
+  exportToCSV: string;
+  importFromExcel: string;
+  importFromCSV: string;
+  importSuccess: string;
+  importFailed: string;
+  importError: string;
+  bulkUpdate: string;
+  updateStock: string;
+  updatePrice: string;
+  updateCategory: string;
+  bulkUpdateSuccess: string;
+  bulkUpdateFailed: string;
+  bulkUpdateError: string;
+  productName: string;
+  editProduct: string;
+  productManagement: string;
+  addNewProduct: string;
+  bulkImport: string;
+  export: string;
+  product: string;
+  sku: string;
+  category: string;
+  price: string;
+  stock: string;
+  productTypeLabel: string;
+  productTypePlaceholder: string;
+  addTableDesc: string;
+  deleteorder: string;
+}
+
+// Employees translations interface
+export interface EmployeesTranslations {
+  title: string;
+  description: string;
+  employeeManagement: string;
+  addEmployee: string;
+  editEmployee: string;
+  deleteEmployee: string;
+  searchPlaceholder: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+  role: string;
   status: string;
   active: string;
   inactive: string;
+  noEmployees: string;
+  confirmDelete: string;
+  firstNameRequired: string;
+  lastNameRequired: string;
+  emailRequired: string;
+  invalidEmail: string;
+  phoneRequired: string;
+  roleRequired: string;
+  employeeUpdateError: string;
+  employeeCreated: string;
+  employeeUpdated: string;
+  employeeDeleted: string;
+  employeeError: string;
+  firstNamePlaceholder: string;
+  lastNamePlaceholder: string;
+  emailPlaceholder: string;
+  phonePlaceholder: string;
+  selectRole: string;
+  selectStatus: string;
+  employeeDeleteError: string;
+  employeeDetails: string;
+  employeeInfo: string;
+  employeeSettings: string;
+  employeePermissions: string;
+  employeeSchedule: string;
+  employeeAttendance: string;
+  employeePerformance: string;
+  employeeSalary: string;
+  employeeContract: string;
+  employeeDocument: string;
+  employeeNotes: string;
+  employeeNotesPlaceholder: string;
+  employeeCreateSuccess: string;
+  employeeUpdateSuccess: string;
+  employeeDeleteSuccess: string;
+  employeeErrorGeneric: string;
+  employeeCode: string;
+  employeeCodePlaceholder: string;
+  employeeCodeRequired: string;
+  duplicateEmployeeCode: string;
+  employeeCodeAlreadyExists: string;
+  pinCodeLabel: string;
+  pinCodePlaceholder: string;
+  loginIdLabel: string;
+}
+
+// Customers translations interface
+export interface CustomersTranslations {
+  title: string;
+  description: string;
+  customerManagement: string;
+  addCustomer: string;
+  editCustomer: string;
+  deleteCustomer: string;
+  searchPlaceholder: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+  address: string;
+  city: string;
+  state: string;
+  zipCode: string;
+  country: string;
+  customerSince: string;
+  totalSpent: string;
+  totalOrders: string;
+  lastOrderDate: string;
   actions: string;
-  settings: string;
-  back: string;
-  next: string;
-  previous: string;
-  first: string;
-  last: string;
-  page: string;
-  of: string;
-  items: string;
-  all: string;
-  none: string;
-  other: string;
-  required: string;
-  optional: string;
-  error: string;
-  warning: string;
-  info: string;
-  success: string;
-  failed: string;
-  completed: string;
-  pending: string;
-  processing: string;
-  categories: string;
-  category: string;
-  today: string;
-  yesterday: string;
-  thisWeek: string;
-  thisMonth: string;
-  thisYear: string;
-  lastWeek: string;
-  lastMonth: string;
-  lastYear: string;
-  custom: string;
-  from: string;
-  to: string;
-  startDate: string;
-  endDate: string;
-  dateRange: string;
-  filters: string;
-
-  // Status translations
-  statuses: {
-    // Order status
-    pending: string;
-    confirmed: string;
-    preparing: string;
-    ready: string;
-    delivered: string;
-    cancelled: string;
-    completed: string;
-
-    // Payment status
-    unpaid: string;
-    partiallyPaid: string;
-    fullyPaid: string;
-    refunded: string;
-
-    // Stock levels
-    inStock: string;
-    lowStock: string;
-    outOfStock: string;
-
-    // Employee roles
-    admin: string;
-    manager: string;
-    cashier: string;
-    waiter: string;
-    chef: string;
-    cleaner: string;
-  };
-
-  // Time periods
-  days30: string;
-  days60: string;
-  days90: string;
-  days180: string;
-  days365: string;
+  noCustomers: string;
+  confirmDelete: string;
+  firstNameRequired: string;
+  lastNameRequired: string;
+  emailRequired: string;
+  invalidEmail: string;
+  phoneRequired: string;
+  addressRequired: string;
+  cityRequired: string;
+  stateRequired: string;
+  zipCodeRequired: string;
+  countryRequired: string;
+  customerUpdateError: string;
+  customerCreated: string;
+  customerUpdated: string;
+  customerDeleted: string;
+  customerError: string;
+  firstNamePlaceholder: string;
+  lastNamePlaceholder: string;
+  emailPlaceholder: string;
+  phonePlaceholder: string;
+  addressPlaceholder: string;
+  cityPlaceholder: string;
+  statePlaceholder: string;
+  zipCodePlaceholder: string;
+  countryPlaceholder: string;
+  customerDeleteError: string;
+  customerDetails: string;
+  customerInfo: string;
+  customerOrders: string;
+  customerPreferences: string;
+  customerNotes: string;
+  customerNotesPlaceholder: string;
+  customerCreateSuccess: string;
+  customerUpdateSuccess: string;
+  customerDeleteSuccess: string;
+  customerErrorGeneric: string;
+  loyaltyPoints: string;
+  customerGroup: string;
+  selectCustomerGroup: string;
+  customerGroupRequired: string;
+  manageCustomerGroups: string;
+  addCustomerGroup: string;
+  editCustomerGroup: string;
+  deleteCustomerGroup: string;
+  customerGroupCreated: string;
+  customerGroupUpdated: string;
+  customerGroupDeleted: string;
+  customerGroupError: string;
+  customerGroupNamePlaceholder: string;
+  customerGroupNameRequired: string;
+  customerGroupDescriptionPlaceholder: string;
 }
 
 // Type-safe translation keys
@@ -2428,7 +2722,8 @@ export type TranslationKey =
   | `notFound.${keyof NotFoundTranslations}`
   | `einvoice.${keyof EInvoiceTranslations}`
   | `pos.${keyof POSTranslations}`
-  | `suppliers.${keyof SuppliersTranslations}`;
+  | `suppliers.${keyof SuppliersTranslations}`
+  | `purchases.${keyof PurchasesTranslations}`;
 
 // Language-specific translations type
 export interface LanguageTranslations {
@@ -2447,6 +2742,7 @@ export interface LanguageTranslations {
     tables: TablesTranslations;
     einvoice: EInvoiceTranslations;
     suppliers: SuppliersTranslations;
+    purchases: PurchasesTranslations;
   };
   en: {
     common: CommonTranslations;
@@ -2463,6 +2759,7 @@ export interface LanguageTranslations {
     tables: TablesTranslations;
     einvoice: EInvoiceTranslations;
     suppliers: SuppliersTranslations;
+    purchases: PurchasesTranslations;
   };
   vi: {
     common: CommonTranslations;
@@ -2479,5 +2776,6 @@ export interface LanguageTranslations {
     tables: TablesTranslations;
     einvoice: EInvoiceTranslations;
     suppliers: SuppliersTranslations;
+    purchases: PurchasesTranslations;
   };
 }

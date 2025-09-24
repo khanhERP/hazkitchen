@@ -36,6 +36,19 @@ export function ProductGrid({ selectedCategory, searchQuery, onAddToCart }: Prod
   const [sortBy, setSortBy] = useState<'name' | 'price' | 'stock'>('name');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
 
+  // Fetch store settings to check price inclusion of tax
+  const { data: storeSettings } = useQuery({
+    queryKey: ["https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/store-settings"],
+    queryFn: async () => {
+      const response = await fetch("https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/store-settings");
+      if (!response.ok) throw new Error('Failed to fetch store settings');
+      return response.json();
+    },
+    staleTime: Infinity, // Assuming store settings don't change frequently
+  });
+
+  const priceIncludesTax = storeSettings?.priceIncludesTax ?? false;
+
   // Assume setCart and other necessary hooks/context are available if this were a real component
   // For demonstration, we'll just use the onAddToCart prop
   const setCart = (items: CartItem[]) => {
@@ -109,6 +122,18 @@ export function ProductGrid({ selectedCategory, searchQuery, onAddToCart }: Prod
     // Pass productId to onAddToCart as expected by the interface
     // Toast notification will be handled by the usePOS hook only
     onAddToCart(product.id);
+  };
+
+  // Function to calculate the display price based on store settings
+  // This function is no longer used for direct price display but kept for potential future use or other logic.
+  const getDisplayPrice = (product: Product): number => {
+    const basePrice = parseFloat(product.price);
+    if (priceIncludesTax) {
+      // product.taxRate is a percentage like "8.00" for 8%
+      const taxRate = parseFloat(product.taxRate || "0");
+      return basePrice * (1 + taxRate / 100);
+    }
+    return basePrice;
   };
 
   // Mock updateCart function to demonstrate the change
@@ -228,6 +253,7 @@ export function ProductGrid({ selectedCategory, searchQuery, onAddToCart }: Prod
 
       switch (sortBy) {
         case 'price':
+          // Use parseFloat on the 'price' column directly for sorting
           aValue = parseFloat(a.price);
           bValue = parseFloat(b.price);
           break;
@@ -344,7 +370,7 @@ export function ProductGrid({ selectedCategory, searchQuery, onAddToCart }: Prod
                         <h3 className="font-medium pos-text-primary mb-1 line-clamp-2">{product.name}</h3>
                         <p className="text-sm pos-text-secondary mb-2">SKU: {product.sku}</p>
                         <div className="flex items-center justify-between">
-                          <span className="text-lg font-bold text-green-600">{parseFloat(product.price).toLocaleString()} ₫</span>
+                          <span className="text-lg font-bold text-green-600">{Math.round(parseFloat(product.price)).toLocaleString("vi-VN")} ₫</span>
                           {product.trackInventory !== false && (
                             <span className={`text-xs font-medium ${stockStatus.color}`}>
                               {stockStatus.text}
@@ -376,7 +402,7 @@ export function ProductGrid({ selectedCategory, searchQuery, onAddToCart }: Prod
                         <h3 className="font-medium pos-text-primary mb-1">{product.name}</h3>
                         <p className="text-sm pos-text-secondary mb-1">SKU: {product.sku}</p>
                         <div className="flex items-center justify-between">
-                          <span className="text-lg font-bold text-green-600">{parseFloat(product.price).toLocaleString()} ₫</span>
+                          <span className="text-lg font-bold text-green-600">{Math.round(parseFloat(product.price)).toLocaleString("vi-VN")} ₫</span>
                           {product.trackInventory !== false && (
                             <span className={`text-xs font-medium ${stockStatus.color}`}>
                               {stockStatus.text}
