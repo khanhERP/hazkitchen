@@ -10,6 +10,7 @@ export const reportsTranslations: { [key: string]: ReportsTranslations } = {
     menuAnalysis: "Phân tích menu",
     tableAnalysis: "Phân tích bàn",
     backToTables: "Quay lại Bàn",
+    product: "Sản phẩm",
 
     // Date and time filters
     startDate: "Từ ngày",
@@ -377,6 +378,7 @@ export const reportsTranslations: { [key: string]: ReportsTranslations } = {
     inValue: "Giá trị nhập",
 
     // Additional missing keys
+    floor: "Tầng",
     period: "Kỳ",
     noDataDescription: "Không có dữ liệu để hiển thị",
     monthAccumulated: "Tháng tích lũy",
@@ -555,6 +557,23 @@ export const reportsTranslations: { [key: string]: ReportsTranslations } = {
     productDetails: "Chi tiết sản phẩm",
     priceInfo: "Thông tin giá",
     additionalInfo: "Thông tin khác",
+
+    // Spending Report (Đã chi và dự chi)
+    spendingReport: "Đã chi và dự chi",
+    spendingReportTitle: "Báo cáo đã chi và dự chi",
+    spendingReportDescription: "Báo cáo chi tiết về chi phí đã phát sinh và dự kiến",
+    rawMaterialsPurchased: "Nguyên vật liệu đã mua / Chi tiêu nguyên vật liệu",
+    managementExpenses: "Chi phí quản lý",
+    fixedExpenses: "Chi phí cố định",
+    unpaidSupplierDebt: "Công nợ nhà cung cấp",
+    totalSpending: "Tổng chi tiêu",
+    totalRevenue: "Doanh số bán hàng",
+    netProfit: "Lợi nhuận (Doanh thu - Chi phí)",
+    categoryName: "Tên nhóm",
+    itemName: "Tên vật tư / Sản phẩm",
+    supplierName: "Nhà cung cấp",
+    totalValue: "Tổng giá trị",
+    debtAmount: "Số tiền nợ",
   },
 
   ko: {
@@ -568,6 +587,7 @@ export const reportsTranslations: { [key: string]: ReportsTranslations } = {
     totalMoney: "총 금액",
     tableAnalysis: "테이블 분석",
     backToTables: "테이블로 돌아가기",
+    product: "상품",
 
     // Date and time filters
     startDate: "시작일",
@@ -581,7 +601,7 @@ export const reportsTranslations: { [key: string]: ReportsTranslations } = {
     custom: "사용자 정의",
 
     // Dashboard metrics
-    totalRevenue: "총 매출",
+    totalRevenue: "판매로 인한 총 수익",
     salesReportTotalRevenue: "총 수익",
     totalOrders: "총 주문",
     totalQuantitySold: "총 판매량",
@@ -643,7 +663,7 @@ export const reportsTranslations: { [key: string]: ReportsTranslations } = {
     salesMethod: "판매 방법",
     salesChannel: "판매 채널",
     productFilter: "상품",
-    productFilterPlaceholder: "코드, 이름으로 검색",
+    productFilterPlaceholder: "코드, 이름으��� 검색",
     customerFilter: "고객",
     customerFilterPlaceholder: "이름, 전화번호 또는 코드로 검색",
     customerCodePlaceholder: "고객 코드로 검색",
@@ -906,6 +926,7 @@ export const reportsTranslations: { [key: string]: ReportsTranslations } = {
     inValue: "입고 가치",
 
     // Additional missing keys
+    floor: "층",
     period: "기간",
     noDataDescription: "표시할 데이터가 없습니다",
     monthAccumulated: "월 누적",
@@ -1082,6 +1103,23 @@ export const reportsTranslations: { [key: string]: ReportsTranslations } = {
     productDetails: "제품 세부 정보",
     priceInfo: "가격 정보",
     additionalInfo: "추가 정보",
+
+    // Spending Report (지출 및 예상 지출)
+    spendingReport: "지출 및 예상 지출",
+    spendingReportTitle: "지출 및 예상 지출 보고서",
+    spendingReportDescription: "발생 및 예상 비용에 대한 상세 보고서",
+    rawMaterialsPurchased: "구매한 원자재 / 원자재 지출",
+    managementExpenses: "관리 비용",
+    fixedExpenses: "고정 비용",
+    unpaidSupplierDebt: "미지급 공급업체 부채",
+    totalSpending: "총 지출",
+    totalRevenue: "매출",
+    netProfit: "순이익 (매출 - 지출)",
+    categoryName: "그룹명",
+    itemName: "자재명 / 제품명",
+    supplierName: "공급업체",
+    totalValue: "총 금액",
+    debtAmount: "부채 금액",
   },
 
   en: {
@@ -1096,6 +1134,7 @@ export const reportsTranslations: { [key: string]: ReportsTranslations } = {
 
     // Date and time filters
     startDate: "Start Date",
+    product: "Product",
     endDate: "End Date",
     refresh: "Refresh",
     toDay: "Today",
@@ -1106,7 +1145,7 @@ export const reportsTranslations: { [key: string]: ReportsTranslations } = {
     custom: "Custom",
 
     // Dashboard metrics
-    totalRevenue: "Total Sales Revenue",
+    totalRevenue: "Total revenue from sales",
     salesReportTotalRevenue: "Total Sales Revenue",
     totalOrders: "Total Orders",
     totalQuantitySold: "Total Quantity Sold",
@@ -1436,6 +1475,7 @@ export const reportsTranslations: { [key: string]: ReportsTranslations } = {
     productSearch: "Product Search",
 
     // Additional missing keys
+    floor: "Floor",
     period: "Period",
     noDataDescription: "No data to display",
     monthAccumulated: "Month Accumulated",
@@ -1612,5 +1652,22 @@ export const reportsTranslations: { [key: string]: ReportsTranslations } = {
     productDetails: "Product Details",
     priceInfo: "Price Information",
     additionalInfo: "Additional Information",
+
+    // Spending Report
+    spendingReport: "Spending Report",
+    spendingReportTitle: "Spending and Projected Spending Report",
+    spendingReportDescription: "Detailed report on incurred and projected expenses",
+    rawMaterialsPurchased: "Raw Materials Purchased / Raw Materials Spending",
+    managementExpenses: "Management Expenses",
+    fixedExpenses: "Fixed Expenses",
+    unpaidSupplierDebt: "Unpaid Supplier Debt",
+    totalSpending: "Total Spending",
+    totalRevenue: "Sales Revenue",
+    netProfit: "Net Profit (Revenue - Expenses)",
+    categoryName: "Category Name",
+    itemName: "Item Name / Product Name",
+    supplierName: "Supplier",
+    totalValue: "Total Value",
+    debtAmount: "Debt Amount",
   },
 };

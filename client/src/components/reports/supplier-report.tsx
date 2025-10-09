@@ -44,17 +44,18 @@ export function SupplierReport() {
   const [debtTo, setDebtTo] = useState<string>("");
 
   const { data: suppliers } = useQuery({
-    queryKey: ["https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/suppliers"],
+    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/suppliers"],
   });
 
-  const { data: supplierDebts } = useQuery({
-    queryKey: ["https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/supplier-debts"],
-    enabled: concernType === "debt",
-  });
-
-  const { data: supplierPurchases } = useQuery({
-    queryKey: ["https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/supplier-purchases"],
+  const { data: purchaseReceipts } = useQuery({
+    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/purchase-receipts"],
     enabled: concernType === "purchase" || concernType === "purchaseBySupplier",
+  });
+
+  // Sử dụng purchase receipts làm nguồn dữ liệu cho debt report
+  const { data: supplierDebts } = useQuery({
+    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/purchase-receipts"],
+    enabled: concernType === "debt",
   });
 
   const formatCurrency = (amount: number) => {
@@ -70,88 +71,99 @@ export function SupplierReport() {
   };
 
   const getSupplierPurchaseData = () => {
-    if (!supplierPurchases || !Array.isArray(supplierPurchases)) return [];
+    if (!purchaseReceipts || !Array.isArray(purchaseReceipts?.data)) return [];
 
     const start = new Date(startDate);
     const end = new Date(endDate);
     end.setHours(23, 59, 59, 999);
 
-    return supplierPurchases
-      .filter((purchase: any) => {
-        const purchaseDate = new Date(purchase.createdAt || purchase.created_at);
+    return purchaseReceipts.data
+      .filter((receipt: any) => {
+        const purchaseDate = new Date(receipt.purchaseDate || receipt.createdAt);
         const dateMatch = purchaseDate >= start && purchaseDate <= end;
 
         const supplierMatch =
           !supplierSearch ||
-          (purchase.supplier?.code &&
-            purchase.supplier.code.toLowerCase().includes(supplierSearch.toLowerCase())) ||
-          (purchase.supplier?.name &&
-            purchase.supplier.name.toLowerCase().includes(supplierSearch.toLowerCase())) ||
-          (purchase.supplier?.phone && 
-            purchase.supplier.phone.includes(supplierSearch)) ||
-          (purchase.supplierCode &&
-            purchase.supplierCode.toLowerCase().includes(supplierSearch.toLowerCase())) ||
-          (purchase.supplierName &&
-            purchase.supplierName.toLowerCase().includes(supplierSearch.toLowerCase()));
+          (receipt.supplier?.code &&
+            receipt.supplier.code.toLowerCase().includes(supplierSearch.toLowerCase())) ||
+          (receipt.supplier?.name &&
+            receipt.supplier.name.toLowerCase().includes(supplierSearch.toLowerCase())) ||
+          (receipt.supplier?.phone && 
+            receipt.supplier.phone.includes(supplierSearch));
 
         return dateMatch && supplierMatch;
       })
-      .map((purchase: any) => ({
-        supplierCode: purchase.supplier?.code || purchase.supplierCode || purchase.supplier?.id || "N/A",
-        supplierName: purchase.supplier?.name || purchase.supplierName || "Không xác định",
-        purchaseValue: Number(purchase.purchaseValue || purchase.totalValue || 0),
-        returnValue: Number(purchase.returnValue || 0),
-        netValue: Number(purchase.purchaseValue || purchase.totalValue || 0) - Number(purchase.returnValue || 0),
+      .map((receipt: any) => ({
+        supplierCode: receipt.supplier?.code || receipt.supplier?.id || "N/A",
+        supplierName: receipt.supplier?.name || "Không xác định",
+        purchaseValue: Number(receipt.subtotal || 0),
+        returnValue: 0, // Chưa có return functionality
+        netValue: Number(receipt.subtotal || 0),
       }));
   };
 
   const getSupplierDebtData = () => {
-    if (!supplierDebts || !Array.isArray(supplierDebts)) return [];
+    if (!supplierDebts || !Array.isArray(supplierDebts?.data)) return [];
 
     const start = new Date(startDate);
     const end = new Date(endDate);
     end.setHours(23, 59, 59, 999);
 
-    return supplierDebts
-      .filter((debt: any) => {
-        const debtDate = new Date(debt.createdAt || debt.created_at);
-        const dateMatch = debtDate >= start && debtDate <= end;
+    // Group by supplier to calculate debt amounts
+    const supplierDebtMap = new Map();
 
-        const supplierMatch =
-          !supplierSearch ||
-          (debt.supplier?.code &&
-            debt.supplier.code.toLowerCase().includes(supplierSearch.toLowerCase())) ||
-          (debt.supplier?.name &&
-            debt.supplier.name.toLowerCase().includes(supplierSearch.toLowerCase())) ||
-          (debt.supplier?.phone && 
-            debt.supplier.phone.includes(supplierSearch)) ||
-          (debt.supplierCode &&
-            debt.supplierCode.toLowerCase().includes(supplierSearch.toLowerCase())) ||
-          (debt.supplierName &&
-            debt.supplierName.toLowerCase().includes(supplierSearch.toLowerCase()));
+    supplierDebts.data.forEach((receipt: any) => {
+      const receiptDate = new Date(receipt.purchaseDate || receipt.createdAt);
+      const dateMatch = receiptDate >= start && receiptDate <= end;
 
-        const debtAmountMatch = (() => {
-          if (!debtFrom && !debtTo) return true;
-          const from = debtFrom ? Number(debtFrom) : 0;
-          const to = debtTo ? Number(debtTo) : Infinity;
-          const closingDebt = Number(debt.closingDebt || 0);
-          return closingDebt >= from && closingDebt <= to;
-        })();
+      if (!dateMatch) return;
 
-        return dateMatch && supplierMatch && debtAmountMatch;
-      })
-      .map((debt: any) => ({
-        supplierCode: debt.supplier?.code || debt.supplierCode || debt.supplier?.id || "N/A",
-        supplierName: debt.supplier?.name || debt.supplierName || "Không xác định",
-        openingDebt: Number(debt.openingDebt || 0),
-        debitAmount: Number(debt.debitAmount || 0),
-        creditAmount: Number(debt.creditAmount || 0),
-        closingDebt: Number(debt.closingDebt || 0),
-      }));
+      const supplierCode = receipt.supplier?.code || receipt.supplier?.id || "N/A";
+      const supplierName = receipt.supplier?.name || "Không xác định";
+
+      const supplierMatch =
+        !supplierSearch ||
+        (receipt.supplier?.code &&
+          receipt.supplier.code.toLowerCase().includes(supplierSearch.toLowerCase())) ||
+        (receipt.supplier?.name &&
+          receipt.supplier.name.toLowerCase().includes(supplierSearch.toLowerCase())) ||
+        (receipt.supplier?.phone && 
+          receipt.supplier.phone.includes(supplierSearch));
+
+      if (!supplierMatch) return;
+
+      const key = supplierCode;
+      if (!supplierDebtMap.has(key)) {
+        supplierDebtMap.set(key, {
+          supplierCode,
+          supplierName,
+          openingDebt: 0,
+          debitAmount: 0,
+          creditAmount: 0,
+          closingDebt: 0,
+        });
+      }
+
+      const supplier = supplierDebtMap.get(key);
+      // Assume purchase creates debt (debit) and payments reduce debt (credit)
+      supplier.debitAmount += Number(receipt.total || 0);
+      supplier.closingDebt = supplier.openingDebt + supplier.debitAmount - supplier.creditAmount;
+    });
+
+    const result = Array.from(supplierDebtMap.values());
+
+    // Apply debt amount filter
+    return result.filter((debt: any) => {
+      if (!debtFrom && !debtTo) return true;
+      const from = debtFrom ? Number(debtFrom) : 0;
+      const to = debtTo ? Number(debtTo) : Infinity;
+      const closingDebt = Number(debt.closingDebt || 0);
+      return closingDebt >= from && closingDebt <= to;
+    });
   };
 
   const getSupplierProductData = () => {
-    if (!supplierPurchases || !Array.isArray(supplierPurchases)) return [];
+    if (!purchaseReceipts || !Array.isArray(purchaseReceipts?.data)) return [];
 
     const start = new Date(startDate);
     const end = new Date(endDate);
@@ -159,20 +171,20 @@ export function SupplierReport() {
 
     const supplierProductMap = new Map();
 
-    supplierPurchases.forEach((purchase: any) => {
-      const purchaseDate = new Date(purchase.createdAt || purchase.created_at);
-      const dateMatch = purchaseDate >= start && purchaseDate <= end;
+    purchaseReceipts.data.forEach((receipt: any) => {
+      const receiptDate = new Date(receipt.purchaseDate || receipt.createdAt);
+      const dateMatch = receiptDate >= start && receiptDate <= end;
 
       if (!dateMatch) return;
 
-      const supplierCode = purchase.supplier?.code || purchase.supplierCode || purchase.supplier?.id || "N/A";
-      const supplierName = purchase.supplier?.name || purchase.supplierName || "Không xác định";
+      const supplierCode = receipt.supplier?.code || receipt.supplier?.id || "N/A";
+      const supplierName = receipt.supplier?.name || "Không xác định";
 
       const supplierMatch =
         !supplierSearch ||
         supplierCode.toLowerCase().includes(supplierSearch.toLowerCase()) ||
         supplierName.toLowerCase().includes(supplierSearch.toLowerCase()) ||
-        (purchase.supplier?.phone && purchase.supplier.phone.includes(supplierSearch));
+        (receipt.supplier?.phone && receipt.supplier.phone.includes(supplierSearch));
 
       if (!supplierMatch) return;
 
@@ -181,11 +193,15 @@ export function SupplierReport() {
         supplierProductMap.set(key, {
           supplierCode,
           supplierName,
-          openingDebt: Number(purchase.openingDebt || 0),
-          debitAmount: Number(purchase.debitAmount || 0),
-          creditAmount: Number(purchase.creditAmount || 0),
-          closingDebt: Number(purchase.closingDebt || 0),
+          openingDebt: 0,
+          debitAmount: Number(receipt.total || 0),
+          creditAmount: 0,
+          closingDebt: Number(receipt.total || 0),
         });
+      } else {
+        const supplier = supplierProductMap.get(key);
+        supplier.debitAmount += Number(receipt.total || 0);
+        supplier.closingDebt += Number(receipt.total || 0);
       }
     });
 

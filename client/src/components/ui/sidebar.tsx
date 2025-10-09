@@ -1,7 +1,9 @@
 import * as React from "react"
 import { Slot } from "@radix-ui/react-slot"
 import { VariantProps, cva } from "class-variance-authority"
-import { PanelLeft } from "lucide-react"
+import { PanelLeft, Package, BookOpen, ClipboardList, Users, Clock, Settings, ChevronDown, Building2, BarChart3 } from "lucide-react"
+import Link from "next/link"
+import { useTranslation } from "react-i18next"
 
 import { useIsMobile } from "@/hooks/use-mobile"
 import { cn } from "@/lib/utils"
@@ -180,6 +182,7 @@ const Sidebar = React.forwardRef<
     ref
   ) => {
     const { isMobile, state, openMobile, setOpenMobile } = useSidebar()
+    const { t } = useTranslation()
 
     if (collapsible === "none") {
       return (
@@ -258,7 +261,82 @@ const Sidebar = React.forwardRef<
             data-sidebar="sidebar"
             className="flex h-full w-full flex-col bg-sidebar group-data-[variant=floating]:rounded-lg group-data-[variant=floating]:border group-data-[variant=floating]:border-sidebar-border group-data-[variant=floating]:shadow"
           >
-            {children}
+            {/* Navigation items */}
+            <SidebarHeader>
+              <SidebarTrigger />
+              <SidebarInput placeholder={t("sidebar.search") ?? "Search..."} />
+            </SidebarHeader>
+            <SidebarSeparator />
+            <SidebarContent>
+              <SidebarMenu>
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild>
+                    <Link href="/" className="flex items-center gap-2">
+                      <PanelLeft className="w-4 h-4" />
+                      <span>{t("navigation.dashboard")}</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild>
+                    <Link href="/inventory" className="flex items-center gap-2">
+                      <Package className="w-4 h-4" />
+                      <span>{t("navigation.inventory")}</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild>
+                    <Link href="/cash-book" className="flex items-center gap-2">
+                      <BookOpen className="w-4 h-4" />
+                      <span>Sổ quỹ</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild>
+                    <Link href="/sales" className="flex items-center gap-2">
+                      <ClipboardList className="w-4 h-4" />
+                      <span>{t("navigation.sales")}</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild>
+                    <Link href="/customers" className="flex items-center gap-2">
+                      <Users className="w-4 h-4" />
+                      <span>{t("navigation.customers")}</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild>
+                    <Link href="/purchase" className="flex items-center gap-2">
+                      <Building2 className="w-4 h-4" />
+                      <span>{t("navigation.purchase")}</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild>
+                    <Link href="/reports" className="flex items-center gap-2">
+                      <BarChart3 className="w-4 h-4" />
+                      <span>{t("navigation.reports")}</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild>
+                    <Link href="/settings" className="flex items-center gap-2">
+                      <Settings className="w-4 h-4" />
+                      <span>{t("navigation.settings")}</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              </SidebarMenu>
+              <SidebarSeparator />
+              <SidebarFooter />
+            </SidebarContent>
           </div>
         </div>
       </div>

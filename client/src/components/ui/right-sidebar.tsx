@@ -15,6 +15,7 @@ import {
   FileText,
   ClipboardCheck,
   Building2,
+  BookOpen, // Import BookOpen icon
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -39,9 +40,9 @@ export function RightSidebar() {
 
   // Query store settings to get business type
   const { data: storeSettings } = useQuery({
-    queryKey: ["https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/store-settings"],
+    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/store-settings"],
     queryFn: async () => {
-      const response = await apiRequest("GET", "https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/store-settings");
+      const response = await apiRequest("GET", "https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/store-settings");
       return response.json();
     },
   });
@@ -76,6 +77,12 @@ export function RightSidebar() {
       icon: Package,
       label: t("nav.inventory"),
       href: "/inventory",
+    },
+    // Add Cash Book menu item
+    {
+      icon: BookOpen,
+      label: t("nav.cashBook"),
+      href: "/cash-book",
     },
     {
       icon: Users,
@@ -211,7 +218,7 @@ export function RightSidebar() {
         <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-green-200 bg-green-50">
           <div className="text-sm text-gray-500 text-center">
             <div className="font-medium">EDPOS System</div>
-            <div className="text-xs opacity-75">22/09/2025</div>
+            <div className="text-xs opacity-75">09/10/2025</div>
           </div>
         </div>
       )}

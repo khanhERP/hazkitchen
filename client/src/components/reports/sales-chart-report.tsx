@@ -86,6 +86,8 @@ export function SalesChartReport() {
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [productType, setProductType] = useState("all");
   const [customerStatus, setCustomerStatus] = useState("all");
+  const [orderStatusFilter, setOrderStatusFilter] = useState("all");
+  const [selectedFloor, setSelectedFloor] = useState<string>("all"); // State for floor filter
 
   // Pagination state for product report
   const [productCurrentPage, setProductCurrentPage] = useState(1);
@@ -105,9 +107,9 @@ export function SalesChartReport() {
 
   // Query store settings for priceIncludesTax
   const { data: storeSettings } = useQuery({
-    queryKey: ["https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/store-settings"],
+    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/store-settings"],
     queryFn: async () => {
-      const response = await fetch("https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/store-settings");
+      const response = await fetch("https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/store-settings");
       if (!response.ok) {
         throw new Error("Failed to fetch store settings");
       }
@@ -123,31 +125,93 @@ export function SalesChartReport() {
     error: ordersError,
   } = useQuery({
     queryKey: [
-      "https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/orders/date-range",
+      "https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders/date-range",
       startDate,
       endDate,
       startTime,
       endTime,
+      selectedFloor, // Include floor filter in query key
+      orderStatusFilter, // Include status filter in query key
     ],
     queryFn: async () => {
       try {
-        // Create full datetime strings
-        const startDateTime = `${startDate}T${startTime}:00.000Z`;
-        const endDateTime = `${endDate}T${endTime}:59.999Z`;
+        // Create full datetime strings with proper timezone handling
+        const startDateTime = `${startDate}T${startTime}:00`;
+        const endDateTime = `${endDate}T${endTime}:59`;
+
+        // Create Date objects directly without timezone adjustment
+        const startDateTimeLocal = new Date(startDateTime);
+        const endDateTimeLocal = new Date(endDateTime);
+
+        // Format to ISO string to ensure consistent format
+        const startDateTimeISO = startDateTimeLocal.toISOString();
+        const endDateTimeISO = endDateTimeLocal.toISOString();
+
+        console.log("Sales Chart - Fetching orders with date range:", {
+          startDate,
+          endDate,
+          startTime,
+          endTime,
+          startDateTime,
+          endDateTime,
+          startDateTimeISO,
+          endDateTimeISO,
+          localTimezoneOffset: startDateTimeLocal.getTimezoneOffset(),
+          timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+          selectedFloor,
+          orderStatusFilter,
+        });
+
+        // Construct URL with floor filter if it's not 'all'
+        const floorFilter =
+          selectedFloor !== "all" ? `/${selectedFloor}` : "/all";
 
         const response = await fetch(
-          `https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/orders/date-range/${encodeURIComponent(startDateTime)}/${encodeURIComponent(endDateTime)}`,
+          `https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders/date-range/${startDateTimeISO}/${endDateTimeISO}${floorFilter}`,
         );
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
         const data = await response.json();
+
+        // Filter orders by status on client side
+        let filteredData = Array.isArray(data) ? data : [];
+        if (orderStatusFilter && orderStatusFilter !== "all") {
+          filteredData = filteredData.filter((order: any) => {
+            if (orderStatusFilter === "paid") {
+              return order.status === "completed" || order.status === "paid";
+            } else if (orderStatusFilter === "pending") {
+              return (
+                order.status === "pending" ||
+                order.status === "in_progress" ||
+                order.status === "confirmed" ||
+                order.status === "preparing" ||
+                order.status === "ready" ||
+                order.status === "served"
+              );
+            } else if (orderStatusFilter === "cancelled") {
+              return order.status === "cancelled";
+            }
+            return true;
+          });
+        }
+
         console.log("Sales Chart - Orders loaded with datetime:", {
-          count: data?.length || 0,
-          startDateTime,
-          endDateTime,
+          count: filteredData?.length || 0,
+          totalCount: data?.length || 0,
+          startDateTimeISO,
+          endDateTimeISO,
+          orderStatusFilter,
+          sampleOrder: filteredData?.[0]
+            ? {
+                id: filteredData[0].id,
+                orderNumber: filteredData[0].orderNumber,
+                orderedAt: filteredData[0].orderedAt,
+                status: filteredData[0].status,
+              }
+            : null,
         });
-        return Array.isArray(data) ? data : [];
+        return filteredData;
       } catch (error) {
         console.error("Sales Chart - Error fetching orders:", error);
         return [];
@@ -155,17 +219,17 @@ export function SalesChartReport() {
     },
     retry: 2,
     retryDelay: 500,
-    staleTime: 10 * 60 * 1000, // Cache for 10 minutes
-    gcTime: 15 * 60 * 1000, // Keep in cache for 15 minutes
+    staleTime: 1 * 60 * 1000, // Cache for 1 minute only to ensure fresh data
+    gcTime: 5 * 60 * 1000, // Keep in cache for 5 minutes
     refetchOnWindowFocus: false,
   });
 
   // Query order items for all orders
   const { data: orderItems = [], isLoading: orderItemsLoading } = useQuery({
-    queryKey: ["https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/order-items"],
+    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/order-items"],
     queryFn: async () => {
       try {
-        const response = await fetch("https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/order-items");
+        const response = await fetch("https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/order-items");
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
@@ -185,23 +249,36 @@ export function SalesChartReport() {
     enabled: analysisType === "product", // Only fetch when needed
   });
 
-  const { data: tables } = useQuery({
-    queryKey: ["https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/tables"],
+  // Query tables for floor data
+  const {
+    data: tables,
+    isLoading: tablesLoading,
+    error: tablesError,
+  } = useQuery({
+    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/tables"],
+    staleTime: 5 * 60 * 1000, // Cache for 5 minutes
   });
 
   // Combined loading state
   const isLoading = ordersLoading || orderItemsLoading;
 
   const { data: employees } = useQuery({
-    queryKey: ["https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/employees"],
+    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/employees"],
     staleTime: 5 * 60 * 1000,
   });
 
   const { data: products } = useQuery({
-    queryKey: ["https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/products", selectedCategory, productType, productSearch],
+    queryKey: [
+      "https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products",
+      selectedCategory,
+      productType,
+      productSearch,
+      startDate,
+      endDate,
+    ],
     queryFn: async () => {
       const response = await fetch(
-        `https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/products/${selectedCategory}/${productType}/${productSearch || ""}`,
+        `https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products/${selectedCategory}/${productType}/${productSearch || ""}`,
       );
       if (!response.ok) throw new Error("Failed to fetch products");
       return response.json();
@@ -210,15 +287,21 @@ export function SalesChartReport() {
   });
 
   const { data: categories } = useQuery({
-    queryKey: ["https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/categories"],
+    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/categories"],
     staleTime: 5 * 60 * 1000,
   });
 
   const { data: customers } = useQuery({
-    queryKey: ["https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/customers", customerSearch, customerStatus],
+    queryKey: [
+      "https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/customers",
+      customerSearch,
+      customerStatus,
+      startDate,
+      endDate,
+    ],
     queryFn: async () => {
       const response = await fetch(
-        `https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/customers/${customerSearch || "all"}/${customerStatus}`,
+        `https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/customers/${customerSearch || "all"}/${customerStatus}`,
       );
       if (!response.ok) throw new Error("Failed to fetch customers");
       return response.json();
@@ -230,43 +313,93 @@ export function SalesChartReport() {
   const { data: productAnalysisData, isLoading: productAnalysisLoading } =
     useQuery({
       queryKey: [
-        "https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/product-analysis",
-        startDate, // Use startDate for consistency
-        endDate, // Use endDate for consistency
+        "https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/product-analysis",
+        startDate,
+        endDate,
+        startTime,
+        endTime,
         selectedCategory,
         productType,
+        selectedFloor, // Include floor filter in query key
         productSearch,
       ],
       queryFn: async () => {
-        const params = new URLSearchParams({
-          startDate,
-          endDate,
-          categoryId: selectedCategory,
-          productType,
-          productSearch: productSearch || "",
-        });
-        const response = await fetch(`https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/product-analysis?${params}`);
-        if (!response.ok) throw new Error("Failed to fetch product analysis");
-        return response.json();
+        try {
+          // Use YYYY-MM-DD format with time to avoid timezone conversion issues
+          const startDateTimeLocal = `${startDate} ${startTime}:00`;
+          const endDateTimeLocal = `${endDate} ${endTime}:59`;
+
+          const params = new URLSearchParams({
+            categoryId: selectedCategory || "all",
+            productType: productType || "all",
+            productSearch: productSearch || "",
+          });
+
+          // Construct URL with floor filter if it's not 'all'
+          const floorFilter =
+            selectedFloor !== "all" ? `/${selectedFloor}` : "/all";
+
+          console.log("📊 Fetching product analysis data:", {
+            startDateTimeLocal,
+            endDateTimeLocal,
+            floorFilter,
+            params: params.toString(),
+          });
+
+          const response = await fetch(
+            `https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/product-analysis/${encodeURIComponent(startDateTimeLocal)}/${encodeURIComponent(endDateTimeLocal)}${floorFilter}?${params}`,
+            {
+              method: "GET",
+              headers: {
+                "Content-Type": "application/json",
+              },
+            },
+          );
+
+          if (!response.ok) {
+            const errorText = await response.text();
+            console.error(
+              "❌ Product analysis API error:",
+              response.status,
+              errorText,
+            );
+            throw new Error(
+              `Failed to fetch product analysis: ${response.status} ${errorText}`,
+            );
+          }
+
+          const data = await response.json();
+          console.log(
+            "✅ Product analysis data received:",
+            data?.productStats?.length || 0,
+            "products",
+          );
+          return data;
+        } catch (error) {
+          console.error("❌ Product analysis query error:", error);
+          throw error;
+        }
       },
       enabled: analysisType === "product",
-      staleTime: 2 * 60 * 1000,
+      staleTime: 1 * 60 * 1000, // Reduced cache time for fresh data
+      retry: 2,
+      retryDelay: 1000,
     });
 
-  const { data: suppliers } = useQuery({
-    queryKey: ["https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/suppliers"],
-    staleTime: 5 * 60 * 1000,
-  });
-
   const { data: transactions } = useQuery({
-    queryKey: ["https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/transactions"],
+    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/transactions"],
     staleTime: 5 * 60 * 1000,
   });
 
   // Utility functions
-  const formatCurrency = (amount: number) => {
+  const formatCurrency = (amount: number | string | undefined | null) => {
+    // Handle undefined, null, empty string, and NaN cases
+    const numAmount = Number(amount);
+    if (isNaN(numAmount) || amount === null || amount === undefined) {
+      return "0 ₫";
+    }
     // Remove decimal formatting and use floor to remove decimals
-    return `${Math.floor(Number(amount || 0)).toLocaleString()} ₫`;
+    return `${Math.floor(numAmount).toLocaleString()} ₫`;
   };
 
   const formatDate = (dateStr: string) => {
@@ -296,6 +429,62 @@ export function SalesChartReport() {
       mobile: "Mobile",
     };
     return labels[method as keyof typeof labels] || method;
+  };
+
+  // Function to format payment methods, handling JSON strings for multiple methods
+  const formatPaymentMethodDisplay = (
+    paymentMethod: string | undefined | null,
+  ) => {
+    if (!paymentMethod) return "-";
+
+    try {
+      const parsed = JSON.parse(paymentMethod);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        // Multiple payment methods
+        return parsed
+          .map(
+            (pm: { method: string; amount: number }) =>
+              `${getPaymentMethodLabel(pm.method)}: ${formatCurrency(pm.amount)}`,
+          )
+          .join("\n"); // Use newline for better readability in tooltips/cells
+      } else {
+        // Not a valid JSON array, or empty array, treat as single method
+        return getPaymentMethodLabel(paymentMethod);
+      }
+    } catch (e) {
+      // If parsing fails, treat as a single payment method
+      return getPaymentMethodLabel(paymentMethod);
+    }
+  };
+
+  // Function to get unique floors from tables data
+  const getUniqueFloors = (): string[] => {
+    if (!tables || !Array.isArray(tables)) {
+      return [];
+    }
+    const floors = tables
+      .map((table: any) => table.floor)
+      .filter((floor: any) => floor !== null && floor !== undefined);
+    return Array.from(new Set(floors)).sort();
+  };
+
+  // Function to get fixed floors
+  const getFixedFloors = (): string[] => {
+    // Provide 10 fixed floors as requested
+    return Array.from({ length: 10 }, (_, i) => `Tầng ${i + 1}`);
+  };
+
+  // Function to get available floors, considering both fixed and dynamic data
+  const getAvailableFloors = (): string[] => {
+    const uniqueFloors = getUniqueFloors();
+    const fixedFloors = getFixedFloors();
+
+    // Combine and ensure uniqueness, prioritizing uniqueFloors if they exist
+    // If uniqueFloors are empty, use fixedFloors. Otherwise, combine them.
+    const allFloors = uniqueFloors.length > 0 ? uniqueFloors : fixedFloors;
+
+    // Further processing if needed, but for now, return unique ones
+    return Array.from(new Set(allFloors)).sort();
   };
 
   const getReportTitle = () => {
@@ -356,10 +545,11 @@ export function SalesChartReport() {
         };
       }
 
-      // Ensure we have valid arrays
-      const validOrders = Array.isArray(orders) ? orders : [];
-      const validOrderItems = Array.isArray(orderItems) ? orderItems : [];
-      const validTables = Array.isArray(tables) ? tables : [];
+      // Ensure we have valid arrays - add null/undefined checks
+      const validOrders = orders && Array.isArray(orders) ? orders : [];
+      const validOrderItems =
+        orderItems && Array.isArray(orderItems) ? orderItems : [];
+      const validTables = tables && Array.isArray(tables) ? tables : [];
 
       // Filter completed/paid orders for time analysis (exclude cancelled orders)
       const completedOrders = validOrders.filter(
@@ -552,13 +742,13 @@ export function SalesChartReport() {
       orderNumber: order.orderNumber, // Ensure orderNumber is included if available
       transactionId: `TXN-${order.id}`,
       total: order.total,
-      subtotal: order.subtotal,
+      subtotal: order.priceIncludeTax
+        ? Number(order.subtotal || 0) + Number(order.tax || 0)
+        : order.subtotal,
       discount: order.discount || 0,
       paymentMethod: order.paymentMethod || "cash",
-      createdAt:
-        order.orderedAt || order.createdAt || order.created_at || order.paidAt,
-      created_at:
-        order.orderedAt || order.createdAt || order.created_at || order.paidAt,
+      createdAt: order.createdAt || order.orderedAt || order.paidAt,
+      created_at: order.createdAt || order.orderedAt || order.paidAt,
       customerName: order.customerName,
       tax: order.tax || 0,
       customerId: order.customerId,
@@ -588,22 +778,17 @@ export function SalesChartReport() {
 
     filteredCompletedOrders.forEach((order: any) => {
       try {
-        // Use correct date field from order
+        // Use correct date field from order - prioritize createdAt for consistency with API filter
         const orderDate = new Date(
-          order.orderedAt ||
-            order.createdAt ||
+          order.createdAt ||
             order.created_at ||
+            order.orderedAt ||
             order.paidAt ||
             order.date,
         );
 
         if (isNaN(orderDate.getTime())) {
-          console.warn("Invalid date for order:", order.id, {
-            orderedAt: order.orderedAt,
-            createdAt: order.createdAt,
-            paidAt: order.paidAt,
-            date: order.date,
-          });
+          console.warn("Invalid date for order:", order.id);
           return;
         }
 
@@ -627,21 +812,21 @@ export function SalesChartReport() {
         const orderTax = Number(order.tax || 0);
         const orderTotal = Number(order.total || 0);
 
-        // Fix calculation logic based on priceIncludeTax
+        // Fix calculation logic based on order-specific priceIncludeTax
         let thanhTien, doanhThu;
 
         if (orderPriceIncludeTax) {
-          // When priceIncludeTax = true:
-          // - Thành tiền = subtotal + discount
-          // - Doanh thu = subtotal (already net of discount)
-          thanhTien = orderSubtotal + orderDiscount;
-          doanhThu = orderSubtotal;
+          // When order priceIncludeTax = true:
+          // - Thành tiền = subtotal + discount (original amount before discount)
+          // - Doanh thu = subtotal (already net of discount, includes tax)
+          thanhTien = orderSubtotal + orderDiscount + orderTax;
+          doanhThu = thanhTien - orderDiscount - orderTax;
         } else {
-          // When priceIncludeTax = false:
-          // - Thành tiền = subtotal
-          // - Doanh thu = subtotal - discount
+          // When order priceIncludeTax = false:
+          // - Thành tiền = subtotal (original amount before discount, excludes tax)
+          // - Doanh thu = subtotal - discount (net amount, excludes tax)
           thanhTien = orderSubtotal;
-          doanhThu = orderSubtotal - orderDiscount;
+          doanhThu = Math.max(0, orderSubtotal - orderDiscount);
         }
 
         dailySales[dateStr].orders += 1;
@@ -827,18 +1012,40 @@ export function SalesChartReport() {
                       <TableHead
                         className="text-center border-r bg-blue-50 min-w-[200px] font-bold"
                         colSpan={(() => {
-                          // Get all unique payment methods from completed orders
+                          // Get all unique payment methods from completed orders (including from JSON)
                           const allPaymentMethods = new Set();
                           if (
                             filteredCompletedOrders &&
                             Array.isArray(filteredCompletedOrders)
                           ) {
                             filteredCompletedOrders.forEach((order: any) => {
-                              const method = order.paymentMethod || "cash";
-                              allPaymentMethods.add(method);
+                              const paymentMethod =
+                                order.paymentMethod || "cash";
+
+                              // Try to parse as JSON for multi-payment
+                              try {
+                                const parsed = JSON.parse(paymentMethod);
+                                if (
+                                  Array.isArray(parsed) &&
+                                  parsed.length > 0
+                                ) {
+                                  // Multi-payment: add all methods from JSON
+                                  parsed.forEach((pm: any) => {
+                                    if (pm.method) {
+                                      allPaymentMethods.add(pm.method);
+                                    }
+                                  });
+                                } else {
+                                  // Single payment method
+                                  allPaymentMethods.add(paymentMethod);
+                                }
+                              } catch (e) {
+                                // Not JSON, treat as single payment method
+                                allPaymentMethods.add(paymentMethod);
+                              }
                             });
                           }
-                          return allPaymentMethods.size + 1; // +1 for total column
+                          return allPaymentMethods.size;
                         })()}
                       >
                         {t("reports.totalCustomerPayment")}
@@ -846,15 +1053,33 @@ export function SalesChartReport() {
                     </TableRow>
                     <TableRow>
                       {(() => {
-                        // Get all unique payment methods from completed orders
+                        // Get all unique payment methods from completed orders (including from JSON)
                         const allPaymentMethods = new Set();
                         if (
                           filteredCompletedOrders &&
                           Array.isArray(filteredCompletedOrders)
                         ) {
                           filteredCompletedOrders.forEach((order: any) => {
-                            const method = order.paymentMethod || "cash";
-                            allPaymentMethods.add(method);
+                            const paymentMethod = order.paymentMethod || "cash";
+
+                            // Try to parse as JSON for multi-payment
+                            try {
+                              const parsed = JSON.parse(paymentMethod);
+                              if (Array.isArray(parsed) && parsed.length > 0) {
+                                // Multi-payment: add all methods from JSON
+                                parsed.forEach((pm: any) => {
+                                  if (pm.method) {
+                                    allPaymentMethods.add(pm.method);
+                                  }
+                                });
+                              } else {
+                                // Single payment method
+                                allPaymentMethods.add(paymentMethod);
+                              }
+                            } catch (e) {
+                              // Not JSON, treat as single payment method
+                              allPaymentMethods.add(paymentMethod);
+                            }
                           });
                         }
 
@@ -866,7 +1091,7 @@ export function SalesChartReport() {
                             {paymentMethodsArray.map(
                               (method: any, index: number) => (
                                 <TableHead
-                                  key={`payment-method-header-${index}-${method}`}
+                                  key={`payment-header-${index}-${method}`}
                                   className="text-center border-r bg-blue-50 min-w-[130px] font-bold"
                                 >
                                   {getPaymentMethodLabel(method)}
@@ -940,8 +1165,10 @@ export function SalesChartReport() {
                             if (orderPriceIncludeTax) {
                               // When priceIncludeTax = true: thành tiền = subtotal + discount
                               thanhTien =
-                                transactionSubtotal + transactionDiscount;
-                              doanhThu = transactionSubtotal; // Doanh thu = subtotal (already net of discount)
+                                transactionSubtotal +
+                                transactionDiscount +
+                                transactionTax;
+                              doanhThu = transactionSubtotal - transactionTax; // Doanh thu = subtotal (already net of discount)
                             } else {
                               // When priceIncludeTax = false: thành tiền = subtotal
                               thanhTien = transactionSubtotal;
@@ -987,7 +1214,7 @@ export function SalesChartReport() {
                                 </TableCell>
                                 <TableCell className="text-right border-r min-w-[140px] px-4">
                                   {(() => {
-                                    // Tính thành tiền theo logic đúng với priceIncludeTax
+                                    // Calculate thành tiền according to correct logic with priceIncludeTax from orders
                                     let totalThanhTien = 0;
                                     dateTransactions.forEach(
                                       (transaction: any) => {
@@ -1002,14 +1229,12 @@ export function SalesChartReport() {
 
                                         let thanhTien;
                                         if (orderPriceIncludeTax) {
-                                          // Khi priceIncludeTax = true:
-                                          // thành tiền = subtotal + discount (giá đã bao gồm thuế từ đầu)
+                                          // priceIncludeTax = true: thành tiền = subtotal + discount
                                           thanhTien =
                                             transactionSubtotal +
                                             transactionDiscount;
                                         } else {
-                                          // Khi priceIncludeTax = false:
-                                          // thành tiền = subtotal (giá chưa bao gồm thuế)
+                                          // priceIncludeTax = false: thành tiền = subtotal
                                           thanhTien = transactionSubtotal;
                                         }
                                         totalThanhTien += thanhTien;
@@ -1025,88 +1250,221 @@ export function SalesChartReport() {
                                   </TableCell>
                                 )}
                                 <TableCell className="text-right border-r text-green-600 font-medium min-w-[140px] px-4">
-                                  {formatCurrency(
-                                    Math.max(0, rowActualRevenue),
-                                  )}
+                                  {(() => {
+                                    // Calculate correct revenue based on each order's priceIncludeTax setting
+                                    let totalRevenue = 0;
+                                    dateTransactions.forEach(
+                                      (transaction: any) => {
+                                        const orderPriceIncludeTax =
+                                          transaction.priceIncludeTax === true;
+                                        const transactionSubtotal = Number(
+                                          transaction.subtotal || 0,
+                                        );
+                                        const transactionDiscount = Number(
+                                          transaction.discount || 0,
+                                        );
+
+                                        const transactionTax = Number(
+                                          transaction.tax || 0,
+                                        );
+
+                                        let doanhThu;
+                                        if (orderPriceIncludeTax) {
+                                          // priceIncludeTax = true: doanh thu = subtotal
+                                          doanhThu =
+                                            transactionSubtotal -
+                                            transactionTax;
+                                        } else {
+                                          // priceIncludeTax = false: doanh thu = subtotal - discount
+                                          doanhThu = Math.max(
+                                            0,
+                                            transactionSubtotal -
+                                              transactionDiscount,
+                                          );
+                                        }
+                                        totalRevenue += doanhThu;
+                                      },
+                                    );
+
+                                    return formatCurrency(totalRevenue);
+                                  })()}
                                 </TableCell>
                                 <TableCell className="text-right border-r min-w-[120px] px-4">
                                   {formatCurrency(rowTax)}
                                 </TableCell>
                                 <TableCell className="text-right border-r font-bold text-blue-600 min-w-[140px] px-4">
-                                  {formatCurrency(
-                                    Math.max(0, rowActualRevenue) + rowTax,
-                                  )}
+                                  {(() => {
+                                    // Calculate total money customer paid based on correct logic
+                                    let totalCustomerPayment = 0;
+                                    dateTransactions.forEach(
+                                      (transaction: any) => {
+                                        const orderPriceIncludeTax =
+                                          transaction.priceIncludeTax === true;
+                                        const transactionSubtotal = Number(
+                                          transaction.subtotal || 0,
+                                        );
+                                        const transactionDiscount = Number(
+                                          transaction.discount || 0,
+                                        );
+                                        const transactionTax = Number(
+                                          transaction.tax || 0,
+                                        );
+                                        const transactionTotal = Number(
+                                          transaction.total || 0,
+                                        );
+
+                                        let customerPayment;
+                                        if (orderPriceIncludeTax) {
+                                          // When priceIncludeTax = true: customer payment = total from DB
+                                          customerPayment =
+                                            transactionTotal - transactionTax;
+                                        } else {
+                                          // When priceIncludeTax = false: customer payment = revenue + tax
+                                          const revenue = Math.max(
+                                            0,
+                                            transactionSubtotal -
+                                              transactionDiscount,
+                                          );
+                                          customerPayment =
+                                            revenue + transactionTax;
+                                        }
+                                        totalCustomerPayment += customerPayment;
+                                      },
+                                    );
+                                    return formatCurrency(totalCustomerPayment);
+                                  })()}
                                 </TableCell>
                                 {(() => {
                                   // Group orders by payment method for this date
                                   const paymentMethodsForDate: {
                                     [method: string]: number;
                                   } = {};
+
                                   dateTransactions.forEach(
                                     (transaction: any) => {
-                                      const method =
+                                      const paymentMethodStr =
                                         transaction.paymentMethod || "cash";
-                                      // Use revenue + tax formula for customer payment
-                                      const transactionSubtotal = Number(
-                                        transaction.subtotal || 0,
-                                      );
-                                      const transactionDiscount = Number(
-                                        transaction.discount || 0,
-                                      );
-                                      const transactionTax = Number(
-                                        transaction.tax || 0,
-                                      );
-                                      const transactionTotal = Number(
-                                        transaction.total || 0,
-                                      );
 
-                                      const transactionCustomerPayment =
-                                        transaction.priceIncludeTax === true
-                                          ? transactionTotal
-                                          : transactionSubtotal -
-                                            transactionDiscount +
-                                            transactionTax;
+                                      // Parse payment method - check if it's multi-payment (JSON array)
+                                      try {
+                                        const parsed =
+                                          JSON.parse(paymentMethodStr);
+                                        if (
+                                          Array.isArray(parsed) &&
+                                          parsed.length > 0
+                                        ) {
+                                          // Multi-payment: use amounts directly from JSON
+                                          parsed.forEach((pm: any) => {
+                                            const method = pm.method || "cash";
+                                            const amount = Number(
+                                              pm.amount || 0,
+                                            );
+                                            paymentMethodsForDate[method] =
+                                              (paymentMethodsForDate[method] ||
+                                                0) + amount;
+                                          });
+                                        } else {
+                                          // Not a valid JSON array, treat as single payment method
+                                          const transSubtotal = Number(
+                                            transaction.subtotal || 0,
+                                          );
+                                          const transDiscount = Number(
+                                            transaction.discount || 0,
+                                          );
+                                          const transTax = Number(
+                                            transaction.tax || 0,
+                                          );
+                                          const transTotal = Number(
+                                            transaction.total || 0,
+                                          );
 
-                                      paymentMethodsForDate[method] =
-                                        (paymentMethodsForDate[method] || 0) +
-                                        transactionCustomerPayment;
+                                          const transCustomerPayment =
+                                            transaction.priceIncludeTax === true
+                                              ? transTotal
+                                              : transSubtotal -
+                                                transDiscount +
+                                                transTax;
+
+                                          paymentMethodsForDate[
+                                            paymentMethodStr
+                                          ] =
+                                            (paymentMethodsForDate[
+                                              paymentMethodStr
+                                            ] || 0) + transCustomerPayment;
+                                        }
+                                      } catch (e) {
+                                        // Not JSON, single payment method
+                                        const transSubtotal = Number(
+                                          transaction.subtotal || 0,
+                                        );
+                                        const transDiscount = Number(
+                                          transaction.discount || 0,
+                                        );
+                                        const transTax = Number(
+                                          transaction.tax || 0,
+                                        );
+                                        const transTotal = Number(
+                                          transaction.total || 0,
+                                        );
+
+                                        const transCustomerPayment =
+                                          transaction.priceIncludeTax === true
+                                            ? transTotal
+                                            : transSubtotal -
+                                              transDiscount +
+                                              transTax;
+
+                                        paymentMethodsForDate[
+                                          paymentMethodStr
+                                        ] =
+                                          (paymentMethodsForDate[
+                                            paymentMethodStr
+                                          ] || 0) + transCustomerPayment;
+                                      }
                                     },
                                   );
 
-                                  // Get all unique payment methods from all completed orders
-                                  const allPaymentMethods = new Set();
-                                  if (
-                                    filteredCompletedOrders &&
-                                    Array.isArray(filteredCompletedOrders)
-                                  ) {
-                                    filteredCompletedOrders.forEach(
-                                      (order: any) => {
-                                        const method =
-                                          order.paymentMethod || "cash";
-                                        allPaymentMethods.add(method);
-                                      },
-                                    );
-                                  }
+                                  // Get all unique payment methods from all transactions
+                                  const allPaymentMethods = new Set<string>();
+                                  filteredTransactions.forEach(
+                                    (transaction: any) => {
+                                      const paymentMethodStr =
+                                        transaction.paymentMethod || "cash";
+                                      try {
+                                        const parsed =
+                                          JSON.parse(paymentMethodStr);
+                                        if (
+                                          Array.isArray(parsed) &&
+                                          parsed.length > 0
+                                        ) {
+                                          parsed.forEach((pm: any) => {
+                                            if (pm.method) {
+                                              allPaymentMethods.add(pm.method);
+                                            }
+                                          });
+                                        } else {
+                                          allPaymentMethods.add(
+                                            paymentMethodStr,
+                                          );
+                                        }
+                                      } catch (e) {
+                                        allPaymentMethods.add(paymentMethodStr);
+                                      }
+                                    },
+                                  );
 
                                   const paymentMethodsArray =
                                     Array.from(allPaymentMethods).sort();
-                                  const totalCustomerPayment = Object.values(
-                                    paymentMethodsForDate,
-                                  ).reduce(
-                                    (sum: number, amount: number) =>
-                                      sum + amount,
-                                    0,
-                                  );
 
                                   return (
                                     <>
                                       {paymentMethodsArray.map(
-                                        (method: any) => {
+                                        (method: any, methodIndex: number) => {
                                           const amount =
                                             paymentMethodsForDate[method] || 0;
                                           return (
                                             <TableCell
-                                              key={method}
+                                              key={`payment-${date}-${methodIndex}-${method}`}
                                               className="text-right border-r font-medium min-w-[130px] px-4"
                                             >
                                               {amount > 0
@@ -1140,15 +1498,17 @@ export function SalesChartReport() {
                                           {new Date(
                                             transaction.createdAt ||
                                               transaction.created_at,
+                                          ).toLocaleDateString("vi-VN")}
+                                        </div>
+                                        <div className="text-xs text-gray-500">
+                                          {new Date(
+                                            transaction.createdAt ||
+                                              transaction.created_at,
                                           ).toLocaleTimeString("vi-VN", {
                                             hour: "2-digit",
                                             minute: "2-digit",
+                                            hour12: false,
                                           })}
-                                        </div>
-                                        <div className="text-xs text-gray-500 font-normal mt-1">
-                                          {getPaymentMethodLabel(
-                                            transaction.paymentMethod,
-                                          )}
                                         </div>
                                       </TableCell>
                                       <TableCell className="text-center border-r text-sm min-w-[100px] px-4">
@@ -1171,7 +1531,7 @@ export function SalesChartReport() {
                                       </TableCell>
                                       <TableCell className="text-right border-r text-sm min-w-[140px] px-4">
                                         {(() => {
-                                          // Tính thành tiền cho từng giao dịch
+                                          // Calculate thành tiền for each transaction based on order's priceIncludeTax
                                           const orderPriceIncludeTax =
                                             transaction.priceIncludeTax ===
                                             true;
@@ -1184,14 +1544,12 @@ export function SalesChartReport() {
 
                                           let thanhTien;
                                           if (orderPriceIncludeTax) {
-                                            // Khi priceIncludeTax = true:
-                                            // thành tiền = subtotal + discount (giá gốc trước khi áp dụng discount)
+                                            // priceIncludeTax = true: thành tiền = subtotal + discount
                                             thanhTien =
                                               transactionSubtotal +
                                               transactionDiscount;
                                           } else {
-                                            // Khi priceIncludeTax = false:
-                                            // thành tiền = subtotal (giá đã tính với số lượng)
+                                            // priceIncludeTax = false: thành tiền = subtotal
                                             thanhTien = transactionSubtotal;
                                           }
 
@@ -1214,26 +1572,31 @@ export function SalesChartReport() {
                                             transaction.discount || 0,
                                           );
 
-                                          // Check priceIncludeTax from transaction or order
+                                          const transactionTax = Number(
+                                            transaction.tax || 0,
+                                          );
+
+                                          // Check priceIncludeTax from specific order
                                           const orderPriceIncludeTax =
                                             transaction.priceIncludeTax ===
                                             true;
 
+                                          let doanhThu;
                                           if (orderPriceIncludeTax) {
-                                            // When priceIncludeTax = true: doanh thu = subtotal (already includes tax, net of discount)
-                                            return formatCurrency(
-                                              transactionSubtotal,
-                                            );
+                                            // priceIncludeTax = true: doanh thu = subtotal
+                                            doanhThu =
+                                              transactionSubtotal -
+                                              transactionTax;
                                           } else {
-                                            // When priceIncludeTax = false: doanh thu = subtotal - discount
-                                            return formatCurrency(
-                                              Math.max(
-                                                0,
-                                                transactionSubtotal -
-                                                  transactionDiscount,
-                                              ),
+                                            // priceIncludeTax = false: doanh thu = subtotal - discount
+                                            doanhThu = Math.max(
+                                              0,
+                                              transactionSubtotal -
+                                                transactionDiscount,
                                             );
                                           }
+
+                                          return formatCurrency(doanhThu);
                                         })()}
                                       </TableCell>
                                       <TableCell className="text-right border-r text-sm min-w-[120px] px-4">
@@ -1262,64 +1625,24 @@ export function SalesChartReport() {
                                             true;
 
                                           if (orderPriceIncludeTax) {
-                                            // When priceIncludeTax = true: total = total from DB
+                                            // priceIncludeTax = true: tổng tiền = total
                                             return formatCurrency(
                                               transactionTotal,
                                             );
                                           } else {
-                                            // When priceIncludeTax = false: total = doanh thu + tax
-                                            const revenue = Math.max(
+                                            // priceIncludeTax = false: tổng tiền = subtotal - discount + tax
+                                            const doanhThu = Math.max(
                                               0,
                                               transactionSubtotal -
                                                 transactionDiscount,
                                             );
                                             return formatCurrency(
-                                              revenue + transactionTax,
+                                              doanhThu + transactionTax,
                                             );
                                           }
                                         })()}
                                       </TableCell>
                                       {(() => {
-                                        // Calculate payment methods for this individual transaction
-                                        const expandedPaymentMethodsForDate: {
-                                          [method: string]: number;
-                                        } = {};
-
-                                        // Group orders by payment method for this date
-                                        dateTransactions.forEach(
-                                          (trans: any) => {
-                                            const method =
-                                              trans.paymentMethod || "cash";
-                                            // Use revenue + tax formula for customer payment
-                                            const transSubtotal = Number(
-                                              trans.subtotal || 0,
-                                            );
-                                            const transDiscount = Number(
-                                              trans.discount || 0,
-                                            );
-                                            const transTax = Number(
-                                              trans.tax || 0,
-                                            );
-                                            const transTotal = Number(
-                                              trans.total || 0,
-                                            );
-
-                                            const transCustomerPayment =
-                                              trans.priceIncludeTax === true
-                                                ? transTotal
-                                                : transSubtotal -
-                                                  transDiscount +
-                                                  transTax;
-
-                                            expandedPaymentMethodsForDate[
-                                              method
-                                            ] =
-                                              (expandedPaymentMethodsForDate[
-                                                method
-                                              ] || 0) + transCustomerPayment;
-                                          },
-                                        );
-
                                         // Get all unique payment methods from all transactions
                                         const allPaymentMethods = new Set();
                                         if (
@@ -1327,68 +1650,133 @@ export function SalesChartReport() {
                                           Array.isArray(filteredTransactions)
                                         ) {
                                           filteredTransactions.forEach(
-                                            (transaction: any) => {
-                                              const method =
-                                                transaction.paymentMethod ||
-                                                "cash";
-                                              allPaymentMethods.add(method);
+                                            (trans: any) => {
+                                              try {
+                                                const parsed = JSON.parse(
+                                                  trans.paymentMethod || "[]",
+                                                );
+                                                if (
+                                                  Array.isArray(parsed) &&
+                                                  parsed.length > 0
+                                                ) {
+                                                  parsed.forEach((pm: any) =>
+                                                    allPaymentMethods.add(
+                                                      pm.method,
+                                                    ),
+                                                  );
+                                                } else {
+                                                  allPaymentMethods.add(
+                                                    trans.paymentMethod ||
+                                                      "cash",
+                                                  );
+                                                }
+                                              } catch (e) {
+                                                allPaymentMethods.add(
+                                                  trans.paymentMethod || "cash",
+                                                );
+                                              }
                                             },
                                           );
                                         }
 
                                         const paymentMethodsArray =
                                           Array.from(allPaymentMethods).sort();
-                                        const totalCustomerPayment =
-                                          Object.values(
-                                            expandedPaymentMethodsForDate,
-                                          ).reduce(
-                                            (sum: number, amount: number) =>
-                                              sum + amount,
-                                            0,
-                                          );
-
                                         return (
                                           <>
                                             {paymentMethodsArray.map(
                                               (method: any) => {
-                                                const currentTransactionMethod =
+                                                // Parse this transaction's payment method
+                                                const transPaymentMethod =
                                                   transaction.paymentMethod ||
                                                   "cash";
-                                                const isCurrentMethod =
-                                                  method ===
-                                                  currentTransactionMethod;
+                                                let transactionAmount = 0;
 
-                                                // For individual transaction row, only show amount for its payment method
-                                                const transactionAmount =
-                                                  isCurrentMethod
-                                                    ? (() => {
-                                                        const transSubtotal =
-                                                          Number(
-                                                            transaction.subtotal ||
-                                                              0,
-                                                          );
-                                                        const transDiscount =
-                                                          Number(
-                                                            transaction.discount ||
-                                                              0,
-                                                          );
-                                                        const transTax = Number(
-                                                          transaction.tax || 0,
+                                                try {
+                                                  const parsed =
+                                                    JSON.parse(
+                                                      transPaymentMethod,
+                                                    );
+                                                  if (
+                                                    Array.isArray(parsed) &&
+                                                    parsed.length > 0
+                                                  ) {
+                                                    // Multi-payment: find amount for this method from JSON
+                                                    const paymentItem =
+                                                      parsed.find(
+                                                        (pm: any) =>
+                                                          pm.method === method,
+                                                      );
+                                                    if (paymentItem) {
+                                                      transactionAmount =
+                                                        Number(
+                                                          paymentItem.amount ||
+                                                            0,
                                                         );
-                                                        const transTotal =
-                                                          Number(
-                                                            transaction.total ||
-                                                              0,
-                                                          );
+                                                    }
+                                                  } else {
+                                                    // Not a valid array, treat as single payment
+                                                    if (
+                                                      transPaymentMethod ===
+                                                      method
+                                                    ) {
+                                                      const transSubtotal =
+                                                        Number(
+                                                          transaction.subtotal ||
+                                                            0,
+                                                        );
+                                                      const transDiscount =
+                                                        Number(
+                                                          transaction.discount ||
+                                                            0,
+                                                        );
+                                                      const transTax = Number(
+                                                        transaction.tax || 0,
+                                                      );
+                                                      const transTotal = Number(
+                                                        transaction.total || 0,
+                                                      );
 
-                                                        return transaction.priceIncludeTax ===
-                                                          true
+                                                      transactionAmount =
+                                                        transaction.priceIncludeTax ===
+                                                        true
                                                           ? transTotal
                                                           : transSubtotal -
-                                                              transDiscount +
-                                                              transTax;
-                                                      })()
-                                                    : 0;
+                                                            transDiscount +
+                                                            transTax;
+                                                    }
+                                                  }
+                                                } catch (e) {
+                                                  // Not JSON, single payment method
+                                                  if (
+                                                    transPaymentMethod ===
+                                                    method
+                                                  ) {
+                                                    const transSubtotal =
+                                                      Number(
+                                                        transaction.subtotal ||
+                                                          0,
+                                                      );
+                                                    const transDiscount =
+                                                      Number(
+                                                        transaction.discount ||
+                                                          0,
+                                                      );
+                                                    const transTax = Number(
+                                                      transaction.tax || 0,
+                                                    );
+                                                    const transTotal = Number(
+                                                      transaction.total || 0,
+                                                    );
+
+                                                    transactionAmount =
+                                                      transaction.priceIncludeTax ===
+                                                      true
+                                                        ? transTotal
+                                                        : transSubtotal -
+                                                          transDiscount +
+                                                          transTax;
+                                                  }
+                                                }
 
                                                 return (
                                                   <TableCell
@@ -1440,7 +1828,7 @@ export function SalesChartReport() {
                         </TableCell>
                         <TableCell className="text-right border-r min-w-[140px] px-4">
                           {(() => {
-                            // Tính tổng thành tiền cho tất cả giao dịch
+                            // Calculate total thành tiền for all transactions based on order's priceIncludeTax
                             let totalThanhTien = 0;
                             filteredTransactions.forEach((transaction: any) => {
                               const orderPriceIncludeTax =
@@ -1454,13 +1842,11 @@ export function SalesChartReport() {
 
                               let thanhTien;
                               if (orderPriceIncludeTax) {
-                                // Khi priceIncludeTax = true:
-                                // thành tiền = subtotal + discount (khôi phục giá gốc)
+                                // priceIncludeTax = true: thành tiền = subtotal + discount
                                 thanhTien =
                                   transactionSubtotal + transactionDiscount;
                               } else {
-                                // Khi priceIncludeTax = false:
-                                // thành tiền = subtotal (giá đã nhân số lượng)
+                                // priceIncludeTax = false: thành tiền = subtotal
                                 thanhTien = transactionSubtotal;
                               }
                               totalThanhTien += thanhTien;
@@ -1479,32 +1865,35 @@ export function SalesChartReport() {
                             )}
                           </TableCell>
                         )}
-                        <TableCell className="text-right border-r min-w-[140px] px-4">
+                        <TableCell className="text-right border-r text-green-600 min-w-[120px] px-4">
                           {(() => {
-                            // Tính tổng doanh thu từ tất cả giao dịch theo đúng logic như từng dòng
+                            // Calculate total revenue based on each order's priceIncludeTax setting
                             let totalRevenue = 0;
                             filteredTransactions.forEach((transaction: any) => {
+                              const orderPriceIncludeTax =
+                                transaction.priceIncludeTax === true;
                               const transactionSubtotal = Number(
                                 transaction.subtotal || 0,
                               );
                               const transactionDiscount = Number(
                                 transaction.discount || 0,
                               );
-                              const orderPriceIncludeTax =
-                                transaction.priceIncludeTax === true;
+
+                              const transactionTax = Number(
+                                transaction.tax || 0,
+                              );
 
                               let doanhThu;
                               if (orderPriceIncludeTax) {
-                                // When priceIncludeTax = true: doanh thu = subtotal (already net of discount)
-                                doanhThu = transactionSubtotal;
+                                // priceIncludeTax = true: doanh thu = subtotal
+                                doanhThu = transactionSubtotal - transactionTax;
                               } else {
-                                // When priceIncludeTax = false: doanh thu = subtotal - discount
+                                // priceIncludeTax = false: doanh thu = subtotal - discount
                                 doanhThu = Math.max(
                                   0,
                                   transactionSubtotal - transactionDiscount,
                                 );
                               }
-
                               totalRevenue += doanhThu;
                             });
 
@@ -1519,11 +1908,13 @@ export function SalesChartReport() {
                             ),
                           )}
                         </TableCell>
-                        <TableCell className="text-right border-r text-blue-600 min-w-[140px] px-4">
+                        <TableCell className="text-right border-r text-blue-600 font-bold min-w-[140px] px-4">
                           {(() => {
-                            // Tính tổng tiền từ tất cả giao dịch theo đúng logic như từng dòng
+                            // Calculate total customer payment from all transactions
                             let totalCustomerPayment = 0;
                             filteredTransactions.forEach((transaction: any) => {
+                              const orderPriceIncludeTax =
+                                transaction.priceIncludeTax === true;
                               const transactionSubtotal = Number(
                                 transaction.subtotal || 0,
                               );
@@ -1537,32 +1928,32 @@ export function SalesChartReport() {
                                 transaction.total || 0,
                               );
 
-                              // Áp dụng cùng logic như từng dòng giao dịch
-                              const orderPriceIncludeTax =
-                                transaction.priceIncludeTax === true;
-
                               let customerPayment;
                               if (orderPriceIncludeTax) {
-                                // When priceIncludeTax = true: tổng tiền = total từ DB
-                                customerPayment =
-                                  transactionSubtotal + transactionDiscount;
+                                // priceIncludeTax = true: customer payment = total from DB
+                                customerPayment = transactionTotal;
                               } else {
-                                customerPayment = transactionSubtotal;
+                                // priceIncludeTax = false: customer payment = revenue + tax
+                                const revenue = Math.max(
+                                  0,
+                                  transactionSubtotal - transactionDiscount,
+                                );
+                                customerPayment = revenue + transactionTax;
                               }
-
                               totalCustomerPayment += customerPayment;
                             });
-
                             return formatCurrency(totalCustomerPayment);
                           })()}
                         </TableCell>
                         {(() => {
-                          // Calculate total payment methods across all dates
+                          // Calculate total payment methods across all dates with proper multi-payment handling
                           const totalPaymentMethods: {
                             [method: string]: number;
                           } = {};
+
                           filteredTransactions.forEach((transaction: any) => {
-                            const method = transaction.paymentMethod || "cash";
+                            const paymentMethodStr =
+                              transaction.paymentMethod || "cash";
 
                             const transactionSubtotal = Number(
                               transaction.subtotal || 0,
@@ -1577,15 +1968,34 @@ export function SalesChartReport() {
 
                             const customerPayment =
                               transaction.priceIncludeTax === true
-                                ? transactionSubtotal +
-                              transactionTax
+                                ? transactionTotal
                                 : transactionSubtotal -
                                   transactionDiscount +
                                   transactionTax;
 
-                            totalPaymentMethods[method] =
-                              (totalPaymentMethods[method] || 0) +
-                              customerPayment;
+                            // Try to parse as JSON for multi-payment
+                            try {
+                              const parsed = JSON.parse(paymentMethodStr);
+                              if (Array.isArray(parsed) && parsed.length > 0) {
+                                // Multi-payment: use amounts directly from JSON
+                                parsed.forEach((pm: any) => {
+                                  const method = pm.method || "cash";
+                                  const amount = Number(pm.amount || 0);
+                                  totalPaymentMethods[method] =
+                                    (totalPaymentMethods[method] || 0) + amount;
+                                });
+                              } else {
+                                // Not a valid JSON array, treat as single payment
+                                totalPaymentMethods[paymentMethodStr] =
+                                  (totalPaymentMethods[paymentMethodStr] || 0) +
+                                  customerPayment;
+                              }
+                            } catch (e) {
+                              // Not JSON, single payment method
+                              totalPaymentMethods[paymentMethodStr] =
+                                (totalPaymentMethods[paymentMethodStr] || 0) +
+                                customerPayment;
+                            }
                           });
 
                           // Get all unique payment methods from all completed orders
@@ -1595,19 +2005,32 @@ export function SalesChartReport() {
                             Array.isArray(filteredCompletedOrders)
                           ) {
                             filteredCompletedOrders.forEach((order: any) => {
-                              const method = order.paymentMethod || "cash";
-                              allPaymentMethods.add(method);
+                              const paymentMethodStr =
+                                order.paymentMethod || "cash";
+
+                              // Parse to find all methods including multi-payment
+                              try {
+                                const parsed = JSON.parse(paymentMethodStr);
+                                if (
+                                  Array.isArray(parsed) &&
+                                  parsed.length > 0
+                                ) {
+                                  parsed.forEach((pm: any) => {
+                                    if (pm.method) {
+                                      allPaymentMethods.add(pm.method);
+                                    }
+                                  });
+                                } else {
+                                  allPaymentMethods.add(paymentMethodStr);
+                                }
+                              } catch (e) {
+                                allPaymentMethods.add(paymentMethodStr);
+                              }
                             });
                           }
 
                           const paymentMethodsArray =
                             Array.from(allPaymentMethods).sort();
-                          const grandTotal = Object.values(
-                            totalPaymentMethods,
-                          ).reduce(
-                            (sum: number, amount: number) => sum + amount,
-                            0,
-                          );
 
                           return (
                             <>
@@ -1754,15 +2177,34 @@ export function SalesChartReport() {
 
     // Filter completed orders with all search criteria
     const filteredOrders = orders.filter((order: any) => {
-      const orderDate = new Date(
-        order.orderedAt || order.createdAt || order.created_at,
-      );
+      const orderDate = new Date(order.createdAt);
+
+      if (isNaN(orderDate.getTime())) {
+        console.warn("Skipping order with invalid createdAt date:", order.id);
+        return false;
+      }
+
+      // Apply floor filter
+      const floorMatch =
+        selectedFloor === "all" ||
+        !order.tableId ||
+        !tables ||
+        !Array.isArray(tables) ||
+        tables.find((table: any) => table.id === order.tableId)?.floor ===
+          selectedFloor;
+
       const dateMatch = orderDate >= start && orderDate <= end;
-      const statusMatch =
+      let statusMatch =
         order.status === "paid" ||
         order.status === "completed" ||
         order.status === "cancelled";
-
+      if (orderStatusFilter !== "all") {
+        if (orderStatusFilter == "completed") {
+          statusMatch = order.status === "paid" || order.status === "completed";
+        } else {
+          order.status === orderStatusFilter;
+        }
+      }
       const employeeMatch = (() => {
         try {
           // No filter selected
@@ -1774,52 +2216,49 @@ export function SalesChartReport() {
             return true;
           }
 
-          // Safe string extraction
-          const safeEmployeeName =
-            order.employeeName && typeof order.employeeName === "string"
-              ? order.employeeName.trim()
-              : "";
-          const safeCashierName =
-            order.cashierName && typeof order.cashierName === "string"
-              ? order.cashierName.trim()
-              : "";
-          const safeEmployeeId = order.employeeId
-            ? order.employeeId.toString()
-            : "";
+          // Exact matches
           const safeSelectedEmployee =
             selectedEmployee && typeof selectedEmployee === "string"
               ? selectedEmployee.trim()
               : "";
+          if (!safeSelectedEmployee) return true; // If filter is empty after trim
 
-          // Exact matches
-          if (
-            safeEmployeeName === safeSelectedEmployee ||
-            safeCashierName === safeSelectedEmployee ||
-            safeEmployeeId === safeSelectedEmployee
-          ) {
-            return true;
-          }
+          const employeeNameMatch =
+            order.employeeName && typeof order.employeeName === "string"
+              ? order.employeeName.trim().toLowerCase() ===
+                safeSelectedEmployee.toLowerCase()
+              : false;
+          const cashierNameMatch =
+            order.cashierName && typeof order.cashierName === "string"
+              ? order.cashierName.trim().toLowerCase() ===
+                safeSelectedEmployee.toLowerCase()
+              : false;
+          const employeeIdMatch = order.employeeId
+            ? order.employeeId.toString().toLowerCase() ===
+              safeSelectedEmployee.toLowerCase()
+            : false;
 
-          // Partial matches for non-empty strings
-          if (safeSelectedEmployee && safeSelectedEmployee !== "all") {
-            const searchTerm = safeSelectedEmployee.toLowerCase();
+          // Partial matches for non-exact searches
+          const nameIncludesSearch =
+            order.employeeName &&
+            typeof order.employeeName === "string" &&
+            order.employeeName
+              .toLowerCase()
+              .includes(safeSelectedEmployee.toLowerCase());
+          const cashierIncludesSearch =
+            order.cashierName &&
+            typeof order.cashierName === "string" &&
+            order.cashierName
+              .toLowerCase()
+              .includes(safeSelectedEmployee.toLowerCase());
 
-            if (
-              safeEmployeeName &&
-              safeEmployeeName.toLowerCase().includes(searchTerm)
-            ) {
-              return true;
-            }
-
-            if (
-              safeCashierName &&
-              safeCashierName.toLowerCase().includes(searchTerm)
-            ) {
-              return true;
-            }
-          }
-
-          return false;
+          return (
+            employeeNameMatch ||
+            cashierNameMatch ||
+            employeeIdMatch ||
+            nameIncludesSearch ||
+            cashierIncludesSearch
+          );
         } catch (error) {
           console.warn("Error in employee matching:", error);
           return true; // Include by default if there's an error
@@ -1848,7 +2287,12 @@ export function SalesChartReport() {
         (order.id && order.id.toString().includes(orderSearch));
 
       return (
-        dateMatch && statusMatch && employeeMatch && customerMatch && orderMatch
+        dateMatch &&
+        statusMatch &&
+        employeeMatch &&
+        customerMatch &&
+        orderMatch &&
+        floorMatch // Add floor match
       );
     });
 
@@ -1857,27 +2301,61 @@ export function SalesChartReport() {
 
     filteredOrders.forEach((order: any) => {
       // Get items for this order
-      const orderItemsForOrder = orderItems.filter(
+      let orderItemsForOrder = orderItems.filter(
         (item: any) => item.orderId === order.id,
       );
 
+      // Filter items by category if category filter is selected
+      if (selectedCategory && selectedCategory !== "all") {
+        orderItemsForOrder = orderItemsForOrder.filter((item: any) => {
+          const product = products?.find((p: any) => p.id === item.productId);
+          return product && product.categoryId?.toString() === selectedCategory;
+        });
+      }
+
+      // Filter items by product search if search term exists
+      if (productSearch && productSearch.trim() !== "") {
+        orderItemsForOrder = orderItemsForOrder.filter(
+          (item: any) =>
+            item.productName
+              ?.toLowerCase()
+              .includes(productSearch.toLowerCase()) ||
+            item.productSku
+              ?.toLowerCase()
+              .includes(productSearch.toLowerCase()),
+        );
+      }
+
+      // Skip order if no items match the filters
+      if (orderItemsForOrder.length === 0) {
+        return;
+      }
+
       // Use EXACT values from database
-      const orderSubtotal = Number(order.subtotal || 0); // Thành tiền từ DB
-      const orderDiscount = Number(order.discount || 0); // Giảm giá từ DB
-      const orderTax =
+      let orderSubtotal = Number(order.subtotal || 0); // Thành tiền từ DB
+      let orderDiscount = Number(order.discount || 0); // Giảm giá từ DB
+      let orderTax =
         Number(order.tax || 0) ||
         Number(order.total || 0) - Number(order.subtotal || 0); // Thuế từ DB hoặc tính từ total-subtotal
-      const orderTotal = Number(order.total || 0); // Tổng tiền từ DB
-      const orderRevenue = orderSubtotal - orderDiscount; // Doanh thu = thành tiền - giảm giá
+      let orderTotal = Number(order.total || 0); // Tổng tiền từ DB
+      let orderRevenue = orderSubtotal - orderDiscount; // Doanh thu = thành tiền - giêm giá
+
+      if (order.priceIncludeTax === true) {
+        orderSubtotal = orderSubtotal + orderDiscount + orderTax; // Thành tiền = subtotal + discount + tax
+        orderRevenue = orderSubtotal - orderDiscount - orderTax; // Doanh thu = subtotal - tax
+        orderTotal = orderRevenue + orderTax;
+      } else {
+        orderTotal = orderRevenue + orderTax;
+      }
 
       const orderSummary = {
         orderDate: order.orderedAt || order.createdAt || order.created_at,
         orderNumber: order.orderNumber || `ORD-${order.id}`,
-        customerId: order.customerId || "guest",
-        customerName: order.customerName || "Khách lẻ",
+        customerId: order.customerId || "",
+        customerName: order.customerName || "",
         totalAmount: orderSubtotal, // Thành tiền từ DB
         discount: orderDiscount, // Giảm giá từ DB
-        revenue: orderRevenue, // Doanh thu = thành tiền - giwem giá
+        revenue: orderRevenue, // Doanh thu = thành tiền - giêm giá
         tax: orderTax, // Thuế từ DB
         vat: orderTax, // VAT = thuế
         totalMoney: orderTotal, // Tổng tiền từ DB
@@ -1887,11 +2365,11 @@ export function SalesChartReport() {
         employeeName: order.employeeName || order.cashierName || "Unknown",
         status:
           order.status === "paid"
-            ? "Đã thanh toán"
+            ? `${t("common.paid")}`
             : order.status === "completed"
-              ? "Hoàn thành"
+              ? `${t("common.completed")}`
               : order.status === "cancelled"
-                ? "Đã hủy"
+                ? `${t("common.cancelled")}`
                 : order.status,
         items:
           orderItemsForOrder.length === 0
@@ -1909,22 +2387,27 @@ export function SalesChartReport() {
                   vat: orderTax, // VAT = thuế
                   totalMoney: orderTotal, // Tổng tiền từ order
                   productGroup: "-",
-                  taxRate: 10, // Default tax rate for items
+                  taxRate: 0, // Default tax rate for items
                 },
               ]
             : orderItemsForOrder.map((item: any) => {
                 // Sử dụng giá trị CHÍNH XÁC từ order_items và order
                 const itemQuantity = Number(item.quantity || 1);
-                const itemUnitPrice = Number(item.unitPrice || 0); // Đơn giá từ order_items (trước thuế)
-                const itemTotal = itemUnitPrice * itemQuantity; // Thành tiền = đơn giá * số lượng (trước thuế)
+                let itemUnitPrice = Number(item.unitPrice || 0); // Đơn giá từ order_items
+                let itemTotal = itemUnitPrice * itemQuantity; // Thành tiền = đơn giá * số lượng (trước thuế)
 
                 // Phân bổ giảm giá và thuế theo tỷ lệ của item trong tổng order
                 const itemDiscountRatio =
                   orderSubtotal > 0 ? itemTotal / orderSubtotal : 0; // Avoid division by zero
                 const itemDiscount = orderDiscount * itemDiscountRatio; // Giảm giá theo tỷ lệ
-                const itemTax = orderTax * itemDiscountRatio; // Thuế theo tỷ lệ
-                const itemRevenue = itemTotal - itemDiscount; // Doanh thu = thành tiền - giảm giá
-                const itemTotalMoney = itemRevenue + itemTax; // Tổng tiền = doanh thu + thuế
+                let itemTax = orderTax * itemDiscountRatio; // Thuế theo tỷ lệ
+                let itemRevenue = itemTotal - itemDiscount; // Doanh thu = thành tiền - giảm giá
+                let itemTotalMoney = itemRevenue + itemTax; // Tổng tiền = doanh thu + thuế
+
+                if (order.priceIncludeTax === true) {
+                  itemRevenue = itemTotal - itemDiscount - itemTax;
+                  itemTotalMoney = itemRevenue + itemTax;
+                }
 
                 // Get tax rate from product database, default to 0 if not available
                 const product = Array.isArray(products)
@@ -2145,10 +2628,10 @@ export function SalesChartReport() {
                 <TableHeader>
                   <TableRow>
                     <TableHead className="text-center bg-green-50 min-w-[100px] font-bold">
-                      Ngày
+                      {t("reports.date")}
                     </TableHead>
                     <TableHead className="text-center bg-green-50 min-w-[120px] font-bold">
-                      Số đơn bán
+                      {t("reports.orderNumber")}
                     </TableHead>
                     <TableHead className="text-center bg-green-50 min-w-[120px] font-bold">
                       Mã khách hàng
@@ -2217,9 +2700,7 @@ export function SalesChartReport() {
                         expandedRows[`order-${order.orderNumber}`] || false;
 
                       return (
-                        <Fragment
-                          key={`order-${order.orderNumber}-${orderIndex}`}
-                        >
+                        <>
                           {/* Order Header Row */}
                           <TableRow className="bg-blue-50/50 hover:bg-blue-100/50 border-l-4 border-l-blue-500">
                             <TableCell className="text-center font-medium min-w-[100px] px-2">
@@ -2289,7 +2770,7 @@ export function SalesChartReport() {
                               {formatCurrency(order.tax)}
                             </TableCell>
                             <TableCell className="text-right font-bold text-blue-600 min-w-[120px] px-2">
-                              {formatCurrency(order.revenue + order.tax)}
+                              {formatCurrency(order.totalMoney)}
                             </TableCell>
                             <TableCell className="text-center min-w-[150px] px-2">
                               {order.notes || "-"}
@@ -2357,7 +2838,7 @@ export function SalesChartReport() {
                                 <TableCell className="text-center min-w-[100px] px-2">
                                   {item.productCode}
                                 </TableCell>
-                                <TableCell className="text-left min-w-[200px] px-2">
+                                <TableCell className="text-center min-w-[200px] px-2">
                                   <div className="pl-6">{item.productName}</div>
                                 </TableCell>
                                 <TableCell className="text-center min-w-[60px] px-2">
@@ -2430,7 +2911,7 @@ export function SalesChartReport() {
                                 </TableCell>
                               </TableRow>
                             ))}
-                        </Fragment>
+                        </>
                       );
                     })
                   ) : (
@@ -2451,6 +2932,9 @@ export function SalesChartReport() {
                       <TableCell className="text-center border-r bg-green-100 min-w-[120px] px-4">
                         TỔNG CỘNG
                       </TableCell>
+                      <TableCell className="text-center border-r bg-green-100 min-w-[150px] px-4">
+                        -
+                      </TableCell>
                       <TableCell className="text-center border-r bg-green-100 min-w-[120px] px-4">
                         {groupedOrders.length} đơn
                       </TableCell>
@@ -2461,9 +2945,6 @@ export function SalesChartReport() {
                         -
                       </TableCell>
                       <TableCell className="text-center border-r bg-blue-100 min-w-[200px] px-4">
-                        -
-                      </TableCell>
-                      <TableCell className="text-center border-r bg-blue-100 min-w-[60px] px-4">
                         -
                       </TableCell>
                       <TableCell className="text-center border-r bg-blue-100 min-w-[100px] px-4">
@@ -2488,7 +2969,7 @@ export function SalesChartReport() {
                         {formatCurrency(totalTax)}
                       </TableCell>
                       <TableCell className="text-right border-r bg-purple-100 min-w-[120px] px-4">
-                        {formatCurrency(totalRevenue + totalTax)}
+                        {formatCurrency(totalMoney)}
                       </TableCell>
                       <TableCell className="text-center min-w-[150px] px-4">
                         -
@@ -2505,7 +2986,7 @@ export function SalesChartReport() {
                       <TableCell className="text-center min-w-[120px] px-4">
                         -
                       </TableCell>
-                      <TableCell className="text-center min-w-[120px] px-4">
+                      <TableCell className="text-center min-w-[100px] px-4">
                         -
                       </TableCell>
                     </TableRow>
@@ -2589,7 +3070,7 @@ export function SalesChartReport() {
 
   // Employee Report Component Logic - Enhanced with expandable rows and proper data handling
   const renderEmployeeReport = () => {
-    if (ordersLoading) {
+    if (ordersLoading || orderItemsLoading) {
       return (
         <div className="flex justify-center py-8">
           <div className="text-gray-500">{t("reports.loading")}...</div>
@@ -2597,312 +3078,286 @@ export function SalesChartReport() {
       );
     }
 
-    if (!orders || !Array.isArray(orders)) {
-      return (
-        <div className="flex justify-center py-8">
-          <div className="text-gray-500">Không có dữ liệu đơn hàng</div>
-        </div>
-      );
-    }
+    const dashboardStats = getDashboardStats();
+    const { filteredCompletedOrders } = dashboardStats;
 
-    try {
-      // Date filtering
-      const start = new Date(startDate);
-      const end = new Date(endDate);
-      end.setHours(23, 59, 59, 999);
+    // Employee sales data
+    const employeeSales: {
+      [employeeId: string]: {
+        employeeName: string;
+        totalRevenue: number;
+        totalOrders: number;
+        totalCustomers: number;
+        totalDiscount: number;
+        totalTax: number;
+        totalMoney: number;
+        totalSubtotal: number; // Add subtotal tracking
+        paymentMethods: { [method: string]: number };
+        orders: any[]; // Add orders array to track individual orders
+        employeeCode: string; // Add employee code
+      };
+    } = {};
 
-      // Filter completed orders only
-      const completedOrders = orders.filter((order: any) => {
-        try {
-          if (order.status !== "completed" && order.status !== "paid") {
-            return false;
-          }
+    filteredCompletedOrders.forEach((order: any) => {
+      const employeeId = order.employeeId?.toString() || "unknown";
+      const employeeName = order.employeeName || order.cashierName || "Unknown";
 
-          const orderDate = new Date(
-            order.orderedAt || order.createdAt || order.created_at,
-          );
-
-          if (isNaN(orderDate.getTime())) {
-            return false;
-          }
-
-          return orderDate >= start && orderDate <= end;
-        } catch (error) {
-          return false;
-        }
-      });
-
-      // Group by employee with detailed order tracking
-      const employeeSales: {
-        [employeeKey: string]: {
-          employeeCode: string;
-          employeeName: string;
-          orderCount: number;
-          revenue: number;
-          tax: number;
-          total: number;
-          discount: number;
-          orders: any[];
-          paymentMethods: { [method: string]: number };
+      if (!employeeSales[employeeId]) {
+        employeeSales[employeeId] = {
+          employeeName,
+          totalRevenue: 0,
+          totalOrders: 0,
+          totalCustomers: 0,
+          totalDiscount: 0,
+          totalTax: 0,
+          totalMoney: 0,
+          totalSubtotal: 0,
+          paymentMethods: {},
+          orders: [], // Add orders array to track individual orders
+          employeeCode: employeeId, // Add employee code
         };
-      } = {};
+      }
 
-      completedOrders.forEach((order: any) => {
-        try {
-          // Safe employee name extraction
-          let employeeName = "Unknown";
-          if (order.employeeName && typeof order.employeeName === "string") {
-            employeeName = order.employeeName.trim();
-          } else if (
-            order.cashierName &&
-            typeof order.cashierName === "string"
-          ) {
-            employeeName = order.cashierName.trim();
-          }
+      const orderSubtotal = Number(order.subtotal || 0);
+      const orderDiscount = Number(order.discount || 0);
+      const orderTax = Number(order.tax || 0);
+      const orderTotal = Number(order.total || 0);
 
-          const employeeCode = order.employeeId
-            ? `EMP-${order.employeeId}`
-            : "EMP-000";
-          const employeeKey = `${employeeCode}-${employeeName}`;
+      // Validate numbers to prevent NaN
+      if (
+        isNaN(orderSubtotal) ||
+        isNaN(orderDiscount) ||
+        isNaN(orderTax) ||
+        isNaN(orderTotal)
+      ) {
+        console.warn("Invalid order financial data:", {
+          orderId: order.id,
+          subtotal: order.subtotal,
+          discount: order.discount,
+          tax: order.tax,
+          total: order.total,
+        });
+        return; // Skip this order if data is invalid
+      }
 
-          // Apply employee filter safely
-          if (selectedEmployee && selectedEmployee !== "all") {
-            const filterName = selectedEmployee.toLowerCase();
-            const empNameLower = employeeName.toLowerCase();
+      // Calculate based on priceIncludeTax consistently
+      const orderPriceIncludeTax = order.priceIncludeTax === true;
+      let thanhTien, doanhThu, tongTien;
 
-            if (
-              !empNameLower.includes(filterName) &&
-              employeeCode.toLowerCase() !== selectedEmployee.toLowerCase()
-            ) {
-              return;
-            }
-          }
+      if (orderPriceIncludeTax) {
+        // When priceIncludeTax = true:
+        // - Thành tiền = subtotal + discount (before discount deduction)
+        // - Doanh thu = subtotal (after discount, net revenue)
+        // - Tổng tiền = total from DB
+        thanhTien = orderSubtotal + orderDiscount + orderTax; // Thành tiền = subtotal + discount + tax
+        doanhThu = thanhTien - orderDiscount - orderTax; // Doanh thu = subtotal + tax
+        tongTien = orderTotal;
+      } else {
+        // When priceIncludeTax = false:
+        // - Thành tiền = subtotal (before discount)
+        // - Doanh thu = subtotal - discount (after discount)
+        // - Tổng tiền = doanh thu + tax
+        thanhTien = orderSubtotal;
+        doanhThu = Math.max(0, orderSubtotal - orderDiscount);
+        tongTien = doanhThu + orderTax;
+      }
 
-          if (!employeeSales[employeeKey]) {
-            employeeSales[employeeKey] = {
-              employeeCode,
-              employeeName,
-              orderCount: 0,
-              revenue: 0,
-              tax: 0,
-              total: 0,
-              discount: 0,
-              orders: [],
-              paymentMethods: {},
-            };
-          }
-
-          const stats = employeeSales[employeeKey];
-          const orderSubtotal = Number(order.subtotal || 0);
-          const orderDiscount = Number(order.discount || 0);
-          const revenue = Math.max(0, orderSubtotal - orderDiscount); // Doanh thu = subtotal - discount
-          const tax = Number(order.tax || 0); // Use tax from database first, fallback to calculation
-          const orderTotal = Number(order.total || 0);
-
-          stats.orderCount += 1;
-          stats.revenue += revenue;
-          stats.tax += tax;
-          stats.total += orderTotal;
-          stats.discount += orderDiscount;
-          stats.orders.push(order);
-
-          const paymentMethod = order.paymentMethod || "cash";
-          stats.paymentMethods[paymentMethod] =
-            (stats.paymentMethods[paymentMethod] || 0) + orderTotal;
-        } catch (error) {
-          console.warn("Error processing employee order:", error);
-        }
-      });
-
-      const data = Object.values(employeeSales).sort(
-        (a, b) => b.total - a.total,
+      employeeSales[employeeId].totalSubtotal += thanhTien;
+      employeeSales[employeeId].totalRevenue += doanhThu;
+      employeeSales[employeeId].totalOrders += 1;
+      employeeSales[employeeId].totalCustomers += Number(
+        order.customerCount || 1,
       );
+      employeeSales[employeeId].totalDiscount += orderDiscount;
+      employeeSales[employeeId].totalTax += orderTax;
+      employeeSales[employeeId].totalMoney += tongTien;
 
-      // Pagination
-      const totalPages = Math.ceil(data.length / employeePageSize);
-      const startIndex = (employeeCurrentPage - 1) * employeePageSize;
-      const endIndex = startIndex + employeePageSize;
-      const paginatedData = data.slice(startIndex, endIndex);
+      // Add order to orders array for detailed view
+      employeeSales[employeeId].orders.push(order);
 
-      return (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Users className="w-5 h-5" />
-              {t("reports.employeeSalesReport")}
-            </CardTitle>
-            <CardDescription className="flex items-center justify-between">
-              <span>
-                {t("reports.fromDate")}: {formatDate(startDate)} -{" "}
-                {t("reports.toDate")}: {formatDate(endDate)}
-              </span>
-              <Button
-                onClick={() => {
-                  const exportData = [];
+      // Payment methods
+      const paymentMethod = order.paymentMethod || "cash";
+      employeeSales[employeeId].paymentMethods[paymentMethod] =
+        (employeeSales[employeeId].paymentMethods[paymentMethod] || 0) +
+        tongTien;
+    });
 
-                  // Export employee summaries with their detailed orders
-                  data.forEach((item) => {
-                    // Add employee summary row
-                    exportData.push({
-                      Loại: "Tổng nhân viên",
-                      "Mã NV": item.employeeCode,
-                      "Tên NV": item.employeeName,
-                      "Mã đơn hàng": "",
-                      "Ngày giờ": "",
-                      "Khách hàng": "",
-                      "Số đơn": item.orderCount,
-                      "Doanh thu": formatCurrency(item.revenue),
-                      "Giảm giá": formatCurrency(item.discount),
-                      Thuế: formatCurrency(item.tax),
-                      "Tổng cộng": formatCurrency(item.total),
-                      "Phương thức thanh toán": "Tất cả",
-                    });
+    const data = Object.values(employeeSales).sort(
+      (a, b) => b.totalMoney - a.totalMoney, // Sort by totalMoney
+    );
 
-                    // Add detailed orders for this employee
-                    item.orders.forEach((order: any) => {
-                      exportData.push({
-                        Loại: "Chi tiết đơn hàng",
-                        "Mã NV": item.employeeCode,
-                        "Tên NV": item.employeeName,
-                        "Mã đơn hàng": order.orderNumber || `ORD-${order.id}`,
-                        "Ngày giờ": new Date(
-                          order.orderedAt ||
-                            order.createdAt ||
-                            order.created_at,
-                        ).toLocaleString("vi-VN"),
-                        "Khách hàng": order.customerName || "Khách lẻ",
-                        "Số đơn": 1,
-                        "Doanh thu": formatCurrency(
-                          Math.max(0, Number(order.subtotal || 0)),
-                        ),
-                        "Giảm giá": formatCurrency(Number(order.discount || 0)),
-                        Thuế: formatCurrency(Number(order.tax || 0)),
-                        "Tổng cộng": formatCurrency(Number(order.total || 0)),
-                        "Phương thức thanh toán": getPaymentMethodLabel(
-                          order.paymentMethod || "cash",
-                        ),
-                      });
-                    });
-                  });
+    // Pagination
+    const totalPages = Math.ceil(data.length / employeePageSize);
+    const startIndex = (employeeCurrentPage - 1) * employeePageSize;
+    const endIndex = startIndex + employeePageSize;
+    const paginatedData = data.slice(startIndex, endIndex);
 
-                  // Add grand total summary
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Users className="w-5 h-5" />
+            {t("reports.employeeSalesReport")}
+          </CardTitle>
+          <CardDescription className="flex items-center justify-between">
+            <span>
+              {t("reports.fromDate")}: {formatDate(startDate)} -{" "}
+              {t("reports.toDate")}: {formatDate(endDate)}
+            </span>
+            <Button
+              onClick={() => {
+                const exportData = [];
+
+                // Export employee summaries with their detailed orders
+                data.forEach((item) => {
+                  // Add employee summary row
                   exportData.push({
-                    Loại: "TỔNG CỘNG",
-                    "Mã NV": "",
-                    "Tên NV": `${data.length} nhân viên`,
-                    "Mã đơn hàng": "",
-                    "Ngày giờ": "",
-                    "Khách hàng": "",
-                    "Số đơn": data.reduce(
-                      (sum, item) => sum + item.orderCount,
-                      0,
-                    ),
-                    "Doanh thu": formatCurrency(
-                      data.reduce((sum, item) => sum + item.revenue, 0),
-                    ),
-                    "Giảm giá": formatCurrency(
-                      data.reduce((sum, item) => sum + item.discount, 0),
-                    ),
-                    Thuế: formatCurrency(
-                      data.reduce((sum, item) => sum + item.tax, 0),
-                    ),
-                    "Tổng cộng": formatCurrency(
-                      data.reduce((sum, item) => sum + item.total, 0),
-                    ),
+                    Loại: "Tổng nhân viên",
+                    "Mã NV": item.employeeCode,
+                    "Tên NV": item.employeeName,
+                    "Số đơn": item.totalOrders,
+                    "Thành tiền": formatCurrency(item.totalSubtotal),
+                    "Giảm giá": formatCurrency(item.totalDiscount),
+                    "Doanh thu": formatCurrency(item.totalRevenue),
+                    Thuế: formatCurrency(item.totalTax),
+                    "Tổng cộng": formatCurrency(item.totalMoney),
                     "Phương thức thanh toán": "Tất cả",
                   });
 
-                  exportToExcel(
-                    exportData,
-                    `BaoCaoNhanVien_${startDate}_to_${endDate}`,
-                  );
-                }}
-                className="inline-flex items-center gap-2 px-3 py-1 bg-green-600 text-white text-sm rounded hover:bg-green-700 transition-colors"
-              >
-                <Download className="w-4 h-4" />
-                {t("common.exportExcel")}
-              </Button>
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="w-full">
-              <div className="overflow-x-auto">
-                <Table className="w-full min-w-[1400px]">
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead
-                        className="text-center bg-green-50 w-12 font-bold"
-                        rowSpan={2}
-                      ></TableHead>
-                      <TableHead
-                        className="text-center border-r bg-green-50 min-w-[120px] font-bold"
-                        rowSpan={2}
-                      >
-                        {t("reports.employeeId")}
-                      </TableHead>
-                      <TableHead
-                        className="text-center border-r bg-green-50 min-w-[150px] font-bold"
-                        rowSpan={2}
-                      >
-                        {t("reports.employeeName")}
-                      </TableHead>
-                      <TableHead
-                        className="text-center border-r min-w-[100px] font-bold"
-                        rowSpan={2}
-                      >
-                        {t("reports.orders")}
-                      </TableHead>
-                      <TableHead
-                        className="text-right border-r min-w-[140px] font-bold"
-                        rowSpan={2}
-                      >
-                        {t("reports.revenue")}
-                      </TableHead>
-                      <TableHead
-                        className="text-right border-r min-w-[120px] font-bold"
-                        rowSpan={2}
-                      >
-                        {t("reports.discount")}
-                      </TableHead>
-                      <TableHead
-                        className="text-right border-r min-w-[120px] font-bold"
-                        rowSpan={2}
-                      >
-                        {t("common.tax")}
-                      </TableHead>
-                      <TableHead
-                        className="text-right border-r min-w-[140px] font-bold"
-                        rowSpan={2}
-                      >
-                        {t("reports.total")}
-                      </TableHead>
-                      <TableHead
-                        className="text-center border-r bg-blue-50 min-w-[200px] font-bold"
-                        colSpan={(() => {
-                          // Get all unique payment methods from completed orders
-                          const allPaymentMethods = new Set();
-                          if (data && Array.isArray(data)) {
-                            data.forEach((employee: any) => {
-                              if (
-                                employee.orders &&
-                                Array.isArray(employee.orders)
-                              ) {
-                                employee.orders.forEach((order: any) => {
-                                  const method = order.paymentMethod || "cash";
-                                  allPaymentMethods.add(method);
-                                });
-                              }
-                            });
-                          }
-                          return allPaymentMethods.size;
-                        })()}
-                      >
-                        {t("reports.totalCustomerPayment")}
-                      </TableHead>
-                    </TableRow>
-                    <TableRow>
-                      {(() => {
-                        // Get all unique payment methods from employee orders
+                  // Add detailed orders for this employee
+                  item.orders.forEach((order: any) => {
+                    exportData.push({
+                      Loại: "Chi tiết đơn hàng",
+                      "Mã NV": item.employeeCode,
+                      "Tên NV": item.employeeName,
+                      "Mã đơn h �ng": order.orderNumber || `ORD-${order.id}`,
+                      "Ngày giờ": new Date(
+                        order.orderedAt || order.createdAt || order.created_at,
+                      ).toLocaleString("vi-VN", {
+                        year: "numeric",
+                        month: "2-digit",
+                        day: "2-digit",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                        second: "2-digit",
+                        hour12: false,
+                      }),
+                      "Khách hàng": order.customerName || "",
+                      "Số đơn": 1,
+                      "Doanh thu": formatCurrency(
+                        Math.max(0, Number(order.subtotal || 0)),
+                      ),
+                      "Giảm giá": formatCurrency(Number(order.discount || 0)),
+                      Thuế: formatCurrency(Number(order.tax || 0)),
+                      "Tổng cộng": formatCurrency(Number(order.total || 0)),
+                      "Phương thức thanh toán": formatPaymentMethodDisplay(
+                        order.paymentMethod || "cash",
+                      ),
+                    });
+                  });
+                });
+
+                // Add grand total summary
+                exportData.push({
+                  Loại: "TỔNG CỘNG",
+                  "Mã NV": "",
+                  "Tên NV": `${data.length} nhân viên`,
+                  "Số đơn": data.reduce(
+                    (sum, item) => sum + item.totalOrders,
+                    0,
+                  ),
+                  "Thành tiền": formatCurrency(
+                    data.reduce((sum, item) => sum + item.totalSubtotal, 0),
+                  ),
+                  "Giảm giá": formatCurrency(
+                    data.reduce((sum, item) => sum + item.totalDiscount, 0),
+                  ),
+                  "Doanh thu": formatCurrency(
+                    data.reduce((sum, item) => sum + item.totalRevenue, 0),
+                  ),
+                  Thuế: formatCurrency(
+                    data.reduce((sum, item) => sum + item.totalTax, 0),
+                  ),
+                  "Tổng cộng": formatCurrency(
+                    data.reduce((sum, item) => sum + item.totalMoney, 0),
+                  ),
+                  "Phương thức thanh toán": "Tất cả",
+                });
+
+                exportToExcel(
+                  exportData,
+                  `BaoCaoNhanVien_${startDate}_to_${endDate}`,
+                );
+              }}
+              className="inline-flex items-center gap-2 px-3 py-1 bg-green-600 text-white text-sm rounded hover:bg-green-700 transition-colors"
+            >
+              <Download className="w-4 h-4" />
+              {t("common.exportExcel")}
+            </Button>
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="w-full">
+            <div className="overflow-x-auto">
+              <Table className="w-full min-w-[1400px]">
+                <TableHeader>
+                  <TableRow>
+                    <TableHead
+                      className="text-center bg-green-50 w-12 font-bold"
+                      rowSpan={2}
+                    ></TableHead>
+                    <TableHead
+                      className="text-center border-r bg-green-50 min-w-[120px] font-bold"
+                      rowSpan={2}
+                    >
+                      {t("reports.employeeId")}
+                    </TableHead>
+                    <TableHead
+                      className="text-center border-r bg-green-50 min-w-[150px] font-bold"
+                      rowSpan={2}
+                    >
+                      {t("reports.employeeName")}
+                    </TableHead>
+                    <TableHead
+                      className="text-center border-r min-w-[100px] font-bold"
+                      rowSpan={2}
+                    >
+                      {t("reports.orders")}
+                    </TableHead>
+                    <TableHead
+                      className="text-right border-r min-w-[140px] font-bold"
+                      rowSpan={2}
+                    >
+                      {t("reports.thanhTien")}
+                    </TableHead>
+                    <TableHead
+                      className="text-right border-r min-w-[120px] font-bold"
+                      rowSpan={2}
+                    >
+                      {t("reports.discount")}
+                    </TableHead>
+                    <TableHead
+                      className="text-right border-r min-w-[120px] font-bold"
+                      rowSpan={2}
+                    >
+                      {t("reports.revenue")}
+                    </TableHead>
+                    <TableHead
+                      className="text-right border-r min-w-[120px] font-bold"
+                      rowSpan={2}
+                    >
+                      {t("common.tax")}
+                    </TableHead>
+                    <TableHead
+                      className="text-right border-r min-w-[140px] font-bold"
+                      rowSpan={2}
+                    >
+                      {t("reports.totalMoney")}
+                    </TableHead>
+                    <TableHead
+                      className="text-center border-r bg-blue-50 min-w-[200px] font-bold"
+                      colSpan={(() => {
+                        // Get all unique payment methods from completed orders (including from JSON)
                         const allPaymentMethods = new Set();
                         if (data && Array.isArray(data)) {
                           data.forEach((employee: any) => {
@@ -2911,9 +3366,671 @@ export function SalesChartReport() {
                               Array.isArray(employee.orders)
                             ) {
                               employee.orders.forEach((order: any) => {
-                                const method = order.paymentMethod || "cash";
-                                allPaymentMethods.add(method);
+                                const paymentMethodStr =
+                                  order.paymentMethod || "cash";
+
+                                // Try to parse as JSON for multi-payment
+                                try {
+                                  const parsed = JSON.parse(paymentMethodStr);
+                                  if (
+                                    Array.isArray(parsed) &&
+                                    parsed.length > 0
+                                  ) {
+                                    // Multi-payment: add all methods from JSON
+                                    parsed.forEach((pm: any) => {
+                                      if (pm.method) {
+                                        allPaymentMethods.add(pm.method);
+                                      }
+                                    });
+                                  } else {
+                                    // Single payment method
+                                    allPaymentMethods.add(paymentMethodStr);
+                                  }
+                                } catch (e) {
+                                  // Not JSON, treat as single payment method
+                                  allPaymentMethods.add(paymentMethodStr);
+                                }
                               });
+                            }
+                          });
+                        }
+                        return allPaymentMethods.size;
+                      })()}
+                    >
+                      {t("reports.totalCustomerPayment")}
+                    </TableHead>
+                  </TableRow>
+                  <TableRow>
+                    {(() => {
+                      // Get all unique payment methods from employee orders (including from JSON)
+                      const allPaymentMethods = new Set();
+                      if (data && Array.isArray(data)) {
+                        data.forEach((employee: any) => {
+                          if (
+                            employee.orders &&
+                            Array.isArray(employee.orders)
+                          ) {
+                            employee.orders.forEach((order: any) => {
+                              const paymentMethodStr =
+                                order.paymentMethod || "cash";
+
+                              // Try to parse as JSON for multi-payment
+                              try {
+                                const parsed = JSON.parse(paymentMethodStr);
+                                if (
+                                  Array.isArray(parsed) &&
+                                  parsed.length > 0
+                                ) {
+                                  // Multi-payment: add all methods from JSON
+                                  parsed.forEach((pm: any) => {
+                                    if (pm.method) {
+                                      allPaymentMethods.add(pm.method);
+                                    }
+                                  });
+                                } else {
+                                  // Single payment method
+                                  allPaymentMethods.add(paymentMethodStr);
+                                }
+                              } catch (e) {
+                                // Not JSON, treat as single payment method
+                                allPaymentMethods.add(paymentMethodStr);
+                              }
+                            });
+                          }
+                        });
+                      }
+
+                      const paymentMethodsArray =
+                        Array.from(allPaymentMethods).sort();
+
+                      return (
+                        <>
+                          {paymentMethodsArray.map(
+                            (method: any, index: number) => (
+                              <TableHead
+                                key={`payment-header-${index}-${method}`}
+                                className="text-center border-r bg-blue-50 min-w-[130px] font-bold"
+                              >
+                                {getPaymentMethodLabel(method)}
+                              </TableHead>
+                            ),
+                          )}
+                        </>
+                      );
+                    })()}
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {paginatedData.length > 0 ? (
+                    paginatedData.map((item, index) => {
+                      const isExpanded =
+                        expandedRows[item.employeeCode] || false;
+
+                      return (
+                        <>
+                          <TableRow
+                            key={`${item.employeeCode}-${index}`}
+                            className="hover:bg-gray-50"
+                          >
+                            <TableCell className="text-center border-r w-12">
+                              <button
+                                onClick={() =>
+                                  setExpandedRows((prev) => ({
+                                    ...prev,
+                                    [item.employeeCode]:
+                                      !prev[item.employeeCode],
+                                  }))
+                                }
+                                className="w-8 h-8 flex items-center justify-center hover:bg-gray-200 rounded text-sm"
+                              >
+                                {isExpanded ? "−" : "+"}
+                              </button>
+                            </TableCell>
+                            <TableCell className="text-center border-r bg-green-50 font-medium min-w-[120px] px-4">
+                              {item.employeeCode}
+                            </TableCell>
+                            <TableCell className="text-center border-r bg-green-50 font-medium min-w-[150px] px-4">
+                              {item.employeeName}
+                            </TableCell>
+                            <TableCell className="text-center border-r min-w-[100px] px-4">
+                              {item.totalOrders.toLocaleString()}
+                            </TableCell>
+                            <TableCell className="text-right border-r min-w-[140px] px-4">
+                              {formatCurrency(item.totalSubtotal)}
+                            </TableCell>
+                            <TableCell className="text-right border-r text-red-600 min-w-[120px] px-4">
+                              {formatCurrency(item.totalDiscount)}
+                            </TableCell>
+                            <TableCell className="text-right border-r min-w-[120px] px-4">
+                              {formatCurrency(item.totalRevenue)}
+                            </TableCell>
+                            <TableCell className="text-right border-r min-w-[120px] px-4">
+                              {formatCurrency(item.totalTax)}
+                            </TableCell>
+                            <TableCell className="text-right border-r text-blue-600 font-bold min-w-[140px] px-4">
+                              {formatCurrency(item.totalMoney)}
+                            </TableCell>
+                            {(() => {
+                              // Get all unique payment methods from all employee data (including from JSON)
+                              const allPaymentMethods = new Set();
+                              if (data && Array.isArray(data)) {
+                                data.forEach((employee: any) => {
+                                  if (
+                                    employee.orders &&
+                                    Array.isArray(employee.orders)
+                                  ) {
+                                    employee.orders.forEach((order: any) => {
+                                      const paymentMethodStr =
+                                        order.paymentMethod || "cash";
+
+                                      // Try to parse as JSON for multi-payment
+                                      try {
+                                        const parsed =
+                                          JSON.parse(paymentMethodStr);
+                                        if (
+                                          Array.isArray(parsed) &&
+                                          parsed.length > 0
+                                        ) {
+                                          // Multi-payment: add all methods from JSON
+                                          parsed.forEach((pm: any) => {
+                                            if (pm.method) {
+                                              allPaymentMethods.add(pm.method);
+                                            }
+                                          });
+                                        } else {
+                                          // Single payment method
+                                          allPaymentMethods.add(
+                                            paymentMethodStr,
+                                          );
+                                        }
+                                      } catch (e) {
+                                        // Not JSON, treat as single payment method
+                                        allPaymentMethods.add(paymentMethodStr);
+                                      }
+                                    });
+                                  }
+                                });
+                              }
+
+                              const paymentMethodsArray =
+                                Array.from(allPaymentMethods).sort();
+
+                              return (
+                                <>
+                                  {paymentMethodsArray.map((method: any) => {
+                                    // Calculate customer payment for this payment method
+                                    let customerPaymentForMethod = 0;
+                                    if (
+                                      item.orders &&
+                                      Array.isArray(item.orders)
+                                    ) {
+                                      item.orders.forEach((order: any) => {
+                                        const paymentMethodStr =
+                                          order.paymentMethod || "cash";
+                                        const orderSubtotal = Number(
+                                          order.subtotal || 0,
+                                        );
+                                        const orderDiscount = Number(
+                                          order.discount || 0,
+                                        );
+                                        const orderTax = Number(order.tax || 0);
+                                        const orderTotal = Number(
+                                          order.total || 0,
+                                        );
+
+                                        const customerPayment =
+                                          order.priceIncludeTax === true
+                                            ? orderTotal
+                                            : orderSubtotal -
+                                              orderDiscount +
+                                              orderTax;
+
+                                        // Try to parse as JSON for multi-payment
+                                        try {
+                                          const parsed =
+                                            JSON.parse(paymentMethodStr);
+                                          if (
+                                            Array.isArray(parsed) &&
+                                            parsed.length > 0
+                                          ) {
+                                            // Multi-payment: find amount for this method from JSON
+                                            const paymentItem = parsed.find(
+                                              (pm: any) => pm.method === method,
+                                            );
+                                            if (paymentItem) {
+                                              customerPaymentForMethod +=
+                                                Number(paymentItem.amount || 0);
+                                            }
+                                          } else {
+                                            // Not a valid array, treat as single payment
+                                            if (paymentMethodStr === method) {
+                                              customerPaymentForMethod +=
+                                                customerPayment;
+                                            }
+                                          }
+                                        } catch (e) {
+                                          // Not JSON, single payment method
+                                          if (paymentMethodStr === method) {
+                                            customerPaymentForMethod +=
+                                              customerPayment;
+                                          }
+                                        }
+                                      });
+                                    }
+
+                                    return (
+                                      <TableCell
+                                        key={method}
+                                        className="text-right border-r font-medium min-w-[130px] px-4"
+                                      >
+                                        {customerPaymentForMethod > 0
+                                          ? formatCurrency(
+                                              customerPaymentForMethod,
+                                            )
+                                          : "-"}
+                                      </TableCell>
+                                    );
+                                  })}
+                                </>
+                              );
+                            })()}
+                          </TableRow>
+
+                          {/* Expanded Order Details */}
+                          {isExpanded &&
+                            item.orders.length > 0 &&
+                            item.orders.map(
+                              (order: any, orderIndex: number) => (
+                                <TableRow
+                                  key={`${item.employeeCode}-order-${
+                                    order.id || orderIndex
+                                  }`}
+                                  className="bg-blue-50/50 border-l-4 border-l-blue-400"
+                                >
+                                  <TableCell className="text-center border-r bg-blue-50 w-12">
+                                    <div className="w-8 h-6 flex items-center justify-center text-blue-600 text-xs">
+                                      └
+                                    </div>
+                                  </TableCell>
+                                  <TableCell className="text-center border-r text-blue-600 text-sm min-w-[120px] px-4">
+                                    <button
+                                      onClick={() => {
+                                        const orderNumber =
+                                          order.orderNumber ||
+                                          `ORD-${order.id}`;
+                                        window.location.href = `/sales-orders?order=${orderNumber}`;
+                                      }}
+                                      className="text-blue-600 hover:text-blue-800 hover:underline font-medium cursor-pointer bg-transparent border-none p-0"
+                                      title="Click to view order details"
+                                    >
+                                      {order.orderNumber || `ORD-${order.id}`}
+                                    </button>
+                                  </TableCell>
+                                  <TableCell className="text-center border-r text-sm min-w-[150px] px-4">
+                                    <div>
+                                      {new Date(
+                                        order.orderedAt ||
+                                          order.createdAt ||
+                                          order.created_at,
+                                      ).toLocaleDateString("vi-VN")}
+                                    </div>
+                                    <div className="text-xs text-gray-500">
+                                      {new Date(
+                                        order.orderedAt ||
+                                          order.createdAt ||
+                                          order.created_at,
+                                      ).toLocaleTimeString("vi-VN", {
+                                        hour: "2-digit",
+                                        minute: "2-digit",
+                                        hour12: false,
+                                      })}
+                                    </div>
+                                  </TableCell>
+                                  <TableCell className="text-center border-r text-sm min-w-[100px] px-4">
+                                    <Badge
+                                      variant="outline"
+                                      className="text-xs"
+                                    >
+                                      {order.customerName}
+                                    </Badge>
+                                  </TableCell>
+                                  <TableCell className="text-right text-green-600 font-medium text-sm min-w-[140px] px-4">
+                                    {(() => {
+                                      const subtotal =
+                                        Number(order.subtotal) || 0;
+                                      const discount =
+                                        Number(order.discount) || 0;
+                                      const tax = Number(order.tax) || 0;
+                                      if (order.priceIncludeTax === true) {
+                                        return formatCurrency(
+                                          subtotal + discount + tax,
+                                        );
+                                      } else {
+                                        return formatCurrency(subtotal);
+                                      }
+                                    })()}
+                                  </TableCell>
+                                  <TableCell className="text-right text-orange-600 text-sm min-w-[120px] px-4">
+                                    {formatCurrency(
+                                      Number(order.discount || 0),
+                                    )}
+                                  </TableCell>
+                                  <TableCell className="text-right border-r text-sm min-w-[120px] px-4">
+                                    {(() => {
+                                      const subtotal =
+                                        Number(order.subtotal) || 0;
+                                      const discount =
+                                        Number(order.discount) || 0;
+                                      const tax = Number(order.tax) || 0;
+                                      if (order.priceIncludeTax === false) {
+                                        return formatCurrency(subtotal - tax);
+                                      } else {
+                                        return formatCurrency(subtotal);
+                                      }
+                                    })()}
+                                  </TableCell>
+                                  <TableCell className="text-right border-r text-sm min-w-[120px] px-4">
+                                    {formatCurrency(Number(order.tax || 0))}
+                                  </TableCell>
+                                  <TableCell className="text-right border-r font-bold text-blue-600 text-sm min-w-[140px] px-4">
+                                    {(() => {
+                                      const subtotal =
+                                        Number(order.subtotal) || 0;
+                                      const discount =
+                                        Number(order.discount) || 0;
+                                      const tax = Number(order.tax) || 0;
+                                      const total = Number(order.total) || 0;
+                                      if (order.priceIncludeTax === false) {
+                                        return formatCurrency(
+                                          subtotal - discount + tax,
+                                        );
+                                      } else {
+                                        return formatCurrency(total);
+                                      }
+                                    })()}
+                                  </TableCell>
+                                  {(() => {
+                                    // Get all unique payment methods from all employee data (including from JSON)
+                                    const allPaymentMethods = new Set();
+                                    if (data && Array.isArray(data)) {
+                                      data.forEach((employee: any) => {
+                                        if (
+                                          employee.orders &&
+                                          Array.isArray(employee.orders)
+                                        ) {
+                                          employee.orders.forEach(
+                                            (order: any) => {
+                                              const paymentMethodStr =
+                                                order.paymentMethod || "cash";
+
+                                              // Try to parse as JSON for multi-payment
+                                              try {
+                                                const parsed =
+                                                  JSON.parse(paymentMethodStr);
+                                                if (
+                                                  Array.isArray(parsed) &&
+                                                  parsed.length > 0
+                                                ) {
+                                                  // Multi-payment: add all methods from JSON
+                                                  parsed.forEach((pm: any) => {
+                                                    if (pm.method) {
+                                                      allPaymentMethods.add(
+                                                        pm.method,
+                                                      );
+                                                    }
+                                                  });
+                                                } else {
+                                                  // Single payment method
+                                                  allPaymentMethods.add(
+                                                    paymentMethodStr,
+                                                  );
+                                                }
+                                              } catch (e) {
+                                                // Not JSON, treat as single payment method
+                                                allPaymentMethods.add(
+                                                  paymentMethodStr,
+                                                );
+                                              }
+                                            },
+                                          );
+                                        }
+                                      });
+                                    }
+
+                                    const paymentMethodsArray =
+                                      Array.from(allPaymentMethods).sort();
+
+                                    return (
+                                      <>
+                                        {paymentMethodsArray.map(
+                                          (method: any) => {
+                                            const orderPaymentMethodStr =
+                                              order.paymentMethod || "cash";
+                                            let orderPaymentForMethod = 0;
+
+                                            const orderSubtotal = Number(
+                                              order.subtotal || 0,
+                                            );
+                                            const orderDiscount = Number(
+                                              order.discount || 0,
+                                            );
+                                            const orderTax = Number(
+                                              order.tax || 0,
+                                            );
+                                            const orderTotal = Number(
+                                              order.total || 0,
+                                            );
+
+                                            const customerPayment =
+                                              order.priceIncludeTax === true
+                                                ? orderTotal
+                                                : orderSubtotal -
+                                                  orderDiscount +
+                                                  orderTax;
+
+                                            // Try to parse as JSON for multi-payment
+                                            try {
+                                              const parsed = JSON.parse(
+                                                orderPaymentMethodStr,
+                                              );
+                                              if (
+                                                Array.isArray(parsed) &&
+                                                parsed.length > 0
+                                              ) {
+                                                // Multi-payment: find amount for this method from JSON
+                                                const paymentItem = parsed.find(
+                                                  (pm: any) =>
+                                                    pm.method === method,
+                                                );
+                                                if (paymentItem) {
+                                                  orderPaymentForMethod =
+                                                    Number(
+                                                      paymentItem.amount || 0,
+                                                    );
+                                                }
+                                              } else {
+                                                // Not a valid array, treat as single payment
+                                                if (
+                                                  orderPaymentMethodStr ===
+                                                  method
+                                                ) {
+                                                  orderPaymentForMethod =
+                                                    customerPayment;
+                                                }
+                                              }
+                                            } catch (e) {
+                                              // Not JSON, single payment method
+                                              if (
+                                                orderPaymentMethodStr === method
+                                              ) {
+                                                orderPaymentForMethod =
+                                                  customerPayment;
+                                              }
+                                            }
+
+                                            return (
+                                              <TableCell
+                                                key={method}
+                                                className="text-right border-r text-sm min-w-[130px] px-4"
+                                              >
+                                                {orderPaymentForMethod > 0
+                                                  ? formatCurrency(
+                                                      orderPaymentForMethod,
+                                                    )
+                                                  : "-"}
+                                              </TableCell>
+                                            );
+                                          },
+                                        )}
+                                      </>
+                                    );
+                                  })()}
+                                </TableRow>
+                              ),
+                            )}
+                        </>
+                      );
+                    })
+                  ) : (
+                    <TableRow>
+                      <TableCell
+                        colSpan={8}
+                        className="text-center text-gray-500 py-8"
+                      >
+                        {t("reports.noDataDescription")}
+                      </TableCell>
+                    </TableRow>
+                  )}
+
+                  {/* Summary Row */}
+                  {data.length > 0 && (
+                    <TableRow className="bg-gray-100 font-bold border-t-2">
+                      <TableCell className="text-center border-r w-12"></TableCell>
+                      <TableCell className="text-center border-r bg-green-100 min-w-[120px] px-4">
+                        {t("common.total")}
+                      </TableCell>
+                      <TableCell className="text-center border-r bg-green-100 min-w-[150px] px-4">
+                        {data.length} nhân viên
+                      </TableCell>
+                      <TableCell className="text-center border-r min-w-[100px] px-4">
+                        {data
+                          .reduce((sum, item) => sum + item.totalOrders, 0)
+                          .toLocaleString()}
+                      </TableCell>
+                      <TableCell className="text-right border-r min-w-[140px] px-4">
+                        {formatCurrency(
+                          data.reduce(
+                            (sum, item) => sum + item.totalSubtotal,
+                            0,
+                          ),
+                        )}
+                      </TableCell>
+                      <TableCell className="text-right border-r text-red-600 min-w-[120px] px-4">
+                        {formatCurrency(
+                          data.reduce(
+                            (sum, item) => sum + item.totalDiscount,
+                            0,
+                          ),
+                        )}
+                      </TableCell>
+                      <TableCell className="text-right border-r text-green-600 min-w-[120px] px-4">
+                        {formatCurrency(
+                          data.reduce(
+                            (sum, item) => sum + item.totalRevenue,
+                            0,
+                          ),
+                        )}
+                      </TableCell>
+                      <TableCell className="text-right border-r min-w-[120px] px-4">
+                        {formatCurrency(
+                          data.reduce((sum, item) => sum + item.totalTax, 0),
+                        )}
+                      </TableCell>
+                      <TableCell className="text-right border-r text-blue-600 font-bold min-w-[140px] px-4">
+                        {formatCurrency(
+                          data.reduce((sum, item) => sum + item.totalMoney, 0),
+                        )}
+                      </TableCell>
+                      {(() => {
+                        // Calculate total payment methods across all dates with proper multi-payment handling
+                        const totalPaymentMethods: {
+                          [method: string]: number;
+                        } = {};
+
+                        filteredCompletedOrders.forEach((transaction: any) => {
+                          const paymentMethodStr =
+                            transaction.paymentMethod || "cash";
+
+                          const transactionSubtotal = Number(
+                            transaction.subtotal || 0,
+                          );
+                          const transactionDiscount = Number(
+                            transaction.discount || 0,
+                          );
+                          const transactionTax = Number(transaction.tax || 0);
+                          const transactionTotal = Number(
+                            transaction.total || 0,
+                          );
+
+                          const customerPayment =
+                            transaction.priceIncludeTax === true
+                              ? transactionTotal
+                              : transactionSubtotal -
+                                transactionDiscount +
+                                transactionTax;
+
+                          // Try to parse as JSON for multi-payment
+                          try {
+                            const parsed = JSON.parse(paymentMethodStr);
+                            if (Array.isArray(parsed) && parsed.length > 0) {
+                              // Multi-payment: use amounts directly from JSON
+                              parsed.forEach((pm: any) => {
+                                const method = pm.method || "cash";
+                                const amount = Number(pm.amount || 0);
+                                totalPaymentMethods[method] =
+                                  (totalPaymentMethods[method] || 0) + amount;
+                              });
+                            } else {
+                              // Not a valid JSON array, treat as single payment
+                              totalPaymentMethods[paymentMethodStr] =
+                                (totalPaymentMethods[paymentMethodStr] || 0) +
+                                customerPayment;
+                            }
+                          } catch (e) {
+                            // Not JSON, single payment method
+                            totalPaymentMethods[paymentMethodStr] =
+                              (totalPaymentMethods[paymentMethodStr] || 0) +
+                              customerPayment;
+                          }
+                        });
+
+                        // Get all unique payment methods from all completed orders (including from JSON)
+                        const allPaymentMethods = new Set();
+                        if (
+                          filteredCompletedOrders &&
+                          Array.isArray(filteredCompletedOrders)
+                        ) {
+                          filteredCompletedOrders.forEach((order: any) => {
+                            const paymentMethodStr =
+                              order.paymentMethod || "cash";
+
+                            // Try to parse as JSON for multi-payment
+                            try {
+                              const parsed = JSON.parse(paymentMethodStr);
+                              if (Array.isArray(parsed) && parsed.length > 0) {
+                                // Multi-payment: add all methods from JSON
+                                parsed.forEach((pm: any) => {
+                                  if (pm.method) {
+                                    allPaymentMethods.add(pm.method);
+                                  }
+                                });
+                              } else {
+                                // Single payment method
+                                allPaymentMethods.add(paymentMethodStr);
+                              }
+                            } catch (e) {
+                              // Not JSON, treat as single payment method
+                              allPaymentMethods.add(paymentMethodStr);
                             }
                           });
                         }
@@ -2923,493 +4040,99 @@ export function SalesChartReport() {
 
                         return (
                           <>
-                            {paymentMethodsArray.map(
-                              (method: any, index: number) => (
-                                <TableHead
-                                  key={`payment-method-header-${index}-${method}`}
-                                  className="text-center border-r bg-blue-50 min-w-[130px] font-bold"
+                            {paymentMethodsArray.map((method: any) => {
+                              const total = totalPaymentMethods[method] || 0;
+                              return (
+                                <TableCell
+                                  key={method}
+                                  className="text-right border-r font-bold text-green-600 min-w-[130px] px-4"
                                 >
-                                  {getPaymentMethodLabel(method)}
-                                </TableHead>
-                              ),
-                            )}
+                                  {total > 0 ? formatCurrency(total) : "-"}
+                                </TableCell>
+                              );
+                            })}
                           </>
                         );
                       })()}
                     </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {paginatedData.length > 0 ? (
-                      paginatedData.map((item, index) => {
-                        const isExpanded =
-                          expandedRows[item.employeeCode] || false;
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+          </div>
 
-                        return (
-                          <>
-                            <TableRow
-                              key={`${item.employeeCode}-${index}`}
-                              className="hover:bg-gray-50"
-                            >
-                              <TableCell className="text-center border-r w-12">
-                                <button
-                                  onClick={() =>
-                                    setExpandedRows((prev) => ({
-                                      ...prev,
-                                      [item.employeeCode]:
-                                        !prev[item.employeeCode],
-                                    }))
-                                  }
-                                  className="w-8 h-8 flex items-center justify-center hover:bg-gray-200 rounded text-sm"
-                                >
-                                  {isExpanded ? "−" : "+"}
-                                </button>
-                              </TableCell>
-                              <TableCell className="text-center border-r bg-green-50 font-medium min-w-[120px] px-4">
-                                {item.employeeCode}
-                              </TableCell>
-                              <TableCell className="text-center border-r bg-green-50 font-medium min-w-[150px] px-4">
-                                {item.employeeName}
-                              </TableCell>
-                              <TableCell className="text-center border-r min-w-[100px] px-4">
-                                {item.orderCount.toLocaleString()}
-                              </TableCell>
-                              <TableCell className="text-right border-r text-green-600 font-medium min-w-[140px] px-4">
-                                {formatCurrency(item.revenue)}
-                              </TableCell>
-                              <TableCell className="text-right border-r text-orange-600 min-w-[120px] px-4">
-                                {formatCurrency(item.discount)}
-                              </TableCell>
-                              <TableCell className="text-right border-r min-w-[120px] px-4">
-                                {formatCurrency(item.tax)}
-                              </TableCell>
-                              <TableCell className="text-right border-r font-bold text-blue-600 min-w-[140px] px-4">
-                                {formatCurrency(item.revenue + item.tax)}
-                              </TableCell>
-                              {(() => {
-                                // Get all unique payment methods from all employee data
-                                const allPaymentMethods = new Set();
-                                if (data && Array.isArray(data)) {
-                                  data.forEach((employee: any) => {
-                                    if (
-                                      employee.orders &&
-                                      Array.isArray(employee.orders)
-                                    ) {
-                                      employee.orders.forEach((order: any) => {
-                                        const method =
-                                          order.paymentMethod || "cash";
-                                        allPaymentMethods.add(method);
-                                      });
-                                    }
-                                  });
-                                }
+          {/* Pagination Controls for Customer Report */}
+          {data.length > 0 && (
+            <div className="flex items-center justify-between space-x-6 py-4">
+              <div className="flex items-center space-x-2">
+                <p className="text-sm font-medium">{t("common.show")} </p>
+                <Select
+                  value={employeePageSize.toString()}
+                  onValueChange={(value) => {
+                    setEmployeePageSize(Number(value));
+                    setEmployeeCurrentPage(1);
+                  }}
+                >
+                  <SelectTrigger className="h-8 w-[70px]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent side="top">
+                    <SelectItem value="15">15</SelectItem>
+                    <SelectItem value="20">20</SelectItem>
+                    <SelectItem value="30">30</SelectItem>
+                    <SelectItem value="50">50</SelectItem>
+                    <SelectItem value="100">100</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-sm font-medium"> {t("common.rows")}</p>
+              </div>
 
-                                const paymentMethodsArray =
-                                  Array.from(allPaymentMethods).sort();
-
-                                return (
-                                  <>
-                                    {paymentMethodsArray.map((method: any) => {
-                                      // Calculate customer payment = revenue + tax for this payment method
-                                      let customerPaymentForMethod = 0;
-                                      if (
-                                        item.orders &&
-                                        Array.isArray(item.orders)
-                                      ) {
-                                        item.orders.forEach((order: any) => {
-                                          if (
-                                            (order.paymentMethod || "cash") ===
-                                            method
-                                          ) {
-                                            const orderRevenue = Math.max(
-                                              0,
-                                              Number(order.subtotal || 0),
-                                            );
-                                            const orderTax = Number(
-                                              order.tax || 0,
-                                            );
-                                            customerPaymentForMethod +=
-                                              orderRevenue + orderTax;
-                                          }
-                                        });
-                                      }
-
-                                      return (
-                                        <TableCell
-                                          key={method}
-                                          className="text-right border-r font-medium min-w-[130px] px-4"
-                                        >
-                                          {customerPaymentForMethod > 0
-                                            ? formatCurrency(
-                                                customerPaymentForMethod,
-                                              )
-                                            : "-"}
-                                        </TableCell>
-                                      );
-                                    })}
-                                  </>
-                                );
-                              })()}
-                            </TableRow>
-
-                            {/* Expanded Order Details */}
-                            {isExpanded &&
-                              item.orders.length > 0 &&
-                              item.orders.map(
-                                (order: any, orderIndex: number) => (
-                                  <TableRow
-                                    key={`${item.employeeCode}-order-${
-                                      order.id || orderIndex
-                                    }`}
-                                    className="bg-blue-50/50 border-l-4 border-l-blue-400"
-                                  >
-                                    <TableCell className="text-center border-r bg-blue-50 w-12">
-                                      <div className="w-8 h-6 flex items-center justify-center text-blue-600 text-xs">
-                                        └
-                                      </div>
-                                    </TableCell>
-                                    <TableCell className="text-center border-r text-blue-600 text-sm min-w-[120px] px-4">
-                                      <button
-                                        onClick={() => {
-                                          const orderNumber =
-                                            order.orderNumber ||
-                                            `ORD-${order.id}`;
-                                          window.location.href = `/sales-orders?order=${orderNumber}`;
-                                        }}
-                                        className="text-blue-600 hover:text-blue-800 hover:underline font-medium cursor-pointer bg-transparent border-none p-0"
-                                        title="Click to view order details"
-                                      >
-                                        {order.orderNumber || `ORD-${order.id}`}
-                                      </button>
-                                    </TableCell>
-                                    <TableCell className="text-center border-r text-sm min-w-[150px] px-4">
-                                      <div>
-                                        {new Date(
-                                          order.orderedAt ||
-                                            order.createdAt ||
-                                            order.created_at,
-                                        ).toLocaleDateString("vi-VN")}
-                                      </div>
-                                      <div className="text-xs text-gray-500">
-                                        {new Date(
-                                          order.orderedAt ||
-                                            order.createdAt ||
-                                            order.created_at,
-                                        ).toLocaleTimeString("vi-VN", {
-                                          hour: "2-digit",
-                                          minute: "2-digit",
-                                        })}
-                                      </div>
-                                    </TableCell>
-                                    <TableCell className="text-center border-r text-sm min-w-[100px] px-4">
-                                      <Badge
-                                        variant="outline"
-                                        className="text-xs"
-                                      >
-                                        {order.customerName || "Khách lẻ"}
-                                      </Badge>
-                                    </TableCell>
-                                    <TableCell className="text-right text-green-600 font-medium text-sm min-w-[140px] px-4">
-                                      {formatCurrency(
-                                        Math.max(
-                                          0,
-                                          Number(order.subtotal || 0),
-                                        ),
-                                      )}
-                                    </TableCell>
-                                    <TableCell className="text-right text-orange-600 text-sm min-w-[120px] px-4">
-                                      {formatCurrency(
-                                        Number(order.discount || 0),
-                                      )}
-                                    </TableCell>
-                                    <TableCell className="text-right border-r text-sm min-w-[120px] px-4">
-                                      {formatCurrency(Number(order.tax || 0))}
-                                    </TableCell>
-                                    <TableCell className="text-right border-r font-bold text-blue-600 text-sm min-w-[140px] px-4">
-                                      {formatCurrency(
-                                        Math.max(
-                                          0,
-                                          Number(order.subtotal || 0),
-                                        ) + Number(order.tax || 0),
-                                      )}
-                                    </TableCell>
-                                    {(() => {
-                                      // Get all unique payment methods from all employee data
-                                      const allPaymentMethods = new Set();
-                                      if (data && Array.isArray(data)) {
-                                        data.forEach((employee: any) => {
-                                          if (
-                                            employee.orders &&
-                                            Array.isArray(employee.orders)
-                                          ) {
-                                            employee.orders.forEach(
-                                              (order: any) => {
-                                                const method =
-                                                  order.paymentMethod || "cash";
-                                                allPaymentMethods.add(method);
-                                              },
-                                            );
-                                          }
-                                        });
-                                      }
-
-                                      const paymentMethodsArray =
-                                        Array.from(allPaymentMethods).sort();
-                                      const orderPaymentMethod =
-                                        order.paymentMethod || "cash";
-
-                                      // Calculate customer payment = revenue + tax for this order
-                                      const orderRevenue = Math.max(
-                                        0,
-                                        Number(order.subtotal || 0),
-                                      );
-                                      const orderTax = Number(order.tax || 0);
-                                      const customerPayment =
-                                        orderRevenue + orderTax;
-
-                                      return (
-                                        <>
-                                          {paymentMethodsArray.map(
-                                            (method: any) => (
-                                              <TableCell
-                                                key={method}
-                                                className="text-right border-r text-sm min-w-[130px] px-4"
-                                              >
-                                                {orderPaymentMethod === method
-                                                  ? formatCurrency(
-                                                      customerPayment,
-                                                    )
-                                                  : "-"}
-                                              </TableCell>
-                                            ),
-                                          )}
-                                        </>
-                                      );
-                                    })()}
-                                  </TableRow>
-                                ),
-                              )}
-                          </>
-                        );
-                      })
-                    ) : (
-                      <TableRow>
-                        <TableCell
-                          colSpan={8}
-                          className="text-center text-gray-500 py-8"
-                        >
-                          {t("reports.noDataDescription")}
-                        </TableCell>
-                      </TableRow>
-                    )}
-
-                    {/* Summary Row */}
-                    {data.length > 0 && (
-                      <TableRow className="bg-gray-100 font-bold border-t-2">
-                        <TableCell className="text-center border-r w-12"></TableCell>
-                        <TableCell className="text-center border-r bg-green-100 min-w-[120px] px-4">
-                          {t("common.total")}
-                        </TableCell>
-                        <TableCell className="text-center border-r bg-green-100 min-w-[150px] px-4">
-                          {data.length} nhân viên
-                        </TableCell>
-                        <TableCell className="text-center border-r min-w-[100px] px-4">
-                          {data
-                            .reduce((sum, item) => sum + item.orderCount, 0)
-                            .toLocaleString()}
-                        </TableCell>
-                        <TableCell className="text-right border-r text-green-600 min-w-[140px] px-4">
-                          {formatCurrency(
-                            data.reduce((sum, item) => sum + item.revenue, 0),
-                          )}
-                        </TableCell>
-                        <TableCell className="text-right border-r text-orange-600 min-w-[120px] px-4">
-                          {formatCurrency(
-                            data.reduce((sum, item) => sum + item.discount, 0),
-                          )}
-                        </TableCell>
-                        <TableCell className="text-right border-r min-w-[120px] px-4">
-                          {formatCurrency(
-                            data.reduce((sum, item) => sum + item.tax, 0),
-                          )}
-                        </TableCell>
-                        <TableCell className="text-right border-r font-bold text-blue-600 min-w-[140px] px-4">
-                          {formatCurrency(
-                            data.reduce(
-                              (sum, item) => sum + item.revenue + item.tax,
-                              0,
-                            ),
-                          )}
-                        </TableCell>
-                        {(() => {
-                          // Calculate total payment methods across all employees
-                          const totalPaymentMethods: {
-                            [method: string]: number;
-                          } = {};
-
-                          data.forEach((employee: any) => {
-                            if (employee.paymentMethods) {
-                              Object.entries(employee.paymentMethods).forEach(
-                                ([method, amount]) => {
-                                  totalPaymentMethods[method] =
-                                    (totalPaymentMethods[method] || 0) +
-                                    Number(amount);
-                                },
-                              );
-                            }
-                          });
-
-                          // Get all unique payment methods from all employee data
-                          const allPaymentMethods = new Set();
-                          if (data && Array.isArray(data)) {
-                            data.forEach((employee: any) => {
-                              if (
-                                employee.orders &&
-                                Array.isArray(employee.orders)
-                              ) {
-                                employee.orders.forEach((order: any) => {
-                                  const method = order.paymentMethod || "cash";
-                                  allPaymentMethods.add(method);
-                                });
-                              }
-                            });
-                          }
-
-                          const paymentMethodsArray =
-                            Array.from(allPaymentMethods).sort();
-
-                          return (
-                            <>
-                              {paymentMethodsArray.map((method: any) => {
-                                // Calculate total customer payment = total revenue + total tax for this method
-                                let totalCustomerPaymentForMethod = 0;
-                                data.forEach((employee: any) => {
-                                  if (
-                                    employee.orders &&
-                                    Array.isArray(employee.orders)
-                                  ) {
-                                    employee.orders.forEach((order: any) => {
-                                      if (
-                                        (order.paymentMethod || "cash") ===
-                                        method
-                                      ) {
-                                        const orderRevenue = Math.max(
-                                          0,
-                                          Number(order.subtotal || 0),
-                                        );
-                                        const orderTax = Number(order.tax || 0);
-                                        totalCustomerPaymentForMethod +=
-                                          orderRevenue + orderTax;
-                                      }
-                                    });
-                                  }
-                                });
-
-                                return (
-                                  <TableCell
-                                    key={method}
-                                    className="text-right border-r font-bold text-green-600 min-w-[130px] px-4"
-                                  >
-                                    {totalCustomerPaymentForMethod > 0
-                                      ? formatCurrency(
-                                          totalCustomerPaymentForMethod,
-                                        )
-                                      : "-"}
-                                  </TableCell>
-                                );
-                              })}
-                            </>
-                          );
-                        })()}
-                      </TableRow>
-                    )}
-                  </TableBody>
-                </Table>
+              <div className="flex items-center space-x-2">
+                <p className="text-sm font-medium">
+                  {t("common.page")} {employeeCurrentPage} / {totalPages}
+                </p>
+                <div className="flex items-center space-x-1">
+                  <button
+                    onClick={() => setEmployeeCurrentPage(1)}
+                    disabled={employeeCurrentPage === 1}
+                    className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-8 w-8"
+                  >
+                    «
+                  </button>
+                  <button
+                    onClick={() =>
+                      setEmployeeCurrentPage((prev) => Math.max(prev - 1, 1))
+                    }
+                    disabled={employeeCurrentPage === 1}
+                    className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-8 w-8"
+                  >
+                    ‹
+                  </button>
+                  <button
+                    onClick={() =>
+                      setEmployeeCurrentPage((prev) =>
+                        Math.min(prev + 1, totalPages),
+                      )
+                    }
+                    disabled={employeeCurrentPage === totalPages}
+                    className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-8 w-8"
+                  >
+                    ›
+                  </button>
+                  <button
+                    onClick={() => setEmployeeCurrentPage(totalPages)}
+                    disabled={employeeCurrentPage === totalPages}
+                    className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-8 w-8"
+                  >
+                    »
+                  </button>
+                </div>
               </div>
             </div>
-
-            {/* Pagination Controls */}
-            {data.length > 0 && (
-              <div className="flex items-center justify-between space-x-6 py-4">
-                <div className="flex items-center space-x-2">
-                  <p className="text-sm font-medium">{t("common.show")} </p>
-                  <Select
-                    value={employeePageSize.toString()}
-                    onValueChange={(value) => {
-                      setEmployeePageSize(Number(value));
-                      setEmployeeCurrentPage(1);
-                    }}
-                  >
-                    <SelectTrigger className="h-8 w-[70px]">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent side="top">
-                      <SelectItem value="15">15</SelectItem>
-                      <SelectItem value="20">20</SelectItem>
-                      <SelectItem value="30">30</SelectItem>
-                      <SelectItem value="50">50</SelectItem>
-                      <SelectItem value="100">100</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <p className="text-sm font-medium"> {t("common.rows")}</p>
-                </div>
-
-                <div className="flex items-center space-x-2">
-                  <p className="text-sm font-medium">
-                    {t("common.page")} {employeeCurrentPage} / {totalPages}
-                  </p>
-                  <div className="flex items-center space-x-1">
-                    <button
-                      onClick={() => setEmployeeCurrentPage(1)}
-                      disabled={employeeCurrentPage === 1}
-                      className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-8 w-8"
-                    >
-                      «
-                    </button>
-                    <button
-                      onClick={() =>
-                        setEmployeeCurrentPage((prev) => Math.max(prev - 1, 1))
-                      }
-                      disabled={employeeCurrentPage === 1}
-                      className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-8 w-8"
-                    >
-                      ‹
-                    </button>
-                    <button
-                      onClick={() =>
-                        setEmployeeCurrentPage((prev) =>
-                          Math.min(prev + 1, totalPages),
-                        )
-                      }
-                      disabled={employeeCurrentPage === totalPages}
-                      className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-8 w-8"
-                    >
-                      ›
-                    </button>
-                    <button
-                      onClick={() => setEmployeeCurrentPage(totalPages)}
-                      disabled={employeeCurrentPage === totalPages}
-                      className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-8 w-8"
-                    >
-                      »
-                    </button>
-                  </div>
-                </div>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      );
-    } catch (error) {
-      console.error("Error in renderEmployeeReport:", error);
-      return (
-        <div className="flex justify-center py-8">
-          <div className="text-red-500">
-            <p>Có lỗi xảy ra khi hiển thị báo cáo nhân viên</p>
-            <p className="text-sm">{error?.message || "Unknown error"}</p>
-          </div>
-        </div>
-      );
-    }
+          )}
+        </CardContent>
+      </Card>
+    );
   };
 
   // Customer Report with Pagination State
@@ -3440,12 +4163,21 @@ export function SalesChartReport() {
 
     const filteredOrders = orders.filter((order: any) => {
       const orderDate = new Date(
-        order.orderedAt || order.createdAt || order.created_at,
+        order.orderedAt || order.created_at || order.createdAt,
       );
 
       if (isNaN(orderDate.getTime())) {
         return false;
       }
+
+      // Apply floor filter
+      const floorMatch =
+        selectedFloor === "all" ||
+        !order.tableId ||
+        !tables ||
+        !Array.isArray(tables) ||
+        tables.find((table: any) => table.id === order.tableId)?.floor ===
+          selectedFloor;
 
       const dateMatch = orderDate >= start && orderDate <= end;
 
@@ -3453,6 +4185,11 @@ export function SalesChartReport() {
         !customerSearch ||
         (order.customerName &&
           order.customerName
+            .toLowerCase()
+            .includes(customerSearch.toLowerCase())) ||
+        (order.customerId &&
+          order.customerId
+            .toString()
             .toLowerCase()
             .includes(customerSearch.toLowerCase()));
 
@@ -3494,7 +4231,13 @@ export function SalesChartReport() {
         order.status === "completed" ||
         order.status === "cancelled";
 
-      return dateMatch && customerMatch && statusMatch && validOrderStatus;
+      return (
+        dateMatch &&
+        customerMatch &&
+        statusMatch &&
+        validOrderStatus &&
+        floorMatch
+      ); // Add floor match
     });
 
     // Calculate customer sales
@@ -3514,8 +4257,8 @@ export function SalesChartReport() {
     } = {};
 
     filteredOrders.forEach((order: any) => {
-      const customerId = order.customerId || "guest";
-      const customerName = order.customerName || "Khách lẻ";
+      const customerId = order.customerId || "";
+      const customerName = order.customerName || "";
 
       if (!customerSales[customerId]) {
         customerSales[customerId] = {
@@ -3534,20 +4277,29 @@ export function SalesChartReport() {
 
       const orderSubtotal = Number(order.subtotal || 0); // Use subtotal from DB
       const orderDiscount = Number(order.discount || 0); // Default discount to 0
+      const orderTax = Number(order.tax || 0); // Default discount to 0
 
       // Count all orders and add to orderDetails
       customerSales[customerId].orders += 1;
       customerSales[customerId].orderDetails.push(order);
 
       // Always add to totals (including cancelled orders for total amount calculation)
-      customerSales[customerId].totalAmount += orderSubtotal;
       customerSales[customerId].discount += orderDiscount;
 
-      // Calculate revenue correctly: revenue = subtotal - discount (only for non-cancelled orders)
-      if (order.status !== "cancelled") {
-        const orderRevenue = Math.max(0, orderSubtotal - orderDiscount);
-        customerSales[customerId].revenue += orderRevenue;
+      // Calculate revenue correctly based on priceIncludeTax setting (only for non-cancelled orders)
+      const orderPriceIncludeTax = order.priceIncludeTax ?? false;
+      let orderRevenue;
+      if (orderPriceIncludeTax) {
+        // When priceIncludeTax = true: doanh thu = subtotal (already includes discount effect)
+        orderRevenue = orderSubtotal + orderDiscount + orderTax;
+        customerSales[customerId].totalAmount +=
+          orderRevenue - orderDiscount - orderTax;
+      } else {
+        // When priceIncludeTax = false: doanh thu = subtotal - discount
+        orderRevenue = Math.max(0, orderSubtotal - orderDiscount);
+        customerSales[customerId].totalAmount += orderSubtotal - orderDiscount;
       }
+      customerSales[customerId].revenue += orderRevenue;
 
       // Determine customer group based on total spending
       if (customerSales[customerId].revenue >= 1000000) {
@@ -3581,7 +4333,7 @@ export function SalesChartReport() {
             </span>
             <Button
               onClick={() => {
-                const exportData = [];
+                let exportData = [];
 
                 // Export customer summaries with their detailed orders
                 data.forEach((customer) => {
@@ -3615,8 +4367,16 @@ export function SalesChartReport() {
                         "Mã đơn hàng": order.orderNumber || `ORD-${order.id}`,
                         "Ngày giờ": new Date(
                           order.orderedAt || order.created_at,
-                        ).toLocaleString("vi-VN"),
-                        "Số đơn": 1,
+                        ).toLocaleString("vi-VN", {
+                          year: "numeric",
+                          month: "2-digit",
+                          day: "2-digit",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                          second: "2-digit",
+                          hour12: false,
+                        }),
+                        "Số đ �n": 1,
                         "Tổng tiền": formatCurrency(
                           Number(order.subtotal || 0),
                         ),
@@ -3634,7 +4394,7 @@ export function SalesChartReport() {
                             : order.status === "cancelled"
                               ? "Đã hủy"
                               : order.status,
-                        "Phương thức thanh toán": getPaymentMethodLabel(
+                        "Phương thức thanh toán": formatPaymentMethodDisplay(
                           order.paymentMethod || "cash",
                         ),
                       });
@@ -3773,19 +4533,43 @@ export function SalesChartReport() {
                               </TableCell>
                             )}
                             <TableCell className="text-right border-r text-green-600 font-medium min-w-[120px] px-4">
-                              {formatCurrency(
-                                item.orderDetails?.reduce(
-                                  (sum: number, order: any) => {
-                                    const orderRevenue = Math.max(
-                                      0,
-                                      Number(order.subtotal || 0) -
-                                        Number(order.discount || 0),
+                              {(() => {
+                                // Calculate revenue properly for each customer
+                                if (
+                                  item.orderDetails &&
+                                  Array.isArray(item.orderDetails) &&
+                                  item.orderDetails.length > 0
+                                ) {
+                                  let totalRevenue = 0;
+                                  item.orderDetails.forEach((order: any) => {
+                                    const orderSubtotal = Number(
+                                      order.subtotal || 0,
                                     );
-                                    return sum + orderRevenue;
-                                  },
-                                  0,
-                                ) || item.revenue,
-                              )}
+                                    const orderDiscount = Number(
+                                      order.discount || 0,
+                                    );
+                                    const orderTax = Number(order.tax || 0);
+                                    const orderPriceIncludeTax =
+                                      order.priceIncludeTax === true;
+
+                                    let orderRevenue;
+                                    if (orderPriceIncludeTax) {
+                                      // When priceIncludeTax = true: doanh thu = subtotal (already net of discount)
+                                      orderRevenue = orderSubtotal - orderTax;
+                                    } else {
+                                      // When priceIncludeTax = false: doanh thu = subtotal - discount
+                                      orderRevenue = Math.max(
+                                        0,
+                                        orderSubtotal - orderDiscount,
+                                      );
+                                    }
+                                    totalRevenue += orderRevenue;
+                                  });
+                                  return formatCurrency(totalRevenue);
+                                }
+                                // Fallback to item.revenue if no order details
+                                return formatCurrency(item.revenue || 0);
+                              })()}
                             </TableCell>
                             <TableCell className="text-center min-w-[100px] px-4">
                               <Badge
@@ -3837,24 +4621,38 @@ export function SalesChartReport() {
                                   <TableCell className="text-center border-r text-sm min-w-[150px] px-4">
                                     {new Date(
                                       order.orderedAt || order.created_at,
-                                    ).toLocaleDateString("vi-VN")}{" "}
-                                    {new Date(
-                                      order.orderedAt || order.created_at,
-                                    ).toLocaleTimeString("vi-VN", {
+                                    ).toLocaleString("vi-VN", {
+                                      year: "numeric",
+                                      month: "2-digit",
+                                      day: "2-digit",
                                       hour: "2-digit",
                                       minute: "2-digit",
+                                      second: "2-digit",
+                                      hour12: false,
                                     })}
                                   </TableCell>
                                   <TableCell className="text-center border-r text-sm min-w-[100px] px-4">
                                     1
                                   </TableCell>
                                   <TableCell className="text-center border-r text-sm min-w-[130px] px-4">
-                                    {getPaymentMethodLabel(order.paymentMethod)}
+                                    <div className="text-xs whitespace-pre-wrap break-words">
+                                      {formatPaymentMethodDisplay(
+                                        order.paymentMethod,
+                                      )}
+                                    </div>
                                   </TableCell>
                                   <TableCell className="text-right border-r text-sm min-w-[140px] px-4">
-                                    {formatCurrency(
-                                      Number(order.subtotal || 0),
-                                    )}
+                                    {(() => {
+                                      const subtotal = Number(order.subtotal);
+                                      const discount = Number(order.discount);
+                                      if (order.priceIncludeTax === true) {
+                                        return formatCurrency(
+                                          subtotal + discount,
+                                        );
+                                      } else {
+                                        return formatCurrency(subtotal);
+                                      }
+                                    })()}
                                   </TableCell>
                                   {analysisType !== "employee" && (
                                     <TableCell className="text-right border-r text-red-600 text-sm min-w-[120px] px-4">
@@ -3864,13 +4662,18 @@ export function SalesChartReport() {
                                     </TableCell>
                                   )}
                                   <TableCell className="text-right border-r text-sm min-w-[140px] px-4">
-                                    {formatCurrency(
-                                      Math.max(
-                                        0,
-                                        Number(order.subtotal || 0) -
-                                          Number(order.discount || 0),
-                                      ),
-                                    )}
+                                    {(() => {
+                                      const subtotal = Number(order.subtotal);
+                                      const discount = Number(order.discount);
+                                      const tax = Number(order.tax);
+                                      if (order.priceIncludeTax === false) {
+                                        return formatCurrency(
+                                          subtotal - discount,
+                                        );
+                                      } else {
+                                        return formatCurrency(subtotal - tax);
+                                      }
+                                    })()}
                                   </TableCell>
                                   <TableCell className="text-center text-center text-sm min-w-[100px] px-4">
                                     <Badge
@@ -3954,19 +4757,41 @@ export function SalesChartReport() {
                       <TableCell className="text-right border-r text-green-600 font-medium min-w-[120px] px-4">
                         {formatCurrency(
                           data.reduce((sum, customer) => {
-                            // Calculate revenue from order details for each customer
-                            const customerRevenue =
-                              customer.orderDetails?.reduce(
-                                (orderSum: number, order: any) => {
-                                  const orderRevenue = Math.max(
+                            // Calculate revenue from order details for each customer with proper priceIncludeTax logic
+                            if (
+                              customer.orderDetails &&
+                              Array.isArray(customer.orderDetails) &&
+                              customer.orderDetails.length > 0
+                            ) {
+                              let customerRevenue = 0;
+                              customer.orderDetails.forEach((order: any) => {
+                                const orderSubtotal = Number(
+                                  order.subtotal || 0,
+                                );
+                                const orderDiscount = Number(
+                                  order.discount || 0,
+                                );
+                                const orderTax = Number(order.tax || 0);
+                                const orderPriceIncludeTax =
+                                  order.priceIncludeTax === true;
+
+                                let orderRevenue;
+                                if (orderPriceIncludeTax) {
+                                  // When priceIncludeTax = true: doanh thu = subtotal (already net of discount)
+                                  orderRevenue = orderSubtotal;
+                                } else {
+                                  // When priceIncludeTax = false: doanh thu = subtotal - discount
+                                  orderRevenue = Math.max(
                                     0,
-                                    Number(order.subtotal || 0) -
-                                      Number(order.discount || 0),
+                                    orderSubtotal - orderDiscount,
                                   );
-                                  return orderSum + orderRevenue;
-                                },
-                              ) || customer.revenue;
-                            return sum + customerRevenue;
+                                }
+                                customerRevenue += orderRevenue;
+                              });
+                              return sum + customerRevenue;
+                            }
+                            // Fallback to customer.revenue if no order details
+                            return sum + (customer.revenue || 0);
                           }, 0),
                         )}
                       </TableCell>
@@ -4073,12 +4898,23 @@ export function SalesChartReport() {
     const validOrders = Array.isArray(orders) ? orders : [];
 
     // Filter orders that are completed, paid, or cancelled
-    const relevantOrders = validOrders.filter(
-      (order: any) =>
-        order.status === "paid" ||
-        order.status === "completed" ||
-        order.status === "cancelled",
-    );
+    const relevantOrders = validOrders.filter((order: any) => {
+      // Apply floor filter
+      const floorMatch =
+        selectedFloor === "all" ||
+        !order.tableId ||
+        !tables ||
+        !Array.isArray(tables) ||
+        tables.find((table: any) => table.id === order.tableId)?.floor ===
+          selectedFloor;
+
+      return (
+        (order.status === "paid" ||
+          order.status === "completed" ||
+          order.status === "cancelled") &&
+        floorMatch
+      );
+    });
 
     console.log("Sales Channel Report Debug:", {
       totalOrders: validOrders.length,
@@ -4404,6 +5240,15 @@ export function SalesChartReport() {
                   return false;
                 }
 
+                // Apply floor filter
+                const floorMatch =
+                  selectedFloor === "all" ||
+                  !order.tableId ||
+                  !tables ||
+                  !Array.isArray(tables) ||
+                  tables.find((table: any) => table.id === order.tableId)
+                    ?.floor === selectedFloor;
+
                 // EXACT same date parsing as dashboard
                 const orderDate = new Date(
                   order.orderedAt ||
@@ -4419,7 +5264,7 @@ export function SalesChartReport() {
 
                 const dateMatch =
                   orderDate >= timeStart && orderDate <= timeEnd;
-                return dateMatch;
+                return dateMatch && floorMatch;
               } catch (error) {
                 console.warn("Error filtering order:", order.id, error);
                 return false;
@@ -4536,6 +5381,15 @@ export function SalesChartReport() {
                 if (order.status !== "completed" && order.status !== "paid")
                   return false;
 
+                // Apply floor filter
+                const floorMatch =
+                  selectedFloor === "all" ||
+                  !order.tableId ||
+                  !tables ||
+                  !Array.isArray(tables) ||
+                  tables.find((table: any) => table.id === order.tableId)
+                    ?.floor === selectedFloor;
+
                 // Try multiple possible date fields (EXACT same as dashboard)
                 const orderDate = new Date(
                   order.orderedAt ||
@@ -4589,7 +5443,7 @@ export function SalesChartReport() {
                       .toLowerCase()
                       .includes(selectedEmployee.toLowerCase()));
 
-                return dateMatch && employeeMatch;
+                return dateMatch && employeeMatch && floorMatch;
               } catch (error) {
                 console.warn(
                   "Error filtering employee order:",
@@ -4675,10 +5529,20 @@ export function SalesChartReport() {
                   return false;
                 }
 
+                // Apply floor filter
+                const floorMatch =
+                  selectedFloor === "all" ||
+                  !order.tableId ||
+                  !tables ||
+                  !Array.isArray(tables) ||
+                  tables.find((table: any) => table.id === order.tableId)
+                    ?.floor === selectedFloor;
+
                 return (
                   orderDate >= custStart &&
                   orderDate <= custEnd &&
-                  order.status === "paid"
+                  order.status === "paid" &&
+                  floorMatch
                 );
               } catch (error) {
                 console.warn(
@@ -4700,8 +5564,8 @@ export function SalesChartReport() {
 
             custFilteredOrders.forEach((order: any) => {
               try {
-                const customerId = order.customerId || "guest";
-                const customerName = order.customerName || "Khách lẻ";
+                const customerId = order.customerId || "";
+                const customerName = order.customerName || "";
 
                 if (!customerData[customerId]) {
                   customerData[customerId] = {
@@ -4764,6 +5628,15 @@ export function SalesChartReport() {
                 )
                   return false;
 
+                // Apply floor filter
+                const floorMatch =
+                  selectedFloor === "all" ||
+                  !order.tableId ||
+                  !tables ||
+                  !Array.isArray(tables) ||
+                  tables.find((table: any) => table.id === order.tableId)
+                    ?.floor === selectedFloor;
+
                 const orderDate = new Date(
                   order.orderedAt ||
                     order.createdAt ||
@@ -4780,7 +5653,9 @@ export function SalesChartReport() {
                 }
 
                 return (
-                  orderDate >= salesMethodStart && orderDate <= salesMethodEnd
+                  orderDate >= salesMethodStart &&
+                  orderDate <= salesMethodEnd &&
+                  floorMatch
                 );
               } catch (error) {
                 console.warn(
@@ -4818,7 +5693,7 @@ export function SalesChartReport() {
             salesMethodFilteredOrders.forEach((order: any) => {
               try {
                 // Check if order has tableId to determine if it's dine-in or takeaway
-                const isDineIn = order.tableId && order.tableId !== null;
+                const isDineIn = order.salesChannel === "table" ? true : false;
                 const method = isDineIn ? "Ăn tại chỗ" : "Mang về";
 
                 const orderRevenue = Number(order.subtotal || 0);
@@ -4881,10 +5756,26 @@ export function SalesChartReport() {
       );
     }
 
-    if (!productAnalysisData || !productAnalysisData.productStats) {
+    if (
+      !productAnalysisData?.productStats ||
+      productAnalysisData.productStats.length === 0
+    ) {
       return (
-        <div className="flex justify-center py-8">
-          <div className="text-gray-500">Không có dữ liệu sản phẩm</div>
+        <div className="text-center py-8">
+          <Package className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+          <h3 className="text-lg font-medium text-gray-900 mb-2">
+            {t("reports.noDataTitle")}
+          </h3>
+          <p className="text-gray-500 max-w-sm mx-auto">
+            📊 {t("reports.noDataDescription")}
+            <br />({formatDate(startDate)} - {formatDate(endDate)})
+            <br />
+            Thử chọn khoảng thời gian khác hoặc kiểm tra dữ liệu đơn hàng và hóa
+            đơn
+          </p>
+          <div className="mt-4 text-sm text-gray-400">
+            Không có dữ liệu sản phẩm
+          </div>
         </div>
       );
     }
@@ -4927,7 +5818,7 @@ export function SalesChartReport() {
                     "Mã hàng": product.productSku,
                     "Tên hàng": product.productName,
                     "Đơn vị tính": t("common.perUnit"),
-                    "Số lượng bán": product.quantity,
+                    "Sn lượng bán": product.quantity,
                     "Thành tiền": formatCurrency(
                       (product.unitPrice || 0) * (product.quantity || 1),
                     ),
@@ -4943,7 +5834,7 @@ export function SalesChartReport() {
                     "Mã hàng": "TỔNG CỘNG",
                     "Tên hàng": `${totalProducts} sản phẩm`,
                     "Đơn vị tính": "-",
-                    "Số lượng bán": totalQuantity,
+                    "Số l>ợng bán": totalQuantity,
                     "Thành tiền": formatCurrency(totalRevenue),
                     "Giảm giá": formatCurrency(totalDiscount),
                     "Doanh thu": formatCurrency(
@@ -4970,8 +5861,8 @@ export function SalesChartReport() {
               <Table className="w-full min-w-[1000px] xl:min-w-full">
                 <TableHeader>
                   <TableRow>
-                    <TableHead>{t("reports.productCode")}</TableHead>
-                    <TableHead>{t("reports.productName")}</TableHead>
+                    <TableHead> {t("reports.productCode")} </TableHead>
+                    <TableHead> {t("reports.productName")} </TableHead>
                     <TableHead className="text-center">
                       {t("common.unit")}
                     </TableHead>
@@ -4979,7 +5870,7 @@ export function SalesChartReport() {
                       {t("reports.quantitySold")}
                     </TableHead>
                     <TableHead className="text-right">
-                      {t("common.subtotalAmount")}
+                      {t("reports.thanhTien")}
                     </TableHead>
                     {analysisType !== "employee" && (
                       <TableHead className="text-right">
@@ -5030,12 +5921,12 @@ export function SalesChartReport() {
                             {product.productSku}
                           </button>
                         </TableCell>
-                        <TableCell>{product.productName}</TableCell>
+                        <TableCell> {product.productName} </TableCell>
                         <TableCell className="text-center">
                           {t("common.perUnit")}
                         </TableCell>
                         <TableCell className="text-center">
-                          <Badge variant="outline">{product.quantity}</Badge>
+                          <Badge variant="outline"> {product.quantity} </Badge>
                         </TableCell>
                         <TableCell className="text-right font-semibold">
                           {formatCurrency(
@@ -5099,7 +5990,10 @@ export function SalesChartReport() {
                           (totalRevenue || 0) - (totalDiscount || 0),
                         )}
                       </TableCell>
-                      <TableCell className="text-center font-bold">-</TableCell>
+                      <TableCell className="text-center font-bold">
+                        {" "}
+                        -
+                      </TableCell>
                     </TableRow>
                   )}
                 </TableBody>
@@ -5111,7 +6005,7 @@ export function SalesChartReport() {
           {data.length > 0 && (
             <div className="flex items-center justify-between space-x-6 py-4">
               <div className="flex items-center space-x-2">
-                <p className="text-sm font-medium">{t("common.show")} </p>
+                <p className="text-sm font-medium"> {t("common.show")} </p>
                 <Select
                   value={productPageSize.toString()}
                   onValueChange={(value) => {
@@ -5123,14 +6017,14 @@ export function SalesChartReport() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent side="top">
-                    <SelectItem value="15">15</SelectItem>
-                    <SelectItem value="20">20</SelectItem>
-                    <SelectItem value="30">30</SelectItem>
-                    <SelectItem value="50">50</SelectItem>
-                    <SelectItem value="100">100</SelectItem>
+                    <SelectItem value="15"> 15 </SelectItem>
+                    <SelectItem value="20"> 20 </SelectItem>
+                    <SelectItem value="30"> 30 </SelectItem>
+                    <SelectItem value="50"> 50 </SelectItem>
+                    <SelectItem value="100"> 100 </SelectItem>
                   </SelectContent>
                 </Select>
-                <p className="text-sm font-medium"> {t("common.rows")}</p>
+                <p className="text-sm font-medium"> {t("common.rows")} </p>
               </div>
 
               <div className="flex items-center space-x-2">
@@ -5533,7 +6427,7 @@ export function SalesChartReport() {
         <CardContent className="pt-6">
           <div className="space-y-6">
             {/* Main Filter Row */}
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               {/* Analysis Type */}
               <div className="space-y-2">
                 <Label className="text-sm font-semibold text-gray-800 flex items-center gap-2">
@@ -5555,7 +6449,7 @@ export function SalesChartReport() {
                     }
                   }}
                 >
-                  <SelectTrigger className="h-10 text-sm border-gray-200 hover:border-blue-300 focus:border-blue-500 transition-colors">
+                  <SelectTrigger className="h-10 text-sm border-gray-200 hover:border-blue-300 transition-colors">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -5624,8 +6518,47 @@ export function SalesChartReport() {
                 />
               </div>
 
-              {/* Empty space for balance */}
-              <div className="hidden lg:block"></div>
+              {/* Floor Filter */}
+              <div className="space-y-2">
+                <Label className="text-sm font-semibold text-gray-800 flex items-center gap-2">
+                  <div className="w-2 h-2 bg-teal-500 rounded-full"></div>
+                  {t("tables.floorLabel")}
+                </Label>
+                <Select
+                  value={selectedFloor}
+                  onValueChange={setSelectedFloor}
+                  disabled={tablesLoading}
+                >
+                  <SelectTrigger>
+                    <SelectValue
+                      placeholder={tablesLoading ? "Đang tải..." : "Chọn tầng"}
+                    />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Tất cả</SelectItem>
+                    {tablesLoading ? (
+                      <SelectItem value="loading" disabled>
+                        Đang tải dữ liệu...
+                      </SelectItem>
+                    ) : tablesError ? (
+                      <SelectItem value="error" disabled>
+                        Lỗi tải dữ liệu
+                      </SelectItem>
+                    ) : (
+                      getAvailableFloors().map((floor) => (
+                        <SelectItem key={floor} value={floor}>
+                          {floor}
+                        </SelectItem>
+                      ))
+                    )}
+                  </SelectContent>
+                </Select>
+                {tablesError && (
+                  <p className="text-xs text-red-500 mt-1">
+                    Không thể tải dữ liệu tầng
+                  </p>
+                )}
+              </div>
             </div>
           </div>
 
@@ -5672,33 +6605,6 @@ export function SalesChartReport() {
                       className="pl-10 h-10 text-sm border-gray-200 hover:border-orange-300 focus:border-orange-500 transition-colors"
                     />
                   </div>
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-sm font-semibold text-gray-800 flex items-center gap-2">
-                    <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
-                    {t("reports.status")}
-                  </Label>
-                  <Select
-                    value={customerStatus}
-                    onValueChange={setCustomerStatus}
-                  >
-                    <SelectTrigger className="h-10 text-sm border-gray-200 hover:border-orange-300 focus:border-orange-500 transition-colors">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">{t("common.all")}</SelectItem>
-                      <SelectItem value="active">
-                        {t("reports.active")}
-                      </SelectItem>
-                      <SelectItem value="inactive">
-                        {t("reports.inactive")}
-                      </SelectItem>
-                      <SelectItem value="vip">{t("reports.vip")}</SelectItem>
-                      <SelectItem value="new">
-                        {t("reports.newCustomer")}
-                      </SelectItem>
-                    </SelectContent>
-                  </Select>
                 </div>
               </div>
             </div>
@@ -5890,7 +6796,11 @@ export function SalesChartReport() {
                       <div className="w-2 h-2 bg-teal-500 rounded-full"></div>
                       {t("reports.status")}
                     </Label>
-                    <Select defaultValue="all">
+                    <Select
+                      value={orderStatusFilter}
+                      onValueChange={setOrderStatusFilter}
+                      defaultValue="all"
+                    >
                       <SelectTrigger className="h-10 text-sm border-gray-200 hover:border-teal-300 focus:border-teal-500 transition-colors">
                         <SelectValue />
                       </SelectTrigger>
@@ -5898,9 +6808,6 @@ export function SalesChartReport() {
                         <SelectItem value="all">{t("common.all")}</SelectItem>
                         <SelectItem value="completed">
                           {t("reports.completed")}
-                        </SelectItem>
-                        <SelectItem value="pending">
-                          {t("reports.pending")}
                         </SelectItem>
                         <SelectItem value="cancelled">
                           {t("reports.cancelled")}

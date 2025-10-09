@@ -91,9 +91,9 @@ export function PaymentMethodModal({
 
   // Query store settings to get dynamic address - ALWAYS CALL THIS HOOK
   const { data: storeSettings } = useQuery({
-    queryKey: ["https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/store-settings"],
+    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/store-settings"],
     queryFn: async () => {
-      const response = await apiRequest("GET", "https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/store-settings");
+      const response = await apiRequest("GET", "https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/store-settings");
       return response.json();
     },
     enabled: isOpen, // Only fetch when modal is open
@@ -101,6 +101,15 @@ export function PaymentMethodModal({
 
   // Get priceIncludesTax setting from store settings
   let priceIncludesTax = storeSettings?.priceIncludesTax === true;
+
+  // State for multiple payment methods
+  const [selectedPaymentMethods, setSelectedPaymentMethods] = useState<
+    Array<{
+      method: string;
+      amount: number;
+    }>
+  >([]);
+  const [showMultiPayment, setShowMultiPayment] = useState(false);
 
   // Validate orderForPayment exists or create fallback order info
   const orderInfo = orderForPayment || {
@@ -665,7 +674,7 @@ export function PaymentMethodModal({
           // Get base values
           const exactSubtotal =
             receipt?.exactSubtotal ||
-            orderForPayment?.exactSubtotal ||
+            orderInfo?.exactSubtotal ||
             parseFloat(receipt?.subtotal || "0") ||
             parseFloat(orderForPayment?.subtotal || "0") ||
             0;
@@ -863,6 +872,8 @@ export function PaymentMethodModal({
               ).toString(),
             notes: null,
             discount: "0.00", // Will be calculated below
+            tax: "0.00", // Will be calculated below
+            priceBeforeTax: "0.00", // Will be calculated below
           }),
         );
 
@@ -892,15 +903,40 @@ export function PaymentMethodModal({
                 itemDiscount = Math.max(0, discountAmount - allocatedDiscount);
               } else {
                 // Calculate proportional discount
-                const proportionalDiscount =
-                  (discountAmount * itemTotal) / totalAmount;
-                itemDiscount = Math.round(proportionalDiscount);
+                itemDiscount =
+                  totalAmount > 0
+                    ? Math.round((discountAmount * itemTotal) / totalAmount)
+                    : 0;
                 allocatedDiscount += itemDiscount;
+              }
+
+              // Get product to calculate tax
+              const product = products?.find((p: any) => p.id === item.productId);
+              const taxRate = product?.taxRate ? parseFloat(product.taxRate) / 100 : 0;
+
+              let itemTax = 0;
+              let itemPriceBeforeTax = 0;
+
+              if (priceIncludesTax && taxRate > 0) {
+                // When price includes tax
+                const discountPerUnit = itemDiscount / quantity;
+                const adjustedPrice = Math.max(0, unitPrice - discountPerUnit);
+                const giaGomThue = adjustedPrice * quantity;
+                itemPriceBeforeTax = Math.round(giaGomThue / (1 + taxRate));
+                itemTax = giaGomThue - itemPriceBeforeTax;
+              } else {
+                // When price doesn't include tax
+                const discountPerUnit = itemDiscount / quantity;
+                const adjustedPrice = Math.max(0, unitPrice - discountPerUnit);
+                itemPriceBeforeTax = Math.round(adjustedPrice * quantity);
+                itemTax = taxRate > 0 ? Math.round(itemPriceBeforeTax * taxRate) : 0;
               }
 
               return {
                 ...item,
                 discount: itemDiscount.toFixed(2),
+                tax: Math.round(itemTax).toString(),
+                priceBeforeTax: Math.round(itemPriceBeforeTax).toString(),
               };
             });
 
@@ -911,6 +947,8 @@ export function PaymentMethodModal({
                 unitPrice: item.unitPrice,
                 quantity: item.quantity,
                 discount: item.discount,
+                tax: item.tax,
+                priceBeforeTax: item.priceBeforeTax,
               })),
             });
           }
@@ -923,7 +961,7 @@ export function PaymentMethodModal({
           customerName: orderInfo.customerName || "Khách hàng lẻ",
           customerCount: 1,
           status: "paid", // Mark as paid immediately
-          paymentMethod: method,
+          paymentMethod: method, // Explicitly set payment method
           paymentStatus: "paid",
           subtotal: receiptSubtotal.toString(),
           tax: receiptTax.toString(),
@@ -937,7 +975,7 @@ export function PaymentMethodModal({
         console.log(`📦 Order items:`, orderItems);
 
         // Create order via API
-        const createResponse = await fetch("https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/orders", {
+        const createResponse = await fetch("https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -957,6 +995,8 @@ export function PaymentMethodModal({
 
           // Update orderInfo with the real order ID for E-Invoice
           orderInfo.id = createdOrder.id;
+          receipt.id = createdOrder.id;
+          orderForPayment.id = createdOrder.id;
           orderInfo.orderNumber = createdOrder.orderNumber;
 
           setSelectedPaymentMethod(method);
@@ -981,14 +1021,14 @@ export function PaymentMethodModal({
 
         try {
           // First update the payment method and status
-          const updateResponse = await fetch(`https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/orders/${orderInfo.id}`, {
+          const updateResponse = await fetch(`https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders/${orderInfo.id}`, {
             method: "PUT",
             headers: {
               "Content-Type": "application/json",
             },
             body: JSON.stringify({
               status: "paid",
-              paymentMethod: method,
+              paymentMethod: method, // This ensures payment method is saved
               paymentStatus: "paid",
               paidAt: new Date().toISOString(),
             }),
@@ -1005,18 +1045,35 @@ export function PaymentMethodModal({
                 paymentMethod: updatedOrder.paymentMethod,
                 paymentStatus: updatedOrder.paymentStatus,
                 paidAt: updatedOrder.paidAt,
+                tableId: updatedOrder.tableId,
               },
             );
 
-            // Update order status if order has a table
-            if (updatedOrder.tableId) {
-              try {
-                console.log(
-                  `🔄 Checking table status update for table ${updatedOrder.tableId} after ${method} payment`,
-                );
+            orderInfo.id = updatedOrder.id;
+            receipt.id = updatedOrder.id;
+            orderForPayment.id = updatedOrder.id;
 
+            // ALWAYS update table status if order has a table - regardless of payment method
+            if (updatedOrder.tableId) {
+              console.log(
+                `🔄 Starting table status update for table ${updatedOrder.tableId} after ${method} payment`,
+              );
+
+              try {
                 // Check if there are any other unpaid orders on this table
-                const ordersResponse = await fetch("https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/orders");
+                const ordersResponse = await fetch("https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders", {
+                  cache: "no-store",
+                  headers: {
+                    "Cache-Control": "no-cache, no-store, must-revalidate",
+                  },
+                });
+
+                if (!ordersResponse.ok) {
+                  throw new Error(
+                    "Failed to fetch orders for table status check",
+                  );
+                }
+
                 const allOrders = await ordersResponse.json();
 
                 const otherActiveOrders = Array.isArray(allOrders)
@@ -1043,11 +1100,11 @@ export function PaymentMethodModal({
                 // If no other unpaid orders, update table to available
                 if (otherActiveOrders.length === 0) {
                   console.log(
-                    `🔄 Updating table ${updatedOrder.tableId} to available after ${method} payment`,
+                    `🔄 No other active orders - updating table ${updatedOrder.tableId} to available`,
                   );
 
                   const tableUpdateResponse = await fetch(
-                    `https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/tables/${updatedOrder.tableId}/status`,
+                    `https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/tables/${updatedOrder.tableId}/status`,
                     {
                       method: "PUT",
                       headers: {
@@ -1059,13 +1116,41 @@ export function PaymentMethodModal({
                     },
                   );
 
-                  if (tableUpdateResponse.ok) {
-                    console.log(
-                      `✅ Table ${updatedOrder.tableId} updated to available after ${method} payment`,
-                    );
-                  } else {
-                    console.error(
-                      `❌ Failed to update table ${updatedOrder.tableId} status after ${method} payment`,
+                  if (!tableUpdateResponse.ok) {
+                    const errorText = await tableUpdateResponse.text();
+                    throw new Error(`Table update failed: ${errorText}`);
+                  }
+
+                  console.log(
+                    `✅ Table ${updatedOrder.tableId} updated to available after ${method} payment`,
+                  );
+
+                  // Send refresh signal via WebSocket
+                  try {
+                    const protocol =
+                      window.location.protocol === "https:" ? "wss:" : "ws:";
+                    const wsUrl = `${protocol}//${window.location.host}/ws`;
+                    const ws = new WebSocket(wsUrl);
+
+                    ws.onopen = () => {
+                      console.log(
+                        `📡 Sending table status refresh signal for table ${updatedOrder.tableId}`,
+                      );
+                      ws.send(
+                        JSON.stringify({
+                          type: "force_refresh",
+                          source: "payment-method-modal",
+                          reason: `table_status_updated_after_${method}_payment`,
+                          tableId: updatedOrder.tableId,
+                          timestamp: new Date().toISOString(),
+                        }),
+                      );
+                      setTimeout(() => ws.close(), 100);
+                    };
+                  } catch (wsError) {
+                    console.warn(
+                      "⚠️ WebSocket refresh signal failed (non-critical):",
+                      wsError,
                     );
                   }
                 } else {
@@ -1078,7 +1163,16 @@ export function PaymentMethodModal({
                   `❌ Error updating table status after ${method} payment:`,
                   tableError,
                 );
+                toast({
+                  title: "Cảnh báo",
+                  description: `Thanh toán thành công nhưng không thể cập nhật trạng thái bàn`,
+                  variant: "destructive",
+                });
               }
+            } else {
+              console.log(
+                "ℹ️ Order has no table, skipping table status update",
+              );
             }
 
             // Show success toast
@@ -1159,6 +1253,8 @@ export function PaymentMethodModal({
             ).toString(),
           notes: null,
           discount: item.discount || "0", // Will be calculated below
+          tax: "0.00", // Will be calculated below
+          priceBeforeTax: "0.00", // Will be calculated below
         }),
       );
 
@@ -1193,11 +1289,33 @@ export function PaymentMethodModal({
               allocatedDiscount += itemDiscount;
             }
 
-            const itemTotal = unitPrice * quantity - itemDiscount;
-            item.total = itemTotal.toString();
+            // Get product to calculate tax
+            const product = products?.find((p: any) => p.id === item.productId);
+            const taxRate = product?.taxRate ? parseFloat(product.taxRate) / 100 : 0;
+
+            let itemTax = 0;
+            let itemPriceBeforeTax = 0;
+
+            if (priceIncludesTax && taxRate > 0) {
+              // When price includes tax
+              const discountPerUnit = itemDiscount / quantity;
+              const adjustedPrice = Math.max(0, unitPrice - discountPerUnit);
+              const giaGomThue = adjustedPrice * quantity;
+              itemPriceBeforeTax = Math.round(giaGomThue / (1 + taxRate));
+              itemTax = giaGomThue - itemPriceBeforeTax;
+            } else {
+              // When price doesn't include tax
+              const discountPerUnit = itemDiscount / quantity;
+              const adjustedPrice = Math.max(0, unitPrice - discountPerUnit);
+              itemPriceBeforeTax = Math.round(adjustedPrice * quantity);
+              itemTax = taxRate > 0 ? Math.round(itemPriceBeforeTax * taxRate) : 0;
+            }
+
             return {
               ...item,
               discount: itemDiscount.toFixed(2),
+              tax: Math.round(itemTax).toString(),
+              priceBeforeTax: Math.round(itemPriceBeforeTax).toString(),
             };
           });
 
@@ -1208,6 +1326,8 @@ export function PaymentMethodModal({
               unitPrice: item.unitPrice,
               quantity: item.quantity,
               discount: item.discount,
+              tax: item.tax,
+              priceBeforeTax: item.priceBeforeTax,
             })),
           });
         }
@@ -1240,7 +1360,7 @@ export function PaymentMethodModal({
       console.log("📦 Order items:", orderItems);
 
       // Create order via API
-      const createResponse = await fetch("https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/orders", {
+      const createResponse = await fetch("https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -1257,6 +1377,8 @@ export function PaymentMethodModal({
 
         // Update orderInfo with the real order ID for E-Invoice
         orderInfo.id = createdOrder.id;
+        receipt.id = createdOrder.id;
+        orderForPayment.id = createdOrder.id;
         orderInfo.orderNumber = createdOrder.orderNumber;
 
         setShowQRCode(false);
@@ -1278,31 +1400,114 @@ export function PaymentMethodModal({
       );
 
       try {
-        console.log(
-          `🔥 MAKING API CALL: PUT /api/orders/${orderInfo.id}/status`,
-        );
+        console.log(`🔥 MAKING API CALL: PUT /api/orders/${orderInfo.id}`);
 
-        const statusResponse = await fetch(
-          `https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/orders/${orderInfo.id}/status`,
-          {
-            method: "PUT",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              status: "paid",
-            }),
+        const statusResponse = await fetch(`https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders/${orderInfo.id}`, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
           },
-        );
+          body: JSON.stringify({
+            status: "paid",
+            paymentMethod: "qrCode",
+            paymentStatus: "paid",
+            paidAt: new Date().toISOString(),
+          }),
+        });
 
         if (statusResponse.ok) {
           const data = await statusResponse.json();
           console.log(`✅ Order status updated to paid successfully:`, data);
+          orderInfo.id = data.id;
+          receipt.id = data.id;
+          orderForPayment.id = data.id;
 
-          setShowQRCode(false);
-          setQrCodeUrl("");
+          // ALWAYS update table status if order has a table after QR payment
+          if (data.tableId) {
+            console.log(
+              `🔄 Starting table status update for table ${data.tableId} after QR payment`,
+            );
 
-          // Set payment method and show E-Invoice modal directly
+            try {
+              // Check if there are any other unpaid orders on this table
+              const ordersResponse = await fetch("https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders", {
+                cache: "no-store",
+                headers: {
+                  "Cache-Control": "no-cache, no-store, must-revalidate",
+                },
+              });
+
+              if (ordersResponse.ok) {
+                const allOrders = await ordersResponse.json();
+
+                const otherActiveOrders = Array.isArray(allOrders)
+                  ? allOrders.filter(
+                      (o: any) =>
+                        o.tableId === data.tableId &&
+                        o.id !== orderInfo.id &&
+                        !["paid", "cancelled"].includes(o.status),
+                    )
+                  : [];
+
+                console.log(
+                  `🔍 Other active orders on table ${data.tableId}:`,
+                  otherActiveOrders.length,
+                );
+
+                // If no other unpaid orders, update table to available
+                if (otherActiveOrders.length === 0) {
+                  const tableUpdateResponse = await fetch(
+                    `https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/tables/${data.tableId}/status`,
+                    {
+                      method: "PUT",
+                      headers: {
+                        "Content-Type": "application/json",
+                      },
+                      body: JSON.stringify({
+                        status: "available",
+                      }),
+                    },
+                  );
+
+                  if (tableUpdateResponse.ok) {
+                    console.log(
+                      `✅ Table ${data.tableId} updated to available after QR payment`,
+                    );
+
+                    // Send refresh signal via WebSocket
+                    try {
+                      const protocol =
+                        window.location.protocol === "https:" ? "wss:" : "ws:";
+                      const wsUrl = `${protocol}//${window.location.host}/ws`;
+                      const ws = new WebSocket(wsUrl);
+
+                      ws.onopen = () => {
+                        ws.send(
+                          JSON.stringify({
+                            type: "force_refresh",
+                            source: "payment-method-modal",
+                            reason: "table_status_updated_after_qr_payment",
+                            tableId: data.tableId,
+                            timestamp: new Date().toISOString(),
+                          }),
+                        );
+                        setTimeout(() => ws.close(), 100);
+                      };
+                    } catch (wsError) {
+                      console.warn("⚠️ WebSocket signal failed:", wsError);
+                    }
+                  }
+                }
+              }
+            } catch (tableError) {
+              console.error(
+                "❌ Error updating table status after QR payment:",
+                tableError,
+              );
+            }
+          }
+
+          // Set payment method and show E-Invoice modal
           setSelectedPaymentMethod("qrCode");
           setShowEInvoice(true);
           console.log(`🔥 SHOWING E-INVOICE MODAL after successful QR payment`);
@@ -1310,6 +1515,7 @@ export function PaymentMethodModal({
           const errorText = await statusResponse.text();
           console.error(`❌ Failed to update order status:`, errorText);
           alert("Lỗi: Không thể cập nhật trạng thái đơn hàng");
+          return;
         }
       } catch (error) {
         console.error(`❌ Error updating order status:`, error);
@@ -1357,6 +1563,334 @@ export function PaymentMethodModal({
     }
   };
 
+  // Handle adding payment method
+  const handleAddPaymentMethod = (methodId: string) => {
+    const existing = selectedPaymentMethods.find((p) => p.method === methodId);
+    if (!existing) {
+      setSelectedPaymentMethods([
+        ...selectedPaymentMethods,
+        { method: methodId, amount: 0 },
+      ]);
+    }
+  };
+
+  // Handle removing payment method
+  const handleRemovePaymentMethod = (methodId: string) => {
+    setSelectedPaymentMethods(
+      selectedPaymentMethods.filter((p) => p.method !== methodId),
+    );
+  };
+
+  // Handle amount change
+  const handleAmountChange = (methodId: string, amount: number) => {
+    setSelectedPaymentMethods(
+      selectedPaymentMethods.map((p) =>
+        p.method === methodId ? { ...p, amount } : p,
+      ),
+    );
+  };
+
+  // Calculate remaining amount
+  const getRemainingAmount = () => {
+    const orderTotal =
+      orderInfo?.total ||
+      orderForPayment?.total ||
+      receipt?.total ||
+      total ||
+      0;
+    const paid = selectedPaymentMethods.reduce((sum, p) => sum + p.amount, 0);
+    return Math.floor(parseFloat(orderTotal.toString())) - paid;
+  };
+
+  // Handle multi-payment complete
+  const handleMultiPaymentComplete = async () => {
+    const orderTotal =
+      orderInfo?.total ||
+      orderForPayment?.total ||
+      receipt?.total ||
+      total ||
+      0;
+    const totalPaid = selectedPaymentMethods.reduce(
+      (sum, p) => sum + p.amount,
+      0,
+    );
+
+    if (totalPaid < Math.floor(parseFloat(orderTotal.toString()))) {
+      toast({
+        title: "Lỗi",
+        description: "Số tiền thanh toán chưa đủ",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Check if this is a real order or temporary order
+    const isTemporaryOrder = orderInfo.id.toString().startsWith("temp-");
+
+    if (isTemporaryOrder) {
+      // Create order with multiple payment methods
+      const receiptSubtotal =
+        receipt?.exactSubtotal || orderInfo?.exactSubtotal || 0;
+      const receiptTax = receipt?.exactTax || orderInfo?.exactTax || 0;
+      const receiptTotal = receipt?.exactTotal || orderInfo?.exactTotal || 0;
+      const discountAmount = Math.floor(
+        parseFloat(receipt?.discount || orderForPayment?.discount || "0"),
+      );
+
+      let orderItems = (orderInfo.items || cartItems || []).map(
+        (item: any) => ({
+          productId: item.productId || item.id,
+          quantity: parseInt(item.quantity?.toString() || "1"),
+          unitPrice: item.unitPrice || item.price?.toString() || "0",
+          total:
+            item.total ||
+            (
+              parseFloat(item.price || "0") * parseInt(item.quantity || "1")
+            ).toString(),
+          notes: null,
+          discount: item.discount || "0",
+          tax: "0.00", // Add tax field
+          priceBeforeTax: "0.00", // Add priceBeforeTax field
+        }),
+      );
+
+      // Distribute discount and calculate tax/priceBeforeTax for order items
+      if (discountAmount > 0 && orderItems.length > 0) {
+        const totalAmount = orderItems.reduce((sum, item) => {
+          const unitPrice = Number(item.unitPrice || 0);
+          const quantity = Number(item.quantity || 0);
+          return sum + unitPrice * quantity;
+        }, 0);
+
+        if (totalAmount > 0) {
+          let allocatedDiscount = 0;
+          orderItems = orderItems.map((item, index) => {
+            const unitPrice = Number(item.unitPrice || 0);
+            const quantity = Number(item.quantity || 0);
+            const itemTotal = unitPrice * quantity;
+
+            let itemDiscount = 0;
+            if (index === orderItems.length - 1) {
+              itemDiscount = Math.max(0, discountAmount - allocatedDiscount);
+            } else {
+              itemDiscount =
+                totalAmount > 0
+                  ? Math.round((discountAmount * itemTotal) / totalAmount)
+                  : 0;
+              allocatedDiscount += itemDiscount;
+            }
+
+            const product = products?.find((p: any) => p.id === item.productId);
+            const taxRate = product?.taxRate ? parseFloat(product.taxRate) / 100 : 0;
+
+            let itemTax = 0;
+            let itemPriceBeforeTax = 0;
+
+            if (priceIncludesTax && taxRate > 0) {
+              const discountPerUnit = itemDiscount / quantity;
+              const adjustedPrice = Math.max(0, unitPrice - discountPerUnit);
+              const giaGomThue = adjustedPrice * quantity;
+              itemPriceBeforeTax = Math.round(giaGomThue / (1 + taxRate));
+              itemTax = giaGomThue - itemPriceBeforeTax;
+            } else {
+              const discountPerUnit = itemDiscount / quantity;
+              const adjustedPrice = Math.max(0, unitPrice - discountPerUnit);
+              itemPriceBeforeTax = Math.round(adjustedPrice * quantity);
+              itemTax = taxRate > 0 ? Math.round(itemPriceBeforeTax * taxRate) : 0;
+            }
+
+            return {
+              ...item,
+              discount: itemDiscount.toFixed(2),
+              tax: Math.round(itemTax).toString(),
+              priceBeforeTax: Math.round(itemPriceBeforeTax).toString(),
+            };
+          });
+        }
+      }
+
+      const orderData = {
+        orderNumber: `ORD-${Date.now()}`,
+        tableId: null,
+        salesChannel: "pos",
+        customerName: orderInfo.customerName || "Khách hàng lẻ",
+        customerCount: 1,
+        status: "paid",
+        paymentMethod: JSON.stringify(selectedPaymentMethods), // Store as JSON
+        paymentStatus: "paid",
+        subtotal: receiptSubtotal.toString(),
+        tax: receiptTax.toString(),
+        total: receiptTotal.toString(),
+        notes: `POS Multi Payment - ${selectedPaymentMethods.map((p) => `${p.method}: ${p.amount.toLocaleString("vi-VN")}₫`).join(", ")}`,
+        paidAt: new Date().toISOString(),
+        discount: discountAmount.toString(),
+      };
+
+      const createResponse = await fetch("https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ order: orderData, items: orderItems }),
+      });
+
+      if (createResponse.ok) {
+        const createdOrder = await createResponse.json();
+        orderInfo.id = createdOrder.id;
+        receipt.id = createdOrder.id;
+        orderForPayment.id = createdOrder.id;
+        orderInfo.orderNumber = createdOrder.orderNumber;
+        setShowMultiPayment(false);
+        setSelectedPaymentMethods([]);
+        setSelectedPaymentMethod("multi");
+        setShowEInvoice(true);
+      }
+    } else {
+      // Update existing order
+      const updateResponse = await fetch(`https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders/${orderInfo.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          status: "paid",
+          paymentMethod: JSON.stringify(selectedPaymentMethods),
+          paymentStatus: "paid",
+          paidAt: new Date().toISOString(),
+        }),
+      });
+
+      if (updateResponse.ok) {
+        const updatedOrder = await updateResponse.json();
+        console.log("✅ Multi-payment order updated:", updatedOrder);
+        orderInfo.id = updatedOrder.id;
+        receipt.id = updatedOrder.id;
+        orderForPayment.id = updatedOrder.id;
+
+        // ALWAYS update table status if order has a table - regardless of payment method
+        if (updatedOrder.tableId) {
+          console.log(
+            `🔄 Starting table status update for table ${updatedOrder.tableId} after multi-payment`,
+          );
+
+          try {
+            // Check if there are any other unpaid orders on this table
+            const ordersResponse = await fetch("https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders", {
+              cache: "no-store",
+              headers: {
+                "Cache-Control": "no-cache, no-store, must-revalidate",
+              },
+            });
+
+            if (!ordersResponse.ok) {
+              throw new Error("Failed to fetch orders for table status check");
+            }
+
+            const allOrders = await ordersResponse.json();
+
+            const otherActiveOrders = Array.isArray(allOrders)
+              ? allOrders.filter(
+                  (o: any) =>
+                    o.tableId === updatedOrder.tableId &&
+                    o.id !== updatedOrder.id &&
+                    !["paid", "cancelled"].includes(o.status),
+                )
+              : [];
+
+            console.log(
+              `🔍 Other active orders on table ${updatedOrder.tableId}:`,
+              {
+                otherOrdersCount: otherActiveOrders.length,
+                otherOrders: otherActiveOrders.map((o) => ({
+                  id: o.id,
+                  orderNumber: o.orderNumber,
+                  status: o.status,
+                })),
+              },
+            );
+
+            // If no other unpaid orders, update table to available
+            if (otherActiveOrders.length === 0) {
+              console.log(
+                `🔄 No other active orders - updating table ${updatedOrder.tableId} to available`,
+              );
+
+              const tableUpdateResponse = await fetch(
+                `https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/tables/${updatedOrder.tableId}/status`,
+                {
+                  method: "PUT",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ status: "available" }),
+                },
+              );
+
+              if (!tableUpdateResponse.ok) {
+                const errorText = await tableUpdateResponse.text();
+                throw new Error(`Table update failed: ${errorText}`);
+              }
+
+              console.log(
+                `✅ Table ${updatedOrder.tableId} updated to available after multi-payment`,
+              );
+
+              // Send refresh signal via WebSocket
+              try {
+                const protocol =
+                  window.location.protocol === "https:" ? "wss:" : "ws:";
+                const wsUrl = `${protocol}//${window.location.host}/ws`;
+                const ws = new WebSocket(wsUrl);
+
+                ws.onopen = () => {
+                  console.log(
+                    `📡 Sending table status refresh signal for table ${updatedOrder.tableId}`,
+                  );
+                  ws.send(
+                    JSON.stringify({
+                      type: "force_refresh",
+                      source: "payment-method-modal",
+                      reason: "table_status_updated_after_multi_payment",
+                      tableId: updatedOrder.tableId,
+                      timestamp: new Date().toISOString(),
+                    }),
+                  );
+                  setTimeout(() => ws.close(), 100);
+                };
+              } catch (wsError) {
+                console.warn(
+                  "⚠️ WebSocket refresh signal failed (non-critical):",
+                  wsError,
+                );
+              }
+            } else {
+              console.log(
+                `⏳ Table ${updatedOrder.tableId} still has ${otherActiveOrders.length} active orders, keeping occupied status`,
+              );
+            }
+          } catch (tableError) {
+            console.error(
+              `❌ Error updating table status after multi-payment:`,
+              tableError,
+            );
+            toast({
+              title: "Cảnh báo",
+              description: `Thanh toán thành công nhưng không thể cập nhật trạng thái bàn`,
+              variant: "destructive",
+            });
+          }
+        } else {
+          console.log("ℹ️ Order has no table, skipping table status update");
+        }
+
+        // Show success toast
+        toast({
+          title: "Thanh toán thành công",
+          description: "Đã thanh toán bằng nhiều phương thức",
+        });
+
+        setShowMultiPayment(false);
+        setSelectedPaymentMethods([]);
+        setSelectedPaymentMethod("multi");
+        setShowEInvoice(true);
+      }
+    }
+  };
+
   const handleCashPaymentComplete = async () => {
     const receivedAmount = parseFloat(cashAmountInput || "0");
 
@@ -1385,10 +1919,10 @@ export function PaymentMethodModal({
 
     let orderTotal;
     if (priceIncludesTax) {
-      // When priceIncludesTax = true: total = subtotal - discount (subtotal already includes tax)
+      // When price includes tax: total = subtotal - discount (subtotal already includes tax)
       orderTotal = Math.max(0, exactSubtotal - discount);
     } else {
-      // When priceIncludesTax = false: total = subtotal + tax - discount
+      // When price doesn't include tax: total = subtotal + tax - discount
       orderTotal = Math.max(0, exactSubtotal + exactTax - discount);
     }
 
@@ -1443,6 +1977,8 @@ export function PaymentMethodModal({
             ).toString(),
           notes: null,
           discount: item.discount || "0", // Will be calculated below
+          tax: "0.00", // Will be calculated below
+          priceBeforeTax: "0.00", // Will be calculated below
         }),
       );
 
@@ -1477,11 +2013,33 @@ export function PaymentMethodModal({
               allocatedDiscount += itemDiscount;
             }
 
-            const itemTotal = unitPrice * quantity - itemDiscount;
-            item.total = itemTotal.toString();
+            // Get product to calculate tax
+            const product = products?.find((p: any) => p.id === item.productId);
+            const taxRate = product?.taxRate ? parseFloat(product.taxRate) / 100 : 0;
+
+            let itemTax = 0;
+            let itemPriceBeforeTax = 0;
+
+            if (priceIncludesTax && taxRate > 0) {
+              // When price includes tax
+              const discountPerUnit = itemDiscount / quantity;
+              const adjustedPrice = Math.max(0, unitPrice - discountPerUnit);
+              const giaGomThue = adjustedPrice * quantity;
+              itemPriceBeforeTax = Math.round(giaGomThue / (1 + taxRate));
+              itemTax = giaGomThue - itemPriceBeforeTax;
+            } else {
+              // When price doesn't include tax
+              const discountPerUnit = itemDiscount / quantity;
+              const adjustedPrice = Math.max(0, unitPrice - discountPerUnit);
+              itemPriceBeforeTax = Math.round(adjustedPrice * quantity);
+              itemTax = taxRate > 0 ? Math.round(itemPriceBeforeTax * taxRate) : 0;
+            }
+
             return {
               ...item,
               discount: itemDiscount.toFixed(2),
+              tax: Math.round(itemTax).toString(),
+              priceBeforeTax: Math.round(itemPriceBeforeTax).toString(),
             };
           });
 
@@ -1492,6 +2050,8 @@ export function PaymentMethodModal({
               unitPrice: item.unitPrice,
               quantity: item.quantity,
               discount: item.discount,
+              tax: item.tax,
+              priceBeforeTax: item.priceBeforeTax,
             })),
           });
         }
@@ -1526,7 +2086,7 @@ export function PaymentMethodModal({
       console.log("📦 Order items:", orderItems);
 
       // Create order via API
-      const createResponse = await fetch("https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/orders", {
+      const createResponse = await fetch("https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -1543,6 +2103,8 @@ export function PaymentMethodModal({
 
         // Update orderInfo with the real order ID for E-Invoice
         orderInfo.id = createdOrder.id;
+        receipt.id = createdOrder.id;
+        orderForPayment.id = createdOrder.id;
         orderInfo.orderNumber = createdOrder.orderNumber;
 
         // Reset form states
@@ -1566,26 +2128,150 @@ export function PaymentMethodModal({
       );
 
       try {
-        console.log(
-          `🔥 MAKING API CALL: PUT /api/orders/${orderInfo.id}/status`,
-        );
+        console.log(`🔥 MAKING API CALL: PUT /api/orders/${orderInfo.id}`);
 
-        const statusResponse = await fetch(
-          `https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/orders/${orderInfo.id}/status`,
-          {
-            method: "PUT",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              status: "paid",
-            }),
+        const statusResponse = await fetch(`https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders/${orderInfo.id}`, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
           },
-        );
+          body: JSON.stringify({
+            status: "paid",
+            paymentMethod: "cash",
+            paymentStatus: "paid",
+            paidAt: new Date().toISOString(),
+          }),
+        });
 
         if (statusResponse.ok) {
-          const data = await statusResponse.json();
-          console.log(`✅ Order status updated to paid successfully:`, data);
+          const updatedOrder = await statusResponse.json();
+          console.log(
+            `✅ Order status updated to paid successfully:`,
+            updatedOrder,
+          );
+          orderInfo.id = updatedOrder.id;
+          receipt.id = updatedOrder.id;
+          orderForPayment.id = updatedOrder.id;
+
+          // ALWAYS update table status if order has a table - for cash payment
+          if (updatedOrder.tableId) {
+            console.log(
+              `🔄 Starting table status update for table ${updatedOrder.tableId} after cash payment`,
+            );
+
+            try {
+              // Check if there are any other unpaid orders on this table
+              const ordersResponse = await fetch("https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders", {
+                cache: "no-store",
+                headers: {
+                  "Cache-Control": "no-cache, no-store, must-revalidate",
+                },
+              });
+
+              if (!ordersResponse.ok) {
+                throw new Error(
+                  "Failed to fetch orders for table status check",
+                );
+              }
+
+              const allOrders = await ordersResponse.json();
+
+              const otherActiveOrders = Array.isArray(allOrders)
+                ? allOrders.filter(
+                    (o: any) =>
+                      o.tableId === updatedOrder.tableId &&
+                      o.id !== updatedOrder.id &&
+                      !["paid", "cancelled"].includes(o.status),
+                  )
+                : [];
+
+              console.log(
+                `🔍 Other active orders on table ${updatedOrder.tableId}:`,
+                {
+                  otherOrdersCount: otherActiveOrders.length,
+                  otherOrders: otherActiveOrders.map((o) => ({
+                    id: o.id,
+                    orderNumber: o.orderNumber,
+                    status: o.status,
+                  })),
+                },
+              );
+
+              // If no other unpaid orders, update table to available
+              if (otherActiveOrders.length === 0) {
+                console.log(
+                  `🔄 No other active orders - updating table ${updatedOrder.tableId} to available`,
+                );
+
+                const tableUpdateResponse = await fetch(
+                  `https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/tables/${updatedOrder.tableId}/status`,
+                  {
+                    method: "PUT",
+                    headers: {
+                      "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({
+                      status: "available",
+                    }),
+                  },
+                );
+
+                if (!tableUpdateResponse.ok) {
+                  const errorText = await tableUpdateResponse.text();
+                  throw new Error(`Table update failed: ${errorText}`);
+                }
+
+                console.log(
+                  `✅ Table ${updatedOrder.tableId} updated to available after cash payment`,
+                );
+
+                // Send refresh signal via WebSocket
+                try {
+                  const protocol =
+                    window.location.protocol === "https:" ? "wss:" : "ws:";
+                  const wsUrl = `${protocol}//${window.location.host}/ws`;
+                  const ws = new WebSocket(wsUrl);
+
+                  ws.onopen = () => {
+                    console.log(
+                      `📡 Sending table status refresh signal for table ${updatedOrder.tableId}`,
+                    );
+                    ws.send(
+                      JSON.stringify({
+                        type: "force_refresh",
+                        source: "payment-method-modal",
+                        reason: "table_status_updated_after_cash_payment",
+                        tableId: updatedOrder.tableId,
+                        timestamp: new Date().toISOString(),
+                      }),
+                    );
+                    setTimeout(() => ws.close(), 100);
+                  };
+                } catch (wsError) {
+                  console.warn(
+                    "⚠️ WebSocket refresh signal failed (non-critical):",
+                    wsError,
+                  );
+                }
+              } else {
+                console.log(
+                  `⏳ Table ${updatedOrder.tableId} still has ${otherActiveOrders.length} active orders, keeping occupied status`,
+                );
+              }
+            } catch (tableError) {
+              console.error(
+                `❌ Error updating table status after cash payment:`,
+                tableError,
+              );
+              toast({
+                title: "Cảnh báo",
+                description: `Thanh toán thành công nhưng không thể cập nhật trạng thái bàn`,
+                variant: "destructive",
+              });
+            }
+          } else {
+            console.log("ℹ️ Order has no table, skipping table status update");
+          }
 
           // Reset trạng thái và đóng form tiền mặt
           setShowCashPayment(false);
@@ -1629,78 +2315,62 @@ export function PaymentMethodModal({
         description: "Không nhận được dữ liệu hóa đơn",
         variant: "destructive",
       });
-      onClose();
       return;
+    }
+
+    // Show success message based on action type
+    if (invoiceData.publishLater) {
+      console.log(
+        "⏳ E-Invoice publish later completed - will show receipt modal with isPreview=false, isTitle=true",
+      );
+      toast({
+        title: `${t("common.success")}`,
+        description: `${t("einvoice.savedForLaterPublish")}. ${t("einvoice.displayingForPrint")}`,
+      });
+    } else {
+      console.log(
+        "✅ E-Invoice published - will show receipt modal with isPreview=false, isTitle=true",
+      );
+      toast({
+        title: `${t("common.success")}`,
+        description: `${t("einvoice.electronicinvoicehasbeensuccessfully")}`,
+      });
     }
 
     // Check if we have valid receipt data
     if (invoiceData.receipt && typeof invoiceData.receipt === "object") {
       console.log(
-        "📄 Valid receipt data found, setting for receipt modal:",
+        "📄 Valid receipt data found, setting for receipt modal with isPreview=false, isTitle=true:",
         invoiceData.receipt,
       );
 
-      invoiceData.receipt = {
+      // Ensure receipt has all necessary data including tax and discount
+      const completeReceiptData = {
         ...invoiceData.receipt,
-        tax: orderInfo?.tax,
+        tax: orderInfo?.tax || invoiceData.receipt.tax,
         discount: receipt?.discount || orderInfo?.discount || 0,
+        isInvoice: true, // Mark as invoice for receipt modal
+        paymentMethod: selectedPaymentMethod, // Include payment method
       };
+
       // Set receipt data for modal
-      setReceiptDataForModal(invoiceData.receipt);
+      setReceiptDataForModal(completeReceiptData);
 
-      // Show success message based on action type
-      if (invoiceData.publishLater) {
-        console.log("⏳ E-Invoice publish later completed - will show receipt");
-        toast({
-          title: `${t("common.success")}`,
-          description: `${t("einvoice.savedForLaterPublish")}.${t("einvoice.displayingForPrint")}`,
-        });
-      } else if (invoiceData.publishedImmediately || invoiceData.success) {
-        console.log("✅ E-Invoice published immediately - will show receipt");
-        toast({
-          title: `${t("common.success")}`,
-          description: `${t("einvoice.savedForLaterPublish")}.${t("einvoice.displayingForPrint")}`,
-        });
-      } else {
-        toast({
-          title: `${t("common.success")}`,
-          description: "Hóa đơn điện tử đã được phát hành thành công!",
-        });
-      }
-
-      // Don't close payment modal, show receipt modal directly
-      console.log("p: � SHOWING RECEIPT MODAL immediately");
-      setShowReceiptModal(true);
+      // Close payment modal and E-invoice modal first
+      console.log(
+        "🔴 Closing payment modal and E-invoice modal before showing receipt",
+      );
+      setShowEInvoice(false);
     } else {
-      // Even if no receipt data, still show success and close payment flow
-      if (
-        invoiceData.success ||
-        invoiceData.publishLater ||
-        invoiceData.publishedImmediately
-      ) {
-        toast({
-          title: "Thành công",
-          description: invoiceData.publishLater
-            ? "Hóa đơn đã được lưu để phát hành sau"
-            : "Hóa đơn điện tử đã được phát hành thành công",
+      // If no receipt data, pass to parent via callback if available
+      if (onReceiptReady) {
+        console.log("📤 Passing receipt data to parent component");
+        onReceiptReady({
+          ...invoiceData.receipt,
+          isInvoice: true,
         });
-
-        // Close the entire payment modal after successful processing
-        setTimeout(() => {
-          onClose();
-        }, 1000);
-      } else {
-        console.error("❌ Invalid invoice data:", invoiceData);
-        toast({
-          title: "Lỗi",
-          description: "Có lỗi xảy ra khi xử lý hóa đơn. Vui lòng thử lại.",
-          variant: "destructive",
-        });
-        // Close modal on error to prevent white screen
-        onClose();
       }
     }
-
     // Reset payment method selection
     setSelectedPaymentMethod("");
   };
@@ -1889,6 +2559,9 @@ export function PaymentMethodModal({
       setCashAmountInput("");
       setShowVirtualKeyboard(false);
       setWasShowingQRCode(false);
+      setShowMultiPayment(false);
+      setShowReceiptModal(false);
+      setSelectedPaymentMethods([]);
 
       // Remove payment listener if exists
       if (currentTransactionUuid) {
@@ -1969,15 +2642,14 @@ export function PaymentMethodModal({
           </DialogHeader>
 
           <div className="space-y-4 p-4">
-            {!showQRCode && !showCashPayment ? (
+            {!showQRCode && !showCashPayment && !showMultiPayment ? (
               <>
-                <div className="text-center p-4 bg-gray-50 rounded-lg">
-                  <p className="text-sm text-gray-600">
+                <div className="text-center p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200">
+                  <p className="text-sm text-gray-600 mb-1">
                     {t("common.totalAmount")}
                   </p>
-                  <p className="text-2xl font-bold text-blue-600">
+                  <p className="text-3xl font-bold text-blue-600">
                     {(() => {
-                      // Use total from orderInfo or orderForPayment or receipt with priority
                       const orderTotal =
                         orderInfo?.total ||
                         orderForPayment?.total ||
@@ -1992,7 +2664,25 @@ export function PaymentMethodModal({
                   </p>
                 </div>
 
-                <div className="grid gap-3">
+                <Button
+                  onClick={() => setShowMultiPayment(true)}
+                  className="w-full bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600 text-white font-medium"
+                >
+                  💳 Thanh toán nhiều phương thức
+                </Button>
+
+                <div className="relative">
+                  <div className="absolute inset-0 flex items-center">
+                    <span className="w-full border-t" />
+                  </div>
+                  <div className="relative flex justify-center text-xs uppercase">
+                    <span className="bg-white px-2 text-gray-500">
+                      Hoặc chọn một phương thức
+                    </span>
+                  </div>
+                </div>
+
+                <div className="grid gap-2 max-h-[400px] overflow-y-auto">
                   {paymentMethods.map((method) => {
                     const IconComponent = method.icon;
                     const isQRMethod =
@@ -2003,28 +2693,21 @@ export function PaymentMethodModal({
                       <Button
                         key={method.id}
                         variant="outline"
-                        className="flex items-center justify-start p-4 h-auto"
+                        className="flex items-center justify-start p-3 h-auto hover:bg-blue-50 hover:border-blue-300 transition-all"
                         onClick={() => {
-                          console.log(
-                            `🔥 BUTTON CLICKED - Method: ${method.id}, Order ID: ${orderInfo.id}`,
-                          );
-                          console.log(`🔍 Button click debug:`, {
-                            methodId: method.id,
-                            methodName: method.name,
-                            orderForPayment: orderForPayment,
-                            orderInfoId: orderInfo.id,
-                            timestamp: new Date().toISOString(),
-                          });
                           handleSelect(method.id);
                         }}
                         disabled={isLoading}
                       >
-                        <IconComponent className="mr-3" size={24} />
+                        <IconComponent
+                          className="mr-3 text-blue-600"
+                          size={20}
+                        />
                         <div className="text-left flex-1">
-                          <div className="font-medium">
+                          <div className="font-medium text-sm">
                             {isLoading ? t("common.generatingQr") : method.name}
                           </div>
-                          <div className="text-sm text-gray-500">
+                          <div className="text-xs text-gray-500">
                             {method.description}
                           </div>
                         </div>
@@ -2041,7 +2724,6 @@ export function PaymentMethodModal({
                 <Button
                   variant="outline"
                   onClick={() => {
-                    // Send clear message to customer display before closing
                     try {
                       const protocol =
                         window.location.protocol === "https:" ? "wss:" : "ws:";
@@ -2049,9 +2731,6 @@ export function PaymentMethodModal({
                       const ws = new WebSocket(wsUrl);
 
                       ws.onopen = () => {
-                        console.log(
-                          "Payment Modal: Sending clear message from cancel button",
-                        );
                         ws.send(
                           JSON.stringify({
                             type: "restore_cart_display",
@@ -2074,6 +2753,158 @@ export function PaymentMethodModal({
                 >
                   {t("common.cancel")}
                 </Button>
+              </>
+            ) : showMultiPayment ? (
+              <>
+                <div className="text-center p-6 bg-gradient-to-br from-purple-50 via-indigo-50 to-blue-50 rounded-xl border-2 border-purple-200 shadow-sm">
+                  <div className="flex items-center justify-center gap-2 mb-3">
+                    <Wallet className="w-5 h-5 text-purple-600" />
+                    <p className="text-sm font-medium text-gray-700">
+                      Tổng tiền cần thanh toán
+                    </p>
+                  </div>
+                  <p className="text-3xl font-bold text-purple-600 mb-3">
+                    {Math.floor(
+                      parseFloat((orderInfo?.total || total || 0).toString()),
+                    ).toLocaleString("vi-VN")}
+                    ₫
+                  </p>
+                  <div className="mt-3 p-3 bg-white/60 backdrop-blur rounded-lg border border-purple-100">
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-gray-600 font-medium">
+                        Còn lại:
+                      </span>
+                      <span
+                        className={`font-bold text-lg ${getRemainingAmount() <= 0 ? "text-green-600" : "text-orange-600"}`}
+                      >
+                        {getRemainingAmount().toLocaleString("vi-VN")}₫
+                      </span>
+                    </div>
+                    {getRemainingAmount() <= 0 && (
+                      <div className="mt-2 flex items-center justify-center gap-1 text-green-600 text-xs font-medium">
+                        <span className="inline-block w-2 h-2 bg-green-600 rounded-full"></span>
+                        Đủ tiền thanh toán
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div className="space-y-3 max-h-[350px] overflow-y-auto pr-1">
+                  {selectedPaymentMethods.map((payment, index) => {
+                    const method = paymentMethods.find(
+                      (m) => m.id === payment.method,
+                    );
+                    if (!method) return null;
+                    const IconComponent = method.icon;
+
+                    return (
+                      <div
+                        key={payment.method}
+                        className="relative group p-4 bg-gradient-to-r from-white to-blue-50/30 rounded-xl border-2 border-blue-100 hover:border-blue-300 hover:shadow-md transition-all duration-200"
+                      >
+                        <div className="absolute -top-2 -left-2 w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center text-xs font-bold shadow">
+                          {index + 1}
+                        </div>
+                        <div className="flex items-start gap-3">
+                          <div className="p-2 bg-blue-100 rounded-lg">
+                            <IconComponent
+                              className="text-blue-600"
+                              size={20}
+                            />
+                          </div>
+                          <div className="flex-1">
+                            <p className="text-sm font-semibold text-gray-800 mb-2">
+                              {method.name}
+                            </p>
+                            <div className="relative">
+                              <input
+                                type="number"
+                                placeholder="Nhập số tiền thanh toán"
+                                value={payment.amount || ""}
+                                onChange={(e) =>
+                                  handleAmountChange(
+                                    payment.method,
+                                    parseFloat(e.target.value) || 0,
+                                  )
+                                }
+                                className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg text-sm focus:border-blue-400 focus:ring-2 focus:ring-blue-100 outline-none transition-all"
+                              />
+                              <span className="absolute right-3 top-2 text-gray-400 text-sm font-medium">
+                                ₫
+                              </span>
+                            </div>
+                            {payment.amount > 0 && (
+                              <p className="mt-1 text-xs text-blue-600 font-medium">
+                                {payment.amount.toLocaleString("vi-VN")}₫
+                              </p>
+                            )}
+                          </div>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() =>
+                              handleRemovePaymentMethod(payment.method)
+                            }
+                            className="text-red-500 hover:text-white hover:bg-red-500 rounded-lg p-2 transition-all"
+                          >
+                            ✕
+                          </Button>
+                        </div>
+                      </div>
+                    );
+                  })}
+
+                  {selectedPaymentMethods.length < paymentMethods.length && (
+                    <div className="border-2 border-dashed border-purple-300 rounded-xl p-4 bg-purple-50/30 hover:bg-purple-50 transition-all">
+                      <select
+                        className="w-full p-3 border-none bg-transparent text-sm font-medium text-gray-700 cursor-pointer outline-none"
+                        onChange={(e) => {
+                          if (e.target.value) {
+                            handleAddPaymentMethod(e.target.value);
+                            e.target.value = "";
+                          }
+                        }}
+                      >
+                        <option value="">➕ Thêm phương thức thanh toán</option>
+                        {paymentMethods
+                          .filter(
+                            (m) =>
+                              !selectedPaymentMethods.find(
+                                (p) => p.method === m.id,
+                              ),
+                          )
+                          .map((m) => (
+                            <option key={m.id} value={m.id}>
+                              {m.name}
+                            </option>
+                          ))}
+                      </select>
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex gap-3 pt-2">
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setShowMultiPayment(false);
+                      setSelectedPaymentMethods([]);
+                    }}
+                    className="flex-1 border-2 border-gray-300 hover:bg-gray-100 font-medium"
+                  >
+                    ← Quay lại
+                  </Button>
+                  <Button
+                    onClick={handleMultiPaymentComplete}
+                    disabled={
+                      getRemainingAmount() > 0 ||
+                      selectedPaymentMethods.length === 0
+                    }
+                    className="flex-1 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-medium disabled:from-gray-400 disabled:to-gray-400 shadow-md"
+                  >
+                    ✓ Hoàn tất thanh toán
+                  </Button>
+                </div>
               </>
             ) : showQRCode ? (
               <>
@@ -2448,7 +3279,7 @@ export function PaymentMethodModal({
                               orderForPayment?.discount ||
                               "0",
                           );
-                          let finalTotal;
+                          let finalTotal = 0;
                           if (priceIncludesTax) {
                             // When priceIncludesTax = true: total = subtotal - discount (subtotal already includes tax)
                             finalTotal = Math.max(0, exactSubtotal - discount);
@@ -2488,6 +3319,7 @@ export function PaymentMethodModal({
 
               // Close E-Invoice modal first
               setShowEInvoice(false);
+              setShowReceiptModal(true);
 
               // Then notify parent component with payment completion to show receipt
               onSelectMethod("paymentCompleted", {
@@ -2575,6 +3407,7 @@ export function PaymentMethodModal({
                 };
               });
             })()}
+            orderId={receipt.id || orderInfo.id || orderForPayment.id}
           />
         )}
 
@@ -2603,12 +3436,8 @@ export function PaymentMethodModal({
           }}
           receipt={receiptDataForModal}
           onPrint={() => {
-            console.log("🖨️ Payment Modal: Print triggered from receipt modal");
             // When print is triggered from ReceiptModal, we want to open the PrintDialog
             setShowPrintDialog(true);
-            // Keep receipt modal open while print dialog is active if necessary, or close it
-            // For now, let's assume we want to close the receipt modal once print is triggered
-            // setShowReceiptModal(false); // Uncomment if you want to close receipt modal immediately
           }}
         />
       )}

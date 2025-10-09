@@ -159,7 +159,7 @@ export function EInvoiceModal({
         orderId,
       );
       // Pass the paymentMethod to the PUT request for status update
-      return apiRequest("PUT", `https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/orders/${orderId}/status`, {
+      return apiRequest("PUT", `https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders/${orderId}/status`, {
         status: "paid",
         paymentMethod, // Ensure paymentMethod is passed here
       });
@@ -169,8 +169,8 @@ export function EInvoiceModal({
         "🎯 E-invoice modal completed payment successfully for order:",
         variables.orderId,
       );
-      queryClient.invalidateQueries({ queryKey: ["https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/orders"] });
-      queryClient.invalidateQueries({ queryKey: ["https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/tables"] });
+      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] });
+      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/tables"] });
 
       toast({
         title: `${t("common.success")}`,
@@ -202,14 +202,53 @@ export function EInvoiceModal({
 
   // Fetch E-invoice connections
   const { data: eInvoiceConnections = [] } = useQuery<any[]>({
-    queryKey: ["https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/einvoice-connections"],
+    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/einvoice-connections"],
     enabled: isOpen,
   });
 
   // Fetch active invoice templates for dropdown
   const { data: allInvoiceTemplates = [] } = useQuery<any[]>({
-    queryKey: ["https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/invoice-templates/active"],
+    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/invoice-templates/active"],
     enabled: isOpen,
+  });
+
+  // Query all products to get tax rates
+  const { data: products = [] } = useQuery({
+    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products"],
+    queryFn: async () => {
+      try {
+        const response = await apiRequest("GET", "https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products");
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const data = await response.json();
+        return Array.isArray(data) ? data : [];
+      } catch (error) {
+        console.error("Error fetching products:", error);
+        return [];
+      }
+    },
+    staleTime: 300000, // Cache for 5 minutes
+  });
+
+  // Query order data to get priceIncludeTax setting
+  const { data: orderData } = useQuery({
+    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders", orderId],
+    queryFn: async () => {
+      if (!orderId) return null;
+      try {
+        const response = await apiRequest("GET", `https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders/${orderId}`);
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return await response.json();
+      } catch (error) {
+        console.error("Error fetching order data:", error);
+        return null;
+      }
+    },
+    enabled: !!orderId,
+    staleTime: 300000,
   });
 
   // Filter templates to only show ones that are in use (useCK: true)
@@ -346,7 +385,7 @@ export function EInvoiceModal({
     setIsTaxCodeLoading(true);
     try {
       // Use a proxy endpoint through our server to avoid CORS issues
-      const response = await fetch("https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/tax-code-lookup", {
+      const response = await fetch("https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/tax-code-lookup", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -485,40 +524,156 @@ export function EInvoiceModal({
         return;
       }
 
-      // Calculate subtotal and tax with proper type conversion
-      const calculatedSubtotal = cartItems.reduce((sum, item) => {
-        const itemPrice =
-          typeof item.price === "string" ? parseFloat(item.price) : item.price;
-        const itemQuantity =
-          typeof item.quantity === "string"
-            ? parseInt(item.quantity)
-            : item.quantity;
-        console.log(
-          `💰 Item calculation: ${item.name} - Price: ${itemPrice}, Qty: ${itemQuantity}, Subtotal: ${itemPrice * itemQuantity}`,
-        );
-        return sum + itemPrice * itemQuantity;
-      }, 0);
+      // Calculate totals using same logic as the main publish function
+      const priceIncludeTax = orderData?.priceIncludeTax ?? false;
 
-      const calculatedTax = cartItems.reduce((sum, item) => {
+      let calculatedSubtotal = 0;
+      let calculatedTax = 0;
+      let calculatedDiscount = 0;
+
+      // Get discount from orderData if available
+      if (orderData?.discount) {
+        calculatedDiscount = parseFloat(orderData.discount);
+      } else {
+        // Calculate discount from cart items if available
+        calculatedDiscount = cartItems.reduce((sum, item) => {
+          const itemDiscount =
+            typeof item.discount === "string"
+              ? parseFloat(item.discount || "0")
+              : item.discount || 0;
+          return sum + itemDiscount;
+        }, 0);
+      }
+
+      cartItems.forEach((item, index) => {
         const itemPrice =
           typeof item.price === "string" ? parseFloat(item.price) : item.price;
         const itemQuantity =
           typeof item.quantity === "string"
             ? parseInt(item.quantity)
             : item.quantity;
-        const itemTaxRate =
-          typeof item.taxRate === "string"
-            ? parseFloat(item.taxRate || "0")
-            : item.taxRate || 0;
-        const itemTax = (itemPrice * itemQuantity * itemTaxRate) / 100;
+        const product = products?.find((p: any) => p.id === item.id);
+        const itemTaxRate = product?.taxRate ? parseFloat(product.taxRate) : 0;
+
+        // Calculate discount for this item (same logic as main publish)
+        let itemDiscountAmount = 0;
+        if (calculatedDiscount > 0) {
+          const totalBeforeDiscount = cartItems.reduce((total, cartItem) => {
+            const cartItemPrice =
+              typeof cartItem.price === "string"
+                ? parseFloat(cartItem.price)
+                : cartItem.price;
+            const cartItemQuantity =
+              typeof cartItem.quantity === "string"
+                ? parseInt(cartItem.quantity)
+                : cartItem.quantity;
+            return total + cartItemPrice * cartItemQuantity;
+          }, 0);
+
+          const isLastItem = index === cartItems.length - 1;
+
+          if (isLastItem) {
+            let previousDiscounts = 0;
+            for (let i = 0; i < cartItems.length - 1; i++) {
+              const prevItem = cartItems[i];
+              const prevItemPrice =
+                typeof prevItem.price === "string"
+                  ? parseFloat(prevItem.price)
+                  : prevItem.price;
+              const prevItemQuantity =
+                typeof prevItem.quantity === "string"
+                  ? parseInt(prevItem.quantity)
+                  : prevItem.quantity;
+              const prevItemTotal = prevItemPrice * prevItemQuantity;
+              const prevItemDiscount =
+                totalBeforeDiscount > 0
+                  ? Math.round(
+                      (calculatedDiscount * prevItemTotal) /
+                        totalBeforeDiscount,
+                    )
+                  : 0;
+              previousDiscounts += prevItemDiscount;
+            }
+            itemDiscountAmount = calculatedDiscount - previousDiscounts;
+          } else {
+            const itemTotal = itemPrice * itemQuantity;
+            itemDiscountAmount =
+              totalBeforeDiscount > 0
+                ? Math.round(
+                    (calculatedDiscount * itemTotal) / totalBeforeDiscount,
+                  )
+                : 0;
+          }
+        }
+
+        let itemSubtotal = 0;
+
+        if (priceIncludeTax && itemTaxRate > 0) {
+          // When priceIncludeTax = true: use beforeTaxPrice or calculate from formula (same as sales-orders)
+          if (
+            product?.beforeTaxPrice &&
+            product.beforeTaxPrice !== null &&
+            product.beforeTaxPrice !== ""
+          ) {
+            const beforeTaxPrice = parseFloat(product.beforeTaxPrice);
+            itemSubtotal = beforeTaxPrice * itemQuantity;
+          } else {
+            // Fallback: calculate using sales-orders formula
+            const taxRate = itemTaxRate / 100;
+            const giaGomThue = itemPrice * itemQuantity;
+            const tamTinh = Math.round(giaGomThue / (1 + taxRate));
+            itemSubtotal = tamTinh;
+          }
+        } else {
+          // When priceIncludeTax = false: use base price as subtotal (same as sales-orders)
+          itemSubtotal = itemPrice * itemQuantity;
+        }
+
+        // Calculate tax using EXACT same logic as sales-orders
+        let itemTax = 0;
+        if (itemTaxRate > 0) {
+          if (priceIncludeTax) {
+            if (
+              product?.beforeTaxPrice &&
+              product.beforeTaxPrice !== null &&
+              product.beforeTaxPrice !== ""
+            ) {
+              const beforeTaxPrice = parseFloat(product.beforeTaxPrice);
+              itemTax = Math.max(
+                0,
+                (itemPrice - beforeTaxPrice) * itemQuantity,
+              );
+            } else {
+              const taxRate = itemTaxRate / 100;
+              const giaGomThue = itemPrice * itemQuantity;
+              const tamTinh = Math.round(giaGomThue / (1 + taxRate));
+              itemTax = giaGomThue - tamTinh;
+            }
+          } else {
+            if (
+              product?.afterTaxPrice &&
+              product.afterTaxPrice !== null &&
+              product.afterTaxPrice !== ""
+            ) {
+              const afterTaxPrice = parseFloat(product.afterTaxPrice);
+              const taxPerUnit = afterTaxPrice - itemPrice;
+              itemTax = Math.max(0, taxPerUnit * itemQuantity);
+            } else {
+              itemTax = Math.round(itemSubtotal * (itemTaxRate / 100));
+            }
+          }
+        }
+
+        calculatedSubtotal += itemSubtotal;
+        calculatedTax += itemTax;
+
         console.log(
-          `💰 Tax calculation: ${item.name} - Tax rate: ${itemTaxRate}%, Tax: ${itemTax}`,
+          `💰 Publish Later Item calculation (sales-orders logic): ${item.name} - Price: ${itemPrice}, Qty: ${itemQuantity}, Discount: ${itemDiscountAmount}, Subtotal: ${itemSubtotal}, Tax: ${itemTax}`,
         );
-        return sum + itemTax;
-      }, 0);
+      });
 
       console.log(
-        `💰 Total calculations: Subtotal: ${calculatedSubtotal}, Tax: ${calculatedTax}, Total: ${total}`,
+        `💰 Total calculations: Subtotal: ${calculatedSubtotal}, Tax: ${calculatedTax}, Discount: ${calculatedDiscount}, Total: ${total}`,
       );
 
       // Lấy thông tin mẫu số hóa đơn được chọn
@@ -541,15 +696,16 @@ export function EInvoiceModal({
         customerEmail: formData.email || null,
         subtotal: calculatedSubtotal.toFixed(2),
         tax: calculatedTax.toFixed(2),
+        discount: calculatedDiscount.toFixed(2), // Add discount to invoice payload
         total: (typeof total === "number" && !isNaN(total)
           ? total
-          : calculatedSubtotal + calculatedTax
+          : calculatedSubtotal + calculatedTax - calculatedDiscount
         ).toFixed(2),
         paymentMethod: paymentMethodCode, // Sử dụng mã phương thức thanh toán thực tế
         invoiceDate: new Date(),
         status: "draft",
         einvoiceStatus: 0, // 0 = Chưa phát hành
-        notes: `E-Invoice draft - MST: ${formData.taxCode || "N/A"}, Template: ${selectedTemplate?.name || "N/A"}, Đợi phát hành sau`,
+        notes: `E-Invoice draft - MST: ${formData.taxCode || "N/A"}, Template: ${selectedTemplate?.name || "N/A"}, Giảm giá: ${calculatedDiscount.toLocaleString("vi-VN")} ₫, Đợi phát hành sau`,
         items: cartItems.map((item) => {
           const itemPrice =
             typeof item.price === "string"
@@ -559,20 +715,103 @@ export function EInvoiceModal({
             typeof item.quantity === "string"
               ? parseInt(item.quantity)
               : item.quantity;
-          const itemTaxRate =
-            typeof item.taxRate === "string"
-              ? parseFloat(item.taxRate || "0")
-              : item.taxRate || 0;
-          const itemSubtotal = itemPrice * itemQuantity;
-          const itemTax = (itemSubtotal * itemTaxRate) / 100;
+          const product = products?.find((p: any) => p.id === item.id);
+          const itemTaxRate = product?.taxRate
+            ? parseFloat(product.taxRate)
+            : 0;
+
+          // Calculate proportional discount for this item
+          const itemBeforeDiscountTotal = itemPrice * itemQuantity;
+          const totalBeforeDiscount = cartItems.reduce((sum, cartItem) => {
+            const cartItemPrice =
+              typeof cartItem.price === "string"
+                ? parseFloat(cartItem.price)
+                : cartItem.price;
+            const cartItemQuantity =
+              typeof cartItem.quantity === "string"
+                ? parseInt(cartItem.quantity)
+                : cartItem.quantity;
+            return sum + cartItemPrice * cartItemQuantity;
+          }, 0);
+
+          let itemDiscountAmount = 0;
+          if (calculatedDiscount > 0 && totalBeforeDiscount > 0) {
+            itemDiscountAmount =
+              (calculatedDiscount * itemBeforeDiscountTotal) /
+              totalBeforeDiscount;
+          }
+
+          // Calculate item subtotal and tax using same logic as main function
+          let itemSubtotal = 0;
+          if (priceIncludeTax && itemTaxRate > 0) {
+            if (
+              product?.beforeTaxPrice &&
+              product.beforeTaxPrice !== null &&
+              product.beforeTaxPrice !== ""
+            ) {
+              const beforeTaxPrice = parseFloat(product.beforeTaxPrice);
+              itemSubtotal = beforeTaxPrice * itemQuantity;
+            } else {
+              const taxRate = itemTaxRate / 100;
+              const giaGomThue = itemPrice * itemQuantity;
+              const tamTinh = Math.round(giaGomThue / (1 + taxRate));
+              itemSubtotal = tamTinh;
+            }
+          } else {
+            itemSubtotal = itemPrice * itemQuantity;
+          }
+
+          let itemTax = 0;
+          if (itemTaxRate > 0) {
+            if (priceIncludeTax) {
+              if (
+                product?.beforeTaxPrice &&
+                product.beforeTaxPrice !== null &&
+                product.beforeTaxPrice !== ""
+              ) {
+                const beforeTaxPrice = parseFloat(product.beforeTaxPrice);
+                itemTax = Math.max(
+                  0,
+                  (itemPrice - beforeTaxPrice) * itemQuantity,
+                );
+              } else {
+                const taxRate = itemTaxRate / 100;
+                const giaGomThue = itemPrice * itemQuantity;
+                const tamTinh = Math.round(giaGomThue / (1 + taxRate));
+                itemTax = giaGomThue - tamTinh;
+              }
+            } else {
+              if (
+                product?.afterTaxPrice &&
+                product.afterTaxPrice !== null &&
+                product.afterTaxPrice !== ""
+              ) {
+                const afterTaxPrice = parseFloat(product.afterTaxPrice);
+                const taxPerUnit = afterTaxPrice - itemPrice;
+                itemTax = Math.max(0, taxPerUnit * itemQuantity);
+              } else {
+                itemTax = Math.round(itemSubtotal * (itemTaxRate / 100));
+              }
+            }
+          }
+
+          // Calculate final total after discount
+          let itemTotal;
+          if (priceIncludeTax) {
+            itemTotal = itemPrice * itemQuantity - itemDiscountAmount;
+          } else {
+            itemTotal = itemSubtotal + itemTax - itemDiscountAmount;
+          }
 
           return {
             productId: item.id,
             productName: item.name,
             quantity: itemQuantity,
             unitPrice: itemPrice.toFixed(2),
-            total: (itemSubtotal + itemTax).toFixed(2),
+            total: itemTotal.toFixed(2),
             taxRate: itemTaxRate.toFixed(2),
+            discount: itemDiscountAmount.toFixed(2), // Item-level discount
+            discountAmount: itemDiscountAmount.toFixed(2), // Same as discount for consistency
           };
         }),
       };
@@ -583,7 +822,7 @@ export function EInvoiceModal({
       );
 
       // Lưu hóa đơn vào bảng invoices và invoice_items
-      const invoiceResponse = await fetch("https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/invoices", {
+      const invoiceResponse = await fetch("https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/invoices", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -665,25 +904,18 @@ export function EInvoiceModal({
         invoiceNumber: savedInvoice.invoice?.invoiceNumber,
       };
 
-      console.log("📄 Receipt data created for publish later:", receiptData);
-
-      // Show success message
-      toast({
-        title: `${t("common.success")}`,
-        description: `${t("einvoice.savedForLaterPublish")}.${t("einvoice.displayingForPrint")}`,
-      });
-
-      // Prepare comprehensive invoice data with receipt to display receipt modal
+      // Prepare comprehensive invoice data with receipt to display receipt modal WITH isTitle=true
       const completeInvoiceData = {
         success: true, // Add success flag
         paymentMethod: selectedPaymentMethod, // Use original payment method
         originalPaymentMethod: selectedPaymentMethod,
-        publishLater: true,
+        publishLater: true, // This is publish later, NOT preview
         receipt: receiptData, // Receipt data to display receipt modal
         customerName: formData.customerName,
         taxCode: formData.taxCode,
         showReceiptModal: true, // Flag for parent component to show receipt modal
         shouldShowReceipt: true, // Additional flag for receipt display
+        isTitle: true, // IMPORTANT: Show as invoice, not preview
         einvoiceStatus: 0, // 0 = Not issued yet (for publish later)
         status: "draft", // Draft status for publish later
         cartItems: cartItems, // Include cart items for receipt
@@ -695,17 +927,66 @@ export function EInvoiceModal({
         orderId: orderId,
       };
 
-      console.log("✅ PUBLISH LATER: Prepared data for onConfirm");
-      console.log("📄 PUBLISH LATER: Receipt data to pass:", receiptData);
+      // Update existing order status for publish later if orderId is provided
+      if (orderId) {
+        try {
+          console.log(
+            "🔄 Updating existing order status for publish later:",
+            orderId,
+          );
+
+          const orderUpdateData = {
+            einvoiceStatus: 0, // 0 = chưa phát hành (for publish later)
+            paymentStatus: "paid",
+            status: "paid",
+            invoiceNumber: null, // No invoice number yet for publish later
+            symbol: selectedTemplate?.symbol || null,
+            templateNumber: selectedTemplate?.templateNumber || null,
+            notes: `E-Invoice draft saved - MST: ${formData.taxCode || "N/A"}, Template: ${selectedTemplate?.name || "N/A"}, Đợi phát hành sau`,
+            paidAt: new Date().toISOString(),
+          };
+
+          const updateResponse = await fetch(`https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders/${orderId}`, {
+            method: "PUT",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(orderUpdateData),
+          });
+
+          if (updateResponse.ok) {
+            const updatedOrder = await updateResponse.json();
+            console.log(
+              "✅ Order updated successfully for publish later:",
+              updatedOrder,
+            );
+          } else {
+            const errorText = await updateResponse.text();
+            console.error(
+              "❌ Failed to update order for publish later:",
+              errorText,
+            );
+          }
+        } catch (updateError) {
+          console.error(
+            "❌ Error updating order for publish later:",
+            updateError,
+          );
+        }
+      }
+
+      console.log(
+        "✅ PUBLISH LATER: Prepared data for onConfirm with isTitle=true",
+      );
       console.log(
         "📦 PUBLISH LATER: Complete invoice data:",
         completeInvoiceData,
       );
 
-      // Call onConfirm to trigger receipt modal display
+      // Call onConfirm to trigger receipt modal display with isTitle=true
       onConfirm(completeInvoiceData);
       console.log(
-        "✅ PUBLISH LATER: onConfirm called - parent will handle modal states",
+        "✅ PUBLISH LATER: onConfirm called - parent will show receipt modal with isTitle=true",
       );
 
       console.log("--------------------------------------------------");
@@ -859,82 +1140,120 @@ export function EInvoiceModal({
       );
     };
 
-    // Calculate totals from real cart items
-    let cartSubtotal = 0;
-    let cartTaxAmount = 0;
+    // Get order discount from orderData if available
+    const orderDiscount = orderData?.discount
+      ? parseFloat(orderData.discount)
+      : 0;
 
-    // Convert cart items to invoice products with real data from shopping cart
-    const invoiceProducts = cartItems.map((item, index) => {
-      console.log(`📦 Processing cart item ${index + 1} for e-invoice:`, item);
+    // Determine if tax should be included based on orderData
+    let priceIncludeTax = orderData?.priceIncludeTax;
 
-      // Ensure proper data types with robust parsing
-      const itemPrice = (() => {
-        if (typeof item.price === "string") {
-          const parsed = parseFloat(item.price);
-          return isNaN(parsed) ? 0 : parsed;
-        }
-        return typeof item.price === "number" ? item.price : 0;
-      })();
+    // --- Start: Get data directly from order and order_item tables ---
+    // Use orderData values directly without recalculation
+    let orderSubtotal = orderData?.subtotal
+      ? parseFloat(orderData.subtotal)
+      : 0;
+    let orderTax = orderData?.tax ? parseFloat(orderData.tax) : 0;
+    let orderTotal = orderData?.total ? parseFloat(orderData.total) : total;
+    let orderDiscountValue = orderData?.discount
+      ? parseFloat(orderData.discount)
+      : 0;
 
-      const itemQuantity = (() => {
-        if (typeof item.quantity === "string") {
-          const parsed = parseInt(item.quantity);
-          return isNaN(parsed) ? 1 : Math.max(1, parsed);
-        }
-        return typeof item.quantity === "number"
-          ? Math.max(1, item.quantity)
-          : 1;
-      })();
+    console.log("🔍 E-invoice: Using direct order values from database:", {
+      orderSubtotal,
+      orderTax,
+      orderTotal,
+      orderDiscountValue,
+      priceIncludeTax,
+    });
+    // --- End: Get data directly from order and order_item tables ---
+    if (orderData?.items?.length > 0) {
+      cartItems = orderData.items ?? [];
+    }
 
-      const itemTaxRate = (() => {
-        if (typeof item.taxRate === "string") {
-          const parsed = parseFloat(item.taxRate);
-          return isNaN(parsed) ? 0 : parsed;
-        }
-        return typeof item.taxRate === "number" ? item.taxRate : 0;
-      })();
+    cartItems = cartItems.map((item) => {
+      const product = products?.find((p: any) => p.id === item.productId);
+      item.price = product?.price;
+      item.taxRate = product?.taxRate;
+      item.name = product?.name;
+      return item;
+    });
+    // Build invoice products array from order_items, get taxRate from product table via productId
+    const invoiceProducts = cartItems.map((item) => {
+      // Get product info from products table using productId to get taxRate
+      const product = products?.find((p: any) => p.id === item.productId);
+      const itemTaxRate = product?.taxRate ? parseFloat(product.taxRate) : 0;
 
-      // Calculate amounts
-      const itemSubtotal = itemPrice * itemQuantity;
-      const itemTax = (itemSubtotal * itemTaxRate) / 100;
-      const itemTotal = itemSubtotal + itemTax;
+      // Get data directly from order_items (cartItems prop)
+      const itemUnitPrice = parseFloat(product.price || "0");
+      const itemQuantity = item.quantity;
+      const itemDiscount = parseFloat(item.discount || "0");
 
-      cartSubtotal += itemSubtotal;
-      cartTaxAmount += itemTax;
-
-      console.log(`💰 Item ${index + 1} calculations:`, {
-        name: item.name,
-        price: itemPrice,
+      console.log(`💰 Item ${item.name} from order_items:`, {
+        unitPrice: itemUnitPrice,
         quantity: itemQuantity,
+        discount: itemDiscount,
         taxRate: itemTaxRate,
-        subtotal: itemSubtotal,
-        tax: itemTax,
-        total: itemTotal,
+        productId: item.id,
       });
 
+      // Get SKU from product table or generate
+      const productSKU =
+        product?.sku || `ITEM${String(item.id).padStart(3, "0")}`;
+
+      // Calculate based on priceIncludeTax setting
+      let itemTotalAmountWithoutTax = 0;
+      let itemTax = 0;
+
+      if (priceIncludeTax) {
+        // When price includes tax:
+        // 1. Calculate total with tax first (after discount)
+        const giaGomThue = itemUnitPrice * itemQuantity - itemDiscount;
+
+        // 2. Calculate amount without tax: giaGomThue / (1 + taxRate/100)
+        itemTotalAmountWithoutTax = giaGomThue / (1 + itemTaxRate / 100);
+
+        // 3. Calculate tax: giaGomThue - itemTotalAmountWithoutTax
+        itemTax = giaGomThue - itemTotalAmountWithoutTax;
+      } else {
+        // When price doesn't include tax:
+        // 1. Calculate amount without tax first (after discount)
+        itemTotalAmountWithoutTax = Math.round(
+          itemUnitPrice * itemQuantity - itemDiscount,
+        );
+
+        // 2. Calculate tax: itemTotalAmountWithoutTax * taxRate / 100
+        itemTax = (itemTotalAmountWithoutTax * itemTaxRate) / 100;
+      }
+
       return {
-        itmCd: item.sku || `SP${String(item.id || index + 1).padStart(3, "0")}`, // Sử dụng SKU thực tế từ cart
-        itmName: item.name, // Sử dụng tên sản phẩm thực tế từ cart
-        itmKnd: 1, // Loại sản phẩm (1 = hàng hóa)
-        unitNm: "Cái", // Đơn vị tính
-        qty: itemQuantity, // Số lượng thực tế từ cart
-        unprc: itemPrice, // Đơn giá thực tế từ cart
-        amt: Math.round(itemSubtotal), // Thành tiền chưa thuế
-        discRate: 0, // Tỷ lệ chiết khấu
-        discAmt: 0, // Tiền chiết khấu
-        vatRt: itemTaxRate.toString(), // Thuế suất thực tế từ cart
-        vatAmt: Math.round(itemTax), // Tiền thuế tính từ dữ liệu thực tế
-        totalAmt: Math.round(itemTotal), // Tổng tiền có thuế tính từ dữ liệu thực tế
+        itmCd: productSKU,
+        itmName: item.productName || product?.name || "Unknown Product",
+        itmKnd: 1,
+        unitNm: "Cái",
+        qty: itemQuantity,
+        unprc: itemUnitPrice,
+        amt: Math.round(itemTotalAmountWithoutTax),
+        discRate: 0,
+        discAmt: 0,
+        vatRt: itemTaxRate.toString(),
+        vatAmt: Math.round(Math.max(0, itemTax)),
+        totalAmt: Math.round(itemTotalAmountWithoutTax + itemTax),
       };
     });
 
-    const cartTotal = cartSubtotal + cartTaxAmount;
+    // Update totals calculation to use direct order values
+    const totalAmount = Math.floor(orderTotal);
+    const totalAmountWithoutTax = Math.floor(orderSubtotal);
+    const totalTaxAmount = Math.floor(orderTax);
 
-    console.log("💰 E-invoice totals calculated from real cart data:", {
-      subtotal: cartSubtotal,
-      tax: cartTaxAmount,
-      total: cartTotal,
+    console.log("💰 E-invoice totals:", {
+      totalAmountWithoutTax,
+      totalTaxAmount,
+      totalAmount,
+      priceIncludeTax: priceIncludeTax,
       itemsCount: invoiceProducts.length,
+      totalDiscount: orderDiscountValue,
     });
 
     // Get selected template data for API mapping
@@ -958,11 +1277,11 @@ export function EInvoiceModal({
       },
       transactionID: generateGuid(),
       invRef: `INV-${Date.now()}`,
-      invSubTotal: Math.round(cartSubtotal),
-      invVatRate: 10, // Default VAT rate
-      invVatAmount: Math.round(cartTaxAmount),
-      invDiscAmount: 0, // Chiết khấu
-      invTotalAmount: Math.round(cartTotal),
+      invSubTotal: totalAmountWithoutTax,
+      invVatRate: 0, // Default VAT rate
+      invVatAmount: totalTaxAmount,
+      invDiscAmount: Math.floor(orderDiscountValue), // Total discount from all items, rounded down
+      invTotalAmount: totalAmount,
       paidTp: "TM", // Cash payment
       note: "",
       hdNo: "",
@@ -989,7 +1308,7 @@ export function EInvoiceModal({
         email: formData.email || "",
         emailCC: "",
       },
-      products: invoiceProducts,
+      products: invoiceProducts, // Already calculated with discounts
     };
 
     console.log(
@@ -998,7 +1317,7 @@ export function EInvoiceModal({
     );
 
     // Call the proxy API
-    const response = await fetch("https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/einvoice/publish", {
+    const response = await fetch("https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/einvoice/publish", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -1064,14 +1383,15 @@ export function EInvoiceModal({
               total: (itemSubtotal + itemTax).toFixed(2),
               sku: item.sku || `FOOD${String(item.id).padStart(5, "0")}`,
               taxRate: itemTaxRate,
+              discount: item.discount || "0", // Include discount
             };
           }),
-          subtotal: cartSubtotal.toFixed(2),
-          tax: cartTaxAmount.toFixed(2),
-          total: total.toFixed(2),
+          subtotal: orderSubtotal.toFixed(2),
+          tax: orderTax.toFixed(2),
+          total: orderTotal.toFixed(2),
           paymentMethod: "einvoice",
           originalPaymentMethod: selectedPaymentMethod,
-          amountReceived: total.toFixed(2),
+          amountReceived: orderTotal.toFixed(2),
           change: "0.00",
           cashierName: "System User",
           createdAt: new Date().toISOString(),
@@ -1082,9 +1402,9 @@ export function EInvoiceModal({
       };
 
       // Map order totals to variables for invoice saving
-      const orderSubtotal = cartSubtotal;
-      const orderTax = cartTaxAmount;
-      const orderTotal = cartTotal;
+      const orderSubtotalForInvoice = orderSubtotal;
+      const orderTaxForInvoice = orderTax;
+      const orderTotalForInvoice = orderTotal;
 
       // Lưu thông tin hóa đơn vào bảng invoices với mapping phương thức thanh toán
       try {
@@ -1100,9 +1420,9 @@ export function EInvoiceModal({
           customerAddress: formData.address || null,
           customerPhone: formData.phoneNumber || null,
           customerEmail: formData.email || null,
-          subtotal: orderSubtotal.toFixed(2),
-          tax: orderTax.toFixed(2),
-          total: orderTotal.toFixed(2),
+          subtotal: orderSubtotalForInvoice.toFixed(2),
+          tax: orderTaxForInvoice.toFixed(2),
+          total: orderTotalForInvoice.toFixed(2),
           paymentMethod: paymentMethodCode, // Sử dụng mã số thay vì text
           invoiceDate: new Date(),
           status: "published",
@@ -1131,13 +1451,15 @@ export function EInvoiceModal({
               unitPrice: itemPrice.toFixed(2),
               total: (itemSubtotal + itemTax).toFixed(2),
               taxRate: itemTaxRate.toFixed(2),
+              discount: item.discount || 0, // Add discount here
+              discountAmount: (itemSubtotal * (item.discount || 0)) / 100, // Calculate discount amount
             };
           }),
         };
 
         console.log("💾 Saving published invoice to database:", invoicePayload);
 
-        const invoiceResponse = await fetch("https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/invoices", {
+        const invoiceResponse = await fetch("https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/invoices", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -1159,54 +1481,105 @@ export function EInvoiceModal({
         console.error("❌ Error saving invoice to database:", invoiceSaveError);
       }
 
-      // Lưu đơn hàng vào bảng orders với trạng thái "đã phát hành"
-      try {
-        const orderStatus = "paid";
-        const publishType = "publish"; // Indicate that this is a direct publish
-        const einvoiceStatus = 1; // 1 = Đã phát hành
+      // Update existing order status if orderId is provided
+      if (orderId) {
+        try {
+          console.log(
+            "🔄 Updating existing order status after e-invoice publish:",
+            orderId,
+          );
 
-        // Create order data for POS E-invoice order
-        const orderData = {
-          orderNumber: `ORD-${Date.now()}`,
-          tableId: null, // No table for POS orders
-          salesChannel: "pos", // ALWAYS pos for POS e-invoice orders
-          customerName: formData.customerName,
-          customerPhone: formData.phoneNumber || null,
-          customerEmail: formData.email || null,
-          subtotal: orderSubtotal.toFixed(2),
-          tax: orderTax.toFixed(2),
-          total: orderTotal.toFixed(2),
-          status: orderStatus,
-          paymentMethod: publishType === "publish" ? "cash" : null, // Use 'cash' for published, null for draft
-          paymentStatus: publishType === "publish" ? "paid" : "pending",
-          einvoiceStatus: einvoiceStatus,
-          notes: `E-Invoice published - Tax Code: ${formData.taxCode || "N/A"}, Address: ${formData.address || "N/A"}`,
-          orderedAt: new Date(),
-          employeeId: null, // Can be set if employee info is available
-          salesChannel: "pos",
-        };
+          const orderUpdateData = {
+            einvoiceStatus: 1, // 1 = Đã phát hành
+            paymentStatus: "paid",
+            status: "paid",
+            invoiceNumber: result.data?.invoiceNo || null,
+            symbol: selectedTemplate.symbol || null,
+            templateNumber: selectedTemplate.templateNumber || null,
+            notes: `E-Invoice published - Invoice No: ${result.data?.invoiceNo || "N/A"}, Symbol: ${selectedTemplate.symbol || "N/A"}, Template: ${selectedTemplate.templateNumber || "N/A"}`,
+            paidAt: new Date().toISOString(),
+          };
 
-        console.log("💾 Saving published order to database:", orderData);
+          const updateResponse = await fetch(`https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders/${orderId}`, {
+            method: "PUT",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(orderUpdateData),
+          });
 
-        const saveResponse = await fetch("https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/orders", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(orderData),
-        });
-
-        if (saveResponse.ok) {
-          const savedOrder = await saveResponse.json();
-          console.log("✅ Order saved to database successfully:", savedOrder);
-        } else {
+          if (updateResponse.ok) {
+            const updatedOrder = await updateResponse.json();
+            console.log(
+              "✅ Order updated successfully after e-invoice publish:",
+              updatedOrder,
+            );
+          } else {
+            const errorText = await updateResponse.text();
+            console.error(
+              "❌ Failed to update order after e-invoice publish:",
+              errorText,
+            );
+          }
+        } catch (updateError) {
           console.error(
-            "❌ Failed to save order to database:",
-            await saveResponse.text(),
+            "❌ Error updating order after e-invoice publish:",
+            updateError,
           );
         }
-      } catch (saveError) {
-        console.error("❌ Error saving order to database:", saveError);
+      } else {
+        // Create new order for POS orders without orderId
+        try {
+          const orderStatus = "paid";
+          const publishType = "publish"; // Indicate that this is a direct publish
+          const einvoiceStatus = 1; // 1 = Đã phát hành
+
+          // Create order data for POS E-invoice order
+          const orderData = {
+            orderNumber: `ORD-${Date.now()}`,
+            tableId: null, // No table for POS orders
+            salesChannel: "pos", // ALWAYS pos for POS e-invoice orders
+            customerName: formData.customerName,
+            customerPhone: formData.phoneNumber || null,
+            customerEmail: formData.email || null,
+            subtotal: orderSubtotalForInvoice.toFixed(2),
+            tax: orderTaxForInvoice.toFixed(2),
+            total: orderTotalForInvoice.toFixed(2),
+            status: orderStatus,
+            paymentMethod: publishType === "publish" ? "cash" : null, // Use 'cash' for published, null for draft
+            paymentStatus: publishType === "publish" ? "paid" : "pending",
+            einvoiceStatus: einvoiceStatus,
+            invoiceNumber: result.data?.invoiceNo || null,
+            symbol: selectedTemplate.symbol || null,
+            templateNumber: selectedTemplate.templateNumber || null,
+            notes: `E-Invoice published - Tax Code: ${formData.taxCode || "N/A"}, Address: ${formData.address || "N/A"}, Invoice No: ${result.data?.invoiceNo || "N/A"}`,
+            orderedAt: new Date(),
+            employeeId: null, // Can be set if employee info is available
+            salesChannel: "pos",
+          };
+
+          console.log("💾 Saving published order to database:", orderData);
+
+          const saveResponse = await fetch("https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(orderData),
+          });
+
+          if (saveResponse.ok) {
+            const savedOrder = await saveResponse.json();
+            console.log("✅ Order saved to database successfully:", savedOrder);
+          } else {
+            console.error(
+              "❌ Failed to save order to database:",
+              await saveResponse.text(),
+            );
+          }
+        } catch (saveError) {
+          console.error("❌ Error saving order to database:", saveError);
+        }
       }
 
       toast({
@@ -1239,18 +1612,18 @@ export function EInvoiceModal({
             productName: item.name,
             price: itemPrice.toFixed(2),
             quantity: itemQuantity,
-            discount: item.discount || "0",
+            discount: item.discount || "0", // Include discount
             total: (itemSubtotal + itemTax).toFixed(2),
             sku: item.sku || `FOOD${String(item.id).padStart(5, "0")}`,
             taxRate: itemTaxRate,
           };
         }),
-        subtotal: cartSubtotal.toFixed(2),
-        tax: cartTaxAmount.toFixed(2),
-        total: total.toFixed(2),
+        subtotal: orderSubtotal.toFixed(2),
+        tax: orderTax.toFixed(2),
+        total: orderTotal.toFixed(2),
         paymentMethod: "einvoice",
         originalPaymentMethod: selectedPaymentMethod,
-        amountReceived: total.toFixed(2),
+        amountReceived: orderTotal.toFixed(2),
         change: "0.00",
         cashierName: "System User",
         createdAt: new Date().toISOString(),
@@ -1273,9 +1646,9 @@ export function EInvoiceModal({
         einvoiceStatus: 1, // 1 = Issued
         status: "published",
         cartItems: cartItems,
-        total: total,
-        subtotal: cartSubtotal,
-        tax: cartTaxAmount,
+        total: orderTotal,
+        subtotal: orderSubtotal,
+        tax: orderTax,
         invoiceId: result.data?.id,
         invoiceNumber: result.data?.invoiceNo,
         source: source || "pos",
@@ -1356,7 +1729,7 @@ export function EInvoiceModal({
       };
 
       try {
-        const transactionResponse = await fetch("https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/transactions", {
+        const transactionResponse = await fetch("https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/transactions", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -1365,7 +1738,7 @@ export function EInvoiceModal({
         });
 
         if (transactionResponse.ok) {
-          const transactionResult = await transactionResponse.json();
+          const transactionResult = await response.json();
           console.log(
             "✅ Transaction created successfully for failed invoice:",
             transactionResult,
@@ -1680,6 +2053,7 @@ export function EInvoiceModal({
                 e.stopPropagation();
                 setLastActionTime(0); // Reset debounce timer
                 handleCancel();
+                onClose();
               }}
               className="flex-1"
               disabled={

@@ -218,6 +218,16 @@ export const useTranslatedToast = () => {
     invoiceSaved: () => toast({
       title: t("common.success"),
       description: `${t("common.invoiceSavedForLater")} ${t("common.displayingInvoiceForPrint")}`,
+    }),
+    // Add specific error methods for expense vouchers
+    expenseVoucherError: (message?: string) => toast({
+      title: t("common.error"),
+      description: message || "Không thể tạo phiếu chi",
+      variant: "destructive",
+    }),
+    expenseVoucherSuccess: (message?: string) => toast({
+      title: t("common.success"),
+      description: message || "Tạo phiếu chi thành công",
     })
   };
 };

@@ -119,7 +119,6 @@ export interface POSTranslations {
   productNameRequired: string;
   skuRequired: string;
   invalidPrice: string;
-  amountReceivedLabel: string;
   invalidCategoryId: string;
   invalidTaxRate: string;
   duplicateSku: string;
@@ -134,9 +133,44 @@ export interface POSTranslations {
   subtotal: string;
   tax: string;
   total: string;
+  totalAmount: string;
   paymentMethod: string;
   amountReceived: string;
   phone: string;
+  printerConfiguration: string;
+  addNewPrinter: string;
+  editPrinter: string;
+  printerName: string;
+  printerType: string;
+  thermal: string;
+  inkjet: string;
+  laser: string;
+  connectionType: string;
+  network: string;
+  bluetooth: string;
+  ipAddress: string;
+  port: string;
+  macAddress: string;
+  employeePrinter: string;
+  kitchenPrinter: string;
+  inUse: string;
+  addNew: string;
+  update: string;
+  printerList: string;
+  printers: string;
+  off: string;
+  test: string;
+  edit: string;
+  employee: string;
+  kitchen: string;
+  using: string;
+  close: string;
+  loading: string;
+  noPrinterConfigs: string;
+  cancel: string;
+  posLocation: string;
+  floor: string;
+  zone: string;
 }
 
 export const posTranslations: { [key: string]: POSTranslations } = {
@@ -271,14 +305,15 @@ export const posTranslations: { [key: string]: POSTranslations } = {
     duplicateSkuCount: "중복 SKU 수",
     each: "개당",
     mainStoreLocation: "본점 위치",
-    transactionNumber: "거래번T��:",
+    transactionNumber: "거래번T:",
     date: "날짜:",
     cashier: "계산원:",
     subtotal: "소계:",
     tax: "세금:",
     total: "총계:",
+    totalAmount: "금액:",
     phone: "전화:",
-    
+
     // Printer configuration
     printerConfiguration: "프린터 구성",
     addNewPrinter: "새 프린터 추가",
@@ -311,6 +346,9 @@ export const posTranslations: { [key: string]: POSTranslations } = {
     loading: "로딩 중...",
     noPrinterConfigs: "프린터 구성이 없습니다",
     cancel: "취소",
+    posLocation: "POS 위치",
+    floor: "층",
+    zone: "구역",
   },
   en: {
     title: "POS System",
@@ -449,10 +487,11 @@ export const posTranslations: { [key: string]: POSTranslations } = {
     subtotal: "Subtotal:",
     tax: "Tax (8.25%):",
     total: "Total:",
+    totalAmount: "Amount:",
     paymentMethodLabel: "Payment Method:",
     amountReceivedLabel: "Amount Received:",
     phone: "Phone:",
-    
+
     // Printer configuration
     printerConfiguration: "Printer Configuration",
     addNewPrinter: "Add New Printer",
@@ -485,6 +524,9 @@ export const posTranslations: { [key: string]: POSTranslations } = {
     loading: "Loading...",
     noPrinterConfigs: "No printer configurations",
     cancel: "Cancel",
+    posLocation: "POS Location",
+    floor: "Floor",
+    zone: "Zone",
   },
   vi: {
     title: "Hệ thống POS",
@@ -623,10 +665,11 @@ export const posTranslations: { [key: string]: POSTranslations } = {
     subtotal: "Tạm tính:",
     tax: "Thuế:",
     total: "Tổng cộng:",
+    totalAmount: "Thành tiền:",
     paymentMethodLabel: "Phương thức thanh toán:",
     amountReceivedLabel: "Số tiền nhận:",
     phone: "Điện thoại:",
-    
+
     // Printer configuration
     printerConfiguration: "Cấu hình máy in",
     addNewPrinter: "Thêm máy in mới",
@@ -659,5 +702,8 @@ export const posTranslations: { [key: string]: POSTranslations } = {
     loading: "Đang tải...",
     noPrinterConfigs: "Chưa có cấu hình máy in nào",
     cancel: "Hủy",
+    posLocation: "Vị trí POS",
+    floor: "Tầng",
+    zone: "Khu vực",
   },
 };

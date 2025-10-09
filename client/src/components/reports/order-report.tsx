@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -49,10 +48,10 @@ export function OrderReport() {
   // Filters
   const [concernType, setConcernType] = useState("transaction");
   const [startDate, setStartDate] = useState<string>(
-    new Date().toISOString().split("T")[0]
+    new Date().toISOString().split("T")[0],
   );
   const [endDate, setEndDate] = useState<string>(
-    new Date().toISOString().split("T")[0]
+    new Date().toISOString().split("T")[0],
   );
   const [orderStatus, setOrderStatus] = useState("all");
   const [customerSearch, setCustomerSearch] = useState("");
@@ -62,17 +61,19 @@ export function OrderReport() {
 
   // Query orders by date range
   const { data: orders = [] } = useQuery({
-    queryKey: ["https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/orders/date-range", startDate, endDate],
+    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders/date-range", startDate, endDate, "all"],
     queryFn: async () => {
       try {
-        const response = await fetch(`https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/orders/date-range/${startDate}/${endDate}`);
+        const response = await fetch(
+          `https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders/date-range/${startDate}/${endDate}/all`,
+        );
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
         const data = await response.json();
         return Array.isArray(data) ? data : [];
       } catch (error) {
-        console.error('Error fetching orders:', error);
+        console.error("Error fetching orders:", error);
         return [];
       }
     },
@@ -80,32 +81,34 @@ export function OrderReport() {
 
   // Query transactions by date range
   const { data: transactions = [] } = useQuery({
-    queryKey: ["https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/transactions", startDate, endDate],
+    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/transactions", startDate, endDate],
     queryFn: async () => {
       try {
-        const response = await fetch(`https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/transactions/${startDate}/${endDate}`);
+        const response = await fetch(
+          `https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/transactions/${startDate}/${endDate}`,
+        );
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
         const data = await response.json();
         return Array.isArray(data) ? data : [];
       } catch (error) {
-        console.error('Error fetching transactions:', error);
+        console.error("Error fetching transactions:", error);
         return [];
       }
     },
   });
 
   const { data: products = [] } = useQuery({
-    queryKey: ["https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/products"],
+    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products"],
   });
 
   const { data: categories = [] } = useQuery({
-    queryKey: ["https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/categories"],
+    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/categories"],
   });
 
   const { data: employees = [] } = useQuery({
-    queryKey: ["https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/employees"],
+    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/employees"],
   });
 
   const getFilteredData = () => {
@@ -125,8 +128,7 @@ export function OrderReport() {
           order.customerName
             .toLowerCase()
             .includes(customerSearch.toLowerCase())) ||
-        (order.customerPhone &&
-          order.customerPhone.includes(customerSearch));
+        (order.customerPhone && order.customerPhone.includes(customerSearch));
 
       return statusMatch && customerMatch;
     });
@@ -156,7 +158,12 @@ export function OrderReport() {
       served: { label: "Đã phục vụ", variant: "default" as const },
       paid: { label: "Hoàn thành", variant: "default" as const },
     };
-    return statusMap[status as keyof typeof statusMap] || { label: status, variant: "secondary" as const };
+    return (
+      statusMap[status as keyof typeof statusMap] || {
+        label: status,
+        variant: "secondary" as const,
+      }
+    );
   };
 
   const getProductData = () => {
@@ -188,10 +195,11 @@ export function OrderReport() {
 
     if (concernType === "transaction") {
       // Daily order count chart
-      const dailyData: { [date: string]: { orders: number; value: number } } = {};
+      const dailyData: { [date: string]: { orders: number; value: number } } =
+        {};
 
       filteredOrders.forEach((order: any) => {
-        const date = new Date(order.orderedAt).toISOString().split('T')[0];
+        const date = new Date(order.orderedAt).toISOString().split("T")[0];
         if (!dailyData[date]) {
           dailyData[date] = { orders: 0, value: 0 };
         }
@@ -267,7 +275,10 @@ export function OrderReport() {
                 })
               ) : (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center text-gray-500 italic">
+                  <TableCell
+                    colSpan={6}
+                    className="text-center text-gray-500 italic"
+                  >
                     {t("tables.noReportData")}
                   </TableCell>
                 </TableRow>
@@ -311,7 +322,9 @@ export function OrderReport() {
                       {item.product.sku || item.product.id}
                     </TableCell>
                     <TableCell>{item.product.name}</TableCell>
-                    <TableCell className="text-center">{item.quantity}</TableCell>
+                    <TableCell className="text-center">
+                      {item.quantity}
+                    </TableCell>
                     <TableCell className="text-right text-green-600">
                       {formatCurrency(item.value)}
                     </TableCell>
@@ -319,7 +332,10 @@ export function OrderReport() {
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={4} className="text-center text-gray-500 italic">
+                  <TableCell
+                    colSpan={4}
+                    className="text-center text-gray-500 italic"
+                  >
                     {t("tables.noReportData")}
                   </TableCell>
                 </TableRow>
@@ -355,9 +371,7 @@ export function OrderReport() {
             <FileText className="w-5 h-5" />
             Báo cáo đơn hàng
           </CardTitle>
-          <CardDescription>
-            Phân tích chi tiết các đơn hàng
-          </CardDescription>
+          <CardDescription>Phân tích chi tiết các đơn hàng</CardDescription>
         </CardHeader>
       </Card>
 
@@ -399,7 +413,10 @@ export function OrderReport() {
             {/* Product Group */}
             <div>
               <Label>Nhóm sản phẩm</Label>
-              <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+              <Select
+                value={selectedCategory}
+                onValueChange={setSelectedCategory}
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="Nhóm sản phẩm" />
                 </SelectTrigger>
@@ -408,7 +425,10 @@ export function OrderReport() {
                   {categories &&
                     Array.isArray(categories) &&
                     categories.map((category: any) => (
-                      <SelectItem key={category.id} value={category.id.toString()}>
+                      <SelectItem
+                        key={category.id}
+                        value={category.id.toString()}
+                      >
                         {category.name}
                       </SelectItem>
                     ))}
@@ -419,7 +439,10 @@ export function OrderReport() {
             {/* Employee */}
             <div>
               <Label>Nhân viên</Label>
-              <Select value={selectedEmployee} onValueChange={setSelectedEmployee}>
+              <Select
+                value={selectedEmployee}
+                onValueChange={setSelectedEmployee}
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="Nhân viên" />
                 </SelectTrigger>
@@ -428,7 +451,10 @@ export function OrderReport() {
                   {employees &&
                     Array.isArray(employees) &&
                     employees.map((employee: any) => (
-                      <SelectItem key={employee.id} value={employee.id.toString()}>
+                      <SelectItem
+                        key={employee.id}
+                        value={employee.id.toString()}
+                      >
                         {employee.name}
                       </SelectItem>
                     ))}
@@ -499,12 +525,15 @@ export function OrderReport() {
                 {t("tables.chartView")}
               </div>
               <div className="text-white font-semibold">
-                {concernType === "transaction" ? "Theo giao dịch" : "Theo sản phẩm"}
+                {concernType === "transaction"
+                  ? "Theo giao dịch"
+                  : "Theo sản phẩm"}
               </div>
             </div>
           </CardTitle>
           <CardDescription className="text-blue-100 mt-2">
-            {t("tables.visualRepresentation")} - Từ {formatDate(startDate)} đến {formatDate(endDate)}
+            {t("tables.visualRepresentation")} - Từ {formatDate(startDate)} đến{" "}
+            {formatDate(endDate)}
           </CardDescription>
         </CardHeader>
         <CardContent className="p-8 bg-white/80 backdrop-blur-sm">
@@ -524,17 +553,59 @@ export function OrderReport() {
                     barCategoryGap="25%"
                   >
                     <defs>
-                      <linearGradient id="orderGradient" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor="#10b981" stopOpacity={0.9} />
-                        <stop offset="100%" stopColor="#10b981" stopOpacity={0.6} />
+                      <linearGradient
+                        id="orderGradient"
+                        x1="0"
+                        y1="0"
+                        x2="0"
+                        y2="1"
+                      >
+                        <stop
+                          offset="0%"
+                          stopColor="#10b981"
+                          stopOpacity={0.9}
+                        />
+                        <stop
+                          offset="100%"
+                          stopColor="#10b981"
+                          stopOpacity={0.6}
+                        />
                       </linearGradient>
-                      <linearGradient id="valueGradient" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor="#3b82f6" stopOpacity={0.9} />
-                        <stop offset="100%" stopColor="#3b82f6" stopOpacity={0.6} />
+                      <linearGradient
+                        id="valueGradient"
+                        x1="0"
+                        y1="0"
+                        x2="0"
+                        y2="1"
+                      >
+                        <stop
+                          offset="0%"
+                          stopColor="#3b82f6"
+                          stopOpacity={0.9}
+                        />
+                        <stop
+                          offset="100%"
+                          stopColor="#3b82f6"
+                          stopOpacity={0.6}
+                        />
                       </linearGradient>
-                      <linearGradient id="quantityGradient" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor="#f59e0b" stopOpacity={0.9} />
-                        <stop offset="100%" stopColor="#f59e0b" stopOpacity={0.6} />
+                      <linearGradient
+                        id="quantityGradient"
+                        x1="0"
+                        y1="0"
+                        x2="0"
+                        y2="1"
+                      >
+                        <stop
+                          offset="0%"
+                          stopColor="#f59e0b"
+                          stopOpacity={0.9}
+                        />
+                        <stop
+                          offset="100%"
+                          stopColor="#f59e0b"
+                          stopOpacity={0.6}
+                        />
                       </linearGradient>
                     </defs>
                     <CartesianGrid
@@ -575,15 +646,16 @@ export function OrderReport() {
                         color: "#1e293b",
                         fontWeight: 600,
                         fontSize: 13,
-                        marginBottom: 4
+                        marginBottom: 4,
                       }}
                       contentStyle={{
                         backgroundColor: "rgba(255, 255, 255, 0.98)",
                         border: "1px solid #e2e8f0",
                         borderRadius: "12px",
-                        boxShadow: "0 10px 25px -5px rgb(0 0 0 / 0.15), 0 4px 6px -2px rgb(0 0 0 / 0.05)",
+                        boxShadow:
+                          "0 10px 25px -5px rgb(0 0 0 / 0.15), 0 4px 6px -2px rgb(0 0 0 / 0.05)",
                         padding: "12px 16px",
-                        backdropFilter: "blur(8px)"
+                        backdropFilter: "blur(8px)",
                       }}
                       cursor={{ fill: "rgba(59, 130, 246, 0.05)" }}
                     />
@@ -653,7 +725,9 @@ export function OrderReport() {
 
       {/* Data Tables */}
       <div className="space-y-6">
-        {concernType === "transaction" ? renderTransactionTable() : renderProductTable()}
+        {concernType === "transaction"
+          ? renderTransactionTable()
+          : renderProductTable()}
       </div>
     </div>
   );

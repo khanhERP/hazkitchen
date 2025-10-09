@@ -77,7 +77,7 @@ export function ShoppingCart({
   const { data: storeSettings } = useQuery({
     queryKey: ["store-settings"],
     queryFn: async () => {
-      const response = await fetch("https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/store-settings");
+      const response = await fetch("https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/store-settings");
       if (!response.ok) {
         throw new Error("Failed to fetch store settings");
       }
@@ -357,7 +357,7 @@ export function ShoppingCart({
   const { data: products } = useQuery<any[]>({
     queryKey: ["products"],
     queryFn: async () => {
-      const response = await fetch("https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/products");
+      const response = await fetch("https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products");
       if (!response.ok) {
         throw new Error("Failed to fetch products");
       }
@@ -811,16 +811,22 @@ export function ShoppingCart({
 
       let totalAfterDiscount;
       let originalTotal;
+      let itemPriceBeforeTax = 0;
+      let itemTax = 0;
 
-      if (priceIncludesTax) {
+      if (priceIncludesTax && taxRate > 0) {
         originalTotal = unitPrice * quantity;
         const adjustedPrice = Math.max(0, unitPrice - discountPerUnit);
         const giaGomThue = adjustedPrice * quantity;
-        totalAfterDiscount = Math.round(giaGomThue / (1 + taxRate));
+        itemPriceBeforeTax = Math.round(giaGomThue / (1 + taxRate));
+        itemTax = giaGomThue - itemPriceBeforeTax;
+        totalAfterDiscount = itemPriceBeforeTax;
       } else {
         originalTotal = unitPrice * quantity;
         const adjustedPrice = Math.max(0, unitPrice - discountPerUnit);
-        totalAfterDiscount = adjustedPrice * quantity;
+        itemPriceBeforeTax = Math.round(adjustedPrice * quantity);
+        itemTax = taxRate > 0 ? Math.round(itemPriceBeforeTax * taxRate) : 0;
+        totalAfterDiscount = itemPriceBeforeTax;
       }
 
       return {
@@ -831,12 +837,14 @@ export function ShoppingCart({
         sku: item.sku || `FOOD${String(item.id).padStart(5, "0")}`,
         taxRate: item.taxRate || "0",
         afterTaxPrice: item.afterTaxPrice,
-        discount: item.discount,
-        discountAmount: item.discountAmount,
-        discountPerUnit: item.discountPerUnit.toString(),
+        discount: itemDiscountAmount.toString(),
+        discountAmount: itemDiscountAmount.toString(),
+        discountPerUnit: discountPerUnit.toString(),
         originalPrice: item.originalPrice || unitPrice.toString(),
         totalAfterDiscount: totalAfterDiscount.toString(),
         originalTotal: originalTotal.toString(),
+        tax: itemTax.toString(),
+        priceBeforeTax: itemPriceBeforeTax.toString(),
       };
     });
 
@@ -882,8 +890,9 @@ export function ShoppingCart({
         discountAmount: item.discountAmount,
         discountPerUnit: item.discountPerUnit.toString(),
         originalPrice: item.originalPrice,
-        // Add original total before discount for reference
         originalTotal: (item.price * item.quantity).toString(),
+        tax: item.tax,
+        priceBeforeTax: item.priceBeforeTax,
       })),
       subtotal: Math.floor(calculatedSubtotal).toString(),
       tax: calculatedTax.toString(),
@@ -969,8 +978,9 @@ export function ShoppingCart({
         discountAmount: item.discountAmount,
         discountPerUnit: item.discountPerUnit.toString(),
         originalPrice: item.originalPrice,
-        // Add original total before discount for reference
         originalTotal: (item.price * item.quantity).toString(),
+        tax: item.tax,
+        priceBeforeTax: item.priceBeforeTax,
       })),
       subtotal: Math.floor(calculatedSubtotal),
       tax: calculatedTax,
@@ -1308,7 +1318,7 @@ export function ShoppingCart({
                       )}{" "}
                       ₫ {t("pos.each")}
                     </p>
-                    {item.taxRate && parseFloat(item.taxRate) > 0 && item.trackInventory !== false && (
+                    {item.taxRate && parseFloat(item.taxRate) > 0 && (
                       <p className="text-xs text-orange-600">
                         Thuế ({item.taxRate}%):{" "}
                         {(() => {
@@ -1553,9 +1563,19 @@ export function ShoppingCart({
                     >
                       <Minus size={10} />
                     </Button>
-                    <span className="w-6 text-center font-medium text-xs">
-                      {item.quantity}
-                    </span>
+                    <Input
+                      type="number"
+                      min="1"
+                      max={item.stock}
+                      value={item.quantity}
+                      onChange={(e) => {
+                        const newQuantity = parseInt(e.target.value) || 1;
+                        if (newQuantity >= 1 && newQuantity <= item.stock) {
+                          onUpdateQuantity(parseInt(item.id), newQuantity);
+                        }
+                      }}
+                      className="w-12 h-6 text-center text-xs p-1 border rounded"
+                    />
                     <Button
                       size="sm"
                       variant="outline"
@@ -1563,7 +1583,7 @@ export function ShoppingCart({
                         onUpdateQuantity(parseInt(item.id), item.quantity + 1)
                       }
                       className="w-6 h-6 p-0"
-                      disabled={item.trackInventory !== false && item.quantity >= item.stock}
+                      disabled={item.quantity >= item.stock}
                     >
                       <Plus size={10} />
                     </Button>
@@ -1600,14 +1620,14 @@ export function ShoppingCart({
           <div className="space-y-2">
             <div className="flex justify-between text-sm">
               <span className="pos-text-secondary">
-                {t("tables.subtotal")}:
+                {t("pos.totalAmount")}
               </span>
               <span className="font-medium">
                 {Math.round(subtotal).toLocaleString("vi-VN")} ₫
               </span>
             </div>
             <div className="flex justify-between text-sm">
-              <span className="pos-text-secondary">{t("pos.tax")}:</span>
+              <span className="pos-text-secondary">{t("pos.tax")}</span>
               <span className="font-medium">
                 {Math.round(tax).toLocaleString("vi-VN")} ₫
               </span>

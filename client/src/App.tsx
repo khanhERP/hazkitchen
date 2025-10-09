@@ -14,26 +14,28 @@ import SettingsPage from "@/pages/settings";
 import SuppliersPage from "@/pages/suppliers";
 import PurchasesPage from "@/pages/purchases";
 import PurchaseFormPage from "@/pages/purchase-form";
+import PurchaseViewPage from "./pages/purchase-view";
 import AttendancePage from "@/pages/attendance";
 import AttendanceQRPage from "./pages/attendance-qr";
 import CustomerDisplay from "@/pages/customer-display";
 import SalesOrders from "@/pages/sales-orders";
+import CashBookPage from "./pages/cash-book";
 import NotFoundPage from "./pages/not-found";
 
 function Router({ onLogout }: { onLogout: () => void }) {
   const RedirectToSales = () => {
     const [, setLocation] = useLocation();
-    
+
     useEffect(() => {
-      setLocation('/sales-orders', { replace: true });
+      setLocation("/tables", { replace: true });
     }, [setLocation]);
-    
+
     return null;
   };
 
   return (
     <Switch>
-      <Route path="/" component={() => <TablesPage onLogout={onLogout} />} />
+      <Route path="/" component={RedirectToSales} />
       <Route path="/pos" component={() => <POSPage onLogout={onLogout} />} />
       <Route
         path="/tables"
@@ -56,29 +58,39 @@ function Router({ onLogout }: { onLogout: () => void }) {
         component={() => <SettingsPage onLogout={onLogout} />}
       />
       <Route
-        path="/suppliers"
-        component={() => <SuppliersPage onLogout={onLogout} />}
-      />
-      <Route
         path="/purchases"
         component={() => <PurchasesPage onLogout={onLogout} />}
+      />
+      <Route
+        path="/purchases/view/:id"
+        component={() => <PurchaseViewPage onLogout={onLogout} />}
       />
       <Route
         path="/purchases/create"
         component={() => <PurchaseFormPage onLogout={onLogout} />}
       />
       <Route
-        path="/purchases/:id/edit"
-        component={({ params }) => <PurchaseFormPage id={params.id} onLogout={onLogout} />}
+        path="/purchases/edit/:id"
+        component={({ id }: { id: string }) => (
+          <PurchaseFormPage id={id} onLogout={onLogout} />
+        )}
+      />
+      <Route
+        path="/suppliers"
+        component={() => <SuppliersPage onLogout={onLogout} />}
       />
       <Route
         path="/attendance"
         component={() => <AttendancePage onLogout={onLogout} />}
       />
       <Route path="/attendance-qr" component={AttendanceQRPage} />
-      <Route path="/inventory" component={() => <InventoryPage onLogout={onLogout} />} />
+      <Route
+        path="/inventory"
+        component={() => <InventoryPage onLogout={onLogout} />}
+      />
       <Route path="/customer-display" component={CustomerDisplay} />
       <Route path="/sales-orders" component={SalesOrders} />
+      <Route path="/cash-book" component={() => <CashBookPage onLogout={onLogout} />} />
       <Route path="*" component={NotFoundPage} />
     </Switch>
   );

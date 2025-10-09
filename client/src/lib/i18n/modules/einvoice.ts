@@ -93,6 +93,8 @@ export const einvoiceTranslations: { [key: string]: EInvoiceTranslations } = {
     invoicestatus: "전자세금계산서 상태",
     released: "발행됨",
     notReleased: "미발행",
+    electronicinvoicehasbeensuccessfully:
+      "전자세금계산서가 성공적으로 발행되었습니다",
   },
   en: {
     title: "E-Invoice",
@@ -166,6 +168,8 @@ export const einvoiceTranslations: { [key: string]: EInvoiceTranslations } = {
     invoicestatus: "Trạng thái E-Invoice",
     released: "Released",
     notReleased: "Not Released",
+    electronicinvoicehasbeensuccessfully:
+      "Electronic invoice has been successfully published",
   },
   vi: {
     title: "Phát hành hóa đơn điện tử",
@@ -263,5 +267,7 @@ export const einvoiceTranslations: { [key: string]: EInvoiceTranslations } = {
     selectStatus: "Chọn trạng thái",
     released: "Đã phát hành",
     notReleased: "Chưa phát hành",
+    electronicinvoicehasbeensuccessfully:
+      "Hóa đơn điện tử đã được phát hành thành công",
   },
 };

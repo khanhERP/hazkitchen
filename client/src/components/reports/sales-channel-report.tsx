@@ -61,19 +61,19 @@ export function SalesChannelReport() {
   const [selectedCategory, setSelectedCategory] = useState("all");
 
   const { data: employees } = useQuery({
-    queryKey: ["https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/employees"],
+    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/employees"],
     staleTime: 5 * 60 * 1000,
   });
 
   const { data: categories } = useQuery({
-    queryKey: ["https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/categories"],
+    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/categories"],
     staleTime: 5 * 60 * 1000,
   });
 
   // Sales channel sales data query
   const { data: salesChannelSalesData, isLoading: salesLoading } = useQuery({
     queryKey: [
-      "https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/sales-channel-sales",
+      "https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/sales-channel-sales",
       startDate,
       endDate,
       selectedSeller,
@@ -88,7 +88,7 @@ export function SalesChannelReport() {
           salesChannel: selectedSalesChannel,
         }),
       });
-      const response = await fetch(`https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/sales-channel-sales?${params}`);
+      const response = await fetch(`https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/sales-channel-sales?${params}`);
       if (!response.ok) {
         throw new Error("Failed to fetch sales channel sales data");
       }
@@ -100,7 +100,7 @@ export function SalesChannelReport() {
   // Sales channel profit data query
   const { data: salesChannelProfitData, isLoading: profitLoading } = useQuery({
     queryKey: [
-      "https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/sales-channel-profit",
+      "https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/sales-channel-profit",
       startDate,
       endDate,
       selectedSeller,
@@ -115,7 +115,7 @@ export function SalesChannelReport() {
           salesChannel: selectedSalesChannel,
         }),
       });
-      const response = await fetch(`https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/sales-channel-profit?${params}`);
+      const response = await fetch(`https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/sales-channel-profit?${params}`);
       if (!response.ok) {
         throw new Error("Failed to fetch sales channel profit data");
       }
@@ -128,7 +128,7 @@ export function SalesChannelReport() {
   const { data: salesChannelProductsData, isLoading: productsLoading } =
     useQuery({
       queryKey: [
-        "https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/sales-channel-products",
+        "https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/sales-channel-products",
         startDate,
         endDate,
         selectedSeller,
@@ -149,7 +149,7 @@ export function SalesChannelReport() {
           ...(productType !== "all" && { productType }),
           ...(selectedCategory !== "all" && { categoryId: selectedCategory }),
         });
-        const response = await fetch(`https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/sales-channel-products?${params}`);
+        const response = await fetch(`https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/sales-channel-products?${params}`);
         if (!response.ok) {
           throw new Error("Failed to fetch sales channel products data");
         }

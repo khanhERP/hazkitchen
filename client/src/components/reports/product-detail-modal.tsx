@@ -109,7 +109,13 @@ export function ProductDetailModal({
                 </Badge>
               </div>
               <p className="text-sm text-gray-600 mt-1">
-                {t("common.type") || "Loại"}: {getProductTypeName(product.productType)}
+                {t("common.type") || "Loại"}: {
+                  product.productType === 1 ? t("tables.goodsType") :
+                  product.productType === 2 ? t("tables.materialType") :
+                  product.productType === 3 ? t("tables.finishedProductType") :
+                  product.productType === 4 ? t("tables.expensesType") :
+                  getProductTypeName(product.productType)
+                }
               </p>
             </div>
           </div>

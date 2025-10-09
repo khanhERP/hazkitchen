@@ -49,6 +49,7 @@ interface PrinterConfig {
   isEmployee: boolean;
   isKitchen: boolean;
   isActive: boolean;
+  copies?: number;
 }
 
 export function PrinterConfigModal({
@@ -69,9 +70,12 @@ export function PrinterConfigModal({
     ipAddress: "",
     port: null,
     macAddress: "",
+    floor: "1",
+    zone: "A",
     isEmployee: false,
     isKitchen: false,
     isActive: true,
+    copies: 0,
   });
 
   const { toast } = useToast();
@@ -79,9 +83,9 @@ export function PrinterConfigModal({
 
   // Fetch printer configurations
   const { data: printerConfigs = [], isLoading } = useQuery({
-    queryKey: ["https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/printer-configs"],
+    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/printer-configs"],
     queryFn: async () => {
-      const response = await apiRequest("GET", "https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/printer-configs");
+      const response = await apiRequest("GET", "https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/printer-configs");
       return response.json();
     },
     enabled: isOpen,
@@ -94,15 +98,15 @@ export function PrinterConfigModal({
     mutationFn: async (configData: any) => {
       const response = await apiRequest(
         "POST",
-        "https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/printer-configs",
+        "https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/printer-configs",
         configData,
       );
       return response.json();
     },
     onSuccess: () => {
       // Force refetch data
-      queryClient.invalidateQueries({ queryKey: ["https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/printer-configs"] });
-      queryClient.refetchQueries({ queryKey: ["https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/printer-configs"] });
+      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/printer-configs"] });
+      queryClient.refetchQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/printer-configs"] });
       toast({ title: "Thành công", description: "Đã thêm cấu hình máy in" });
       resetForm();
     },
@@ -120,15 +124,15 @@ export function PrinterConfigModal({
     mutationFn: async ({ id, data }: { id: number; data: any }) => {
       const response = await apiRequest(
         "PUT",
-        `https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/printer-configs/${id}`,
+        `https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/printer-configs/${id}`,
         data,
       );
       return response.json();
     },
     onSuccess: () => {
       // Force refetch data
-      queryClient.invalidateQueries({ queryKey: ["https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/printer-configs"] });
-      queryClient.refetchQueries({ queryKey: ["https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/printer-configs"] });
+      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/printer-configs"] });
+      queryClient.refetchQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/printer-configs"] });
       toast({
         title: "Thành công",
         description: "Đã cập nhật cấu hình máy in",
@@ -147,12 +151,12 @@ export function PrinterConfigModal({
   // Delete printer config mutation
   const deleteConfigMutation = useMutation({
     mutationFn: async (id: number) => {
-      await apiRequest("DELETE", `https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/printer-configs/${id}`);
+      await apiRequest("DELETE", `https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/printer-configs/${id}`);
     },
     onSuccess: () => {
       // Force refetch data
-      queryClient.invalidateQueries({ queryKey: ["https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/printer-configs"] });
-      queryClient.refetchQueries({ queryKey: ["https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/printer-configs"] });
+      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/printer-configs"] });
+      queryClient.refetchQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/printer-configs"] });
       toast({ title: "Thành công", description: "Đã xóa cấu hình máy in" });
     },
     onError: () => {
@@ -169,7 +173,7 @@ export function PrinterConfigModal({
     mutationFn: async (id: number) => {
       const response = await apiRequest(
         "POST",
-        `https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/printer-configs/${id}/test`,
+        `https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/printer-configs/${id}/test`,
       );
       return response.json();
     },
@@ -197,9 +201,12 @@ export function PrinterConfigModal({
       ipAddress: "",
       port: null,
       macAddress: "",
+      floor: "1",
+      zone: "A",
       isEmployee: false,
       isKitchen: false,
       isActive: true,
+      copies: 0,
     });
     setSelectedConfig(null);
     setIsEditing(false);
@@ -207,40 +214,6 @@ export function PrinterConfigModal({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-
-    // Validate that only one printer can be active for each type
-    if (formData.isActive && (formData.isEmployee || formData.isKitchen)) {
-      const activeEmployeePrinter = printerConfigs.find(
-        (p) =>
-          p.isEmployee &&
-          p.isActive &&
-          (!selectedConfig || p.id !== selectedConfig.id),
-      );
-      const activeKitchenPrinter = printerConfigs.find(
-        (p) =>
-          p.isKitchen &&
-          p.isActive &&
-          (!selectedConfig || p.id !== selectedConfig.id),
-      );
-
-      if (formData.isEmployee && activeEmployeePrinter) {
-        toast({
-          title: "Lỗi",
-          description: `Đã có máy in nhân viên đang hoạt động: ${activeEmployeePrinter.name}. Vui lòng tắt máy in đó trước.`,
-          variant: "destructive",
-        });
-        return;
-      }
-
-      if (formData.isKitchen && activeKitchenPrinter) {
-        toast({
-          title: "Lỗi",
-          description: `Đã có máy in bếp đang hoạt động: ${activeKitchenPrinter.name}. Vui lòng tắt máy in đó trước.`,
-          variant: "destructive",
-        });
-        return;
-      }
-    }
 
     if (selectedConfig) {
       updateConfigMutation.mutate({ id: selectedConfig.id, data: formData });
@@ -258,53 +231,17 @@ export function PrinterConfigModal({
       ipAddress: config.ipAddress || "",
       port: config.port || null,
       macAddress: config.macAddress || "",
+      floor: config.floor || "1",
+      zone: config.zone || "A",
       isEmployee: config.isEmployee,
       isKitchen: config.isKitchen,
       isActive: config.isActive,
+      copies: config.copies || 0,
     });
     setIsEditing(true);
   };
 
   const handleToggleStatus = (config: PrinterConfig, newStatus: boolean) => {
-    // If turning on this printer, check if we need to turn off others
-    if (newStatus && (config.isEmployee || config.isKitchen)) {
-      const conflictingPrinter = printerConfigs.find(
-        (p) =>
-          p.id !== config.id &&
-          p.isActive &&
-          ((config.isEmployee && p.isEmployee) ||
-            (config.isKitchen && p.isKitchen)),
-      );
-
-      if (conflictingPrinter) {
-        const printerType = config.isEmployee ? "nhân viên" : "bếp";
-        toast({
-          title: "Thông báo",
-          description: `Sẽ tự động tắt máy in ${printerType} khác: ${conflictingPrinter.name}`,
-        });
-
-        // Turn off the conflicting printer first
-        const conflictingUpdateData = {
-          name: conflictingPrinter.name,
-          printerType: conflictingPrinter.printerType,
-          connectionType: conflictingPrinter.connectionType,
-          ipAddress: conflictingPrinter.ipAddress,
-          port: conflictingPrinter.port,
-          macAddress: conflictingPrinter.macAddress,
-          paperWidth: conflictingPrinter.paperWidth,
-          printSpeed: conflictingPrinter.printSpeed,
-          isEmployee: conflictingPrinter.isEmployee,
-          isKitchen: conflictingPrinter.isKitchen,
-          isActive: false,
-        };
-
-        updateConfigMutation.mutate({
-          id: conflictingPrinter.id,
-          data: conflictingUpdateData,
-        });
-      }
-    }
-
     // Update the current printer status - only send necessary fields
     const updateData = {
       name: config.name,
@@ -431,6 +368,24 @@ export function PrinterConfigModal({
                   </Select>
                 </div>
 
+                {formData.connectionType === "usb" && (
+                  <div>
+                    <Label htmlFor="productId">Product ID (USB)</Label>
+                    <Input
+                      id="productId"
+                      type="text"
+                      value={formData.macAddress}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          macAddress: e.target.value,
+                        })
+                      }
+                      placeholder="VD: 1234 hoặc USB-PRINTER-001"
+                    />
+                  </div>
+                )}
+
                 {formData.connectionType === "network" && (
                   <>
                     <div>
@@ -481,6 +436,50 @@ export function PrinterConfigModal({
                   </div>
                 )}
 
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="floor">{t("tables.floorLabel")}</Label>
+                    <Select
+                      value={formData.floor || "1"}
+                      onValueChange={(value) =>
+                        setFormData({ ...formData, floor: value })
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder={t("tables.floorPlaceholder")} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="1">{t("common.floor")} 1</SelectItem>
+                        <SelectItem value="2">{t("common.floor")} 2</SelectItem>
+                        <SelectItem value="3">{t("common.floor")} 3</SelectItem>
+                        <SelectItem value="4">{t("common.floor")} 4</SelectItem>
+                        <SelectItem value="5">{t("common.floor")} 5</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="zone">{t("tables.zoneLabel")}</Label>
+                    <Select
+                      value={formData.zone || "A"}
+                      onValueChange={(value) =>
+                        setFormData({ ...formData, zone: value })
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder={t("tables.zonePlaceholder")} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="A">{t("common.zone")} A</SelectItem>
+                        <SelectItem value="B">{t("common.zone")} B</SelectItem>
+                        <SelectItem value="C">{t("common.zone")} C</SelectItem>
+                        <SelectItem value="D">{t("common.zone")} D</SelectItem>
+                        <SelectItem value="E">{t("common.zone")} E</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
                 <div className="flex items-center space-x-2">
                   <Switch
                     id="isEmployee"
@@ -512,6 +511,23 @@ export function PrinterConfigModal({
                     }
                   />
                   <Label htmlFor="isActive">{t("pos.inUse")}</Label>
+                </div>
+
+                <div>
+                  <Label htmlFor="copies">Số lần in</Label>
+                  <Input
+                    id="copies"
+                    type="number"
+                    min="0"
+                    value={formData.copies || 0}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        copies: parseInt(e.target.value) || 0,
+                      })
+                    }
+                    placeholder="Nhập số lần in"
+                  />
                 </div>
 
                 <div className="flex gap-2">
@@ -577,6 +593,13 @@ export function PrinterConfigModal({
                               </div>
                               <div className="text-sm text-gray-500">
                                 {config.printerType} - {config.connectionType}
+                                {config.connectionType === "usb" &&
+                                  config.macAddress && (
+                                    <span>
+                                      {" "}
+                                      (Product ID: {config.macAddress})
+                                    </span>
+                                  )}
                                 {config.connectionType === "network" &&
                                   config.ipAddress && (
                                     <span>
@@ -585,6 +608,18 @@ export function PrinterConfigModal({
                                       {config.port || "auto"})
                                     </span>
                                   )}
+                                <br />
+                                <span className="text-xs text-blue-600">
+                                  Số lần in: {config.copies || 0}
+                                </span>
+                                {config.floor && config.zone && (
+                                  <>
+                                    <br />
+                                    <span className="text-xs text-green-600">
+                                      {t("common.floor")} {config.floor} - {t("common.zone")} {config.zone}
+                                    </span>
+                                  </>
+                                )}
                               </div>
                             </div>
                           </div>

@@ -12,7 +12,7 @@ import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { EInvoiceModal } from "./einvoice-modal";
 import { PaymentMethodModal } from "./payment-method-modal";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useTranslation } from "@/lib/i18n";
 
 interface ReceiptModalProps {
@@ -42,21 +42,27 @@ export function ReceiptModal({
   const [showEInvoiceModal, setShowEInvoiceModal] = useState(false);
   const [showPaymentMethodModal, setShowPaymentMethodModal] = useState(false);
   const [hasAutoOpened, setHasAutoOpened] = useState(false);
-  const [title, setTitle] = useState<string>("");
+  const [printers, setPrinters] = useState([]);
   const { t } = useTranslation();
 
-  useEffect(() => {
-    const nameTitle =
-      isTitle == true
-        ? `${t("common.paymentInvoice")}`
-        : `${t("common.provisionalVoucher")}`;
-    setTitle(nameTitle);
-  }, [isTitle]);
+  console.log("🔍 ReceiptModal rendered with props:", {
+    isOpen,
+    isPreview,
+    isTitle,
+    hasReceipt: !!receipt,
+    hasCartItems: cartItems?.length > 0,
+  });
+
+  // Calculate title directly from props instead of using state
+  let title = isTitle
+    ? `${t("common.paymentInvoice")}`
+    : `${t("common.provisionalVoucher")}`;
+
   // Query store settings
   const { data: storeSettings } = useQuery({
-    queryKey: ["https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/store-settings"],
+    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/store-settings"],
     queryFn: async () => {
-      const response = await apiRequest("GET", "https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/store-settings");
+      const response = await apiRequest("GET", "https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/store-settings");
       return response.json();
     },
     enabled: isOpen, // Only fetch when modal is open
@@ -80,6 +86,7 @@ export function ReceiptModal({
         isOpen,
         isPreview,
         receipt,
+        isTitle,
         cartItems: cartItems?.length || 0,
         onConfirm: !!onConfirm,
         hasReceiptData: !!(receipt && typeof receipt === "object"),
@@ -92,6 +99,8 @@ export function ReceiptModal({
             total > 0),
       });
 
+      console.log("Receipt Modal autoClose:", title);
+
       // Force show modal when receipt data exists
       if (receipt && typeof receipt === "object") {
         console.log(
@@ -99,13 +108,96 @@ export function ReceiptModal({
         );
       }
     }
-  }, [isOpen, receipt, isPreview, cartItems, total, onConfirm]);
+  }, [isOpen, receipt, isPreview, cartItems, total, onConfirm, isTitle]);
 
-  // Early return after hooks
-  if (!isOpen) {
-    console.log("❌ Receipt Modal: Modal is closed");
-    return null;
-  }
+  // Don't return early here - let the Dialog component handle the open state
+
+  useEffect(() => {
+    async function fetchPrinterConfigs() {
+      try {
+        const printerResponse = await fetch("https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/printer-configs");
+        if (!printerResponse.ok) {
+          console.error("Failed to fetch printer configs");
+          return;
+        }
+
+        const allConfigs = await printerResponse.json();
+        console.log(`📋 Total printer configs found: ${allConfigs.length}`);
+
+        // Get table floor if receipt has tableId
+        let tableFloor = null;
+        if (receipt?.tableId) {
+          try {
+            const tableResponse = await fetch(`https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/tables/${receipt.tableId}`);
+            if (tableResponse.ok) {
+              const tableData = await tableResponse.json();
+              tableFloor = tableData.floor;
+              console.log(
+                `📍 Table ${receipt.tableId} is on floor: ${tableFloor}`,
+              );
+            }
+          } catch (error) {
+            console.error("Error fetching table data:", error);
+          }
+        }
+
+        let activePrinterConfigs = [];
+
+        // For kitchen receipts, get kitchen printers matching the floor + one employee printer
+        let employeePrinter = allConfigs.filter(
+          (config) => config.isActive && config.isEmployee,
+        );
+
+        let kitchenPrinters = allConfigs.filter(
+          (config) => config.isActive && config.isKitchen,
+        );
+
+        console.log(
+          `🍳 Kitchen receipt mode - Found ${kitchenPrinters.length} active kitchen printers`,
+        );
+
+        // Filter kitchen printers by floor if we have table floor info
+        if (tableFloor) {
+          kitchenPrinters = kitchenPrinters.filter(
+            (config) => config.floor === tableFloor,
+          );
+          console.log(
+            `🖨️ Filtered to ${kitchenPrinters.length} kitchen printers for floor ${tableFloor}`,
+          );
+        }
+
+        // Combine kitchen printers with one employee printer
+        activePrinterConfigs = [...kitchenPrinters, ...employeePrinter];
+
+        if (isTitle) {
+          activePrinterConfigs = activePrinterConfigs.filter(
+            (config) => config.isEmployee,
+          );
+        }
+
+        if (activePrinterConfigs.length > 0) {
+          let lstPrinters = activePrinterConfigs.map((printer) => {
+            return {
+              name: printer.name,
+              type: printer.printerType,
+              ip: printer.ipAddress,
+              port: printer.port ?? 9100,
+              copies: printer.copies ?? 1,
+              serinumber: printer.macAddress,
+            };
+          });
+          setPrinters(lstPrinters);
+          console.log("Danh sachs máy in", lstPrinters);
+          console.log("✅ Final printer list to be used:");
+        } else {
+          console.log("⚠️ No matching printers found");
+        }
+      } catch (error) {
+        console.error("Error in fetchPrinterConfigs:", error);
+      }
+    }
+    fetchPrinterConfigs();
+  }, [receipt?.tableId]);
 
   // Handle missing data cases
   const hasReceiptData = receipt && typeof receipt === "object";
@@ -131,7 +223,7 @@ export function ReceiptModal({
           <div className="p-4 text-center">
             <p>
               {isPreview
-                ? "Không có sản phẩm trong giỏ hàng để xem trước hóa đơn"
+                ? "Không có sản phẩm trong giỏ hàng để xem trư  c hóa đơn"
                 : "Không có dữ liệu hóa đơn để hiển thị"}
             </p>
             <Button onClick={onClose} className="mt-4">
@@ -142,6 +234,101 @@ export function ReceiptModal({
       </Dialog>
     );
   }
+
+  const handleGetPrint = async () => {
+    const printContent = document.getElementById("receipt-content");
+    if (!printContent) {
+      alert("Không tìm thấy nội dung hóa đơn để in.");
+      return;
+    }
+    let content = printContent?.innerHTML ?? "";
+    if (content) {
+      content = generatePrintHTML(printContent, false);
+    }
+
+    console.log("🖨️ ============ BẮT ĐẦU IN HÓA ĐƠN ============");
+    console.log(
+      `📝 Loại hóa đơn: ${isTitle ? "Hóa đơn nhân viên" : "Hóa đơn bếp"}`,
+    );
+    console.log(`📊 Số lượng máy in sẽ được sử dụng: ${printers.length}`);
+    console.log(
+      `🏢 Bàn: ${receipt?.tableId ? `Bàn ${receipt.tableId}` : "POS"}`,
+    );
+    console.log(`📍 Tầng: ${receipt?.tableId ? "Sẽ lọc theo tầng" : "N/A"}`);
+
+    if (printers.length > 0) {
+      console.log("📋 ==========================================");
+      console.log("📋 DANH SÁCH MÁY IN SẼ ĐƯỢC SỬ DỤNG:");
+      console.log("📋 ==========================================");
+      printers.forEach((printer, index) => {
+        console.log(`\n   🖨️  MÁY IN #${index + 1}:`);
+        console.log(`   ├─ Tên máy in: ${printer.name}`);
+        console.log(`   ├─ Loại máy in: ${printer.type}`);
+        console.log(
+          `   ├─ Kết nối: ${printer.ip ? `IP ${printer.ip}:${printer.port}` : "USB"}`,
+        );
+        console.log(`   └─ Số bản in: ${printer.copies} bản`);
+      });
+      console.log("\n📋 ==========================================\n");
+    } else {
+      console.log("⚠️ ==========================================");
+      console.log("⚠️ KHÔNG CÓ MÁY IN NÀO ĐƯỢC CÁU HÌNH!");
+      console.log("⚠️ ==========================================");
+    }
+
+    try {
+      console.log("📤 Đang gửi lệnh in đến máy in...");
+      console.log(
+        `📦 Dữ liệu gửi đi: ${printers.length} máy in, ${content.length} ký tự nội dung`,
+      );
+
+      const response = await fetch("http://localhost:5000/print", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          printers,
+          content,
+        }),
+      });
+
+      const result = await response.text();
+      console.log("✅ ==========================================");
+      console.log("✅ KẾT QUẢ IN THÀNH CÔNG!");
+      console.log("✅ ==========================================");
+      console.log(`✅ Response: ${result}`);
+      console.log(`✅ Đã in trên ${printers.length} máy in`);
+      printers.forEach((printer, index) => {
+        console.log(
+          `   ✓ Máy in #${index + 1}: ${printer.name} - ${printer.copies} bản`,
+        );
+      });
+      console.log("🖨️ ============ KẾT THÚC IN HÓA ĐƠN ============\n");
+      alert("Kết quả in: " + result);
+
+      onClose();
+    } catch (error) {
+      console.error("❌ ==========================================");
+      console.error("❌ LỖI KHI IN HÓA ĐƠN!");
+      console.error("❌ ==========================================");
+      console.error("❌ Chi tiết lỗi:", error);
+      console.error("❌ Số máy in đã cấu hình:", printers.length);
+      if (printers.length > 0) {
+        console.error("❌ Danh sách máy in:");
+        printers.forEach((printer, index) => {
+          console.error(
+            `   ✗ Máy in #${index + 1}: ${printer.name} (${printer.ip || "USB"})`,
+          );
+        });
+      }
+      console.error("🖨️ ============ LỖI IN HÓA ĐƠN ============\n");
+      alert(
+        "Bạn chưa thiết lập cài đặt máy in. Vui lòng liên hệ với edpos để được hỗ trợ.",
+      );
+      onClose();
+    }
+  };
 
   const handlePrint = async () => {
     console.log(
@@ -181,13 +368,14 @@ export function ReceiptModal({
       let activePrinterConfigs = [];
       try {
         console.log("🖨️ Fetching active printer configurations...");
-        const printerResponse = await fetch("https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/printer-configs");
+        const printerResponse = await fetch("https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/printer-configs");
         if (printerResponse.ok) {
           const allConfigs = await printerResponse.json();
           activePrinterConfigs = allConfigs.filter(
             (config) =>
               config.isActive && (config.isEmployee || config.isKitchen),
           );
+          console.log("✅ Found active printer:", activePrinterConfigs);
           console.log(
             "✅ Found active printer configs:",
             activePrinterConfigs.length,
@@ -219,7 +407,7 @@ export function ReceiptModal({
         console.log("🖨️ Trying configured POS printers for all platforms...");
 
         try {
-          const printResponse = await fetch("https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/pos/print-receipt", {
+          const printResponse = await fetch("https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/pos/print-receipt", {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
@@ -869,6 +1057,12 @@ export function ReceiptModal({
       );
     }
 
+    window.dispatchEvent(
+      new CustomEvent("printCompleted", {
+        detail: { closeAllModals: true, refreshData: true },
+      }),
+    );
+
     // Close the modal
     onClose();
   };
@@ -886,6 +1080,7 @@ export function ReceiptModal({
     return Math.floor(parseFloat(receipt?.total || "0"));
   };
 
+  // Always render the Dialog component, let it handle the open state
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-md w-full max-h-screen overflow-y-auto">
@@ -895,7 +1090,7 @@ export function ReceiptModal({
           </DialogTitle>
         </DialogHeader>
 
-        {hasReceiptData ? (
+        {hasValidData ? (
           <div
             id="receipt-content"
             className="receipt-print bg-white"
@@ -916,7 +1111,11 @@ export function ReceiptModal({
               <div className="flex items-center justify-center">
                 <img src={logoPath} alt="EDPOS Logo" className="h-6" />
               </div>
-              <p className="text-lg mb-2 invoice_title">{title}</p>
+              <p className="text-lg mb-2 invoice_title">
+                {isTitle
+                  ? `${t("common.paymentInvoice")}`
+                  : `${t("common.provisionalVoucher")}`}
+              </p>
             </div>
 
             <div className="border-t border-b border-gray-300 py-3 mb-3">
@@ -963,23 +1162,22 @@ export function ReceiptModal({
                   item.unitPrice || item.price || "0",
                 );
                 const quantity = item.quantity || 1;
-                // Get item-level discount from order_items.discount
+                // Get item-level discount from order_items.discount - THIS IS THE DISCOUNT PER ITEM
                 const itemDiscount = parseFloat(item.discount || "0");
-                // Use total from database directly (already includes discount)
-                const itemTotal = parseFloat(item.total || "0");
                 // Calculate subtotal before discount for this item
                 const itemSubtotal = unitPrice * quantity;
+                // Calculate final amount after discount
+                const itemFinalAmount = itemSubtotal - itemDiscount;
 
-                console.log(`Receipt Item:`, receipt);
-
-                console.log(`Receipt Item ${index}:`, {
+                console.log(`Receipt Item ${index + 1}:`, {
                   name: item.productName || item.name,
                   unitPrice,
                   quantity,
                   itemDiscount,
-                  itemTotal,
                   itemSubtotal,
+                  itemFinalAmount,
                   hasDiscount: itemDiscount > 0,
+                  rawDiscount: item.discount,
                 });
 
                 return (
@@ -995,24 +1193,27 @@ export function ReceiptModal({
                             `FOOD${String(item.productId || item.id || "0").padStart(5, "0")}`}
                         </div>
                         <div className="text-xs text-gray-600">
-                          {quantity} x {unitPrice.toLocaleString("vi-VN")} ₫
+                          {quantity} x{" "}
+                          {Math.floor(unitPrice).toLocaleString("vi-VN")} ₫
                         </div>
-                        {/* Always show discount line if there's any discount */}
-                        {itemDiscount > 0 && (
-                          <div className="text-xs text-red-600 font-medium">
-                            Giảm giá: -
-                            {Math.floor(itemDiscount).toLocaleString("vi-VN")} ₫
-                          </div>
-                        )}
                       </div>
                       <div className="text-right">
-                        <div>
-                          <div className="text-xs text-black-500">
-                            {Math.floor(itemSubtotal).toLocaleString("vi-VN")} ₫
-                          </div>
+                        <div className="text-xs text-gray-600">
+                          {Math.floor(itemSubtotal).toLocaleString("vi-VN")} ₫
                         </div>
                       </div>
                     </div>
+                    {/* Show discount as a separate line below item for better visibility */}
+                    {itemDiscount > 0 && (
+                      <div className="flex justify-between text-xs mt-1 pl-4">
+                        <div className="text-red-600 font-medium">
+                          Giảm giá:
+                        </div>
+                        <div className="text-red-600 font-medium">
+                          -{Math.floor(itemDiscount).toLocaleString("vi-VN")} ₫
+                        </div>
+                      </div>
+                    )}
                   </div>
                 );
               })}
@@ -1020,27 +1221,70 @@ export function ReceiptModal({
 
             <div className="border-t border-gray-300 pt-3 space-y-1">
               <div className="flex justify-between text-sm">
-                <span>{t("reports.subtotal")}:</span>
+                <span>{t("pos.totalAmount")}</span>
                 <span>
                   {(() => {
                     // Calculate subtotal as sum of unit price * quantity for all items (before discount)
-                    const itemsSubtotal = parseFloat(receipt.subtotal || "0");
-                    return itemsSubtotal.toLocaleString("vi-VN");
+                    const itemsSubtotal = (receipt.items || []).reduce(
+                      (sum, item) => {
+                        const unitPrice = parseFloat(
+                          item.unitPrice || item.price || "0",
+                        );
+                        const quantity = item.quantity || 1;
+                        return sum + unitPrice * quantity;
+                      },
+                      0,
+                    );
+                    return Math.floor(itemsSubtotal).toLocaleString("vi-VN");
                   })()}{" "}
                   ₫
                 </span>
               </div>
-              <div className="flex justify-between text-sm">
-                <span>{t("reports.tax")}:</span>
-                <span>
-                  {(() => {
-                    // Always use tax directly from database
-                    const taxValue = parseFloat(receipt.tax || "0");
-                    return Math.floor(taxValue).toLocaleString("vi-VN");
-                  })()}{" "}
-                  ₫
-                </span>
-              </div>
+              {(() => {
+                // Group items by tax rate and calculate tax for each group
+                const taxGroups = (receipt.items || []).reduce(
+                  (groups, item) => {
+                    const taxRate = parseFloat(
+                      item.taxRate || item.product?.taxRate || "0",
+                    );
+                    const unitPrice = parseFloat(
+                      item.unitPrice || item.price || "0",
+                    );
+                    const quantity = item.quantity || 1;
+                    const itemDiscount = parseFloat(item.discount || "0");
+                    const itemSubtotal = unitPrice * quantity;
+                    const itemFinalAmount = itemSubtotal - itemDiscount;
+
+                    // Calculate tax for this item based on its tax rate
+                    const itemTax =
+                      (itemFinalAmount * taxRate) / (100 + taxRate);
+
+                    if (!groups[taxRate]) {
+                      groups[taxRate] = 0;
+                    }
+                    groups[taxRate] += itemTax;
+
+                    return groups;
+                  },
+                  {} as Record<number, number>,
+                );
+
+                // Sort tax rates in descending order
+                const sortedTaxRates = Object.keys(taxGroups)
+                  .map(Number)
+                  .sort((a, b) => b - a);
+
+                return sortedTaxRates.map((taxRate) => (
+                  <div key={taxRate} className="flex justify-between text-sm">
+                    <span>
+                      {t("reports.tax")} ({taxRate}%):
+                    </span>
+                    <span>
+                      {Math.floor(taxGroups[taxRate]).toLocaleString("vi-VN")} ₫
+                    </span>
+                  </div>
+                ));
+              })()}
               {(() => {
                 // Only show discount if there are item-level discounts or order-level discount
                 // Calculate total discount: sum of item discounts + order discount
@@ -1053,11 +1297,11 @@ export function ReceiptModal({
                 const orderDiscount = parseFloat(receipt.discount || "0");
                 // Discount is already distributed to items, so only show order-level discount if it exists separately
                 const totalDiscount =
-                  totalItemDiscount > 0 ? totalItemDiscount : orderDiscount;
+                  orderDiscount > 0 ? orderDiscount : totalItemDiscount;
                 return totalDiscount > 0;
               })() && (
                 <div className="flex justify-between text-sm text-red-600">
-                  <span>{t("reports.discount")}</span>
+                  <span>{t("reports.discount")}:</span>
                   <span className="font-medium">
                     -
                     {(() => {
@@ -1071,9 +1315,7 @@ export function ReceiptModal({
                       const orderDiscount = parseFloat(receipt.discount || "0");
                       // Only add order discount if it's not already distributed to items
                       const totalDiscount =
-                        totalItemDiscount > 0
-                          ? totalItemDiscount
-                          : orderDiscount;
+                        orderDiscount > 0 ? orderDiscount : totalItemDiscount;
                       return Math.floor(totalDiscount).toLocaleString("vi-VN");
                     })()}{" "}
                     ₫
@@ -1115,7 +1357,11 @@ export function ReceiptModal({
               <div className="flex items-center justify-center">
                 <img src={logoPath} alt="EDPOS Logo" className="h-6" />
               </div>
-              <p className="text-lg mb-2 invoice_title">{title}</p>
+              <p className="text-lg mb-2 invoice_title">
+                {isTitle
+                  ? `${t("common.paymentInvoice")}`
+                  : `${t("common.provisionalVoucher")}`}
+              </p>
             </div>
 
             <div className="border-t border-b border-gray-300 py-3 mb-3">
@@ -1140,17 +1386,63 @@ export function ReceiptModal({
                     ? parseFloat(item.price)
                     : item.price;
                 const quantity = item.quantity;
-                const itemDiscount = parseFloat(item.discount || "0");
                 const itemSubtotal = unitPrice * quantity;
-                const itemTotal = itemSubtotal - itemDiscount;
+
+                // Calculate item discount from order-level discount (proportional distribution)
+                let itemDiscount = 0;
+                const orderDiscount = parseFloat(
+                  receipt?.discount || total?.discount || "0",
+                );
+
+                if (orderDiscount > 0) {
+                  const totalBeforeDiscount = cartItems.reduce((sum, itm) => {
+                    const price =
+                      typeof itm.price === "string"
+                        ? parseFloat(itm.price)
+                        : itm.price;
+                    return sum + price * itm.quantity;
+                  }, 0);
+
+                  // For last item, use remaining discount to avoid rounding errors
+                  if (index === cartItems.length - 1) {
+                    let previousDiscounts = 0;
+                    for (let i = 0; i < cartItems.length - 1; i++) {
+                      const prevItem = cartItems[i];
+                      const prevPrice =
+                        typeof prevItem.price === "string"
+                          ? parseFloat(prevItem.price)
+                          : prevItem.price;
+                      const prevSubtotal = prevPrice * prevItem.quantity;
+                      previousDiscounts +=
+                        totalBeforeDiscount > 0
+                          ? Math.round(
+                              (orderDiscount * prevSubtotal) /
+                                totalBeforeDiscount,
+                            )
+                          : 0;
+                    }
+                    itemDiscount = orderDiscount - previousDiscounts;
+                  } else {
+                    // Proportional discount for non-last items
+                    itemDiscount =
+                      totalBeforeDiscount > 0
+                        ? Math.round(
+                            (orderDiscount * itemSubtotal) /
+                              totalBeforeDiscount,
+                          )
+                        : 0;
+                  }
+                }
+
+                const itemFinalAmount = itemSubtotal - itemDiscount;
 
                 console.log(`Preview Item ${index}:`, {
                   name: item.name,
                   unitPrice,
                   quantity,
                   itemDiscount,
-                  itemTotal,
                   itemSubtotal,
+                  itemFinalAmount,
                   hasDiscount: itemDiscount > 0,
                 });
 
@@ -1167,20 +1459,25 @@ export function ReceiptModal({
                         <div className="text-xs text-gray-600">
                           {quantity} x {unitPrice.toLocaleString("vi-VN")} ₫
                         </div>
-                        {/* Always show discount line if there's any discount */}
                         {itemDiscount > 0 && (
                           <div className="text-xs text-red-600 font-medium">
                             Giảm giá: -
-                            {Math.floor(itemDiscount).toLocaleString("vi-VN")} ₫
+                            {Math.round(itemDiscount).toLocaleString("vi-VN")} ₫
                           </div>
                         )}
                       </div>
                       <div className="text-right">
-                        <div>
-                          <div className="text-xs text-black-500">
-                            {Math.floor(itemSubtotal).toLocaleString("vi-VN")} ₫
-                          </div>
+                        <div className="text-xs text-gray-600">
+                          {Math.floor(itemSubtotal).toLocaleString("vi-VN")} ₫
                         </div>
+                        {itemDiscount > 0 && (
+                          <div className="text-xs font-medium text-green-600">
+                            {Math.floor(itemFinalAmount).toLocaleString(
+                              "vi-VN",
+                            )}{" "}
+                            ₫
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -1190,28 +1487,119 @@ export function ReceiptModal({
 
             <div className="border-t border-gray-300 pt-3 space-y-1">
               <div className="flex justify-between text-sm">
-                <span>{t("reports.subtotal")}:</span>
+                <span>{t("pos.totalAmount")}</span>
                 <span>
                   {(() => {
                     // Calculate subtotal as sum of unit price * quantity for all items (before discount)
-                    const itemsSubtotal = parseFloat(receipt.subtotal || "0");
-                    return itemsSubtotal.toLocaleString("vi-VN");
+                    const itemsSubtotal = (receipt.items || []).reduce(
+                      (sum, item) => {
+                        const unitPrice = parseFloat(
+                          item.unitPrice || item.price || "0",
+                        );
+                        const quantity = item.quantity || 1;
+                        return sum + unitPrice * quantity;
+                      },
+                      0,
+                    );
+                    return Math.floor(itemsSubtotal).toLocaleString("vi-VN");
                   })()}{" "}
                   ₫
                 </span>
               </div>
-              <div className="flex justify-between text-sm">
-                <span>{t("reports.tax")}:</span>
-                <span>
-                  {(() => {
-                    // Use exactTax first, then fallback to tax from database
-                    const taxValue =
-                      receipt?.exactTax ?? parseFloat(receipt?.tax || "0");
-                    return Math.floor(taxValue).toLocaleString("vi-VN");
-                  })()}{" "}
-                  ₫
-                </span>
-              </div>
+              {(() => {
+                // Group cart items by tax rate and calculate tax for each group
+                const taxGroups = cartItems.reduce(
+                  (groups, item) => {
+                    const taxRate = parseFloat(
+                      item.taxRate || item.product?.taxRate || "0",
+                    );
+                    const unitPrice =
+                      typeof item.price === "string"
+                        ? parseFloat(item.price)
+                        : item.price;
+                    const quantity = item.quantity;
+                    const itemSubtotal = unitPrice * quantity;
+
+                    // Calculate item discount from order-level discount (proportional distribution)
+                    let itemDiscount = 0;
+                    const orderDiscount = parseFloat(
+                      receipt?.discount || total?.discount || "0",
+                    );
+
+                    if (orderDiscount > 0) {
+                      const totalBeforeDiscount = cartItems.reduce(
+                        (sum, itm) => {
+                          const price =
+                            typeof itm.price === "string"
+                              ? parseFloat(itm.price)
+                              : itm.price;
+                          return sum + price * itm.quantity;
+                        },
+                        0,
+                      );
+
+                      const itemIndex = cartItems.indexOf(item);
+                      if (itemIndex === cartItems.length - 1) {
+                        let previousDiscounts = 0;
+                        for (let i = 0; i < cartItems.length - 1; i++) {
+                          const prevItem = cartItems[i];
+                          const prevPrice =
+                            typeof prevItem.price === "string"
+                              ? parseFloat(prevItem.price)
+                              : prevItem.price;
+                          const prevSubtotal = prevPrice * prevItem.quantity;
+                          previousDiscounts +=
+                            totalBeforeDiscount > 0
+                              ? Math.round(
+                                  (orderDiscount * prevSubtotal) /
+                                    totalBeforeDiscount,
+                                )
+                              : 0;
+                        }
+                        itemDiscount = orderDiscount - previousDiscounts;
+                      } else {
+                        itemDiscount =
+                          totalBeforeDiscount > 0
+                            ? Math.round(
+                                (orderDiscount * itemSubtotal) /
+                                  totalBeforeDiscount,
+                              )
+                            : 0;
+                      }
+                    }
+
+                    const itemFinalAmount = itemSubtotal - itemDiscount;
+
+                    // Calculate tax for this item based on its tax rate
+                    const itemTax =
+                      (itemFinalAmount * taxRate) / (100 + taxRate);
+
+                    if (!groups[taxRate]) {
+                      groups[taxRate] = 0;
+                    }
+                    groups[taxRate] += itemTax;
+
+                    return groups;
+                  },
+                  {} as Record<number, number>,
+                );
+
+                // Sort tax rates in descending order
+                const sortedTaxRates = Object.keys(taxGroups)
+                  .map(Number)
+                  .sort((a, b) => b - a);
+
+                return sortedTaxRates.map((taxRate) => (
+                  <div key={taxRate} className="flex justify-between text-sm">
+                    <span>
+                      {t("reports.tax")} ({taxRate}%):
+                    </span>
+                    <span>
+                      {Math.floor(taxGroups[taxRate]).toLocaleString("vi-VN")} ₫
+                    </span>
+                  </div>
+                ));
+              })()}
               {(() => {
                 // Calculate total discount from cart items only (no double counting)
                 const totalItemDiscount = cartItems.reduce((sum, item) => {
@@ -1222,11 +1610,11 @@ export function ReceiptModal({
                   receipt?.discount || total?.discount || 0,
                 );
                 const totalDiscount =
-                  totalItemDiscount > 0 ? totalItemDiscount : orderDiscount;
+                  orderDiscount > 0 ? orderDiscount : totalItemDiscount;
                 return totalDiscount > 0;
               })() && (
                 <div className="flex justify-between text-sm text-red-600">
-                  <span>{t("reports.discount")}</span>
+                  <span>{t("reports.discount")}:</span>
                   <span className="font-medium">
                     -
                     {(() => {
@@ -1241,9 +1629,7 @@ export function ReceiptModal({
                       );
                       // Show either item discounts or order discount, not both
                       const totalDiscount =
-                        totalItemDiscount > 0
-                          ? totalItemDiscount
-                          : orderDiscount;
+                        orderDiscount > 0 ? orderDiscount : totalItemDiscount;
                       return Math.floor(totalDiscount).toLocaleString("vi-VN");
                     })()}{" "}
                     ₫
@@ -1292,7 +1678,11 @@ export function ReceiptModal({
             <div className="flex justify-center space-x-3">
               <Button
                 onClick={() => {
-                  handlePrint(); // First print
+                  if (printers?.length > 0) {
+                    handleGetPrint();
+                  } else {
+                    handlePrint(); // First print
+                  }
                 }}
                 className="bg-blue-600 hover:bg-blue-700 text-white transition-colors duration-200"
               >
@@ -1324,7 +1714,7 @@ export function ReceiptModal({
             typeof window !== "undefined" && (window as any).orderForPayment
               ? (window as any).orderForPayment
               : {
-                  id: receipt?.id || `temp-${Date.now()}`,
+                  id: receipt?.id,
                   orderNumber:
                     receipt?.orderNumber ||
                     receipt?.transactionId ||
@@ -1360,86 +1750,6 @@ export function ReceiptModal({
           onReceiptReady={(receiptData) => {
             console.log("📋 Receipt ready from payment method:", receiptData);
           }}
-        />
-      )}
-
-      {/* E-Invoice Modal */}
-      {showEInvoiceModal && (
-        <EInvoiceModal
-          isOpen={showEInvoiceModal}
-          onClose={() => setShowEInvoiceModal(false)}
-          onConfirm={(eInvoiceData) => {
-            console.log("📧 E-Invoice confirmed:", eInvoiceData);
-            setShowEInvoiceModal(false);
-
-            // Sau khi e-invoice xử lý xong (phát hành ngay hoặc phát hành sau),
-            // hiển thị lại receipt modal để in hóa đơn
-            console.log("📄 Showing receipt modal after e-invoice processing");
-          }}
-          total={
-            typeof receipt?.total === "string"
-              ? parseFloat(receipt.total)
-              : receipt?.total || 0
-          }
-          selectedPaymentMethod={receipt?.paymentMethod || "cash"}
-          cartItems={(() => {
-            console.log("🔄 Receipt Modal - Preparing cartItems for EInvoice:");
-            console.log("- cartItems prop:", cartItems);
-            console.log("- cartItems length:", cartItems?.length || 0);
-            console.log("- receipt items:", receipt?.items);
-
-            // Always prefer cartItems prop since it has the most accurate data
-            if (cartItems && Array.isArray(cartItems) && cartItems.length > 0) {
-              console.log(
-                "✅ Using cartItems prop for e-invoice (most accurate data)",
-              );
-              // Ensure all cartItems have proper structure
-              const processedCartItems = cartItems.map((item) => ({
-                id: item.id,
-                name: item.name,
-                price:
-                  typeof item.price === "string"
-                    ? parseFloat(item.price)
-                    : item.price,
-                quantity:
-                  typeof item.quantity === "string"
-                    ? parseInt(item.quantity)
-                    : item.quantity,
-                sku: item.sku || `FOOD${String(item.id).padStart(5, "0")}`,
-                taxRate: item.taxRate || 0,
-              }));
-              console.log(
-                "🔧 Processed cartItems for e-invoice:",
-                processedCartItems,
-              );
-              return processedCartItems;
-            } else if (
-              receipt?.items &&
-              Array.isArray(receipt.items) &&
-              receipt.items.length > 0
-            ) {
-              console.log("⚠️ Fallback to receipt items for e-invoice");
-              return receipt.items.map((item) => ({
-                id: item.productId || item.id,
-                name: item.productName,
-                price:
-                  typeof item.price === "string"
-                    ? parseFloat(item.price)
-                    : item.price,
-                quantity:
-                  typeof item.quantity === "string"
-                    ? parseInt(item.quantity)
-                    : item.quantity,
-                sku:
-                  item.productId?.toString() ||
-                  `FOOD${String(item.id).padStart(5, "0")}`,
-                taxRate: 0,
-              }));
-            } else {
-              console.error("❌ No valid cart items found for e-invoice");
-              return [];
-            }
-          })()}
         />
       )}
     </Dialog>

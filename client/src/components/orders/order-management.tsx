@@ -100,6 +100,7 @@ export function OrderManagement() {
   const [showReceiptModal, setShowReceiptModal] = useState(false);
   const [selectedReceipt, setSelectedReceipt] = useState<any>(null);
   const [showReceiptPreview, setShowReceiptPreview] = useState(false);
+  const [isShowTitle, setIsShowTitle] = useState(true);
   const [previewReceipt, setPreviewReceipt] = useState<any>(null);
   const [shouldOpenReceiptPreview, setShouldOpenReceiptPreview] =
     useState(false);
@@ -131,8 +132,8 @@ export function OrderManagement() {
       setSelectedReceipt(null);
 
       // Refresh data
-      queryClient.invalidateQueries({ queryKey: ["https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/orders"] });
-      queryClient.invalidateQueries({ queryKey: ["https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/tables"] });
+      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] });
+      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/tables"] });
     };
 
     window.addEventListener(
@@ -214,7 +215,7 @@ export function OrderManagement() {
 
   // Query orders by date range - filter only table orders
   const { data: orders, isLoading: ordersLoading } = useQuery({
-    queryKey: ["https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/orders", "table"],
+    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders", "table"],
     refetchInterval: 2000, // Faster polling - every 2 seconds
     refetchOnWindowFocus: true, // Refetch when window regains focus
     refetchIntervalInBackground: true, // Continue refetching in background
@@ -222,7 +223,7 @@ export function OrderManagement() {
     queryFn: async () => {
       const response = await apiRequest(
         "GET",
-        "https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/orders?salesChannel=table",
+        "https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders?salesChannel=table",
       );
       if (!response.ok) {
         throw new Error("Failed to fetch table orders");
@@ -254,28 +255,28 @@ export function OrderManagement() {
   });
 
   const { data: tables } = useQuery({
-    queryKey: ["https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/tables"],
+    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/tables"],
   });
 
   const { data: products } = useQuery({
-    queryKey: ["https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/products"],
+    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products"],
   });
 
   const { data: customers } = useQuery({
-    queryKey: ["https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/customers"],
+    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/customers"],
     enabled: pointsPaymentOpen,
   });
 
   const { data: storeSettings } = useQuery({
-    queryKey: ["https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/store-settings"],
+    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/store-settings"],
     queryFn: async () => {
-      const response = await apiRequest("GET", "https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/store-settings");
+      const response = await apiRequest("GET", "https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/store-settings");
       return response.json();
     },
   });
 
   const { data: orderItems, isLoading: orderItemsLoading } = useQuery({
-    queryKey: ["https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/order-items", selectedOrder?.id],
+    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/order-items", selectedOrder?.id],
     enabled: !!selectedOrder?.id && orderDetailsOpen,
     refetchOnWindowFocus: false,
     refetchOnMount: false,
@@ -287,7 +288,7 @@ export function OrderManagement() {
       try {
         const response = await apiRequest(
           "GET",
-          `https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/order-items/${selectedOrder.id}`,
+          `https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/order-items/${selectedOrder.id}`,
         );
         if (!response.ok) {
           console.error(
@@ -306,10 +307,10 @@ export function OrderManagement() {
 
   const updateOrderStatusMutation = useMutation({
     mutationFn: ({ orderId, status }: { orderId: number; status: string }) =>
-      apiRequest("PUT", `https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/orders/${orderId}/status`, { status }),
+      apiRequest("PUT", `https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders/${orderId}/status`, { status }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/orders"] });
-      queryClient.invalidateQueries({ queryKey: ["https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/tables"] });
+      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] });
+      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/tables"] });
       toast({
         title: t("common.success"),
         description: t("orders.orderStatusUpdated"),
@@ -360,10 +361,10 @@ export function OrderManagement() {
 
       // Force immediate refresh
       await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ["https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/orders"] }),
-        queryClient.invalidateQueries({ queryKey: ["https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/tables"] }),
-        queryClient.refetchQueries({ queryKey: ["https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/orders"] }),
-        queryClient.refetchQueries({ queryKey: ["https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/tables"] }),
+        queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] }),
+        queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/tables"] }),
+        queryClient.refetchQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] }),
+        queryClient.refetchQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/tables"] }),
       ]);
 
       // Don't show toast immediately to avoid conflicts with receipt modal
@@ -443,13 +444,13 @@ export function OrderManagement() {
       remainingAmount?: number;
     }) => {
       // First redeem points
-      await apiRequest("POST", "https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/customers/redeem-points", {
+      await apiRequest("POST", "https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/customers/redeem-points", {
         customerId,
         points,
       });
 
       // Then mark order as paid
-      await apiRequest("PUT", `https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/orders/${orderId}/status`, {
+      await apiRequest("PUT", `https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders/${orderId}/status`, {
         status: "paid",
         paymentMethod: paymentMethod || "points",
         customerId,
@@ -457,9 +458,9 @@ export function OrderManagement() {
       });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/orders"] });
-      queryClient.invalidateQueries({ queryKey: ["https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/tables"] });
-      queryClient.invalidateQueries({ queryKey: ["https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/customers"] });
+      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] });
+      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/tables"] });
+      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/customers"] });
       setOrderDetailsOpen(false);
       setPointsPaymentOpen(false);
       setSelectedCustomer(null);
@@ -492,22 +493,22 @@ export function OrderManagement() {
       paymentMethod: string;
     }) => {
       // First redeem all available points
-      await apiRequest("POST", "https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/customers/redeem-points", {
+      await apiRequest("POST", "https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/customers/redeem-points", {
         customerId,
         points,
       });
 
       // Then mark order as paid with mixed payment
-      await apiRequest("PUT", `https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/orders/${orderId}/status`, {
+      await apiRequest("PUT", `https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders/${orderId}/status`, {
         status: "paid",
         paymentMethod: `points + ${paymentMethod}`,
         customerId,
       });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/orders"] });
-      queryClient.invalidateQueries({ queryKey: ["https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/tables"] });
-      queryClient.invalidateQueries({ queryKey: ["https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/customers"] });
+      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] });
+      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/tables"] });
+      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/customers"] });
       setOrderDetailsOpen(false);
       setMixedPaymentOpen(false);
       setMixedPaymentData(null);
@@ -602,7 +603,7 @@ export function OrderManagement() {
       );
 
       console.log("🔍 API Call Details:", {
-        url: `https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/orders/${orderId}/status`,
+        url: `https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders/${orderId}/status`,
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status: "paid" }),
@@ -610,7 +611,7 @@ export function OrderManagement() {
 
       const statusResponse = await apiRequest(
         "PUT",
-        `https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/orders/${orderId}/status`,
+        `https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders/${orderId}/status`,
         { status: "paid" },
       );
 
@@ -640,7 +641,7 @@ export function OrderManagement() {
       // Step 2: Update additional payment details
       console.log("📋 Step 2: Updating payment details for order:", orderId);
 
-      const paymentDetailsResponse = await fetch(`https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/orders/${orderId}`, {
+      const paymentDetailsResponse = await fetch(`https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders/${orderId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -667,10 +668,10 @@ export function OrderManagement() {
       // Force immediate refresh with multiple attempts (5 times)
       for (let i = 0; i < 5; i++) {
         await Promise.all([
-          queryClient.invalidateQueries({ queryKey: ["https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/orders"] }),
-          queryClient.invalidateQueries({ queryKey: ["https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/tables"] }),
-          queryClient.refetchQueries({ queryKey: ["https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/orders"] }),
-          queryClient.refetchQueries({ queryKey: ["https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/tables"] }),
+          queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] }),
+          queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/tables"] }),
+          queryClient.refetchQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] }),
+          queryClient.refetchQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/tables"] }),
         ]);
 
         if (i < 4) {
@@ -683,8 +684,8 @@ export function OrderManagement() {
       intervals.forEach((delay, index) => {
         setTimeout(async () => {
           await Promise.all([
-            queryClient.refetchQueries({ queryKey: ["https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/orders"] }),
-            queryClient.refetchQueries({ queryKey: ["https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/tables"] }),
+            queryClient.refetchQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] }),
+            queryClient.refetchQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/tables"] }),
           ]);
           console.log(
             `🔄 Delayed refresh ${index + 1} completed after ${delay}ms`,
@@ -1008,7 +1009,7 @@ export function OrderManagement() {
       const startTime = Date.now();
       const response = await apiRequest(
         "PUT",
-        `https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/orders/${orderId}/status`,
+        `https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders/${orderId}/status`,
         { status: newStatus },
       );
       const endTime = Date.now();
@@ -1045,10 +1046,10 @@ export function OrderManagement() {
 
         // Invalidate and refetch queries immediately
         await Promise.all([
-          queryClient.invalidateQueries({ queryKey: ["https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/orders"] }),
-          queryClient.invalidateQueries({ queryKey: ["https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/tables"] }),
-          queryClient.refetchQueries({ queryKey: ["https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/orders"] }),
-          queryClient.refetchQueries({ queryKey: ["https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/tables"] }),
+          queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] }),
+          queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/tables"] }),
+          queryClient.refetchQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] }),
+          queryClient.refetchQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/tables"] }),
         ]);
 
         console.log(`✅ Queries refreshed after status update`);
@@ -1128,7 +1129,7 @@ export function OrderManagement() {
       // Fetch order items
       const orderItemsResponse = await apiRequest(
         "GET",
-        `https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/order-items/${order.id}`,
+        `https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/order-items/${order.id}`,
       );
 
       if (!orderItemsResponse.ok) {
@@ -1291,10 +1292,10 @@ export function OrderManagement() {
       try {
         // Force immediate refresh
         await Promise.all([
-          queryClient.invalidateQueries({ queryKey: ["https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/orders"] }),
-          queryClient.invalidateQueries({ queryKey: ["https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/tables"] }),
-          queryClient.refetchQueries({ queryKey: ["https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/orders"] }),
-          queryClient.refetchQueries({ queryKey: ["https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/tables"] }),
+          queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] }),
+          queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/tables"] }),
+          queryClient.refetchQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] }),
+          queryClient.refetchQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/tables"] }),
         ]);
 
         // Close all modals immediately and prevent any reopening
@@ -1356,10 +1357,10 @@ export function OrderManagement() {
 
       // Force immediate UI refresh
       await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ["https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/orders"] }),
-        queryClient.invalidateQueries({ queryKey: ["https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/tables"] }),
-        queryClient.refetchQueries({ queryKey: ["https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/orders"] }),
-        queryClient.refetchQueries({ queryKey: ["https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/tables"] }),
+        queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] }),
+        queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/tables"] }),
+        queryClient.refetchQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] }),
+        queryClient.refetchQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/tables"] }),
       ]);
 
       // Close all modals immediately - no receipt display for direct payments
@@ -1733,18 +1734,18 @@ export function OrderManagement() {
     console.log("🔄 Order Management: Refreshing data...");
     try {
       await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ["https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/orders"] }),
-        queryClient.invalidateQueries({ queryKey: ["https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/tables"] }),
-        queryClient.refetchQueries({ queryKey: ["https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/orders"] }),
-        queryClient.refetchQueries({ queryKey: ["https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/tables"] }),
+        queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] }),
+        queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/tables"] }),
+        queryClient.refetchQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] }),
+        queryClient.refetchQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/tables"] }),
       ]);
       console.log("✅ Order Management: Data refreshed successfully");
     } catch (error) {
       console.error("❌ Order Management: Error refreshing data:", error);
       // Try again after a delay
       setTimeout(() => {
-        queryClient.invalidateQueries({ queryKey: ["https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/orders"] });
-        queryClient.invalidateQueries({ queryKey: ["https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/tables"] });
+        queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] });
+        queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/tables"] });
       }, 1000);
     }
   }, [queryClient]);
@@ -1835,7 +1836,7 @@ export function OrderManagement() {
           // Fetch order items for calculation
           const response = await apiRequest(
             "GET",
-            `https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/order-items/${order.id}`,
+            `https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/order-items/${order.id}`,
           );
           if (!response.ok) {
             console.warn(
@@ -2309,10 +2310,13 @@ export function OrderManagement() {
                         </div>
 
                         <div className="flex justify-between">
-                          <span className="text-gray-600">Tạm tính:</span>
+                          <span className="text-gray-600">
+                            {t("pos.totalAmount")}
+                          </span>
                           <span className="font-medium">
                             {Math.floor(
-                              Number(order.subtotal || 0),
+                              Number(order.subtotal || 0) +
+                                Number(order.discount || 0),
                             ).toLocaleString("vi-VN")}{" "}
                             ₫
                           </span>
@@ -2320,7 +2324,7 @@ export function OrderManagement() {
 
                         {order.discount && Number(order.discount) > 0 && (
                           <div className="flex justify-between text-red-600">
-                            <span>Giảm giá:</span>
+                            <span>{t("reports.discount")}:</span>
                             <span>
                               -
                               {Math.floor(
@@ -2333,7 +2337,7 @@ export function OrderManagement() {
 
                         <div className="flex justify-between border-t pt-1">
                           <span className="text-gray-900 font-semibold">
-                            Tổng tiền:
+                            {t("reports.totalMoney")}:
                           </span>
                           <span className="text-lg font-bold text-blue-600">
                             {Math.floor(
@@ -2714,10 +2718,11 @@ export function OrderManagement() {
               {/* Order Summary */}
               <div className="space-y-3 bg-gray-50 p-4 rounded-lg">
                 <div className="flex justify-between text-sm">
-                  <span className="text-gray-600">Tạm tính:</span>
+                  <span className="text-gray-600">{t("pos.totalAmount")}</span>
                   <span className="font-medium">
                     {Math.floor(
-                      Number(selectedOrder?.subtotal || 0),
+                      Number(selectedOrder?.subtotal || 0) +
+                        Number(selectedOrder?.discount || 0),
                     ).toLocaleString("vi-VN")}{" "}
                     ₫
                   </span>
@@ -2749,7 +2754,7 @@ export function OrderManagement() {
                 <Separator />
                 <div className="flex justify-between">
                   <span className="text-lg font-bold text-gray-900">
-                    Tổng tiền:
+                    {t("reports.totalMoney")}:
                   </span>
                   <span className="text-lg font-bold text-blue-600">
                     {Math.floor(
@@ -3175,7 +3180,7 @@ export function OrderManagement() {
                 </p>
                 {mixedPaymentData && (
                   <p className="text-sm text-blue-600">
-                    Đã sử dụng {mixedPaymentData.pointsToUse.toLocaleString()}P
+                    Đã sử d  �ng {mixedPaymentData.pointsToUse.toLocaleString()}P
                     ( -
                     {(mixedPaymentData.pointsToUse * 1000).toLocaleString(
                       "vi-VN",
@@ -3495,66 +3500,68 @@ export function OrderManagement() {
       </Dialog>
 
       {/* Receipt Modal - Step 1: "Xem trước hóa đơn" */}
-      <ReceiptModal
-        isOpen={showReceiptPreview}
-        onClose={() => {
-          console.log("🔴 Order Management: Closing receipt preview modal");
-          setShowReceiptPreview(false);
-          setPreviewReceipt(null);
-          setOrderForPayment(null);
-          setShowPaymentMethodModal(false);
-        }}
-        onConfirm={() => {
-          console.log(
-            "📄 Order Management: Receipt preview confirmed, starting payment flow",
-          );
+      {showReceiptPreview && (
+        <ReceiptModal
+          isOpen={showReceiptPreview}
+          onClose={() => {
+            console.log("🔴 Order Management: Closing receipt preview modal");
+            setShowReceiptPreview(false);
+            setPreviewReceipt(null);
+            setOrderForPayment(null);
+            setShowPaymentMethodModal(false);
+          }}
+          onConfirm={() => {
+            console.log(
+              "📄 Order Management: Receipt preview confirmed, starting payment flow",
+            );
 
-          if (!previewReceipt || !orderForPayment) {
-            console.error("❌ Missing preview data for payment flow");
-            toast({
-              title: "Lỗi",
-              description: "Không thể tiếp tục thanh toán. Vui lòng thử lại.",
-              variant: "destructive",
+            if (!previewReceipt || !orderForPayment) {
+              console.error("❌ Missing preview data for payment flow");
+              toast({
+                title: "Lỗi",
+                description: "Không thể tiếp tục thanh toán. Vui lòng thử lại.",
+                variant: "destructive",
+              });
+              return;
+            }
+
+            console.log("💳 Opening payment method modal with order:", {
+              orderId: orderForPayment.id,
+              exactTotal: orderForPayment.exactTotal,
+              hasItems: orderForPayment.orderItems?.length || 0,
             });
-            return;
+
+            // Close preview and show payment method modal
+            setShowReceiptPreview(false);
+            setShowPaymentMethodModal(true);
+          }}
+          isPreview={true}
+          receipt={previewReceipt}
+          cartItems={
+            previewReceipt?.orderItems?.map((item: any) => ({
+              id: item.productId || item.id,
+              name: item.productName || item.name,
+              price: parseFloat(item.price || item.unitPrice || "0"),
+              quantity: parseInt(item.quantity || "1"),
+              sku: item.sku || `SP${item.productId}`,
+              taxRate: (() => {
+                const product = Array.isArray(products)
+                  ? products.find((p: any) => p.id === item.productId)
+                  : null;
+                return product?.taxRate ? parseFloat(product.taxRate) : 10;
+              })(),
+              discount: item.discount || "0",
+            })) || []
           }
-
-          console.log("💳 Opening payment method modal with order:", {
-            orderId: orderForPayment.id,
-            exactTotal: orderForPayment.exactTotal,
-            hasItems: orderForPayment.orderItems?.length || 0,
-          });
-
-          // Close preview and show payment method modal
-          setShowReceiptPreview(false);
-          setShowPaymentMethodModal(true);
-        }}
-        isPreview={true}
-        receipt={previewReceipt}
-        cartItems={
-          previewReceipt?.orderItems?.map((item: any) => ({
-            id: item.productId || item.id,
-            name: item.productName || item.name,
-            price: parseFloat(item.price || item.unitPrice || "0"),
-            quantity: parseInt(item.quantity || "1"),
-            sku: item.sku || `SP${item.productId}`,
-            taxRate: (() => {
-              const product = Array.isArray(products)
-                ? products.find((p: any) => p.id === item.productId)
-                : null;
-              return product?.taxRate ? parseFloat(product.taxRate) : 10;
-            })(),
-            discount: item.discount || "0",
-          })) || []
-        }
-        total={
-          previewReceipt
-            ? parseFloat(
-                previewReceipt.exactTotal || previewReceipt.total || "0",
-              )
-            : 0
-        }
-      />
+          total={
+            previewReceipt
+              ? parseFloat(
+                  previewReceipt.exactTotal || previewReceipt.total || "0",
+                )
+              : 0
+          }
+        />
+      )}
 
       {/* Payment Method Modal */}
       <PaymentMethodModal
@@ -3598,8 +3605,8 @@ export function OrderManagement() {
             }
 
             // Force UI refresh
-            queryClient.invalidateQueries({ queryKey: ["https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/orders"] });
-            queryClient.invalidateQueries({ queryKey: ["https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/tables"] });
+            queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] });
+            queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/tables"] });
 
             toast({
               title: "Thành công",
@@ -3712,97 +3719,100 @@ export function OrderManagement() {
       )}
 
       {/* Receipt Modal - Final receipt after payment */}
-      <ReceiptModal
-        isOpen={showReceiptModal}
-        onClose={async () => {
-          console.log(
-            "🔴 Order Management: Closing final receipt modal safely",
-          );
-
-          try {
-            // Step 1: Close modal immediately
-            setShowReceiptModal(false);
-            setSelectedReceipt(null);
-
-            // Step 2: Force data refresh before clearing states
-            await Promise.all([
-              queryClient.invalidateQueries({ queryKey: ["https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/orders"] }),
-              queryClient.invalidateQueries({ queryKey: ["https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/tables"] }),
-              queryClient.refetchQueries({ queryKey: ["https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/orders"] }),
-              queryClient.refetchQueries({ queryKey: ["https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/tables"] }),
-            ]);
-
-            // Step 3: Clear modal states gradually to prevent white screen
-            setTimeout(() => {
-              setOrderForPayment(null);
-              setShowPaymentMethodModal(false);
-              setShowEInvoiceModal(false);
-            }, 50);
-
-            setTimeout(() => {
-              setShowReceiptPreview(false);
-              setPreviewReceipt(null);
-              setOrderDetailsOpen(false);
-            }, 100);
-
-            setTimeout(() => {
-              setSelectedOrder(null);
-              setPaymentMethodsOpen(false);
-              setShowQRPayment(false);
-              setPointsPaymentOpen(false);
-              setMixedPaymentOpen(false);
-            }, 150);
-
-            // Step 4: Send global refresh signal
-            if (typeof window !== "undefined") {
-              window.dispatchEvent(
-                new CustomEvent("orderManagementRefresh", {
-                  detail: {
-                    source: "receipt_modal_close",
-                    timestamp: new Date().toISOString(),
-                  },
-                }),
+      {showReceiptModal ||
+        (selectedReceipt && (
+          <ReceiptModal
+            isOpen={showReceiptModal}
+            onClose={async () => {
+              console.log(
+                "🔴 Order Management: Closing final receipt modal safely",
               );
-            }
 
-            console.log(
-              "✅ Order Management: Receipt modal closed safely with gradual state clearing",
-            );
-          } catch (error) {
-            console.error("❌ Error during receipt modal close:", error);
-            // Fallback: just clear states without refresh
-            setOrderForPayment(null);
-            setShowPaymentMethodModal(false);
-            setShowEInvoiceModal(false);
-            setShowReceiptPreview(false);
-            setPreviewReceipt(null);
-            setOrderDetailsOpen(false);
-            setSelectedOrder(null);
-            setPaymentMethodsOpen(false);
-            setShowQRPayment(false);
-            setPointsPaymentOpen(false);
-            setMixedPaymentOpen(false);
-          }
-        }}
-        receipt={selectedReceipt}
-        cartItems={
-          selectedReceipt?.items?.map((item: any) => ({
-            id: item.productId || item.id,
-            name: item.productName || item.name,
-            price: parseFloat(item.price || item.unitPrice || "0"),
-            quantity: item.quantity,
-            sku: item.sku || `SP${item.productId}`,
-            taxRate: (() => {
-              const product = Array.isArray(products)
-                ? products.find((p: any) => p.id === item.productId)
-                : null;
-              return product?.taxRate ? parseFloat(product.taxRate) : 10;
-            })(),
-            discount: item.discount || "0",
-          })) || []
-        }
-        autoClose={true}
-      />
+              try {
+                // Step 1: Close modal immediately
+                setShowReceiptModal(false);
+                setSelectedReceipt(null);
+
+                // Step 2: Force data refresh before clearing states
+                await Promise.all([
+                  queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] }),
+                  queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/tables"] }),
+                  queryClient.refetchQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] }),
+                  queryClient.refetchQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/tables"] }),
+                ]);
+
+                // Step 3: Clear modal states gradually to prevent white screen
+                setTimeout(() => {
+                  setOrderForPayment(null);
+                  setShowPaymentMethodModal(false);
+                  setShowEInvoiceModal(false);
+                }, 50);
+
+                setTimeout(() => {
+                  setShowReceiptPreview(false);
+                  setPreviewReceipt(null);
+                  setOrderDetailsOpen(false);
+                }, 100);
+
+                setTimeout(() => {
+                  setSelectedOrder(null);
+                  setPaymentMethodsOpen(false);
+                  setShowQRPayment(false);
+                  setPointsPaymentOpen(false);
+                  setMixedPaymentOpen(false);
+                }, 150);
+
+                // Step 4: Send global refresh signal
+                if (typeof window !== "undefined") {
+                  window.dispatchEvent(
+                    new CustomEvent("orderManagementRefresh", {
+                      detail: {
+                        source: "receipt_modal_close",
+                        timestamp: new Date().toISOString(),
+                      },
+                    }),
+                  );
+                }
+
+                console.log(
+                  "✅ Order Management: Receipt modal closed safely with gradual state clearing",
+                );
+              } catch (error) {
+                console.error("❌ Error during receipt modal close:", error);
+                // Fallback: just clear states without refresh
+                setOrderForPayment(null);
+                setShowPaymentMethodModal(false);
+                setShowEInvoiceModal(false);
+                setShowReceiptPreview(false);
+                setPreviewReceipt(null);
+                setOrderDetailsOpen(false);
+                setSelectedOrder(null);
+                setPaymentMethodsOpen(false);
+                setShowQRPayment(false);
+                setPointsPaymentOpen(false);
+                setMixedPaymentOpen(false);
+              }
+            }}
+            receipt={selectedReceipt}
+            cartItems={
+              selectedReceipt?.items?.map((item: any) => ({
+                id: item.productId || item.id,
+                name: item.productName || item.name,
+                price: parseFloat(item.price || item.unitPrice || "0"),
+                quantity: item.quantity,
+                sku: item.sku || `SP${item.productId}`,
+                taxRate: (() => {
+                  const product = Array.isArray(products)
+                    ? products.find((p: any) => p.id === item.productId)
+                    : null;
+                  return product?.taxRate ? parseFloat(product.taxRate) : 10;
+                })(),
+                discount: item.discount || "0",
+              })) || []
+            }
+            autoClose={true}
+          />
+        ))}
     </div>
   );
 }

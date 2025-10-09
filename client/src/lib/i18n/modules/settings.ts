@@ -162,11 +162,8 @@ export const settingsTranslations: { [key: string]: SettingsTranslations } = {
     categoryDeleteError: "카테고리 삭제 중 오류가 발생했습니다",
     categoryDeleteErrorWithProducts: "아직 상품이 남아있는 카테고리는 삭제할 수 없습니다. 먼저 상품들을 삭제하거나 다른 카테고리로 이동해주세요.",
     // Product management
-    createProduct: "상품 생성",
-    updateProduct: "상품 수정",
-    productCreateSuccess: "상품이 생성되었습니다",
-    productUpdateSuccess: "상품이 수정되었습니다", 
-    productDeleteSuccess: "상품이 삭제되었습니다",
+    productDeleteSuccess: "상품이 성공적으로 삭제되었습니다",
+    productDeleteError: "상품 삭제 중 오류가 발생했습니다",
     // E-invoice management
     einvoiceConnectionCreateSuccess: "E-invoice 연결이 성공적으로 생성되었습니다",
     einvoiceConnectionCreateError: "E-invoice 연결 생성 중 오류가 발생했습니다",
@@ -249,6 +246,7 @@ export const settingsTranslations: { [key: string]: SettingsTranslations } = {
     categoryDeleteSuccess: "카테고리가 삭제되었습니다",
     productCreateSuccess: "상품이 생성되었습니다",
     productUpdateSuccess: "상품이 수정되었습니다",
+    productDeleteSuccess: "상품이 삭제되었습니다",
     total: "총",
     productsShowing: "상품이 표시됩니다",
     productDescriptionPlaceholder: "상품 설명을 입력하세요 (선택사항)",
@@ -264,6 +262,8 @@ export const settingsTranslations: { [key: string]: SettingsTranslations } = {
     trackInventory: "Track Inventory",
     enableInventoryTracking: "이 상품의 재고 추적을 활성화",
     yes: "네",
+    productUpdatedSuccess: "상품이 성공적으로 업데이트되었습니다",
+    
     // Product form dialog
     addProductTitle: "상품 추가",
     addProductDesc: "새 상품 정보를 입력하세요",
@@ -281,6 +281,12 @@ export const settingsTranslations: { [key: string]: SettingsTranslations } = {
     usageStatusActive: "활성",
     usageStatusInactive: "비활성",
     selectUsageStatus: "상태를 선택하세요",
+    imageInputUrl: "URL 입력",
+    imageInputFile: "파일 업로드",
+    selectImageFile: "이미지 파일을 선택하거나",
+    dragDropUpload: "드래그앤드롭으로 업로드",
+    removeFile: "파일 제거",
+    fileSizeExceeded: "이미지 크기는 5MB를 초과할 수 없습니다",
 
     // Placeholders
     categoryNamePlaceholder: "카테고리 이름을 입력하세요",
@@ -288,7 +294,6 @@ export const settingsTranslations: { [key: string]: SettingsTranslations } = {
     templateCodePlaceholder: "예: 123451/88890345",
     symbolPlaceholder: "예: AA/19E",
     templateNamePlaceholder: "예: 템플릿 1",
-    notesPlaceholder: "메모를 입력하세요 (선택사항)",
     productsCount: "개 상품",
 
     // Product deletion confirmation
@@ -325,13 +330,18 @@ export const settingsTranslations: { [key: string]: SettingsTranslations } = {
     zonePrefixDesc: "구역 이름 뒤에 표시될 접미사를 설정하세요",
     selectedFloorZoneInfo: "선택된 층/구역 정보",
     defaultFloorDisplay: "기본 층",
-    defaultZoneDisplay: "기본 구역",
+    defaultZoneDisplay: "기본 구역", 
     displayInfoLabel: "표시 정보",
     floorSuffix: "층",
     zoneSuffix: "구역",
     defaultZone: "기본 구역",
     selectDefaultZone: "기본 구역을 선택하세요",
     zoneLabel: "구역",
+    zoneA: "A구역",
+    zoneB: "B구역", 
+    zoneC: "C구역",
+    zoneD: "D구역",
+    zoneE: "E구역",
 
     // Printer configuration
     printerManagementDesc: "POS 시스템에 연결된 프린터 관리",
@@ -499,11 +509,9 @@ export const settingsTranslations: { [key: string]: SettingsTranslations } = {
     categoryDeleteSuccess: "Category has been deleted successfully",
     categoryDeleteError: "An error occurred while deleting category",
     categoryDeleteErrorWithProducts: "Cannot delete category because there are still products in this category. Please delete or move the products to other categories first.",
+    productUpdatedSuccess: "Product has been updated successfully",
+  
     // Product management
-    createProduct: "Create Product", 
-    updateProduct: "Update Product",
-    productCreateSuccess: "Product has been created successfully",
-    productUpdateSuccess: "Product has been updated successfully",
     productDeleteSuccess: "Product has been deleted successfully",
     productDeleteError: "An error occurred while deleting product",
     // E-invoice management
@@ -623,6 +631,12 @@ export const settingsTranslations: { [key: string]: SettingsTranslations } = {
     usageStatusActive: "Active",
     usageStatusInactive: "Inactive",
     selectUsageStatus: "Select status",
+    imageInputUrl: "Enter URL",
+    imageInputFile: "Upload File",
+    selectImageFile: "Select image file or",
+    dragDropUpload: "Drag and drop to upload",
+    removeFile: "Remove file",
+    fileSizeExceeded: "Image size cannot exceed 5MB",
 
     // Placeholders
     categoryNamePlaceholder: "Enter category name",
@@ -673,6 +687,11 @@ export const settingsTranslations: { [key: string]: SettingsTranslations } = {
     defaultZone: "Default Zone",
     selectDefaultZone: "Select default zone",
     zoneLabel: "Zone",
+    zoneA: "Zone A",
+    zoneB: "Zone B",
+    zoneC: "Zone C", 
+    zoneD: "Zone D",
+    zoneE: "Zone E",
 
     // Printer configuration
     printerManagementDesc: "Manage printers connected to the POS system",
@@ -841,10 +860,6 @@ export const settingsTranslations: { [key: string]: SettingsTranslations } = {
     categoryDeleteError: "Có lỗi xảy ra khi xóa danh mục",
     categoryDeleteErrorWithProducts: "Không thể xóa danh mục vì vẫn còn sản phẩm trong danh mục này. Vui lòng xóa hoặc chuyển các sản phẩm sang danh mục khác trước.",
     // Product management
-    createProduct: "Tạo sản phẩm",
-    updateProduct: "Cập nhật sản phẩm", 
-    productCreateSuccess: "Tạo sản phẩm thành công", 
-    productUpdateSuccess: "Cập nhật sản phẩm thành công",
     productDeleteSuccess: "Sản phẩm đã được xóa thành công",
     productDeleteError: "Có lỗi xảy ra khi xóa sản phẩm",
     // E-invoice management
@@ -947,6 +962,8 @@ export const settingsTranslations: { [key: string]: SettingsTranslations } = {
     yes: "Có",
     inStock: "Còn hàng",
     outOfStock: "Hết hàng",
+    productUpdatedSuccess: "Sản phẩm đã được cập nhật thành công",
+    
     // Product form dialog
     addProductTitle: "Thêm sản phẩm",
     addProductDesc: "Nhập thông tin sản phẩm mới",
@@ -964,6 +981,12 @@ export const settingsTranslations: { [key: string]: SettingsTranslations } = {
     usageStatusActive: "Hoạt động",
     usageStatusInactive: "Không hoạt động",
     selectUsageStatus: "Chọn trạng thái",
+    imageInputUrl: "Nhập URL",
+    imageInputFile: "Tải file lên",
+    selectImageFile: "Chọn file hình ảnh hoặc",
+    dragDropUpload: "Kéo thả để tải lên",
+    removeFile: "Xóa file",
+    fileSizeExceeded: "Kích thước ảnh không được vượt quá 5MB",
 
     // Placeholders
     categoryNamePlaceholder: "Nhập tên danh mục",
@@ -1012,8 +1035,13 @@ export const settingsTranslations: { [key: string]: SettingsTranslations } = {
     floorSuffix: "Tầng",
     zoneSuffix: "Khu vực",
     defaultZone: "Khu vực mặc định",
-    selectDefaultZone: "Chọn khu vực mặc định",
+    selectDefaultZone: "Chọn khu vực mặc định", 
     zoneLabel: "Khu vực",
+    zoneA: "Khu vực A",
+    zoneB: "Khu vực B",
+    zoneC: "Khu vực C",
+    zoneD: "Khu vực D", 
+    zoneE: "Khu vực E",
 
     // Printer configuration
     printerManagementDesc: "Quản lý các máy in kết nối với hệ thống POS",

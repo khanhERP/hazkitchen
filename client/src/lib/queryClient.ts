@@ -10,23 +10,56 @@ async function throwIfResNotOk(res: Response) {
 export async function apiRequest(
   method: string,
   url: string,
-  data?: unknown | undefined,
-): Promise<Response> {
-  const res = await fetch(url, {
+  data?: any,
+  options: RequestInit = {},
+) {
+  // Log payment method tracking for order status updates
+  if (url.includes("https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders/") && url.includes("/status") && method === "PUT") {
+    console.log("🔍 apiRequest: Payment method tracking for order status update:", {
+      method,
+      url,
+      data,
+      hasPaymentMethod: data && 'paymentMethod' in data,
+      paymentMethodValue: data?.paymentMethod,
+      paymentMethodType: typeof data?.paymentMethod,
+      paymentMethodIsNull: data?.paymentMethod === null,
+      paymentMethodIsUndefined: data?.paymentMethod === undefined,
+      paymentMethodIsEmpty: data?.paymentMethod === "",
+      fullRequestData: data,
+      timestamp: new Date().toISOString()
+    });
+  }
+
+  const config: RequestInit = {
     method,
-    headers: data ? { "Content-Type": "application/json" } : {},
-    body: data
-      ? JSON.stringify(data, (key, value) => {
-          if (value instanceof Date) {
-            return { __type: "Date", value: value.toISOString() };
-          }
-          return value;
-        })
-      : undefined,
-    credentials: "include",
-  });
-  await throwIfResNotOk(res);
-  return res;
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+    ...options,
+  };
+
+  if (data && (method === "POST" || method === "PUT" || method === "PATCH")) {
+    config.body = JSON.stringify(data);
+
+    // Additional logging for payment method requests
+    if (url.includes("https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders/") && url.includes("/status") && method === "PUT") {
+      console.log("🔍 apiRequest: Final request body for payment:", {
+        url,
+        requestBodyString: JSON.stringify(data),
+        parsedBack: JSON.parse(JSON.stringify(data)),
+        timestamp: new Date().toISOString()
+      });
+    }
+  }
+
+  const response = await fetch(url, config);
+
+  if (!response.ok) {
+    throw new Error(`HTTP error! status: ${response.status}`);
+  }
+
+  return response;
 }
 
 type UnauthorizedBehavior = "returnNull" | "throw";

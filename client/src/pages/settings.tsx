@@ -81,6 +81,8 @@ import { PointsManagementModal } from "@/components/customers/points-management-
 import { EmployeeFormModal } from "@/components/employees/employee-form-modal";
 import { Checkbox } from "@/components/ui/checkbox";
 import { PrinterConfigModal } from "@/components/pos/printer-config-modal";
+import { POSHeader } from "@/components/pos/header";
+import { RightSidebar } from "@/components/ui/right-sidebar";
 
 // E-invoice software providers mapping
 const EINVOICE_PROVIDERS = [
@@ -99,7 +101,7 @@ interface SettingsPageProps {
 }
 
 export default function SettingsPage({ onLogout }: SettingsPageProps) {
-  const { t } = useTranslation();
+  const { t, currentLanguage } = useTranslation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState("store");
@@ -169,7 +171,7 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
     if (!employeeToDelete) return;
 
     try {
-      const response = await fetch(`https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/employees/${employeeToDelete.id}`, {
+      const response = await fetch(`https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/employees/${employeeToDelete.id}`, {
         method: "DELETE",
       });
 
@@ -209,7 +211,7 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
       }
 
       await queryClient.refetchQueries({
-        queryKey: ["https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/employees"],
+        queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/employees"],
       });
 
       toast({
@@ -241,33 +243,31 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
     price: "",
     stock: 0,
     categoryId: "",
-    productType: 1,
-    taxRate: "8.00",
     imageUrl: "",
-    floor: "1층",
-    zone: "A구역",
+    floor: "1",
+    zone: "A",
     imageInputMethod: "url" as "url" | "file",
     selectedImageFile: null as File | null,
-    trackInventory: true,
+    trackInventory: true, // Default to true
   });
 
   // Fetch store settings
   const { data: storeData, isLoading } = useQuery<StoreSettings>({
-    queryKey: ["https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/store-settings"],
+    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/store-settings"],
   });
 
   // Fetch customers
   const { data: customersData, isLoading: customersLoading } = useQuery<
     Customer[]
   >({
-    queryKey: ["https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/customers"],
+    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/customers"],
   });
 
   // Fetch employees
   const { data: employeesRawData, isLoading: employeesLoading } = useQuery<
     any[]
   >({
-    queryKey: ["https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/employees"],
+    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/employees"],
   });
 
   // Sort employees by ID descending (newest first)
@@ -291,14 +291,14 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
   const { data: categoriesData, isLoading: categoriesLoading } = useQuery<
     any[]
   >({
-    queryKey: ["https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/categories"],
+    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/categories"],
   });
 
   // Fetch products (include inactive products in settings)
   const { data: productsData, isLoading: productsLoading } = useQuery<any[]>({
-    queryKey: ["https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/products", { includeInactive: true }],
+    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products", { includeInactive: true }],
     queryFn: async () => {
-      const response = await fetch("https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/products?includeInactive=true");
+      const response = await fetch("https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products?includeInactive=true");
       if (!response.ok) throw new Error("Failed to fetch products");
       return response.json();
     },
@@ -318,8 +318,8 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
     closeTime: "22:00",
     priceIncludesTax: false,
     defaultFloor: "1", // Added for floor management
-    floorPrefix: "층", // Added for floor management
-    zonePrefix: "구역", // Added for zone management
+    floorPrefix: "1", // Added for floor management
+    zonePrefix: "A", // Added for zone management
     defaultZone: "A", // Added for zone management
   });
 
@@ -339,8 +339,8 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
         closeTime: storeData.closeTime || "22:00",
         priceIncludesTax: storeData.priceIncludesTax || false,
         defaultFloor: storeData.defaultFloor || "1",
-        floorPrefix: storeData.floorPrefix || "층",
-        zonePrefix: storeData.zonePrefix || "구역",
+        floorPrefix: storeData.floorPrefix || "1",
+        zonePrefix: storeData.zonePrefix || "A",
         defaultZone: storeData.defaultZone || "A",
       });
     }
@@ -362,11 +362,11 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
   // Mutation to update store settings
   const updateStoreSettingsMutation = useMutation({
     mutationFn: async (settings: Partial<InsertStoreSettings>) => {
-      const response = await apiRequest("PUT", "https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/store-settings", settings);
+      const response = await apiRequest("PUT", "https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/store-settings", settings);
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/store-settings"] });
+      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/store-settings"] });
       toast({
         title: t("common.success"),
         description: t("settings.storeUpdated"),
@@ -552,7 +552,7 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
     if (!customerToDelete) return;
 
     try {
-      const response = await fetch(`https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/customers/${customerToDelete.id}`, {
+      const response = await fetch(`https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/customers/${customerToDelete.id}`, {
         method: "DELETE",
       });
 
@@ -560,7 +560,7 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
-      await queryClient.refetchQueries({ queryKey: ["https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/customers"] });
+      await queryClient.refetchQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/customers"] });
 
       toast({
         title: t("common.success"),
@@ -616,11 +616,9 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
       price: "",
       stock: 0,
       categoryId: "",
-      productType: 1,
-      taxRate: "8.00",
       imageUrl: "",
-      floor: "1층",
-      zone: "A구역",
+      floor: "1",
+      zone: "A",
       imageInputMethod: "url",
       selectedImageFile: null,
       trackInventory: true,
@@ -638,7 +636,7 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
     }
 
     try {
-      const response = await fetch("https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/categories", {
+      const response = await fetch("https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/categories", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -653,8 +651,8 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
       const result = await response.json();
 
       // Refetch data immediately
-      await queryClient.refetchQueries({ queryKey: ["https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/categories"] });
-      await queryClient.refetchQueries({ queryKey: ["https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/products"] });
+      await queryClient.refetchQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/categories"] });
+      await queryClient.refetchQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products"] });
 
       toast({
         title: t("common.success"),
@@ -692,7 +690,7 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
     }
 
     try {
-      const response = await fetch(`https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/categories/${editingCategory.id}`, {
+      const response = await fetch(`https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/categories/${editingCategory.id}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -711,8 +709,8 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
       resetCategoryForm();
 
       // Refetch data immediately
-      await queryClient.refetchQueries({ queryKey: ["https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/categories"] });
-      await queryClient.refetchQueries({ queryKey: ["https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/products"] });
+      await queryClient.refetchQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/categories"] });
+      await queryClient.refetchQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products"] });
 
       toast({
         title: t("common.success"),
@@ -755,7 +753,7 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
     if (!categoryToDelete) return;
 
     try {
-      const response = await fetch(`https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/categories/${categoryToDelete.id}`, {
+      const response = await fetch(`https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/categories/${categoryToDelete.id}`, {
         method: "DELETE",
       });
 
@@ -767,8 +765,8 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
       }
 
       // Refetch data immediately
-      await queryClient.refetchQueries({ queryKey: ["https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/categories"] });
-      await queryClient.refetchQueries({ queryKey: ["https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/products"] });
+      await queryClient.refetchQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/categories"] });
+      await queryClient.refetchQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products"] });
 
       toast({
         title: t("common.success"),
@@ -803,51 +801,41 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
       const reader = new FileReader();
       reader.readAsDataURL(file);
       reader.onload = () => resolve(reader.result as string);
-      reader.onerror = error => reject(error);
+      reader.onerror = (error) => reject(error);
     });
+  };
+
+  // Function to generate unique SKU
+  const generateProductSKU = () => {
+    const randomChars = Math.random()
+      .toString(36)
+      .substring(2, 8)
+      .toUpperCase();
+    const sku = `ITEM-${randomChars.padEnd(6, "0")}`;
+    setProductForm((prev) => ({ ...prev, sku }));
   };
 
   const handleCreateProduct = async () => {
     try {
-      // Validate required fields
-      if (!productForm.name || !productForm.sku || !productForm.price || !productForm.categoryId || !productForm.taxRate) {
-        toast({
-          title: t("common.error"),
-          description: "Please fill in all required fields: Name, SKU, Price, Category, and Tax Rate",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      // Validate price limit
-      const priceNum = parseFloat(productForm.price);
-      if (priceNum >= 100000000) {
-        toast({
-          title: t("common.error"),
-          description: "Price cannot exceed 99,999,999 VND",
-          variant: "destructive",
-        });
-        return;
-      }
-
       let finalProductData = {
-        name: productForm.name.trim(),
-        sku: productForm.sku.trim().toUpperCase(),
-        price: productForm.price.toString(),
-        stock: Number(productForm.stock) || 0,
+        ...productForm,
         categoryId: parseInt(productForm.categoryId),
-        productType: Number(productForm.productType) || 1,
-        trackInventory: productForm.trackInventory !== false,
-        imageUrl: productForm.imageUrl?.trim() || null,
-        taxRate: productForm.taxRate.toString(),
-        floor: productForm.floor || "1층",
-        zone: productForm.zone || "A구역",
+        price: productForm.price.toString(),
+        stock: Number(productForm.stock),
+        floor: productForm.floor, // Add floor
+        zone: productForm.zone, // Add zone
+        trackInventory: productForm.trackInventory,
       };
 
       // Handle file upload if file method is selected
-      if (productForm.imageInputMethod === "file" && productForm.selectedImageFile) {
+      if (
+        productForm.imageInputMethod === "file" &&
+        productForm.selectedImageFile
+      ) {
         try {
-          const base64Image = await convertFileToBase64(productForm.selectedImageFile);
+          const base64Image = await convertFileToBase64(
+            productForm.selectedImageFile,
+          );
           finalProductData.imageUrl = base64Image;
         } catch (error) {
           console.error("파일 변환 오류:", error);
@@ -859,21 +847,24 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
           return;
         }
       } else if (productForm.imageInputMethod === "url") {
+        // Ensure imageUrl is set if URL method is selected
         finalProductData.imageUrl = productForm.imageUrl;
       }
 
-      const response = await fetch("https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/products", {
+      const response = await fetch("https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(finalProductData),
       });
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ message: "Unknown error" }));
+        const errorData = await response
+          .json()
+          .catch(() => ({ message: "Unknown error" }));
         throw new Error(errorData.message || "Failed to create product");
       }
 
-      await queryClient.refetchQueries({ queryKey: ["https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/products"] });
+      await queryClient.refetchQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products"] });
       setShowProductForm(false);
       resetProductForm();
       toast({
@@ -884,7 +875,8 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
       console.error("Product creation error:", error);
       toast({
         title: t("common.error"),
-        description: (error as Error).message || t("settings.productCreatedError"),
+        description:
+          (error as Error).message || t("settings.productCreatedError"),
         variant: "destructive",
       });
     }
@@ -894,45 +886,25 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
     if (!editingProduct) return;
 
     try {
-      // Validate required fields
-      if (!productForm.name || !productForm.sku || !productForm.price || !productForm.categoryId || !productForm.taxRate) {
-        toast({
-          title: t("common.error"),
-          description: "Please fill in all required fields: Name, SKU, Price, Category, and Tax Rate",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      // Validate price limit
-      const priceNum = parseFloat(productForm.price);
-      if (priceNum >= 100000000) {
-        toast({
-          title: t("common.error"),
-          description: "Price cannot exceed 99,999,999 VND",
-          variant: "destructive",
-        });
-        return;
-      }
-
       let finalProductData = {
-        name: productForm.name.trim(),
-        sku: productForm.sku.trim().toUpperCase(),
-        price: productForm.price.toString(),
-        stock: Number(productForm.stock) || 0,
+        ...productForm,
         categoryId: parseInt(productForm.categoryId),
-        productType: Number(productForm.productType) || 1,
-        trackInventory: productForm.trackInventory !== false,
-        imageUrl: productForm.imageUrl?.trim() || null,
-        taxRate: productForm.taxRate.toString(),
-        floor: productForm.floor || "1층",
-        zone: productForm.zone || "A구역",
+        price: productForm.price.toString(),
+        stock: Number(productForm.stock),
+        floor: productForm.floor, // Add floor
+        zone: productForm.zone, // Add zone
+        trackInventory: productForm.trackInventory,
       };
 
       // Handle file upload if file method is selected
-      if (productForm.imageInputMethod === "file" && productForm.selectedImageFile) {
+      if (
+        productForm.imageInputMethod === "file" &&
+        productForm.selectedImageFile
+      ) {
         try {
-          const base64Image = await convertFileToBase64(productForm.selectedImageFile);
+          const base64Image = await convertFileToBase64(
+            productForm.selectedImageFile,
+          );
           finalProductData.imageUrl = base64Image;
         } catch (error) {
           console.error("파일 변환 오류:", error);
@@ -944,21 +916,24 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
           return;
         }
       } else if (productForm.imageInputMethod === "url") {
+        // Ensure imageUrl is set if URL method is selected
         finalProductData.imageUrl = productForm.imageUrl;
       }
 
-      const response = await fetch(`https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/products/${editingProduct.id}`, {
+      const response = await fetch(`https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products/${editingProduct.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(finalProductData),
       });
 
       if (!response.ok) {
-         const errorData = await response.json().catch(() => ({ message: "Unknown error" }));
+        const errorData = await response
+          .json()
+          .catch(() => ({ message: "Unknown error" }));
         throw new Error(errorData.message || "Failed to update product");
       }
 
-      await queryClient.refetchQueries({ queryKey: ["https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/products"] });
+      await queryClient.refetchQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products"] });
       setShowProductForm(false);
       setEditingProduct(null);
       resetProductForm();
@@ -970,7 +945,8 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
       console.error("Product update error:", error);
       toast({
         title: t("common.error"),
-        description: (error as Error).message || t("settings.productUpdatedError"),
+        description:
+          (error as Error).message || t("settings.productUpdatedError"),
         variant: "destructive",
       });
     }
@@ -988,9 +964,9 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
     if (!productToDelete) return;
 
     try {
-      await apiRequest("DELETE", `https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/products/${productToDelete.id}`);
+      await apiRequest("DELETE", `https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products/${productToDelete.id}`);
 
-      await queryClient.refetchQueries({ queryKey: ["https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/products"] });
+      await queryClient.refetchQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products"] });
 
       toast({
         title: t("common.success"),
@@ -1026,14 +1002,13 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
       price: product.price.toString(),
       stock: product.stock,
       categoryId: product.categoryId.toString(),
-      productType: product.productType || 1,
-      taxRate: product.taxRate || "8.00",
       imageUrl: product.imageUrl || "",
-      floor: product.floor || "1층",
-      zone: product.zone || "A구역",
-      imageInputMethod: (product.imageUrl && product.imageUrl.trim() !== "") ? "url" : "url",
+      floor: product.floor || "1",
+      zone: product.zone || "A",
+      imageInputMethod:
+        product.imageUrl && product.imageUrl.trim() !== "" ? "url" : "url",
       selectedImageFile: null,
-      trackInventory: product.trackInventory !== false,
+      trackInventory: product.trackInventory !== undefined ? product.trackInventory : true,
     });
     setShowProductForm(true);
   };
@@ -1056,7 +1031,7 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
   // Fetch E-invoice connections
   const { data: eInvoiceConnections = [], isLoading: eInvoiceLoading } =
     useQuery<any[]>({
-      queryKey: ["https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/einvoice-connections"],
+      queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/einvoice-connections"],
     });
 
   // E-invoice mutations
@@ -1064,14 +1039,14 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
     mutationFn: async (data: any) => {
       const response = await apiRequest(
         "POST",
-        "https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/einvoice-connections",
+        "https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/einvoice-connections",
         data,
       );
       return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: ["https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/einvoice-connections"],
+        queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/einvoice-connections"],
       });
       toast({
         title: t("common.success"),
@@ -1093,14 +1068,14 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
     mutationFn: async ({ id, data }: { id: number; data: any }) => {
       const response = await apiRequest(
         "PUT",
-        `https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/einvoice-connections/${id}`,
+        `https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/einvoice-connections/${id}`,
         data,
       );
       return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: ["https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/einvoice-connections"],
+        queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/einvoice-connections"],
       });
       toast({
         title: t("common.success"),
@@ -1122,13 +1097,13 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
     mutationFn: async (id: number) => {
       const response = await apiRequest(
         "DELETE",
-        `https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/einvoice-connections/${id}`,
+        `https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/einvoice-connections/${id}`,
       );
       return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: ["https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/einvoice-connections"],
+        queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/einvoice-connections"],
       });
       toast({
         title: t("common.success"),
@@ -1309,17 +1284,17 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
   const { data: invoiceTemplates = [], isLoading: templatesLoading } = useQuery<
     any[]
   >({
-    queryKey: ["https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/invoice-templates"],
+    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/invoice-templates"],
   });
 
   // Invoice template mutations
   const createTemplateMutation = useMutation({
     mutationFn: async (data: any) => {
-      const response = await apiRequest("POST", "https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/invoice-templates", data);
+      const response = await apiRequest("POST", "https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/invoice-templates", data);
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/invoice-templates"] });
+      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/invoice-templates"] });
       toast({
         title: t("common.success"),
         description: t("settings.einvoiceTemplateCreateSuccess"),
@@ -1340,13 +1315,13 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
     mutationFn: async ({ id, data }: { id: number; data: any }) => {
       const response = await apiRequest(
         "PUT",
-        `https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/invoice-templates/${id}`,
+        `https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/invoice-templates/${id}`,
         data,
       );
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/invoice-templates"] });
+      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/invoice-templates"] });
       toast({
         title: t("common.success"),
         description: t("settings.einvoiceTemplateUpdateSuccess"),
@@ -1363,78 +1338,16 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
     },
   });
 
-  // Create product mutation
-  const createProductMutation = useMutation({
-    mutationFn: async (data: any) => {
-      const response = await fetch("https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/products", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ message: "Unknown error" }));
-        throw new Error(errorData.message || "Failed to create product");
-      }
-      return response.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/products"] });
-      toast({
-        title: t("common.success"),
-        description: t("settings.productCreatedSuccess"),
-      });
-    },
-    onError: (error: Error) => {
-      toast({
-        title: t("common.error"),
-        description: error.message || t("settings.productCreatedError"),
-        variant: "destructive",
-      });
-    },
-  });
-
-  // Update product mutation
-  const updateProductMutation = useMutation({
-    mutationFn: async ({ id, data }: { id: number; data: any }) => {
-      const response = await fetch(`https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/products/${id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ message: "Unknown error" }));
-        throw new Error(errorData.message || "Failed to update product");
-      }
-      return response.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/products"] });
-      toast({
-        title: t("common.success"),
-        description: t("settings.productUpdatedSuccess"),
-      });
-    },
-    onError: (error: Error) => {
-      toast({
-        title: t("common.error"),
-        description: error.message || t("settings.productUpdatedError"),
-        variant: "destructive",
-      });
-    },
-  });
-
   const deleteTemplateMutation = useMutation({
     mutationFn: async (id: number) => {
       const response = await apiRequest(
         "DELETE",
-        `https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/invoice-templates/${id}`,
+        `https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/invoice-templates/${id}`,
       );
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/invoice-templates"] });
+      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/invoice-templates"] });
       toast({
         title: t("common.success"),
         description: t("settings.einvoiceTemplateDeleteSuccess"),
@@ -1534,46 +1447,49 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
   };
 
   const refetchProducts = () => {
-    queryClient.invalidateQueries({ queryKey: ["https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/products"] });
+    queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products"] });
   };
 
-
   return (
-    <div className="min-h-screen bg-gray-50 pt-20 relative">
-      {/* Background Pattern */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div
-          className="absolute inset-0 opacity-5"
-          style={{
-            backgroundImage: `radial-gradient(circle at 25% 25%, #10b981 0%, transparent 50%),
+    <>
+      <POSHeader onLogout={onLogout} />
+      <div className="flex min-h-screen bg-gray-50 pt-20">
+        <RightSidebar />
+        <div className="flex-1 relative">
+        {/* Background Pattern */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div
+            className="absolute inset-0 opacity-5"
+            style={{
+              backgroundImage: `radial-gradient(circle at 25% 25%, #10b981 0%, transparent 50%),
                            radial-gradient(circle at 75% 25%, #059669 0%, transparent 50%),
                            radial-gradient(circle at 25% 75%, #065f46 0%, transparent 50%),
                            radial-gradient(circle at 75% 75%, #059669 0%, transparent 50%)`,
-            backgroundSize: "100px 100px",
-          }}
-        ></div>
-      </div>
-
-      <div className="relative z-10 container mx-auto p-6">
-        <div className="mb-8">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900 mb-2 flex items-center gap-3">
-                <SettingsIcon className="w-8 h-8 text-green-600" />
-                {t("settings.title")}
-              </h1>
-              <p className="text-gray-600">{t("settings.description")}</p>
-            </div>
-            <Button
-              onClick={() => (window.location.href = "/tables")}
-              variant="outline"
-              className="bg-white hover:bg-green-50 border-green-200 text-green-700 hover:text-green-800"
-            >
-              <Home className="w-4 h-4 mr-2" />
-              {t("settings.backToPos")}
-            </Button>
-          </div>
+              backgroundSize: "100px 100px",
+            }}
+          ></div>
         </div>
+
+        <div className="relative z-10 container mx-auto p-6">
+          <div className="mb-8">
+            <div className="flex items-center justify-between">
+              <div>
+                <h1 className="text-3xl font-bold text-gray-900 mb-2 flex items-center gap-3">
+                  <SettingsIcon className="w-8 h-8 text-green-600" />
+                  {t("settings.title")}
+                </h1>
+                <p className="text-gray-600">{t("settings.description")}</p>
+              </div>
+              <Button
+                onClick={() => (window.location.href = "/")}
+                variant="outline"
+                className="bg-white hover:bg-green-50 border-green-200 text-green-700 hover:text-green-800"
+              >
+                <Home className="w-4 h-4 mr-2" />
+                {t("settings.backToPos")}
+              </Button>
+            </div>
+          </div>
 
         <div className="w-full">
           <Tabs
@@ -2434,14 +2350,26 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
                             }
                           >
                             <SelectTrigger>
-                              <SelectValue placeholder={t("settings.selectDefaultFloor")} />
+                              <SelectValue
+                                placeholder={t("settings.selectDefaultFloor")}
+                              />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="1">{t("settings.floor")} 1</SelectItem>
-                              <SelectItem value="2">{t("settings.floor")} 2</SelectItem>
-                              <SelectItem value="3">{t("settings.floor")} 3</SelectItem>
-                              <SelectItem value="4">{t("settings.floor")} 4</SelectItem>
-                              <SelectItem value="5">{t("settings.floor")} 5</SelectItem>
+                              <SelectItem value="1">
+                                {t("settings.floor")} 1
+                              </SelectItem>
+                              <SelectItem value="2">
+                                {t("settings.floor")} 2
+                              </SelectItem>
+                              <SelectItem value="3">
+                                {t("settings.floor")} 3
+                              </SelectItem>
+                              <SelectItem value="4">
+                                {t("settings.floor")} 4
+                              </SelectItem>
+                              <SelectItem value="5">
+                                {t("settings.floor")} 5
+                              </SelectItem>
                             </SelectContent>
                           </Select>
                         </div>
@@ -2456,14 +2384,26 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
                             }
                           >
                             <SelectTrigger>
-                              <SelectValue placeholder={t("settings.selectDefaultZone")} />
+                              <SelectValue
+                                placeholder={t("settings.selectDefaultZone")}
+                              />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="A">{t("settings.zoneLabel")} A</SelectItem>
-                              <SelectItem value="B">{t("settings.zoneLabel")} B</SelectItem>
-                              <SelectItem value="C">{t("settings.zoneLabel")} C</SelectItem>
-                              <SelectItem value="D">{t("settings.zoneLabel")} D</SelectItem>
-                              <SelectItem value="E">{t("settings.zoneLabel")} E</SelectItem>
+                              <SelectItem value="A">
+                                {t("settings.zoneA")}
+                              </SelectItem>
+                              <SelectItem value="B">
+                                {t("settings.zoneB")}
+                              </SelectItem>
+                              <SelectItem value="C">
+                                {t("settings.zoneC")}
+                              </SelectItem>
+                              <SelectItem value="D">
+                                {t("settings.zoneD")}
+                              </SelectItem>
+                              <SelectItem value="E">
+                                {t("settings.zoneE")}
+                              </SelectItem>
                             </SelectContent>
                           </Select>
                         </div>
@@ -2974,25 +2914,34 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
                                     <AlertDialogHeader>
                                       <AlertDialogTitle className="flex items-center gap-2 text-red-600">
                                         <Trash2 className="w-5 h-5" />
-                                        {t("common.comboValues.confirmDeleteCategoryTitle")}
+                                        {t(
+                                          "common.comboValues.confirmDeleteCategoryTitle",
+                                        )}
                                       </AlertDialogTitle>
                                       <AlertDialogDescription className="text-left">
                                         <div className="space-y-3">
                                           <p>
-                                            {t("common.comboValues.confirmDeleteCategoryDesc", {
-                                              name: categoryToDelete?.name,
-                                            })}
+                                            {t(
+                                              "common.comboValues.confirmDeleteCategoryDesc",
+                                              {
+                                                name: categoryToDelete?.name,
+                                              },
+                                            )}
                                           </p>
                                           <div className="bg-red-50 border border-red-200 rounded-lg p-3">
                                             <div className="flex items-start gap-2">
                                               <div className="w-2 h-2 bg-red-400 rounded-full mt-2 flex-shrink-0"></div>
                                               <p className="text-sm text-red-700">
-                                                {t("common.comboValues.deleteCategoryWarning")}
+                                                {t(
+                                                  "common.comboValues.deleteCategoryWarning",
+                                                )}
                                               </p>
                                             </div>
                                           </div>
                                           <p className="text-sm text-gray-600">
-                                            {t("common.comboValues.deleteCategoryDetails")}
+                                            {t(
+                                              "common.comboValues.deleteCategoryDetails",
+                                            )}
                                           </p>
                                         </div>
                                       </AlertDialogDescription>
@@ -3012,7 +2961,9 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
                                         className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
                                       >
                                         <Trash2 className="w-4 h-4 mr-2" />
-                                        {t("common.comboValues.deleteCategoryAction")}
+                                        {t(
+                                          "common.comboValues.deleteCategoryAction",
+                                        )}
                                       </AlertDialogAction>
                                     </AlertDialogFooter>
                                   </AlertDialogContent>
@@ -3075,15 +3026,14 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
                         </Button>
                       </div>
                       <Button
+                        className="bg-green-600 hover:bg-green-700"
                         onClick={() => {
-                          setEditingProduct(null); // Ensure we're not in edit mode
-                          resetProductForm(); // Reset form completely
+                          resetProductForm();
                           setShowProductForm(true);
                         }}
-                        className="bg-green-600 hover:bg-green-700"
                       >
                         <Plus className="w-4 h-4 mr-2" />
-                        {t("settings.createProduct")}
+                        {t("settings.addProduct")}
                       </Button>
                     </div>
 
@@ -3664,19 +3614,19 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
                     🍽️ {t("settings.categoryIcons.mainDish")}
                   </SelectItem>
                   <SelectItem value="fas fa-coffee">
-                    ☕ {t("settings.categoryIcons.beverage")}
+                    ☕ {t("settings.categoryIcons.beverages")}
                   </SelectItem>
                   <SelectItem value="fas fa-cookie">
-                    🍪 {t("settings.categoryIcons.snack")}
+                    🍪 {t("settings.categoryIcons.snacks")}
                   </SelectItem>
                   <SelectItem value="fas fa-ice-cream">
-                    🍨 {t("settings.categoryIcons.dessert")}
+                    🍨 {t("settings.categoryIcons.desserts")}
                   </SelectItem>
                   <SelectItem value="fas fa-beer">
                     🍺 {t("settings.categoryIcons.alcoholic")}
                   </SelectItem>
                   <SelectItem value="fas fa-apple-alt">
-                    🍎 {t("settings.categoryIcons.fruit")}
+                    🍎 {t("settings.categoryIcons.fruits")}
                   </SelectItem>
                 </SelectContent>
               </Select>
@@ -3706,7 +3656,7 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
 
       {/* Product Form Modal */}
       <Dialog open={showProductForm} onOpenChange={setShowProductForm}>
-        <DialogContent className="sm:max-w-[800px] max-h-[90vh] overflow-y-auto">
+        <DialogContent className="sm:max-w-[600px]">
           <DialogHeader>
             <DialogTitle>
               {editingProduct
@@ -3720,212 +3670,280 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
-            {/* Basic Info */}
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="product-name">{t("settings.productName")}</Label>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="productName" className="text-right">
+                {t("settings.productName")}
+              </Label>
+              <Input
+                id="productName"
+                value={productForm.name}
+                onChange={(e) =>
+                  setProductForm((prev) => ({ ...prev, name: e.target.value }))
+                }
+                className="col-span-3"
+                placeholder={t("settings.productNamePlaceholder")}
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="productSku" className="text-right">
+                SKU (Tự động tạo nếu để trống)
+              </Label>
+              <div className="col-span-3 flex gap-2">
                 <Input
-                  id="product-name"
-                  value={productForm.name}
-                  onChange={(e) =>
-                    setProductForm({ ...productForm, name: e.target.value })
-                  }
-                  placeholder={t("settings.productNamePlaceholder")}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="product-sku">{t("settings.productSku")}</Label>
-                <Input
-                  id="product-sku"
+                  id="productSku"
                   value={productForm.sku}
                   onChange={(e) =>
-                    setProductForm({ ...productForm, sku: e.target.value.toUpperCase() })
+                    setProductForm({ ...productForm, sku: e.target.value })
                   }
-                  placeholder={t("settings.skuPlaceholder")}
+                  placeholder="ITEM-xxxxxx (tự động tạo)"
+                  disabled={!!editingProduct}
                 />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={generateProductSKU}
+                  disabled={!!editingProduct}
+                  className="whitespace-nowrap"
+                >
+                  Tạo SKU
+                </Button>
+              </div>
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="trackInventory" className="text-right">
+                {t("settings.trackInventory")}
+              </Label>
+              <div className="col-span-3 flex items-center space-x-2">
+                <Checkbox
+                  id="trackInventory"
+                  checked={productForm.trackInventory !== false}
+                  onCheckedChange={(checked) =>
+                    setProductForm({
+                      ...productForm,
+                      trackInventory: checked as boolean,
+                    })
+                  }
+                />
+                <Label htmlFor="trackInventory" className="text-sm">
+                  {t("settings.enableInventoryTracking")}
+                </Label>
               </div>
             </div>
 
-            {/* Price, Tax, Stock, Category, Type */}
-            <div className="grid grid-cols-5 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="product-price">{t("settings.productPrice")}</Label>
-                <Input
-                  id="product-price"
-                  type="text"
-                  value={productForm.price ? parseInt(productForm.price).toLocaleString('vi-VN') : ''}
-                  onChange={(e) => {
-                    const value = e.target.value;
-                    const sanitized = value.replace(/[^0-9]/g, '');
-
-                    const num = parseInt(sanitized);
-                    if (!isNaN(num) && num >= 100000000) {
-                      return;
-                    }
-
-                    setProductForm({ ...productForm, price: sanitized });
-                  }}
-                  placeholder={t("settings.productPricePlaceholder")}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="product-tax-rate">{t("settings.taxRatePercent")}</Label>
-                <Input
-                  id="product-tax-rate"
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  max="100"
-                  value={productForm.taxRate}
-                  onChange={(e) =>
-                    setProductForm({ ...productForm, taxRate: e.target.value })
-                  }
-                  placeholder={t("settings.taxRatePlaceholder")}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="product-stock">{t("settings.productStock")}</Label>
-                <Input
-                  id="product-stock"
-                  type="number"
-                  value={productForm.stock}
-                  onChange={(e) =>
-                    setProductForm({ ...productForm, stock: parseInt(e.target.value) || 0 })
-                  }
-                  placeholder={t("settings.productStockPlaceholder")}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="product-category">{t("settings.productCategory")}</Label>
-                <Select
-                  value={productForm.categoryId}
-                  onValueChange={(value) =>
-                    setProductForm({ ...productForm, categoryId: value })
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder={t("settings.selectCategory")} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {categoriesData?.map((category: any) => (
-                      <SelectItem key={category.id} value={category.id.toString()}>
-                        {category.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="product-type">{t("tables.productType")}</Label>
-                <Select
-                  value={productForm.productType.toString()}
-                  onValueChange={(value) =>
-                    setProductForm({ ...productForm, productType: parseInt(value) })
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder={t("tables.selectProductType")} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="1">{t("tables.goodsType")}</SelectItem>
-                    <SelectItem value="2">{t("tables.materialType")}</SelectItem>
-                    <SelectItem value="3">{t("tables.finishedProductType")}</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+            {/* Price, Stock, Category, Floor, Zone, Image Upload */}
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="productPrice" className="text-right">
+                {t("settings.productPrice")}
+              </Label>
+              <Input
+                id="productPrice"
+                type="number"
+                step="0.01"
+                value={productForm.price}
+                onChange={(e) =>
+                  setProductForm((prev) => ({ ...prev, price: e.target.value }))
+                }
+                className="col-span-3"
+                placeholder={t("settings.productPricePlaceholder")}
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="productStock" className="text-right">
+                {t("settings.productStock")}
+              </Label>
+              <Input
+                id="productStock"
+                type="number"
+                value={productForm.stock}
+                onChange={(e) =>
+                  setProductForm((prev) => ({
+                    ...prev,
+                    stock: parseInt(e.target.value) || 0,
+                  }))
+                }
+                className="col-span-3"
+                placeholder={t("settings.productStockPlaceholder")}
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="productCategory" className="text-right">
+                {t("settings.productCategory")}
+              </Label>
+              <Select
+                value={productForm.categoryId?.toString() || ""}
+                onValueChange={(value) =>
+                  setProductForm((prev) => ({ ...prev, categoryId: value }))
+                }
+              >
+                <SelectTrigger className="col-span-3">
+                  <SelectValue placeholder={t("settings.selectCategory")} />
+                </SelectTrigger>
+                <SelectContent>
+                  {categoriesData?.map((category: any) => (
+                    <SelectItem
+                      key={category.id}
+                      value={category.id.toString()}
+                    >
+                      {category.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
-            {/* Floor and Zone */}
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="product-floor">{t("tables.floorLabel")}</Label>
-                <Select
-                  value={productForm.floor}
-                  onValueChange={(value) =>
-                    setProductForm({ ...productForm, floor: value })
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder={t("tables.floorPlaceholder")} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="1층">1층</SelectItem>
-                    <SelectItem value="2층">2층</SelectItem>
-                    <SelectItem value="3층">3층</SelectItem>
-                    <SelectItem value="4층">4층</SelectItem>
-                    <SelectItem value="5층">5층</SelectItem>
-                    <SelectItem value="6층">6층</SelectItem>
-                    <SelectItem value="7층">7층</SelectItem>
-                    <SelectItem value="8층">8층</SelectItem>
-                    <SelectItem value="9층">9층</SelectItem>
-                    <SelectItem value="10층">10층</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="product-zone">{t("tables.zoneLabel")}</Label>
-                <Select
-                  value={productForm.zone}
-                  onValueChange={(value) =>
-                    setProductForm({ ...productForm, zone: value })
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder={t("tables.zonePlaceholder")} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="전체구역">전체구역</SelectItem>
-                    <SelectItem value="A구역">A구역</SelectItem>
-                    <SelectItem value="B구역">B구역</SelectItem>
-                    <SelectItem value="C구역">C구역</SelectItem>
-                    <SelectItem value="D구역">D구역</SelectItem>
-                    <SelectItem value="E구역">E구역</SelectItem>
-                    <SelectItem value="F구역">F구역</SelectItem>
-                    <SelectItem value="VIP구역">VIP구역</SelectItem>
-                    <SelectItem value="테라스구역">테라스구역</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+            {/* 층과 구역 선택 */}
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="productFloor" className="text-right">
+                {t("tables.floorLabel")}
+              </Label>
+              <Select
+                value={productForm.floor}
+                onValueChange={(value) =>
+                  setProductForm((prev) => ({ ...prev, floor: value }))
+                }
+              >
+                <SelectTrigger className="col-span-3">
+                  <SelectValue placeholder={t("tables.floorPlaceholder")} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="1">
+                    {t("common.floor")} 1
+                  </SelectItem>
+                  <SelectItem value="2">
+                    {t("common.floor")} 2
+                  </SelectItem>
+                  <SelectItem value="3">
+                    {t("common.floor")} 3
+                  </SelectItem>
+                  <SelectItem value="4">
+                    {t("common.floor")} 4
+                  </SelectItem>
+                  <SelectItem value="5">
+                    {t("common.floor")} 5
+                  </SelectItem>
+                  <SelectItem value="6">
+                    {t("common.floor")} 6
+                  </SelectItem>
+                  <SelectItem value="7">
+                    {t("common.floor")} 7
+                  </SelectItem>
+                  <SelectItem value="8">
+                    {t("common.floor")} 8
+                  </SelectItem>
+                  <SelectItem value="9">
+                    {t("common.floor")} 9
+                  </SelectItem>
+                  <SelectItem value="10">
+                    {t("common.floor")} 10
+                  </SelectItem>
+                </SelectContent>
+              </Select>
             </div>
 
-            {/* Image Upload Section */}
-            <div className="space-y-3">
-              <Label className="text-sm font-medium">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="productZone" className="text-right">
+                {t("tables.zoneLabel")}
+              </Label>
+              <Select
+                value={productForm.zone}
+                onValueChange={(value) =>
+                  setProductForm((prev) => ({ ...prev, zone: value }))
+                }
+              >
+                <SelectTrigger className="col-span-3">
+                  <SelectValue placeholder={t("tables.zonePlaceholder")} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="A">
+                    {t("common.zone")} A
+                  </SelectItem>
+                  <SelectItem value="B">
+                    {t("common.zone")} B
+                  </SelectItem>
+                  <SelectItem value="C">
+                    {t("common.zone")} C
+                  </SelectItem>
+                  <SelectItem value="D">
+                    {t("common.zone")} D
+                  </SelectItem>
+                  <SelectItem value="E">
+                    {t("common.zone")} E
+                  </SelectItem>
+                  <SelectItem value="F">
+                    {t("common.zone")} F
+                  </SelectItem>
+                  <SelectItem value="Vip">
+                    {t("common.zone")} VIP
+                  </SelectItem>
+                  <SelectItem value="All">
+                    {t("common.all")}
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* 이미지 입력 방식 선택 */}
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label className="text-right">
                 {t("tables.imageUrlOptional")}
               </Label>
-              <Tabs
-                value={productForm.imageInputMethod}
-                onValueChange={(value) => setProductForm({ ...productForm, imageInputMethod: value as "url" | "file" })}
-                className="w-full"
-              >
-                <TabsList className="grid w-full grid-cols-2">
-                  <TabsTrigger value="url" className="flex items-center gap-2">
-                    <Link className="w-4 h-4" />
-                    URL 입력
-                  </TabsTrigger>
-                  <TabsTrigger value="file" className="flex items-center gap-2">
-                    <FileImage className="w-4 h-4" />
-                    파일 업로드
-                  </TabsTrigger>
-                </TabsList>
-
-                <TabsContent value="url" className="mt-3">
-                  <Input
-                    value={productForm.imageUrl || ''}
-                    onChange={(e) =>
-                      setProductForm({ ...productForm, imageUrl: e.target.value })
+              <div className="col-span-3 space-y-3">
+                <div className="flex space-x-2">
+                  <Button
+                    type="button"
+                    variant={
+                      productForm.imageInputMethod === "url"
+                        ? "default"
+                        : "outline"
                     }
-                    placeholder={t("tables.imageUrl")}
-                  />
-                </TabsContent>
+                    size="sm"
+                    onClick={() =>
+                      setProductForm((prev) => ({
+                        ...prev,
+                        imageInputMethod: "url",
+                        selectedImageFile: null,
+                      }))
+                    }
+                    className="flex items-center gap-2"
+                  >
+                    <Link className="w-4 h-4" />
+                    {t("settings.imageInputUrl")}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant={
+                      productForm.imageInputMethod === "file"
+                        ? "default"
+                        : "outline"
+                    }
+                    size="sm"
+                    onClick={() =>
+                      setProductForm((prev) => ({
+                        ...prev,
+                        imageInputMethod: "file",
+                        imageUrl: "",
+                      }))
+                    }
+                    className="flex items-center gap-2"
+                  >
+                    <FileImage className="w-4 h-4" />
+                    {t("settings.imageInputFile")}
+                  </Button>
+                </div>
 
-                <TabsContent value="file" className="mt-3">
+                {productForm.imageInputMethod === "url" ? (
+                  <Input
+                    placeholder={t("tables.imageUrl")}
+                    value={productForm.imageUrl || ""}
+                    onChange={(e) =>
+                      setProductForm((prev) => ({
+                        ...prev,
+                        imageUrl: e.target.value,
+                      }))
+                    }
+                  />
+                ) : (
                   <div className="space-y-2">
                     <div className="flex items-center justify-center w-full">
                       <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100">
@@ -3937,16 +3955,23 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
                                 {productForm.selectedImageFile.name}
                               </p>
                               <p className="text-xs text-gray-500">
-                                {(productForm.selectedImageFile.size / 1024).toFixed(1)} KB
+                                {(
+                                  productForm.selectedImageFile.size / 1024
+                                ).toFixed(1)}{" "}
+                                KB
                               </p>
                             </>
                           ) : (
                             <>
                               <Upload className="w-8 h-8 mb-2 text-gray-400" />
                               <p className="mb-2 text-sm text-gray-500">
-                                <span className="font-semibold">이미지 파일을 선택하거나</span>
+                                <span className="font-semibold">
+                                  {t("settings.selectImageFile")}
+                                </span>
                               </p>
-                              <p className="text-xs text-gray-500">드래그엤드롭으로 업로드</p>
+                              <p className="text-xs text-gray-500">
+                                {t("settings.dragDropUpload")}
+                              </p>
                             </>
                           )}
                         </div>
@@ -3960,12 +3985,17 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
                               if (file.size > 5 * 1024 * 1024) {
                                 toast({
                                   title: "오류",
-                                  description: "이미지 크기는 5MB를 초과할 수 없습니다.",
+                                  description:
+                                    "이미지 크기는 5MB를 초과할 수 없습니다.",
                                   variant: "destructive",
                                 });
                                 return;
                               }
-                              setProductForm({ ...productForm, selectedImageFile: file, imageUrl: "" });
+                              setProductForm((prev) => ({
+                                ...prev,
+                                selectedImageFile: file,
+                                imageUrl: "",
+                              }));
                             }
                           }}
                         />
@@ -3976,7 +4006,12 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
                         type="button"
                         variant="outline"
                         size="sm"
-                        onClick={() => setProductForm({ ...productForm, selectedImageFile: null })}
+                        onClick={() =>
+                          setProductForm((prev) => ({
+                            ...prev,
+                            selectedImageFile: null,
+                          }))
+                        }
                         className="w-full"
                       >
                         <X className="w-4 h-4 mr-2" />
@@ -3984,68 +4019,23 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
                       </Button>
                     )}
                   </div>
-                </TabsContent>
-              </Tabs>
-            </div>
-
-            <div className="space-y-4">
-              <div className="flex flex-row items-start space-x-3 space-y-0">
-                <Checkbox
-                  id="track-inventory"
-                  checked={productForm.trackInventory !== false}
-                  onCheckedChange={(checked) =>
-                    setProductForm({ ...productForm, trackInventory: Boolean(checked) })
-                  }
-                />
-                <div className="space-y-1 leading-none">
-                  <Label htmlFor="track-inventory">
-                    {t("inventory.trackInventory")}
-                  </Label>
-                  <p className="text-xs text-gray-500">
-                    {t("settings.enableInventoryTracking")}
-                  </p>
-                </div>
+                )}
               </div>
             </div>
-
-            <div className="flex justify-end space-x-3">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => {
-                  console.log("=== PRODUCT CANCEL BUTTON CLICKED ===");
-                  console.log("Closing product form and resetting state");
-                  
-                  // Close the modal first
-                  setShowProductForm(false);
-                  
-                  // Reset all form state
-                  setEditingProduct(null);
-                  resetProductForm();
-                }}
-              >
-                {t("common.cancel")}
-              </Button>
-              <Button
-                onClick={() => {
-                  console.log("=== PRODUCT SUBMIT BUTTON CLICKED ===");
-                  console.log("editingProduct:", editingProduct);
-                  console.log("Action:", editingProduct ? "UPDATE" : "CREATE");
-
-                  if (editingProduct) {
-                    handleUpdateProduct();
-                  } else {
-                    handleCreateProduct();
-                  }
-                }}
-                className="bg-green-600 hover:bg-green-700 text-white font-medium transition-colors duration-200"
-              >
-                {editingProduct
-                  ? t("settings.updateProduct")
-                  : t("settings.createProduct")}
-              </Button>
-            </div>
           </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowProductForm(false)}>
+              {t("common.cancel")}
+            </Button>
+            <Button
+              onClick={
+                editingProduct ? handleUpdateProduct : handleCreateProduct
+              }
+              className="bg-green-600 hover:bg-green-700"
+            >
+              {editingProduct ? t("common.update") : t("common.create")}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 
@@ -4275,7 +4265,10 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
             <AlertDialogDescription className="text-left">
               <div className="space-y-3">
                 <p>
-                  {t("settings.confirmDeleteConnectionDesc").replace("{{name}}", eInvoiceToDelete?.softwareName || "")}
+                  {t("settings.confirmDeleteConnectionDesc").replace(
+                    "{{name}}",
+                    eInvoiceToDelete?.softwareName || "",
+                  )}
                 </p>
                 <div className="bg-red-50 border border-red-200 rounded-lg p-3">
                   <div className="flex items-start gap-2">
@@ -4860,12 +4853,14 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
       </Dialog>
 
       {/* Printer Configuration Modal */}
-      {showPrinterConfig && (
-        <PrinterConfigModal
-          isOpen={showPrinterConfig}
-          onClose={() => setShowPrinterConfig(false)}
-        />
-      )}
-    </div>
+        {showPrinterConfig && (
+          <PrinterConfigModal
+            isOpen={showPrinterConfig}
+            onClose={() => setShowPrinterConfig(false)}
+          />
+        )}
+        </div>
+      </div>
+    </>
   );
 }

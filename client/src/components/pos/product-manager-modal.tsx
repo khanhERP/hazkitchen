@@ -1,6 +1,15 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { X, Plus, Upload, Download, Edit, Trash2, Link, FileImage } from "lucide-react";
+import {
+  X,
+  Plus,
+  Upload,
+  Download,
+  Edit,
+  Trash2,
+  Link,
+  FileImage,
+} from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -56,22 +65,29 @@ export function ProductManagerModal({
 
   const productFormSchema = insertProductSchema.extend({
     categoryId: z.number().min(1, t("tables.categoryRequired")),
-    price: z.string().min(1, "Price is required").refine((val) => {
-      const num = parseFloat(val.replace(/\./g, ''));
-      return !isNaN(num) && num > 0 && num < 100000000; // Max 99,999,999 (8 digits)
-    }, "Price must be a valid positive number and less than 100,000,000"),
-    sku: z.string().min(1, t("tables.skuRequired")),
+    price: z
+      .string()
+      .min(1, "Price is required")
+      .refine((val) => {
+        const num = parseFloat(val.replace(/\./g, ""));
+        return !isNaN(num) && num > 0 && num < 100000000; // Max 99,999,999 (8 digits)
+      }, "Price must be a valid positive number and less than 100,000,000"),
+    sku: z.string().optional(),
     name: z.string().min(1, t("tables.productNameRequired")),
     productType: z.number().min(1, t("tables.productTypeRequired")),
     trackInventory: z.boolean().optional(),
     stock: z.number().min(0, "Stock must be 0 or greater"),
-    taxRate: z.string().min(1, "Tax rate is required").refine((val) => !isNaN(parseFloat(val)) && parseFloat(val) >= 0 && parseFloat(val) <= 100, "Tax rate must be between 0 and 100"),
+    taxRate: z.union([z.string(), z.number()]),
     priceIncludesTax: z.boolean().optional(),
-    afterTaxPrice: z.string().optional().refine((val) => {
-      if (!val) return true; // Optional field
-      const num = parseFloat(val.replace(/\./g, ''));
-      return !isNaN(num) && num > 0 && num < 100000000;
-    }, "After tax price must be a valid positive number and less than 100,000,000"),
+    afterTaxPrice: z
+      .union([z.string(), z.number(), z.undefined()])
+      .optional()
+      .refine((val) => {
+        if (!val || val === undefined) return true; // Optional field
+        const numVal =
+          typeof val === "string" ? parseFloat(val.replace(/\./g, "")) : val;
+        return !isNaN(numVal) && numVal > 0 && numVal < 100000000;
+      }, "After tax price must be a valid positive number and less than 100,000,000"),
     floor: z.string().optional(),
     zone: z.string().optional(),
   });
@@ -79,7 +95,9 @@ export function ProductManagerModal({
   const [showBulkImport, setShowBulkImport] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
-  const [imageInputMethod, setImageInputMethod] = useState<"url" | "file">("url");
+  const [imageInputMethod, setImageInputMethod] = useState<"url" | "file">(
+    "url",
+  );
   const [selectedImageFile, setSelectedImageFile] = useState<File | null>(null);
   const { toast } = useToast();
 
@@ -89,7 +107,7 @@ export function ProductManagerModal({
       const reader = new FileReader();
       reader.readAsDataURL(file);
       reader.onload = () => resolve(reader.result as string);
-      reader.onerror = error => reject(error);
+      reader.onerror = (error) => reject(error);
     });
   };
 
@@ -98,19 +116,19 @@ export function ProductManagerModal({
     isLoading,
     refetch,
   } = useQuery<Product[]>({
-    queryKey: ["https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/products"],
+    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products"],
     enabled: isOpen,
   });
 
   const { data: categories = [] } = useQuery<Category[]>({
-    queryKey: ["https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/categories"],
+    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/categories"],
     enabled: isOpen,
   });
 
   const createProductMutation = useMutation({
     mutationFn: async (data: z.infer<typeof productFormSchema>) => {
       let finalData = { ...data };
-      
+
       // 파일 업로드가 선택되고 파일이 있는 경우 Base64로 변환
       if (imageInputMethod === "file" && selectedImageFile) {
         try {
@@ -121,9 +139,9 @@ export function ProductManagerModal({
           throw new Error("이미지 파일 처리 중 오류가 발생했습니다.");
         }
       }
-      
+
       console.log("Sending product data:", finalData);
-      const response = await fetch("https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/products", {
+      const response = await fetch("https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(finalData),
@@ -136,18 +154,23 @@ export function ProductManagerModal({
       }
       return response.json();
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/products"] });
-      queryClient.invalidateQueries({ queryKey: ["https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/products/active"] });
-      setShowAddForm(false);
-      resetForm();
-      // 파일 상태 초기화
-      setSelectedImageFile(null);
-      setImageInputMethod("url");
+    onSuccess: (newProduct) => {
+      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products"] });
+      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products/active"] });
+      
       toast({
-        title: "Success",
-        description: "Product created successfully",
+        title: "✅ Tạo sản phẩm thành công",
+        description: `Sản phẩm "${newProduct.name}" đã được thêm vào hệ thống`,
+        duration: 3000,
       });
+      
+      // Small delay to show toast before closing form
+      setTimeout(() => {
+        setShowAddForm(false);
+        resetForm();
+        setSelectedImageFile(null);
+        setImageInputMethod("url");
+      }, 500);
     },
     onError: (error: Error) => {
       console.error("Create product mutation error:", error);
@@ -162,7 +185,7 @@ export function ProductManagerModal({
       }
 
       toast({
-        title: "Error", 
+        title: "Error",
         description: errorMessage,
         variant: "destructive",
       });
@@ -178,7 +201,15 @@ export function ProductManagerModal({
       data: Partial<z.infer<typeof productFormSchema>>;
     }) => {
       let finalData = { ...data };
-      
+
+      console.log("🔄 UPDATE MUTATION - Sending data to server:", {
+        productId: id,
+        taxRate: finalData.taxRate,
+        taxRateName: finalData.taxRateName,
+        price: finalData.price,
+        name: finalData.name,
+      });
+
       // 파일 업로드가 선택되고 파일이 있는 경우 Base64로 변환
       if (imageInputMethod === "file" && selectedImageFile) {
         try {
@@ -189,47 +220,65 @@ export function ProductManagerModal({
           throw new Error("이미지 파일 처리 중 오류가 발생했습니다.");
         }
       }
-      
-      const response = await fetch(`https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/products/${id}`, {
+
+      const response = await fetch(`https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products/${id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(finalData),
       });
-      if (!response.ok) throw new Error("Failed to update product");
-      return response.json();
+      
+      console.log("🔄 UPDATE MUTATION - Response status:", response.status);
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: "Unknown error" }));
+        console.error("🔄 UPDATE MUTATION - Error:", errorData);
+        throw new Error(errorData.message || "Failed to update product");
+      }
+      
+      const result = await response.json();
+      console.log("🔄 UPDATE MUTATION - Success result:", result);
+      return result;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/products"] });
-      queryClient.invalidateQueries({ queryKey: ["https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/products/active"] });
-      setEditingProduct(null);
-      // 파일 상태 초기화
-      setSelectedImageFile(null);
-      setImageInputMethod("url");
+    onSuccess: (updatedProduct) => {
+      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products"] });
+      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products/active"] });
+      
       toast({
-        title: "Success",
-        description: "Product updated successfully",
+        title: "✅ Cập nhật thành công",
+        description: `Sản phẩm "${updatedProduct.name}" đã được cập nhật`,
+        duration: 3000,
       });
+      
+      // Small delay to show toast before closing form
+      setTimeout(() => {
+        setEditingProduct(null);
+        setShowAddForm(false);
+        resetForm();
+        setSelectedImageFile(null);
+        setImageInputMethod("url");
+      }, 500);
     },
-    onError: () => {
+    onError: (error: Error) => {
       toast({
-        title: "Error",
-        description: "Failed to update product",
+        title: "❌ Lỗi cập nhật",
+        description: error.message || "Không thể cập nhật sản phẩm. Vui lòng thử lại.",
         variant: "destructive",
+        duration: 4000,
       });
     },
   });
 
   const deleteProductMutation = useMutation({
     mutationFn: async (id: number) => {
-      const response = await fetch(`https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/products/${id}`, {
+      const response = await fetch(`https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products/${id}`, {
         method: "DELETE",
       });
       if (!response.ok) throw new Error("Failed to delete product");
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/products"] });
-      queryClient.invalidateQueries({ queryKey: ["https://796f2db4-7848-49ea-8b2b-4c67f6de26d7-00-248bpbd8f87mj.sisko.replit.dev/api/products/active"] });
+      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products"] });
+      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products/active"] });
       toast({
         title: "Success",
         description: "Product deleted successfully",
@@ -255,55 +304,89 @@ export function ProductManagerModal({
       productType: 1,
       imageUrl: "",
       trackInventory: true,
-      taxRate: "8.00",
+      taxRate: "8", // 8% tax rate as integer
       priceIncludesTax: false,
       afterTaxPrice: "",
-      floor: "1층",
-      zone: "A구역",
+      floor: "1",
+      zone: "A",
+      unit: "Cái",
     },
   });
 
   // Helper functions for currency formatting
   const formatCurrency = (value: string | number): string => {
-    if (typeof value === 'string') {
+    if (typeof value === "string") {
       // If it's already formatted with dots, parse and reformat
-      if (value.includes('.')) {
-        const num = parseFloat(value.replace(/\./g, ''));
-        if (isNaN(num)) return '';
-        return num.toLocaleString('vi-VN');
+      if (value.includes(".")) {
+        const num = parseFloat(value.replace(/\./g, ""));
+        if (isNaN(num)) return "";
+        return num.toLocaleString("vi-VN");
       }
       // If it's a plain number string
       const num = parseFloat(value);
-      if (isNaN(num)) return '';
-      return num.toLocaleString('vi-VN');
+      if (isNaN(num)) return "";
+      return num.toLocaleString("vi-VN");
     }
-    
+
     // If it's a number
-    if (isNaN(value)) return '';
-    return value.toLocaleString('vi-VN');
+    if (isNaN(value)) return "";
+    return value.toLocaleString("vi-VN");
   };
 
   const parseCurrency = (value: string): number => {
     // Remove all dots and parse as number
-    const cleaned = value.replace(/\./g, '');
+    const cleaned = value.replace(/\./g, "");
     return parseFloat(cleaned) || 0;
   };
 
+  // Function to generate unique SKU
+  const generateSKU = () => {
+    const randomChars = Math.random()
+      .toString(36)
+      .substring(2, 8)
+      .toUpperCase();
+    const sku = `ITEM-${randomChars.padEnd(6, "0")}`;
+    form.setValue("sku", sku);
+  };
+
   const onSubmit = (data: z.infer<typeof productFormSchema>) => {
-    console.log("Form submission data:", data);
+    console.log("=== PRODUCT FORM SUBMISSION DEBUG ===");
+    console.log("Is Editing?", !!editingProduct);
+    console.log("Editing Product ID:", editingProduct?.id);
+    console.log("Raw form data:", data);
+    console.log("Data types:", {
+      name: typeof data.name,
+      price: typeof data.price,
+      taxRate: typeof data.taxRate,
+      afterTaxPrice: typeof data.afterTaxPrice,
+      categoryId: typeof data.categoryId,
+      stock: typeof data.stock,
+    });
 
     // Validate required fields
-    if (!data.name || !data.sku || !data.price || !data.categoryId || !data.taxRate) {
+    if (!data.name || !data.price || !data.categoryId || !data.taxRate) {
       toast({
         title: "Error",
-        description: "Please fill in all required fields: Name, SKU, Price, Category, and Tax Rate",
+        description:
+          "Please fill in all required fields: Name, Price, Category, and Tax Rate",
         variant: "destructive",
       });
       return;
     }
 
-    // Validate price limit
-    const priceNum = parseFloat(data.price);
+    // Clean and validate price
+    const cleanPrice = data.price.replace(/[^0-9]/g, ""); // Remove all non-numeric characters
+    const priceNum = parseInt(cleanPrice);
+
+    if (!cleanPrice || isNaN(priceNum) || priceNum <= 0) {
+      toast({
+        title: "Error",
+        description: "Please enter a valid price",
+        variant: "destructive",
+      });
+      return;
+    }
+
     if (priceNum >= 100000000) {
       toast({
         title: "Error",
@@ -313,70 +396,186 @@ export function ProductManagerModal({
       return;
     }
 
-    // Transform data to ensure proper types
+    // Convert tax rate for storage - handle all cases consistently
+    let taxRateValue = String(data.taxRate || "0");
+    let taxRateName = String(data.taxRate || "0");
+
+    console.log("🔍 Original taxRate from form:", data.taxRate, "Type:", typeof data.taxRate);
+
+    if (taxRateValue === "KCT") {
+      taxRateName = "KCT"; // Save exactly "KCT"
+      taxRateValue = "0"; // Store numeric value as 0
+    } else if (taxRateValue === "KKKNT") {
+      taxRateName = "KKKNT"; // Save exactly "KKKNT"
+      taxRateValue = "0"; // Store numeric value as 0
+    } else if (taxRateValue === "0") {
+      taxRateName = "0%"; // Save as "0%" to distinguish from KCT/KKKNT
+      taxRateValue = "0";
+    } else {
+      taxRateName = taxRateValue + "%"; // Save as "5%", "8%", "10%"
+    }
+
+    console.log("💾 Tax rate conversion for save:", {
+      original: data.taxRate,
+      taxRateValue: taxRateValue,
+      taxRateName: taxRateName,
+      willSaveTaxRateName: taxRateName,
+    });
+
+    // Transform data to ensure proper types - all price fields must be strings
     const transformedData = {
       name: data.name.trim(),
-      sku: data.sku.trim().toUpperCase(),
-      price: data.price.toString(), // Use direct value without parsing
+      sku: data.sku ? data.sku.trim().toUpperCase() : "",
+      price: priceNum.toString(), // String as expected by schema
       stock: Number(data.stock) || 0,
       categoryId: Number(data.categoryId),
       productType: Number(data.productType) || 1,
       trackInventory: data.trackInventory !== false,
       imageUrl: data.imageUrl?.trim() || null,
-      taxRate: data.taxRate.toString(),
-      priceIncludesTax: Boolean(data.priceIncludesTax), // Explicitly convert to boolean
-      afterTaxPrice: data.afterTaxPrice ? data.afterTaxPrice.toString() : undefined,
-      floor: data.floor || "1층",
-      zone: data.zone || "A구역"
+      taxRate: taxRateValue, // Convert KCT/KKKNT to 0
+      taxRateName: taxRateName, // CRITICAL: Save the display name (KCT, KKKNT, 0%, 5%, 8%, 10%)
+      priceIncludesTax: Boolean(data.priceIncludesTax),
+      afterTaxPrice:
+        data.afterTaxPrice && data.afterTaxPrice.trim() !== ""
+          ? String(parseInt(data.afterTaxPrice.replace(/[^0-9]/g, "")))
+          : undefined,
+      beforeTaxPrice: undefined, // Let server calculate this
+      floor: String(data.floor || "1"), // String as expected by schema
+      zone: String(data.zone || "A"), // Add zone field to ensure it's saved
+      unit: data.unit || "Cái", // Unit field - ensure it's saved
     };
-
-    console.log("PriceIncludesTax submission debug:", {
-      originalValue: data.priceIncludesTax,
-      originalType: typeof data.priceIncludesTax,
-      transformedValue: transformedData.priceIncludesTax,
-      transformedType: typeof transformedData.priceIncludesTax,
-      booleanConversion: Boolean(data.priceIncludesTax)
+    
+    console.log("📦 Transformed data with unit:", {
+      productName: transformedData.name,
+      unit: transformedData.unit,
+      unitType: typeof transformedData.unit,
     });
 
+    console.log(
+      "📤 Sending to server - taxRateName:",
+      transformedData.taxRateName,
+    );
+
     console.log("Transformed data:", transformedData);
+    console.log("Transformed data types:", {
+      name: typeof transformedData.name,
+      price: typeof transformedData.price,
+      taxRate: typeof transformedData.taxRate,
+      taxRateName: typeof transformedData.taxRateName,
+      afterTaxPrice: typeof transformedData.afterTaxPrice,
+      categoryId: typeof transformedData.categoryId,
+      stock: typeof transformedData.stock,
+    });
+
+    console.log("Tax rate debugging:", {
+      originalTaxRate: data.taxRate,
+      transformedTaxRate: transformedData.taxRate,
+      transformedTaxRateName: transformedData.taxRateName,
+      taxRateType: typeof transformedData.taxRate,
+    });
 
     if (editingProduct) {
-      updateProductMutation.mutate({ id: editingProduct.id, data: transformedData });
+      console.log("🔄 CALLING UPDATE MUTATION with:", {
+        id: editingProduct.id,
+        productName: transformedData.name,
+        taxRate: transformedData.taxRate,
+        taxRateName: transformedData.taxRateName,
+        price: transformedData.price,
+      });
+      updateProductMutation.mutate({
+        id: editingProduct.id,
+        data: transformedData,
+      });
     } else {
+      console.log("✨ CALLING CREATE MUTATION with:", {
+        productName: transformedData.name,
+        taxRate: transformedData.taxRate,
+        taxRateName: transformedData.taxRateName,
+        price: transformedData.price,
+      });
       createProductMutation.mutate(transformedData);
     }
   };
 
   const handleEdit = (product: Product) => {
     setEditingProduct(product);
-    
+
+    // IMPORTANT: taxRateName is the source of truth for dropdown selection
+    // because KCT, KKKNT, and 0% all have taxRate = 0 in database
+    let dropdownValue = "8"; // default
+
+    if (product.taxRateName) {
+      const trimmedTaxRateName = product.taxRateName.trim();
+
+      console.log("📋 Edit - Product tax info:", {
+        productId: product.id,
+        taxRateName: trimmedTaxRateName,
+        taxRate: product.taxRate,
+      });
+
+      // Exact mapping based on taxRateName - CRITICAL: Keep KCT and KKKNT separate
+      if (trimmedTaxRateName === "KCT") {
+        dropdownValue = "KCT";
+      } else if (trimmedTaxRateName === "KKKNT") {
+        dropdownValue = "KKKNT";
+      } else if (trimmedTaxRateName === "0%") {
+        dropdownValue = "0";
+      } else if (trimmedTaxRateName === "5%") {
+        dropdownValue = "5";
+      } else if (trimmedTaxRateName === "8%") {
+        dropdownValue = "8";
+      } else if (trimmedTaxRateName === "10%") {
+        dropdownValue = "10";
+      } else {
+        // Fallback: try to parse as percentage
+        const match = trimmedTaxRateName.match(/^(\d+)%$/);
+        if (match) {
+          dropdownValue = match[1];
+        }
+      }
+
+      console.log("📋 Edit - Mapped dropdown value:", dropdownValue);
+    } else if (product.taxRate !== null && product.taxRate !== undefined) {
+      // Fallback for old products without taxRateName (should rarely happen)
+      const taxRateNum = parseFloat(product.taxRate);
+      dropdownValue = taxRateNum.toString();
+
+      console.log("⚠️ Edit - No taxRateName, using taxRate fallback:", {
+        productId: product.id,
+        taxRate: product.taxRate,
+        dropdownValue: dropdownValue,
+      });
+    }
+
+    console.log("📋 Edit - Loading product unit:", {
+      productId: product.id,
+      unit: product.unit,
+      unitType: typeof product.unit,
+    });
+
     form.reset({
       name: product.name,
       sku: product.sku,
-      price: product.price, // Show actual price value without formatting
+      price: Math.round(parseFloat(product.price)).toString(),
       stock: product.stock,
       categoryId: product.categoryId,
       productType: product.productType || 1,
       imageUrl: product.imageUrl || "",
       trackInventory: product.trackInventory !== false,
-      taxRate: product.taxRate || "8.00",
-      priceIncludesTax: Boolean(product.priceIncludesTax), // Ensure boolean type
-      // Use saved after-tax price if available, otherwise calculate
-      afterTaxPrice: product.afterTaxPrice || (() => {
-        const basePrice = parseFloat(product.price);
-        const taxRate = parseFloat(product.taxRate || "8.00");
-        return Math.round(basePrice + (basePrice * taxRate / 100)).toString();
-      })(),
-      floor: product.floor || "1층",
-      zone: product.zone || "A구역",
+      taxRate: dropdownValue, // This will be "KCT", "KKKNT", "0", "5", "8", or "10"
+      priceIncludesTax: Boolean(product.priceIncludesTax),
+      afterTaxPrice:
+        product.afterTaxPrice ||
+        (() => {
+          const basePrice = parseFloat(product.price);
+          const taxRate = parseFloat(product.taxRate || "0");
+          return Math.round(basePrice + (basePrice * taxRate) / 100).toString();
+        })(),
+      floor: product.floor || "1",
+      zone: product.zone || "A",
+      unit: product.unit || "Cái", // Load unit from product
     });
     setShowAddForm(true);
-    
-    console.log("Editing product with priceIncludesTax:", {
-      productId: product.id,
-      priceIncludesTax: product.priceIncludesTax,
-      formValue: Boolean(product.priceIncludesTax)
-    });
   };
 
   const handleDelete = (id: number) => {
@@ -400,13 +599,14 @@ export function ProductManagerModal({
       productType: 1,
       imageUrl: "",
       trackInventory: true,
-      taxRate: "8.00",
-      priceIncludesTax: false, // Explicitly set to false for new products
+      taxRate: "8", // 8% tax rate as integer
+      priceIncludesTax: false,
       afterTaxPrice: "",
-      floor: "1층",
-      zone: "A구역",
+      floor: "1",
+      zone: "A",
+      unit: "Cái",
     });
-    
+
     console.log("Form reset with priceIncludesTax: false");
   };
 
@@ -417,8 +617,8 @@ export function ProductManagerModal({
   const getProductTypeName = (productType: number) => {
     const types = {
       1: t("tables.goodsType"),
-      2: t("tables.materialType"), 
-      3: t("tables.finishedProductType")
+      2: t("tables.materialType"),
+      3: t("tables.finishedProductType"),
     };
     return types[productType as keyof typeof types] || "Unknown";
   };
@@ -452,7 +652,7 @@ export function ProductManagerModal({
         product.sku,
         getCategoryName(product.categoryId),
         parseFloat(product.price).toString(),
-        product.taxRate || "8.00",
+        product.taxRate || "0",
         product.stock.toString(),
         product.imageUrl || "",
       ]);
@@ -518,11 +718,12 @@ export function ProductManagerModal({
           productType: 1,
           imageUrl: "",
           trackInventory: true,
-          taxRate: "8.00",
+          taxRate: "8", // 8% tax rate as integer
           priceIncludesTax: false,
           afterTaxPrice: "",
-          floor: "1층",
-          zone: "A구역",
+          floor: "1",
+          zone: "A",
+          unit: "Cái",
         });
       } else {
         // 편집 모드에서 기존 이미지 URL이 있는지 확인
@@ -540,17 +741,17 @@ export function ProductManagerModal({
   // Add keyboard support for closing modal
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape' && isOpen) {
+      if (event.key === "Escape" && isOpen) {
         handleModalClose();
       }
     };
 
     if (isOpen) {
-      document.addEventListener('keydown', handleKeyDown);
+      document.addEventListener("keydown", handleKeyDown);
     }
 
     return () => {
-      document.removeEventListener('keydown', handleKeyDown);
+      document.removeEventListener("keydown", handleKeyDown);
     };
   }, [isOpen]);
 
@@ -567,24 +768,21 @@ export function ProductManagerModal({
       productType: 1,
       imageUrl: "",
       trackInventory: true,
-      taxRate: "8.00",
+      taxRate: "8", // 8% tax rate as integer
       priceIncludesTax: false,
       afterTaxPrice: "",
-      floor: "1층",
-      zone: "A구역",
+      floor: "1",
+      zone: "A",
+      unit: "Cái",
     });
     onClose();
   };
 
   return (
     <Dialog open={isOpen} onOpenChange={handleModalClose}>
-      <DialogContent
-        className="max-w-4xl w-full max-h-screen overflow-y-auto"
-      >
+      <DialogContent className="max-w-4xl w-full max-h-screen overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>
-            {t("tables.productManagement")}
-          </DialogTitle>
+          <DialogTitle>{t("tables.productManagement")}</DialogTitle>
         </DialogHeader>
 
         <div className="p-6">
@@ -616,7 +814,7 @@ export function ProductManagerModal({
                     {t("tables.export")}
                   </Button>
                 </div>
-                
+
                 <div className="flex items-center space-x-2">
                   <Input
                     placeholder="Tìm kiếm theo tên hoặc mã SKU..."
@@ -643,10 +841,9 @@ export function ProductManagerModal({
                 ) : filteredProducts.length === 0 ? (
                   <div className="p-8 text-center">
                     <p className="text-gray-500">
-                      {searchTerm 
+                      {searchTerm
                         ? `Không tìm thấy sản phẩm nào với từ khóa "${searchTerm}"`
-                        : "Không có sản phẩm nào"
-                      }
+                        : "Không có sản phẩm nào"}
                     </p>
                   </div>
                 ) : (
@@ -711,10 +908,13 @@ export function ProductManagerModal({
                             {getProductTypeName(product.productType || 1)}
                           </td>
                           <td className="py-3 px-4 font-medium">
-                            {Math.round(parseFloat(product.price)).toLocaleString("vi-VN")} ₫
+                            {Math.round(
+                              parseFloat(product.price),
+                            ).toLocaleString("vi-VN")}{" "}
+                            ₫
                           </td>
                           <td className="py-3 px-4 pos-text-secondary">
-                            {product.taxRate || "8.00"}%
+                            {product.taxRate || ""}%
                           </td>
                           <td className="py-3 px-4">
                             <span
@@ -776,6 +976,7 @@ export function ProductManagerModal({
                   onSubmit={form.handleSubmit(onSubmit)}
                   className="space-y-4"
                 >
+                  {/* Row 1: Basic Information */}
                   <div className="grid grid-cols-2 gap-4">
                     <FormField
                       control={form.control}
@@ -799,125 +1000,34 @@ export function ProductManagerModal({
                       name="sku"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>{t("tables.sku")}</FormLabel>
-                          <FormControl>
-                            <Input
-                              {...field}
-                              placeholder={t("tables.skuPlaceholder")}
-                            />
-                          </FormControl>
+                          <FormLabel>
+                            {t("tables.sku")} (Tự động tạo nếu để trống)
+                          </FormLabel>
+                          <div className="flex gap-2">
+                            <FormControl>
+                              <Input
+                                {...field}
+                                placeholder="ITEM-xxxxxx (tự động tạo)"
+                              />
+                            </FormControl>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={generateSKU}
+                              className="whitespace-nowrap"
+                            >
+                              Tạo SKU
+                            </Button>
+                          </div>
                           <FormMessage />
                         </FormItem>
                       )}
                     />
                   </div>
 
-                  <div className="grid grid-cols-5 gap-4">
-                    <FormField
-                      control={form.control}
-                      name="price"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>{t("tables.price")}</FormLabel>
-                          <FormControl>
-                            <Input
-                              {...field}
-                              type="text"
-                              placeholder={t("common.comboValues.pricePlaceholder")}
-                              value={field.value ? parseInt(field.value).toLocaleString('ko-KR') : ''}
-                              onChange={(e) => {
-                                const value = e.target.value;
-                                // Only allow numbers and commas
-                                const sanitized = value.replace(/[^0-9,]/g, '').replace(/,/g, '');
-                                
-                                // Check if the number would exceed the limit
-                                const num = parseInt(sanitized);
-                                if (!isNaN(num) && num >= 100000000) {
-                                  // Don't allow input that would exceed the limit
-                                  return;
-                                }
-                                
-                                // Store the integer value (without commas)
-                                field.onChange(sanitized);
-                                
-                                // Calculate after tax price from base price
-                                if (sanitized && !isNaN(parseInt(sanitized))) {
-                                  const basePrice = parseInt(sanitized);
-                                  const taxRate = parseFloat(form.getValues("taxRate") || "8.00");
-                                  
-                                  // Calculate after tax price: afterTaxPrice = basePrice + (basePrice * taxRate/100)
-                                  const afterTaxPrice = Math.round(basePrice + (basePrice * taxRate / 100));
-                                  
-                                  // Update the after tax price field
-                                  form.setValue("afterTaxPrice", afterTaxPrice.toString());
-                                }
-                              }}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={form.control}
-                      name="taxRate"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>{t("tables.taxRate")}</FormLabel>
-                          <FormControl>
-                            <Input
-                              {...field}
-                              type="number"
-                              step="0.01"
-                              min="0"
-                              max="100"
-                              placeholder="8.00"
-                              onChange={(e) => {
-                                const taxRate = e.target.value;
-                                field.onChange(taxRate);
-                                
-                                // Calculate after tax price when tax rate changes
-                                const basePrice = form.getValues("price");
-                                if (basePrice && !isNaN(parseInt(basePrice)) && taxRate && !isNaN(parseFloat(taxRate))) {
-                                  const basePriceNum = parseInt(basePrice);
-                                  const taxRateNum = parseFloat(taxRate);
-                                  
-                                  // Calculate after tax price: afterTaxPrice = basePrice + (basePrice * taxRate/100)
-                                  const afterTaxPrice = Math.round(basePriceNum + (basePriceNum * taxRateNum / 100));
-                                  
-                                  // Update the after tax price field
-                                  form.setValue("afterTaxPrice", afterTaxPrice.toString());
-                                }
-                              }}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={form.control}
-                      name="stock"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>{t("tables.stock")}</FormLabel>
-                          <FormControl>
-                            <Input
-                              {...field}
-                              type="number"
-                              placeholder={t("tables.stockPlaceholder")}
-                              onChange={(e) =>
-                                field.onChange(parseInt(e.target.value) || 0)
-                              }
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
+                  {/* Row 2: Category & Product Type */}
+                  <div className="grid grid-cols-2 gap-4">
                     <FormField
                       control={form.control}
                       name="categoryId"
@@ -973,11 +1083,210 @@ export function ProductManagerModal({
                               </SelectTrigger>
                             </FormControl>
                             <SelectContent>
-                              <SelectItem value="1">{t("tables.goodsType")}</SelectItem>
-                              <SelectItem value="2">{t("tables.materialType")}</SelectItem>
-                              <SelectItem value="3">{t("tables.finishedProductType")}</SelectItem>
+                              <SelectItem value="1">
+                                {t("tables.goodsType")}
+                              </SelectItem>
+                              <SelectItem value="2">
+                                {t("tables.materialType")}
+                              </SelectItem>
+                              <SelectItem value="3">
+                                {t("tables.finishedProductType")}
+                              </SelectItem>
+                              <SelectItem value="4">
+                                {t("tables.expensesType")}
+                              </SelectItem>
                             </SelectContent>
                           </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+
+                  {/* Row 3: Pricing Information */}
+                  <div className="grid grid-cols-3 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="price"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>{t("tables.price")}</FormLabel>
+                          <FormControl>
+                            <Input
+                              {...field}
+                              type="text"
+                              placeholder={t(
+                                "common.comboValues.pricePlaceholder",
+                              )}
+                              value={
+                                field.value
+                                  ? parseInt(
+                                      field.value
+                                        .toString()
+                                        .replace(/[^0-9]/g, "") || "0",
+                                    ).toLocaleString("vi-VN")
+                                  : ""
+                              }
+                              onChange={(e) => {
+                                const value = e.target.value;
+                                // Only allow numbers
+                                const sanitized = value.replace(/[^0-9]/g, "");
+
+                                // Check if the number would exceed the limit
+                                const num = parseInt(sanitized || "0");
+                                if (num >= 100000000) {
+                                  // Don't allow input that would exceed the limit
+                                  return;
+                                }
+
+                                // Store the raw numeric value as string
+                                field.onChange(sanitized);
+
+                                // Calculate after tax price from base price
+                                if (sanitized && !isNaN(parseInt(sanitized))) {
+                                  const basePrice = parseInt(sanitized);
+                                  const taxRateValue =
+                                    form.getValues("taxRate") || "0";
+
+                                  // Convert KCT/KKKNT to 0 for calculation
+                                  let taxRateNum = 0;
+                                  if (
+                                    taxRateValue === "KCT" ||
+                                    taxRateValue === "KKKNT"
+                                  ) {
+                                    taxRateNum = 0;
+                                  } else {
+                                    taxRateNum = parseFloat(taxRateValue);
+                                  }
+
+                                  // Calculate after tax price: afterTaxPrice = basePrice + (basePrice * taxRate/100)
+                                  const afterTaxPrice = Math.round(
+                                    basePrice + (basePrice * taxRateNum) / 100,
+                                  );
+
+                                  // Update the after tax price field
+                                  form.setValue(
+                                    "afterTaxPrice",
+                                    afterTaxPrice.toString(),
+                                  );
+                                }
+                              }}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="taxRate"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>{t("tables.taxRate")}</FormLabel>
+                          <Select
+                            onValueChange={(value) => {
+                              field.onChange(value);
+
+                              // Calculate after tax price when tax rate changes
+                              const basePrice = form.getValues("price");
+                              if (basePrice && !isNaN(parseInt(basePrice))) {
+                                const basePriceNum = parseInt(basePrice);
+
+                                // Convert KCT/KKKNT to 0 for calculation
+                                let taxRateNum = 0;
+                                if (value === "KCT" || value === "KKKNT") {
+                                  taxRateNum = 0;
+                                } else {
+                                  taxRateNum = parseFloat(value);
+                                }
+
+                                // Calculate after tax price: afterTaxPrice = basePrice + (basePrice * taxRate/100)
+                                const afterTaxPrice = Math.round(
+                                  basePriceNum +
+                                    (basePriceNum * taxRateNum) / 100,
+                                );
+
+                                // Update the after tax price field
+                                form.setValue(
+                                  "afterTaxPrice",
+                                  afterTaxPrice.toString(),
+                                );
+                              }
+                            }}
+                            value={field.value?.toString() || "8"}
+                          >
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Chọn thuế suất" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value="KCT">KCT (Không chịu thuế)</SelectItem>
+                              <SelectItem value="KKKNT">KKKNT (Không kê khai nộp thuế)</SelectItem>
+                              <SelectItem value="0">0%</SelectItem>
+                              <SelectItem value="5">5%</SelectItem>
+                              <SelectItem value="8">8%</SelectItem>
+                              <SelectItem value="10">10%</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="unit"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Đơn vị tính</FormLabel>
+                          <Select
+                            onValueChange={field.onChange}
+                            value={field.value || "Cái"}
+                          >
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Chọn đơn vị" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value="Cái">Cái</SelectItem>
+                              <SelectItem value="Ly">Ly</SelectItem>
+                              <SelectItem value="Chai">Chai</SelectItem>
+                              <SelectItem value="Lon">Lon</SelectItem>
+                              <SelectItem value="Phần">Phần</SelectItem>
+                              <SelectItem value="Đĩa">Đĩa</SelectItem>
+                              <SelectItem value="Tô">Tô</SelectItem>
+                              <SelectItem value="Kg">Kg</SelectItem>
+                              <SelectItem value="Gói">Gói</SelectItem>
+                              <SelectItem value="Hộp">Hộp</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+
+                  {/* Row 4: Inventory */}
+                  <div className="grid grid-cols-1 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="stock"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>{t("tables.stock")}</FormLabel>
+                          <FormControl>
+                            <Input
+                              {...field}
+                              type="number"
+                              placeholder={t("tables.stockPlaceholder")}
+                              onChange={(e) =>
+                                field.onChange(parseInt(e.target.value) || 0)
+                              }
+                            />
+                          </FormControl>
                           <FormMessage />
                         </FormItem>
                       )}
@@ -1004,16 +1313,36 @@ export function ProductManagerModal({
                               </SelectTrigger>
                             </FormControl>
                             <SelectContent>
-                              <SelectItem value="1층">1층</SelectItem>
-                              <SelectItem value="2층">2층</SelectItem>
-                              <SelectItem value="3층">3층</SelectItem>
-                              <SelectItem value="4층">4층</SelectItem>
-                              <SelectItem value="5층">5층</SelectItem>
-                              <SelectItem value="6층">6층</SelectItem>
-                              <SelectItem value="7층">7층</SelectItem>
-                              <SelectItem value="8층">8층</SelectItem>
-                              <SelectItem value="9층">9층</SelectItem>
-                              <SelectItem value="10층">10층</SelectItem>
+                              <SelectItem value="1">
+                                {t("common.floor")} 1
+                              </SelectItem>
+                              <SelectItem value="2">
+                                {t("common.floor")} 2
+                              </SelectItem>
+                              <SelectItem value="3">
+                                {t("common.floor")} 3
+                              </SelectItem>
+                              <SelectItem value="4">
+                                {t("common.floor")} 4
+                              </SelectItem>
+                              <SelectItem value="5">
+                                {t("common.floor")} 5
+                              </SelectItem>
+                              <SelectItem value="6">
+                                {t("common.floor")} 6
+                              </SelectItem>
+                              <SelectItem value="7">
+                                {t("common.floor")} 7
+                              </SelectItem>
+                              <SelectItem value="8">
+                                {t("common.floor")} 8
+                              </SelectItem>
+                              <SelectItem value="9">
+                                {t("common.floor")} 9
+                              </SelectItem>
+                              <SelectItem value="10">
+                                {t("common.floor")} 10
+                              </SelectItem>
                             </SelectContent>
                           </Select>
                           <FormMessage />
@@ -1039,15 +1368,30 @@ export function ProductManagerModal({
                               </SelectTrigger>
                             </FormControl>
                             <SelectContent>
-                              <SelectItem value="전체구역">전체구역</SelectItem>
-                              <SelectItem value="A구역">A구역</SelectItem>
-                              <SelectItem value="B구역">B구역</SelectItem>
-                              <SelectItem value="C구역">C구역</SelectItem>
-                              <SelectItem value="D구역">D구역</SelectItem>
-                              <SelectItem value="E구역">E구역</SelectItem>
-                              <SelectItem value="F구역">F구역</SelectItem>
-                              <SelectItem value="VIP구역">VIP구역</SelectItem>
-                              <SelectItem value="테라스구역">테라스구역</SelectItem>
+                              <SelectItem value="A">
+                                {t("common.zone")} A
+                              </SelectItem>
+                              <SelectItem value="B">
+                                {t("common.zone")} B
+                              </SelectItem>
+                              <SelectItem value="C">
+                                {t("common.zone")} C
+                              </SelectItem>
+                              <SelectItem value="D">
+                                {t("common.zone")} D
+                              </SelectItem>
+                              <SelectItem value="E">
+                                {t("common.zone")} E
+                              </SelectItem>
+                              <SelectItem value="F">
+                                {t("common.zone")} F
+                              </SelectItem>
+                              <SelectItem value="Vip">
+                                {t("common.zone")} VIP
+                              </SelectItem>
+                              <SelectItem value="All">
+                                {t("common.all")}
+                              </SelectItem>
                             </SelectContent>
                           </Select>
                           <FormMessage />
@@ -1061,22 +1405,30 @@ export function ProductManagerModal({
                     <Label className="text-sm font-medium">
                       {t("tables.imageUrlOptional")}
                     </Label>
-                    <Tabs 
-                      value={imageInputMethod} 
-                      onValueChange={(value) => setImageInputMethod(value as "url" | "file")}
+                    <Tabs
+                      value={imageInputMethod}
+                      onValueChange={(value) =>
+                        setImageInputMethod(value as "url" | "file")
+                      }
                       className="w-full"
                     >
                       <TabsList className="grid w-full grid-cols-2">
-                        <TabsTrigger value="url" className="flex items-center gap-2">
+                        <TabsTrigger
+                          value="url"
+                          className="flex items-center gap-2"
+                        >
                           <Link className="w-4 h-4" />
-                          URL 입력
+                          {t("common.urlInput")}
                         </TabsTrigger>
-                        <TabsTrigger value="file" className="flex items-center gap-2">
+                        <TabsTrigger
+                          value="file"
+                          className="flex items-center gap-2"
+                        >
                           <FileImage className="w-4 h-4" />
-                          파일 업로드
+                          {t("common.fileUpload")}
                         </TabsTrigger>
                       </TabsList>
-                      
+
                       <TabsContent value="url" className="mt-3">
                         <FormField
                           control={form.control}
@@ -1086,7 +1438,7 @@ export function ProductManagerModal({
                               <FormControl>
                                 <Input
                                   {...field}
-                                  value={field.value || ''}
+                                  value={field.value || ""}
                                   placeholder={t("tables.imageUrl")}
                                 />
                               </FormControl>
@@ -1095,7 +1447,7 @@ export function ProductManagerModal({
                           )}
                         />
                       </TabsContent>
-                      
+
                       <TabsContent value="file" className="mt-3">
                         <div className="space-y-2">
                           <div className="flex items-center justify-center w-full">
@@ -1108,16 +1460,23 @@ export function ProductManagerModal({
                                       {selectedImageFile.name}
                                     </p>
                                     <p className="text-xs text-gray-500">
-                                      {(selectedImageFile.size / 1024).toFixed(1)} KB
+                                      {(selectedImageFile.size / 1024).toFixed(
+                                        1,
+                                      )}{" "}
+                                      KB
                                     </p>
                                   </>
                                 ) : (
                                   <>
                                     <Upload className="w-8 h-8 mb-2 text-gray-400" />
                                     <p className="mb-2 text-sm text-gray-500">
-                                      <span className="font-semibold">이미지 파일을 선택하거나</span>
+                                      <span className="font-semibold">
+                                        {t("common.selectImageFile")}
+                                      </span>
                                     </p>
-                                    <p className="text-xs text-gray-500">드래그엤드롭으로 업로드</p>
+                                    <p className="text-xs text-gray-500">
+                                      {t("common.dragDropUpload")}
+                                    </p>
                                   </>
                                 )}
                               </div>
@@ -1132,7 +1491,8 @@ export function ProductManagerModal({
                                     if (file.size > 5 * 1024 * 1024) {
                                       toast({
                                         title: "오류",
-                                        description: "이미지 크기는 5MB를 초과할 수 없습니다.",
+                                        description:
+                                          "이미지 크기는 5MB를 초과할 수 없습니다.",
                                         variant: "destructive",
                                       });
                                       return;
@@ -1182,22 +1542,58 @@ export function ProductManagerModal({
                         </FormItem>
                       )}
                     />
-
-                    
                   </div>
 
-                  <div className="flex justify-end">
+                  <div className="flex justify-end space-x-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={resetForm}
+                      disabled={
+                        createProductMutation.isPending ||
+                        updateProductMutation.isPending
+                      }
+                    >
+                      {t("common.cancel")}
+                    </Button>
                     <Button
                       type="submit"
                       disabled={
                         createProductMutation.isPending ||
                         updateProductMutation.isPending
                       }
-                      className="bg-green-600 hover:bg-green-700 text-white font-medium transition-colors duration-200"
+                      onClick={(e) => {
+                        console.log("🔘 Submit button clicked!");
+                        console.log("Form values:", form.getValues());
+                        console.log("Form errors:", form.formState.errors);
+                        console.log("Is form valid?", form.formState.isValid);
+                        
+                        // Log detailed errors
+                        const errors = form.formState.errors;
+                        if (Object.keys(errors).length > 0) {
+                          console.log("❌ Validation errors found:");
+                          Object.keys(errors).forEach(key => {
+                            console.log(`  - ${key}:`, errors[key]?.message);
+                          });
+                        }
+                      }}
+                      className="bg-green-600 hover:bg-green-700 text-white font-medium transition-colors duration-200 min-w-[120px]"
                     >
-                      {editingProduct
-                        ? t("tables.updateProduct")
-                        : t("common.comboValues.createProduct")}
+                      {createProductMutation.isPending ||
+                      updateProductMutation.isPending ? (
+                        <div className="flex items-center space-x-2">
+                          <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                          <span>
+                            {editingProduct ? "Đang cập nhật..." : "Đang tạo..."}
+                          </span>
+                        </div>
+                      ) : (
+                        <span>
+                          {editingProduct
+                            ? t("tables.updateProduct")
+                            : t("common.comboValues.createProduct")}
+                        </span>
+                      )}
                     </Button>
                   </div>
                 </form>
