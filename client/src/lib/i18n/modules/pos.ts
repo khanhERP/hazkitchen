@@ -46,6 +46,7 @@ export interface POSTranslations {
   emptyCart: string;
   clearCart: string;
   checkout: string;
+  placeOrder: string;
   payment: string;
   cash: string;
   card: string;
@@ -55,7 +56,6 @@ export interface POSTranslations {
   printReceipt: string;
   newOrder: string;
   newTransaction: string;
-  paymentMethodLabel: string;
   transactionComplete: string;
   transactionFailed: string;
   manageProducts: string;
@@ -171,6 +171,9 @@ export interface POSTranslations {
   posLocation: string;
   floor: string;
   zone: string;
+  customerRequired: string;
+  orderPlacedSuccess: string;
+  orderPlacedSuccessDesc: string;
 }
 
 export const posTranslations: { [key: string]: POSTranslations } = {
@@ -222,6 +225,7 @@ export const posTranslations: { [key: string]: POSTranslations } = {
     emptyCart: "장바구니가 비어있습니다",
     clearCart: "장바구니 비우기",
     checkout: "결제",
+    placeOrder: "주문하기",
     payment: "결제",
     cash: "현금",
     card: "카드",
@@ -349,6 +353,9 @@ export const posTranslations: { [key: string]: POSTranslations } = {
     posLocation: "POS 위치",
     floor: "층",
     zone: "구역",
+    customerRequired: "고객을 선택해야 주문할 수 있습니다.",
+    orderPlacedSuccess: "주문이 성공적으로 접수되었습니다.",
+    orderPlacedSuccessDesc: "주문이 '주문됨' 상태로 저장되었습니다.",
   },
   en: {
     title: "POS System",
@@ -398,6 +405,7 @@ export const posTranslations: { [key: string]: POSTranslations } = {
     emptyCart: "Your cart is empty",
     clearCart: "Clear Cart",
     checkout: "Checkout",
+    placeOrder: "Place Order",
     payment: "Payment",
     cash: "Cash",
     card: "Card",
@@ -527,6 +535,9 @@ export const posTranslations: { [key: string]: POSTranslations } = {
     posLocation: "POS Location",
     floor: "Floor",
     zone: "Zone",
+    customerRequired: "Customer selection is required before placing an order.",
+    orderPlacedSuccess: "Order successfully placed.",
+    orderPlacedSuccessDesc: "The order has been saved with a 'placed' status.",
   },
   vi: {
     title: "Hệ thống POS",
@@ -576,6 +587,7 @@ export const posTranslations: { [key: string]: POSTranslations } = {
     emptyCart: "Giỏ hàng trống",
     clearCart: "Xóa giỏ hàng",
     checkout: "Thanh toán",
+    placeOrder: "Đặt hàng",
     payment: "Thanh toán",
     cash: "Tiền mặt",
     card: "Thẻ",
@@ -621,7 +633,7 @@ export const posTranslations: { [key: string]: POSTranslations } = {
     addedToCartShort: "Đã thêm vào giỏ",
     hasBeenAddedToOrder: " đã được thêm vào đơn hàng",
     addedToOrderToast: " đã được thêm vào đơn hàng",
-    receiptPreview: "Xem trước hóa đơn",
+    receiptPreview: "Phiếu tạm tính",
     cancel: "Hủy",
     confirmAndSelectPayment: "Xác nhận & Chọn thanh toán",
     thankYouBusiness: "Cảm ơn bạn đã mua hàng!",
@@ -705,5 +717,8 @@ export const posTranslations: { [key: string]: POSTranslations } = {
     posLocation: "Vị trí POS",
     floor: "Tầng",
     zone: "Khu vực",
+    customerRequired: "Vui lòng chọn khách hàng trước khi đặt hàng.",
+    orderPlacedSuccess: "Đặt hàng thành công",
+    orderPlacedSuccessDesc: "Đơn hàng đã được lưu với trạng thái đặt hàng",
   },
 };

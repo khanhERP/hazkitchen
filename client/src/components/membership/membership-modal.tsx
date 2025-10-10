@@ -106,14 +106,14 @@ export function MembershipModal({ isOpen, onClose }: MembershipModalProps) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/customers'] });
       toast({
-        title: t("common.success"),
-        description: t("customers.customerUpdated"),
+        title: "common.success",
+        description: "customers.customerUpdated",
       });
     },
     onError: () => {
       toast({
-        title: t("common.error"),
-        description: t("customers.customerError"),
+        title: "common.error",
+        description: "customers.customerError",
         variant: 'destructive',
       });
     },
@@ -135,14 +135,14 @@ export function MembershipModal({ isOpen, onClose }: MembershipModalProps) {
       queryClient.invalidateQueries({ queryKey: ['https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/membership-thresholds'] });
       queryClient.invalidateQueries({ queryKey: ['https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/customers'] });
       toast({
-        title: t("common.success"),
-        description: "Đã cập nhật mức chi tiêu nâng hạng",
+        title: "common.success",
+        description: "customers.thresholdUpdated",
       });
     },
     onError: () => {
       toast({
-        title: t("common.error"),
-        description: "Không thể cập nhật mức chi tiêu",
+        title: "common.error",
+        description: "customers.thresholdUpdateError",
         variant: 'destructive',
       });
     },

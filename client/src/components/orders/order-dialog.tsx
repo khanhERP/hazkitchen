@@ -485,7 +485,16 @@ export function OrderDialog({
         const floorMatch =
           !table?.floor || !product.floor || product.floor === table.floor;
 
-        const productType = Number(product.productType) !== 2;
+        const productType =
+          Number(product.productType) !== 2 ||
+          Number(product.productType) !== 4;
+
+        // Exclude products from expense categories
+        const category = categories?.find(
+          (cat: any) => cat.id === product.categoryId,
+        );
+        const isExpenseCategory =
+          product.categoryId == 15 || product.categoryId == 17;
 
         // Filter by search query (name or SKU)
         const searchMatch =
@@ -494,7 +503,13 @@ export function OrderDialog({
           (product.sku &&
             product.sku.toLowerCase().includes(searchQuery.toLowerCase()));
 
-        return categoryMatch && floorMatch && productType && searchMatch;
+        return (
+          categoryMatch &&
+          floorMatch &&
+          productType &&
+          !isExpenseCategory &&
+          searchMatch
+        );
       })
     : [];
 
@@ -754,19 +769,19 @@ export function OrderDialog({
         if (priceIncludesTax) {
           // When price includes tax:
           // giá bao gồm thuế = (price - (discount/quantity)) * quantity
-          const discountPerUnit = Math.round(itemDiscountAmount / quantity);
+          const discountPerUnit = itemDiscountAmount / quantity;
           const adjustedPrice = Math.max(0, originalPrice - discountPerUnit);
-          const giaGomThue = Math.round(adjustedPrice * quantity);
+          const giaGomThue = adjustedPrice * quantity;
           // subtotal = giá bao gồm thuế / (1 + (taxRate / 100)) (làm tròn)
-          const tamTinh = Math.round(giaGomThue / (1 + taxRate));
+          const tamTinh = giaGomThue / (1 + taxRate);
           // tax = giá bao gồm thuế - subtotal
           itemTax = Math.round(giaGomThue - tamTinh);
         } else {
           // When price doesn't include tax:
           // subtotal = (price - (discount/quantity)) * quantity
-          const discountPerUnit = Math.round(itemDiscountAmount / quantity);
+          const discountPerUnit = itemDiscountAmount / quantity;
           const adjustedPrice = Math.max(0, originalPrice - discountPerUnit);
-          const tamTinh = Math.round(adjustedPrice * quantity);
+          const tamTinh = adjustedPrice * quantity;
           // tax = subtotal * (taxRate / 100) (làm tròn)
           itemTax = Math.round(tamTinh * taxRate);
         }
@@ -1349,19 +1364,42 @@ export function OrderDialog({
                 {t("tables.allCategories")}
               </Button>
               {Array.isArray(categories) &&
-                categories.map((category: Category) => (
-                  <Button
-                    key={category.id}
-                    variant={
-                      selectedCategory === category.id ? "default" : "outline"
-                    }
-                    size="sm"
-                    onClick={() => setSelectedCategory(category.id)}
-                    className="whitespace-nowrap"
-                  >
-                    {category.name}
-                  </Button>
-                ))}
+                categories
+                  .filter((category: Category) => {
+                    // Filter out expense categories
+                    const categoryName = category.name.toLowerCase();
+                    const isExpenseCategory =
+                      category.id == 15 || category.id == 17;
+
+                    // Only show categories that have non-expense products
+                    const categoryProducts =
+                      products?.filter(
+                        (p: Product) => p.categoryId === category.id,
+                      ) || [];
+                    const hasValidProducts = categoryProducts.some(
+                      (p: Product) => {
+                        const productType =
+                          Number(p.productType) !== 2 ||
+                          Number(p.productType) !== 4;
+                        return productType;
+                      },
+                    );
+
+                    return !isExpenseCategory && hasValidProducts;
+                  })
+                  .map((category: Category) => (
+                    <Button
+                      key={category.id}
+                      variant={
+                        selectedCategory === category.id ? "default" : "outline"
+                      }
+                      size="sm"
+                      onClick={() => setSelectedCategory(category.id)}
+                      className="whitespace-nowrap"
+                    >
+                      {category.name}
+                    </Button>
+                  ))}
             </div>
 
             {/* Products Grid */}

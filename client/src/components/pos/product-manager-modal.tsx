@@ -785,7 +785,7 @@ export function ProductManagerModal({
           <DialogTitle>{t("tables.productManagement")}</DialogTitle>
         </DialogHeader>
 
-        <div className="p-6">
+        <div className="w-full p-6">
           {!showAddForm ? (
             <>
               <div className="flex flex-col space-y-4 mb-6">
@@ -850,6 +850,9 @@ export function ProductManagerModal({
                   <table className="w-full">
                     <thead className="bg-gray-100">
                       <tr>
+                        <th className="text-center py-3 px-2 font-medium pos-text-primary w-16">
+                          {t("common.no")}
+                        </th>
                         <th className="text-left py-3 px-4 font-medium pos-text-primary">
                           {t("tables.product")}
                         </th>
@@ -877,11 +880,14 @@ export function ProductManagerModal({
                       </tr>
                     </thead>
                     <tbody className="bg-white">
-                      {filteredProducts.map((product) => (
+                      {filteredProducts.map((product, index) => (
                         <tr
                           key={product.id}
                           className="border-b border-gray-200"
                         >
+                          <td className="py-3 px-2 text-center text-gray-600">
+                            {index + 1}
+                          </td>
                           <td className="py-3 px-4">
                             <div className="flex items-center space-x-3">
                               {product.imageUrl ? (

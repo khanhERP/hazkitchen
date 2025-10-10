@@ -3,7 +3,12 @@ import type { SettingsTranslations } from "../types";
 export const settingsTranslations: { [key: string]: SettingsTranslations } = {
   ko: {
     title: "설정",
-    description: "시스템 설정을 관리합니다",
+    description: "시스템 설정 관리",
+    confirmDeleteCategoryTitle: "카테고리 삭제 확인",
+    confirmDeleteCategoryDesc: "'{name}' 카테고리를 삭제하시겠습니까?",
+    deleteCategoryWarning: "경고: 이 작업은 되돌릴 수 없습니다. 카테고리가 시스템에서 영구적으로 삭제됩니다.",
+    deleteCategoryDetails: "삭제하기 전에 이 카테고리에 제품이 없는지 확인하세요.",
+    deleteCategoryAction: "카테고리 삭제",
     storeInfo: "매장 정보",
     categories: "품목관리",
     employees: "직원",
@@ -27,6 +32,7 @@ export const settingsTranslations: { [key: string]: SettingsTranslations } = {
     categoriesRedirect: "카테고리로 이동",
     employeeManagement: "직원 관리",
     employeeManagementDesc: "직원 정보를 관리합니다",
+    employeeCategory: "직원 카테고리",
     goToEmployees: "직원으로 이동",
     goToInventory: "재고로 이동",
     paymentMethodsDesc: "결제 방법을 설정합니다",
@@ -126,8 +132,10 @@ export const settingsTranslations: { [key: string]: SettingsTranslations } = {
     clickToAddConnection: "'연결 추가'를 클릭하여 시작하세요",
     // Error messages
     cannotDeleteEmployee: "직원을 삭제할 수 없습니다",
-    cannotDeleteEmployeeAttendance: "이 직원은 출근 데이터가 있어 데이터 무결성을 위해 삭제할 수 없습니다.",
-    cannotDeleteEmployeeOrders: "이 직원은 주문 데이터가 있어 데이터 무결성을 위해 삭제할 수 없습니다.",
+    cannotDeleteEmployeeAttendance:
+      "이 직원은 출근 데이터가 있어 데이터 무결성을 위해 삭제할 수 없습니다.",
+    cannotDeleteEmployeeOrders:
+      "이 직원은 주문 데이터가 있어 데이터 무결성을 위해 삭제할 수 없습니다.",
     paymentUpdateSuccessTitle: "성공",
     paymentUpdateSuccessDesc: "결제 방법이 성공적으로 업데이트되었습니다",
     einvoiceShort: "HĐĐT",
@@ -157,25 +165,35 @@ export const settingsTranslations: { [key: string]: SettingsTranslations } = {
     categoryNotFound: "업데이트할 카테고리를 찾을 수 없습니다",
     categoryUpdateSuccess: "카테고리가 성공적으로 업데이트되었습니다",
     categoryUpdateError: "카테고리 업데이트 중 오류가 발생했습니다",
-    categoryDeleteWithProducts: "이 카테고리에는 아직 {count}개의 상품이 있습니다. 먼저 상품들을 삭제하거나 다른 카테고리로 이동해주세요.",
+    categoryDeleteWithProducts:
+      "이 카테고리에는 아직 {count}개의 상품이 있습니다. 먼저 상품들을 삭제하거나 다른 카테고리로 이동해주세요.",
     categoryDeleteSuccess: "카테고리가 성공적으로 삭제되었습니다",
     categoryDeleteError: "카테고리 삭제 중 오류가 발생했습니다",
-    categoryDeleteErrorWithProducts: "아직 상품이 남아있는 카테고리는 삭제할 수 없습니다. 먼저 상품들을 삭제하거나 다른 카테고리로 이동해주세요.",
+    categoryDeleteErrorWithProducts:
+      "아직 상품이 남아있는 카테고리는 삭제할 수 없습니다. 먼저 상품들을 삭제하거나 다른 카테고리로 이동해주세요.",
     // Product management
     productDeleteSuccess: "상품이 성공적으로 삭제되었습니다",
     productDeleteError: "상품 삭제 중 오류가 발생했습니다",
     // E-invoice management
-    einvoiceConnectionCreateSuccess: "E-invoice 연결이 성공적으로 생성되었습니다",
+    einvoiceConnectionCreateSuccess:
+      "E-invoice 연결이 성공적으로 생성되었습니다",
     einvoiceConnectionCreateError: "E-invoice 연결 생성 중 오류가 발생했습니다",
-    einvoiceConnectionUpdateSuccess: "E-invoice 연결이 성공적으로 업데이트되었습니다",
-    einvoiceConnectionUpdateError: "E-invoice 연결 업데이트 중 오류가 발생했습니다",
-    einvoiceConnectionDeleteSuccess: "E-invoice 연결이 성공적으로 삭제되었습니다",
+    einvoiceConnectionUpdateSuccess:
+      "E-invoice 연결이 성공적으로 업데이트되었습니다",
+    einvoiceConnectionUpdateError:
+      "E-invoice 연결 업데이트 중 오류가 발생했습니다",
+    einvoiceConnectionDeleteSuccess:
+      "E-invoice 연결이 성공적으로 삭제되었습니다",
     einvoiceConnectionDeleteError: "E-invoice 연결 삭제 중 오류가 발생했습니다",
-    einvoiceTemplateCreateSuccess: "E-invoice 템플릿이 성공적으로 생성되었습니다",
+    einvoiceTemplateCreateSuccess:
+      "E-invoice 템플릿이 성공적으로 생성되었습니다",
     einvoiceTemplateCreateError: "E-invoice 템플릿 생성 중 오류가 발생했습니다",
-    einvoiceTemplateUpdateSuccess: "E-invoice 템플릿이 성공적으로 업데이트되었습니다",
-    einvoiceTemplateUpdateError: "E-invoice 템플릿 업데이트 중 오류가 발생했습니다",
-    einvoiceTemplateDeleteSuccess: "E-invoice 템플릿이 성공적으로 삭제되었습니다",
+    einvoiceTemplateUpdateSuccess:
+      "E-invoice 템플릿이 성공적으로 업데이트되었습니다",
+    einvoiceTemplateUpdateError:
+      "E-invoice 템플릿 업데이트 중 오류가 발생했습니다",
+    einvoiceTemplateDeleteSuccess:
+      "E-invoice 템플릿이 성공적으로 삭제되었습니다",
     einvoiceTemplateDeleteError: "E-invoice 템플릿 삭제 중 오류가 발생했습니다",
     // Form validation
     requiredFieldsError: "필수 정보를 모두 입력해주세요",
@@ -195,6 +213,8 @@ export const settingsTranslations: { [key: string]: SettingsTranslations } = {
     cqtCodeLevel2: "2단계",
     // Placeholders
     skuPlaceholder: "SKU를 입력하세요",
+    skuLabel: "SKU",
+    skuAutoGenerate: "SKU (자동 생성 비워두면)",
     templateNamePlaceholder: "예: 템플릿 1",
     templateNumberPlaceholder: "예: 01GTKT0/001",
     templateCodePlaceholder: "예: 123451/88890345",
@@ -216,15 +236,21 @@ export const settingsTranslations: { [key: string]: SettingsTranslations } = {
     outOfStock: "품절",
     totalValue: "재고 총 가치",
     totalStockQuantity: "재고 총량",
-    categoryTitle: "카테고리 관리",
-    productTitle: "상품 관리",
+    categoryTitle: "상품 그룹",
+    productTitle: "상품 항목 관리",
     addCategory: "카테고리 추가",
+    addProductGroup: "상품 그룹 추가",
     addCustomer: "고객 추가",
     addProduct: "제품 추가",
     editCategory: "카테고리 수정",
     editProduct: "상품 수정",
     categoryName: "카테고리 이름",
+    categoryGroupName: "상품 그룹 이름",
     categoryIcon: "카테고리 아이콘",
+    categoryGroupIcon: "상품 그룹 아이콘",
+    categoryId: "카테고리 ID",
+    categoryIdPlaceholder: "카테고리 ID 입력",
+    icon: "아이콘",
     productName: "상품명",
     productNamePlaceholder: "상품명을 입력하세요",
     productSku: "SKU",
@@ -235,7 +261,7 @@ export const settingsTranslations: { [key: string]: SettingsTranslations } = {
     productStock: "재고",
     productStockPlaceholder: "재고 수량을 입력하세요",
     selectCategory: "카테고리 선택",
-    allCategories: "모든 카테고리",
+    allCategories: "모든 품목군",
     searchCategoriesPlaceholder: "품목군 검색...",
     noCategories: "등록된 카테고리가 없습니다",
     noProducts: "등록된 상품이 없습니다",
@@ -263,7 +289,7 @@ export const settingsTranslations: { [key: string]: SettingsTranslations } = {
     enableInventoryTracking: "이 상품의 재고 추적을 활성화",
     yes: "네",
     productUpdatedSuccess: "상품이 성공적으로 업데이트되었습니다",
-    
+
     // Product form dialog
     addProductTitle: "상품 추가",
     addProductDesc: "새 상품 정보를 입력하세요",
@@ -299,21 +325,25 @@ export const settingsTranslations: { [key: string]: SettingsTranslations } = {
     // Product deletion confirmation
     confirmDeleteProductTitle: "상품 삭제 확인",
     confirmDeleteProductDesc: "정말로 상품을 삭제하시겠습니까?",
-    deleteProductWarning: "경고: 이 작업은 되돌릴 수 없습니다. 상품이 시스템에서 영구적으로 삭제됩니다.",
-    deleteProductDetails: "이는 이 상품이 포함된 주문 및 보고서에 영향을 줄 것입니다.",
+    deleteProductWarning:
+      "경고: 이 작업은 되돌릴 수 없습니다. 상품이 시스템에서 영구적으로 삭제됩니다.",
+    deleteProductDetails:
+      "이는 이 상품이 포함된 주문 및 보고서에 영향을 줄 것입니다.",
     deleteProductAction: "상품 삭제",
 
     // E-invoice connection deletion confirmation
     confirmDeleteConnectionTitle: "HĐĐT 연결 삭제 확인",
-    confirmDeleteConnectionDesc: "정말로 연결 \"{name}\"을 삭제하시겠습니까?",
-    deleteConnectionWarning: "이 작업은 되돌릴 수 없습니다. HĐĐT 연결이 시스템에서 영구적으로 삭제됩니다.",
+    confirmDeleteConnectionDesc: '정말로 연결 "{name}"을 삭제하시겠습니까?',
+    deleteConnectionWarning:
+      "이 작업은 되돌릴 수 없습니다. HĐĐT 연결이 시스템에서 영구적으로 삭제됩니다.",
     deleteConnectionDetails: "이는 전자 인보이스 발행에 영향을 줄 수 있습니다.",
     deleteConnectionAction: "연결 삭제",
 
     // Template deletion confirmation
     confirmDeleteTemplateTitle: "템플릿 삭제 확인",
-    confirmDeleteTemplateDesc: "정말로 템플릿 \"{name}\"을 삭제하시겠습니까?",
-    deleteTemplateWarning: "이 작업은 되돌릴 수 없습니다. 템플릿이 시스템에서 영구적으로 삭제됩니다.",
+    confirmDeleteTemplateDesc: '정말로 템플릿 "{name}"을 삭제하시겠습니까?',
+    deleteTemplateWarning:
+      "이 작업은 되돌릴 수 없습니다. 템플릿이 시스템에서 영구적으로 삭제됩니다.",
     deleteTemplateDetails: "이는 전자 인보이스 발행에 영향을 줄 수 있습니다.",
     deleteTemplateAction: "템플릿 삭제",
 
@@ -330,7 +360,7 @@ export const settingsTranslations: { [key: string]: SettingsTranslations } = {
     zonePrefixDesc: "구역 이름 뒤에 표시될 접미사를 설정하세요",
     selectedFloorZoneInfo: "선택된 층/구역 정보",
     defaultFloorDisplay: "기본 층",
-    defaultZoneDisplay: "기본 구역", 
+    defaultZoneDisplay: "기본 구역",
     displayInfoLabel: "표시 정보",
     floorSuffix: "층",
     zoneSuffix: "구역",
@@ -338,7 +368,7 @@ export const settingsTranslations: { [key: string]: SettingsTranslations } = {
     selectDefaultZone: "기본 구역을 선택하세요",
     zoneLabel: "구역",
     zoneA: "A구역",
-    zoneB: "B구역", 
+    zoneB: "B구역",
     zoneC: "C구역",
     zoneD: "D구역",
     zoneE: "E구역",
@@ -351,6 +381,11 @@ export const settingsTranslations: { [key: string]: SettingsTranslations } = {
   en: {
     title: "Settings",
     description: "Manage system settings",
+    confirmDeleteCategoryTitle: "Confirm Category Deletion",
+    confirmDeleteCategoryDesc: "Are you sure you want to delete category '{name}'?",
+    deleteCategoryWarning: "Warning: This action cannot be undone. The category will be permanently deleted from the system.",
+    deleteCategoryDetails: "Please ensure there are no products in this category before deletion.",
+    deleteCategoryAction: "Delete Category",
     storeInfo: "Store Info",
     categories: "Categories",
     employees: "Employees",
@@ -374,6 +409,7 @@ export const settingsTranslations: { [key: string]: SettingsTranslations } = {
     categoriesRedirect: "Go to Categories",
     employeeManagement: "Employee Management",
     employeeManagementDesc: "Manage employee information",
+    employeeCategory: "Employee Category",
     goToEmployees: "Go to Employees",
     goToInventory: "Go to Inventory",
     paymentMethodsDesc: "Configure payment methods",
@@ -408,7 +444,8 @@ export const settingsTranslations: { [key: string]: SettingsTranslations } = {
     pinCodePlaceholder: "Enter 4-6 digit PIN code",
     pinCodeMinLength: "PIN code should be at least 4 digits",
     priceIncludesTax: "Price Includes Tax",
-    priceIncludesTaxDesc: "When enabled, displayed prices will be tax-inclusive",
+    priceIncludesTaxDesc:
+      "When enabled, displayed prices will be tax-inclusive",
     loginIdLabel: "Login ID",
     passwordLabel: "Password",
     loginUrlLabel: "Login URL",
@@ -474,8 +511,10 @@ export const settingsTranslations: { [key: string]: SettingsTranslations } = {
     clickToAddConnection: "Click 'Add Connection' to get started",
     // Error messages
     cannotDeleteEmployee: "Cannot Delete Employee",
-    cannotDeleteEmployeeAttendance: "This employee has attendance records in the system. Cannot delete to ensure data integrity.",
-    cannotDeleteEmployeeOrders: "This employee has orders in the system. Cannot delete to ensure data integrity.",
+    cannotDeleteEmployeeAttendance:
+      "This employee has attendance records in the system. Cannot delete to ensure data integrity.",
+    cannotDeleteEmployeeOrders:
+      "This employee has orders in the system. Cannot delete to ensure data integrity.",
     paymentUpdateSuccessTitle: "Success",
     paymentUpdateSuccessDesc: "Payment method has been updated successfully",
     einvoiceShort: "E-Invoice",
@@ -505,28 +544,42 @@ export const settingsTranslations: { [key: string]: SettingsTranslations } = {
     categoryNotFound: "Category to update not found",
     categoryUpdateSuccess: "Category has been updated successfully",
     categoryUpdateError: "An error occurred while updating category",
-    categoryDeleteWithProducts: "Cannot delete this category as it contains {count} products. Please delete or move the products to other categories first.",
+    categoryDeleteWithProducts:
+      "Cannot delete this category as it contains {count} products. Please delete or move the products to other categories first.",
     categoryDeleteSuccess: "Category has been deleted successfully",
     categoryDeleteError: "An error occurred while deleting category",
-    categoryDeleteErrorWithProducts: "Cannot delete category because there are still products in this category. Please delete or move the products to other categories first.",
+    categoryDeleteErrorWithProducts:
+      "Cannot delete category because there are still products in this category. Please delete or move the products to other categories first.",
     productUpdatedSuccess: "Product has been updated successfully",
-  
+
     // Product management
     productDeleteSuccess: "Product has been deleted successfully",
     productDeleteError: "An error occurred while deleting product",
     // E-invoice management
-    einvoiceConnectionCreateSuccess: "E-invoice connection has been created successfully",
-    einvoiceConnectionCreateError: "An error occurred while creating E-invoice connection",
-    einvoiceConnectionUpdateSuccess: "E-invoice connection has been updated successfully",
-    einvoiceConnectionUpdateError: "An error occurred while updating E-invoice connection",
-    einvoiceConnectionDeleteSuccess: "E-invoice connection has been deleted successfully",
-    einvoiceConnectionDeleteError: "An error occurred while deleting E-invoice connection",
-    einvoiceTemplateCreateSuccess: "E-invoice template has been created successfully",
-    einvoiceTemplateCreateError: "An error occurred while creating E-invoice template",
-    einvoiceTemplateUpdateSuccess: "E-invoice template has been updated successfully",
-    einvoiceTemplateUpdateError: "An error occurred while updating E-invoice template",
-    einvoiceTemplateDeleteSuccess: "E-invoice template has been deleted successfully",
-    einvoiceTemplateDeleteError: "An error occurred while deleting E-invoice template",
+    einvoiceConnectionCreateSuccess:
+      "E-invoice connection has been created successfully",
+    einvoiceConnectionCreateError:
+      "An error occurred while creating E-invoice connection",
+    einvoiceConnectionUpdateSuccess:
+      "E-invoice connection has been updated successfully",
+    einvoiceConnectionUpdateError:
+      "An error occurred while updating E-invoice connection",
+    einvoiceConnectionDeleteSuccess:
+      "E-invoice connection has been deleted successfully",
+    einvoiceConnectionDeleteError:
+      "An error occurred while deleting E-invoice connection",
+    einvoiceTemplateCreateSuccess:
+      "E-invoice template has been created successfully",
+    einvoiceTemplateCreateError:
+      "An error occurred while creating E-invoice template",
+    einvoiceTemplateUpdateSuccess:
+      "E-invoice template has been updated successfully",
+    einvoiceTemplateUpdateError:
+      "An error occurred while updating E-invoice template",
+    einvoiceTemplateDeleteSuccess:
+      "E-invoice template has been deleted successfully",
+    einvoiceTemplateDeleteError:
+      "An error occurred while deleting E-invoice template",
     // Form validation
     requiredFieldsError: "Please fill in all required information",
     taxCodeRequired: "Tax code is required",
@@ -545,6 +598,8 @@ export const settingsTranslations: { [key: string]: SettingsTranslations } = {
     cqtCodeLevel2: "Level 2",
     // Placeholders
     skuPlaceholder: "Enter product SKU",
+    skuLabel: "SKU",
+    skuAutoGenerate: "SKU (Auto-generated if empty)",
     templateNamePlaceholder: "e.g.: Template 1",
     templateNumberPlaceholder: "e.g.: 01GTKT0/001",
     templateCodePlaceholder: "e.g.: 123451/88890345",
@@ -566,15 +621,21 @@ export const settingsTranslations: { [key: string]: SettingsTranslations } = {
     outOfStock: "Out of Stock",
     totalValue: "Total Value",
     totalStockQuantity: "Total Stock Quantity",
-    categoryTitle: "Category Management",
-    productTitle: "Product Management",
+    categoryTitle: "Product Group",
+    productTitle: "Product Item Management",
     addCategory: "Add Category",
+    addProductGroup: "Add Product Group",
     addCustomer: "Add Customer",
     addProduct: "Add Product",
     editCategory: "Edit Category",
     editProduct: "Edit Product",
     categoryName: "Category Name",
+    categoryGroupName: "Product Group Name",
     categoryIcon: "Category Icon",
+    categoryGroupIcon: "Product Group Icon",
+    categoryId: "Category ID",
+    categoryIdPlaceholder: "Enter category ID",
+    icon: "Icon",
     productName: "Product Name",
     productNamePlaceholder: "Enter product name",
     productSku: "SKU",
@@ -585,8 +646,8 @@ export const settingsTranslations: { [key: string]: SettingsTranslations } = {
     productStock: "Stock",
     productStockPlaceholder: "Enter stock quantity",
     selectCategory: "Select Category",
-    allCategories: "All Categories",
-    searchCategoriesPlaceholder: "Search categories...",
+    allCategories: "All Product Groups",
+    searchCategoriesPlaceholder: "Search product groups...",
     noCategories: "No categories found",
     noProducts: "No products found",
     deleteConfirm: "Are you sure you want to delete?",
@@ -649,21 +710,27 @@ export const settingsTranslations: { [key: string]: SettingsTranslations } = {
     // Product deletion confirmation
     confirmDeleteProductTitle: "Confirm Product Deletion",
     confirmDeleteProductDesc: "Are you sure you want to delete this product?",
-    deleteProductWarning: "Warning: This action cannot be undone. The product will be permanently deleted from the system.",
-    deleteProductDetails: "This will affect orders and reports containing this product.",
+    deleteProductWarning:
+      "Warning: This action cannot be undone. The product will be permanently deleted from the system.",
+    deleteProductDetails:
+      "This will affect orders and reports containing this product.",
     deleteProductAction: "Delete Product",
 
     // E-invoice connection deletion confirmation
     confirmDeleteConnectionTitle: "Confirm E-invoice Connection Deletion",
-    confirmDeleteConnectionDesc: "Are you sure you want to delete connection \"{name}\"?",
-    deleteConnectionWarning: "This action cannot be undone. The HĐĐT connection will be permanently deleted from the system.",
+    confirmDeleteConnectionDesc:
+      'Are you sure you want to delete connection "{name}"?',
+    deleteConnectionWarning:
+      "This action cannot be undone. The HĐĐT connection will be permanently deleted from the system.",
     deleteConnectionDetails: "This may affect electronic invoice generation.",
     deleteConnectionAction: "Delete Connection",
 
     // Template deletion confirmation
     confirmDeleteTemplateTitle: "Confirm Template Deletion",
-    confirmDeleteTemplateDesc: "Are you sure you want to delete template \"{name}\"?",
-    deleteTemplateWarning: "This action cannot be undone. The template will be permanently deleted from the system.",
+    confirmDeleteTemplateDesc:
+      'Are you sure you want to delete template "{name}"?',
+    deleteTemplateWarning:
+      "This action cannot be undone. The template will be permanently deleted from the system.",
     deleteTemplateDetails: "This may affect electronic invoice generation.",
     deleteTemplateAction: "Delete Template",
 
@@ -689,18 +756,32 @@ export const settingsTranslations: { [key: string]: SettingsTranslations } = {
     zoneLabel: "Zone",
     zoneA: "Zone A",
     zoneB: "Zone B",
-    zoneC: "Zone C", 
+    zoneC: "Zone C",
     zoneD: "Zone D",
     zoneE: "Zone E",
 
     // Printer configuration
     printerManagementDesc: "Manage printers connected to the POS system",
-    printerSetupDesc: "Set up and manage printers for invoices, receipts, and reports",
+    printerSetupDesc:
+      "Set up and manage printers for invoices, receipts, and reports",
     configurePrinter: "Configure Printer",
+    categoryIcons: {
+      mainDish: "Main Dishes",
+      beverages: "Beverages",
+      snacks: "Snacks",
+      desserts: "Desserts",
+      alcoholic: "Alcoholic Beverages",
+      fruits: "Fruits",
+    },
   },
   vi: {
     title: "Cài đặt",
     description: "Quản lý cài đặt hệ thống",
+    confirmDeleteCategoryTitle: "Xác nhận xóa danh mục",
+    confirmDeleteCategoryDesc: 'Bạn có chắc chắn muốn xóa danh mục "{name}" không?',
+    deleteCategoryWarning: "Cảnh báo: Hành động này không thể hoàn tác. Danh mục sẽ bị xóa vĩnh viễn khỏi hệ thống.",
+    deleteCategoryDetails: "Vui lòng đảm bảo không có sản phẩm nào trong danh mục này trước khi xóa.",
+    deleteCategoryAction: "Xóa danh mục",
     storeInfo: "Thông tin cửa hàng",
     categories: "Danh mục sản phẩm",
     employees: "Nhân viên",
@@ -724,6 +805,7 @@ export const settingsTranslations: { [key: string]: SettingsTranslations } = {
     categoriesRedirect: "Đến danh mục",
     employeeManagement: "Quản lý nhân viên",
     employeeManagementDesc: "Quản lý thông tin nhân viên",
+    employeeCategory: "Danh mục nhân viên",
     goToEmployees: "Đến nhân viên",
     goToInventory: "Đến kho hàng",
     paymentMethodsDesc: "Cấu hình phương thức thanh toán",
@@ -824,10 +906,13 @@ export const settingsTranslations: { [key: string]: SettingsTranslations } = {
     clickToAddConnection: "Nhấn 'Thêm kết nối' để bắt đầu",
     // Error messages
     cannotDeleteEmployee: "Không thể xóa nhân viên",
-    cannotDeleteEmployeeAttendance: "Nhân viên này đã có dữ liệu chấm công trong hệ thống. Không thể xóa để đảm bảo tính toàn vẹn dữ liệu.",
-    cannotDeleteEmployeeOrders: "Nhân viên này đã có đơn hàng trong hệ thống. Không thể xóa để đảm bảo tính toàn vẹn dữ liệu.",
+    cannotDeleteEmployeeAttendance:
+      "Nhân viên này đã có dữ liệu chấm công trong hệ thống. Không thể xóa để đảm bảo tính toàn vẹn dữ liệu.",
+    cannotDeleteEmployeeOrders:
+      "Nhân viên này đã có đơn hàng trong hệ thống. Không thể xóa để đảm bảo tính toàn vẹn dữ liệu.",
     paymentUpdateSuccessTitle: "Thành công",
-    paymentUpdateSuccessDesc: "Phương thức thanh toán đã được cập nhật thành công",
+    paymentUpdateSuccessDesc:
+      "Phương thức thanh toán đã được cập nhật thành công",
     einvoiceShort: "HĐĐT",
     employeeDeleteSuccessTitle: "Thành công",
     employeeDeleteSuccessDesc: "Nhân viên đã được xóa thành công",
@@ -855,10 +940,12 @@ export const settingsTranslations: { [key: string]: SettingsTranslations } = {
     categoryNotFound: "Không tìm thấy danh mục cần cập nhật",
     categoryUpdateSuccess: "Danh mục đã được cập nhật thành công",
     categoryUpdateError: "Có lỗi xảy ra khi cập nhật danh mục",
-    categoryDeleteWithProducts: "Không thể xóa danh mục này vì còn {count} sản phẩm. Vui lòng xóa hoặc chuyển các sản phẩm sang danh mục khác trước.",
+    categoryDeleteWithProducts:
+      "Không thể xóa danh mục này vì còn {count} sản phẩm. Vui lòng xóa hoặc chuyển các sản phẩm sang danh mục khác trước.",
     categoryDeleteSuccess: "Danh mục đã được xóa thành công",
     categoryDeleteError: "Có lỗi xảy ra khi xóa danh mục",
-    categoryDeleteErrorWithProducts: "Không thể xóa danh mục vì vẫn còn sản phẩm trong danh mục này. Vui lòng xóa hoặc chuyển các sản phẩm sang danh mục khác trước.",
+    categoryDeleteErrorWithProducts:
+      "Không thể xóa danh mục vì vẫn còn sản phẩm trong danh mục này. Vui lòng xóa hoặc chuyển các sản phẩm sang danh mục khác trước.",
     // Product management
     productDeleteSuccess: "Sản phẩm đã được xóa thành công",
     productDeleteError: "Có lỗi xảy ra khi xóa sản phẩm",
@@ -893,6 +980,8 @@ export const settingsTranslations: { [key: string]: SettingsTranslations } = {
     cqtCodeLevel2: "Cấp hai",
     // Placeholders
     skuPlaceholder: "Nhập SKU sản phẩm",
+    skuLabel: "SKU",
+    skuAutoGenerate: "SKU (Tự động tạo nếu để trống)",
     templateNamePlaceholder: "Ví dụ: Mẫu số 1",
     templateNumberPlaceholder: "Ví dụ: 01GTKT0/001",
     templateCodePlaceholder: "Ví dụ: 123451/88890345",
@@ -914,15 +1003,22 @@ export const settingsTranslations: { [key: string]: SettingsTranslations } = {
     outOfStock: "Hết hàng",
     totalValue: "Tổng giá trị kho",
     totalStockQuantity: "Tổng số lượng tồn kho",
-    categoryTitle: "Quản lý danh mục",
-    productTitle: "Quản lý sản phẩm",
+    categoryTitle: "Nhóm hàng",
+    productTitle: "Quản lý mặt hàng",
     addCategory: "Thêm danh mục",
+    addProductGroup: "Thêm nhóm hàng",
     addCustomer: "Thêm khách hàng",
     addProduct: "Thêm sản phẩm",
     editCategory: "Sửa danh mục",
     editProduct: "Sửa sản phẩm",
     categoryName: "Tên danh mục",
+    categoryGroupName: "Tên nhóm hàng",
     categoryIcon: "Biểu tượng danh mục",
+    categoryGroupIcon: "Biểu tượng nhóm hàng",
+    categoryId: "Mã nhóm hàng",
+    categoryIdPlaceholder: "Nhập mã nhóm hàng",
+    categoryIdAutoGenerated: "Mã tự động tạo",
+    icon: "Icon",
     productName: "Tên sản phẩm",
     productNamePlaceholder: "Nhập tên sản phẩm",
     productSku: "Mã SKU",
@@ -933,8 +1029,8 @@ export const settingsTranslations: { [key: string]: SettingsTranslations } = {
     productStock: "Tồn kho",
     productStockPlaceholder: "Nhập số lượng tồn kho",
     selectCategory: "Chọn danh mục",
-    allCategories: "Tất cả danh mục",
-    searchCategoriesPlaceholder: "Tìm kiếm danh mục...",
+    allCategories: "Tất cả nhóm hàng",
+    searchCategoriesPlaceholder: "Tìm kiếm nhóm hàng...",
     noCategories: "Không có danh mục nào",
     noProducts: "Không có sản phẩm nào",
     deleteConfirm: "Bạn có chắc chắn muốn xóa?",
@@ -963,7 +1059,7 @@ export const settingsTranslations: { [key: string]: SettingsTranslations } = {
     inStock: "Còn hàng",
     outOfStock: "Hết hàng",
     productUpdatedSuccess: "Sản phẩm đã được cập nhật thành công",
-    
+
     // Product form dialog
     addProductTitle: "Thêm sản phẩm",
     addProductDesc: "Nhập thông tin sản phẩm mới",
@@ -999,22 +1095,30 @@ export const settingsTranslations: { [key: string]: SettingsTranslations } = {
     // Product deletion confirmation
     confirmDeleteProductTitle: "Xác nhận xóa sản phẩm",
     confirmDeleteProductDesc: "Bạn có chắc chắn muốn xóa sản phẩm này không?",
-    deleteProductWarning: "Cảnh báo: Hành động này không thể hoàn tác. Sản phẩm sẽ bị xóa vĩnh viễn khỏi hệ thống.",
-    deleteProductDetails: "Điều này sẽ ảnh hưởng đến các đơn hàng và báo cáo có chứa sản phẩm này.",
+    deleteProductWarning:
+      "Cảnh báo: Hành động này không thể hoàn tác. Sản phẩm sẽ bị xóa vĩnh viễn khỏi hệ thống.",
+    deleteProductDetails:
+      "Điều này sẽ ảnh hưởng đến các đơn hàng và báo cáo có chứa sản phẩm này.",
     deleteProductAction: "Xóa sản phẩm",
 
     // E-invoice connection deletion confirmation
     confirmDeleteConnectionTitle: "Xác nhận xóa kết nối HĐĐT",
-    confirmDeleteConnectionDesc: "Bạn có chắc chắn muốn xóa kết nối \"{name}\" không?",
-    deleteConnectionWarning: "Hành động này không thể hoàn tác. Kết nối HĐĐT sẽ bị xóa vĩnh viễn khỏi hệ thống.",
-    deleteConnectionDetails: "Điều này có thể ảnh hưởng đến việc xuất hóa đơn điện tử.",
+    confirmDeleteConnectionDesc:
+      'Bạn có chắc chắn muốn xóa kết nối "{name}" không?',
+    deleteConnectionWarning:
+      "Hành động này không thể hoàn tác. Kết nối HĐĐT sẽ bị xóa vĩnh viễn khỏi hệ thống.",
+    deleteConnectionDetails:
+      "Điều này có thể ảnh hưởng đến việc xuất hóa đơn điện tử.",
     deleteConnectionAction: "Xóa kết nối",
 
     // Template deletion confirmation
     confirmDeleteTemplateTitle: "Xác nhận xóa mẫu số HĐĐT",
-    confirmDeleteTemplateDesc: "Bạn có chắc chắn muốn xóa mẫu số \"{name}\" không?",
-    deleteTemplateWarning: "Hành động này không thể hoàn tác. Mẫu số HĐĐT sẽ bị xóa vĩnh viễn khỏi hệ thống.",
-    deleteTemplateDetails: "Điều này có thể ảnh hưởng đến việc xuất hóa đơn điện tử.",
+    confirmDeleteTemplateDesc:
+      'Bạn có chắc chắn muốn xóa mẫu số "{name}" không?',
+    deleteTemplateWarning:
+      "Hành động này không thể hoàn tác. Mẫu số HĐĐT sẽ bị xóa vĩnh viễn khỏi hệ thống.",
+    deleteTemplateDetails:
+      "Điều này có thể ảnh hưởng đến việc xuất hóa đơn điện tử.",
     deleteTemplateAction: "Xóa mẫu số",
 
     // Floor/Zone Management
@@ -1035,17 +1139,26 @@ export const settingsTranslations: { [key: string]: SettingsTranslations } = {
     floorSuffix: "Tầng",
     zoneSuffix: "Khu vực",
     defaultZone: "Khu vực mặc định",
-    selectDefaultZone: "Chọn khu vực mặc định", 
+    selectDefaultZone: "Chọn khu vực mặc định",
     zoneLabel: "Khu vực",
     zoneA: "Khu vực A",
     zoneB: "Khu vực B",
     zoneC: "Khu vực C",
-    zoneD: "Khu vực D", 
+    zoneD: "Khu vực D",
     zoneE: "Khu vực E",
+    categoryIcons: {
+      mainDish: "Món chính",
+      beverages: "Đồ uống",
+      snacks: "Đồ ăn nhẹ",
+      desserts: "Tráng miệng",
+      alcoholic: "Đồ uống có cồn",
+      fruits: "Trái cây",
+    },
 
     // Printer configuration
     printerManagementDesc: "Quản lý các máy in kết nối với hệ thống POS",
-    printerSetupDesc: "Thiết lập và quản lý máy in cho hóa đơn, biên lai và báo cáo",
+    printerSetupDesc:
+      "Thiết lập và quản lý máy in cho hóa đơn, biên lai và báo cáo",
     configurePrinter: "Cấu hình máy in",
   },
 };

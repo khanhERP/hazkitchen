@@ -85,7 +85,14 @@ export default function PurchasesPage({ onLogout }: PurchasesPageProps) {
   } = useQuery<{ data: PurchaseOrder[]; success: boolean; message: string }>({
     queryKey: [
       "https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/purchase-receipts",
-      { startDate, endDate, productFilter, searchTerm, supplierFilter, poNumberFilter },
+      {
+        startDate,
+        endDate,
+        productFilter,
+        searchTerm,
+        supplierFilter,
+        poNumberFilter,
+      },
     ],
     queryFn: async () => {
       const params = new URLSearchParams();
@@ -96,13 +103,13 @@ export default function PurchasesPage({ onLogout }: PurchasesPageProps) {
       if (endDate) {
         params.append("endDate", endDate);
       }
-      
+
       // Add supplier filter as separate parameter (priority over search)
       if (supplierFilter && supplierFilter.trim() !== "") {
         params.append("supplierName", supplierFilter.trim());
         console.log("🔍 Adding supplier filter:", supplierFilter.trim());
       }
-      
+
       // Add PO number filter as search parameter
       if (poNumberFilter && poNumberFilter.trim() !== "") {
         params.append("search", poNumberFilter.trim());
@@ -121,7 +128,11 @@ export default function PurchasesPage({ onLogout }: PurchasesPageProps) {
       console.log("📦 Purchase receipts response:", responseData);
 
       // The API returns { success: true, message: "OK", data: [] }
-      if (responseData.success && responseData.data && Array.isArray(responseData.data)) {
+      if (
+        responseData.success &&
+        responseData.data &&
+        Array.isArray(responseData.data)
+      ) {
         return responseData;
       } else if (Array.isArray(responseData)) {
         return { data: responseData, success: true, message: "OK" };
@@ -295,8 +306,8 @@ export default function PurchasesPage({ onLogout }: PurchasesPageProps) {
       {/* Right Sidebar */}
       <RightSidebar />
 
-      <div className="container mx-auto pt-16 px-4 sm:px-6">
-        <div className="max-w-full mx-auto py-4 sm:py-8">
+      <div className="main-content pt-16 px-6">
+        <div className="mx-auto py-8" style={{ maxWidth: "95rem" }}>
           {/* Page Header */}
           <div className="mb-6 sm:mb-8">
             <div className="flex items-center gap-2 sm:gap-3 mb-2">
@@ -451,9 +462,7 @@ export default function PurchasesPage({ onLogout }: PurchasesPageProps) {
                     size="lg"
                   >
                     <Plus className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
-                    <span className="hidden sm:inline">
-                      Tạo phiếu nhập mới
-                    </span>
+                    <span className="hidden sm:inline">Tạo phiếu nhập mới</span>
                     <span className="sm:hidden">Tạo phiếu nhập</span>
                   </Button>
                 </div>
@@ -489,6 +498,9 @@ export default function PurchasesPage({ onLogout }: PurchasesPageProps) {
                         <TableHead className="font-bold min-w-[100px] text-right text-xs sm:text-sm">
                           {t("purchases.totalAmount")}
                         </TableHead>
+                        <TableHead className="font-bold min-w-[150px] text-xs sm:text-sm">
+                          Ghi chú
+                        </TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -496,132 +508,165 @@ export default function PurchasesPage({ onLogout }: PurchasesPageProps) {
                         // Calculate values from items if available
                         let calculatedSubtotal = 0;
                         let calculatedDiscount = 0;
-                        
+
                         if (order.items && order.items.length > 0) {
-                          order.items.forEach(item => {
-                            const quantity = parseFloat(item.quantity || '0');
-                            const unitPrice = parseFloat(item.unitPrice || '0');
+                          order.items.forEach((item) => {
+                            const quantity = parseFloat(item.quantity || "0");
+                            const unitPrice = parseFloat(item.unitPrice || "0");
                             const itemSubtotal = quantity * unitPrice;
-                            
+
                             calculatedSubtotal += itemSubtotal;
-                            
+
                             // Get discount from item
-                            const discount = item.discount || item.discountAmount || item.discount_amount || 0;
-                            const discountValue = typeof discount === 'string' ? parseFloat(discount) : discount;
-                            calculatedDiscount += (isNaN(discountValue) ? 0 : discountValue);
+                            const discount =
+                              item.discount ||
+                              item.discountAmount ||
+                              item.discount_amount ||
+                              0;
+                            const discountValue =
+                              typeof discount === "string"
+                                ? parseFloat(discount)
+                                : discount;
+                            calculatedDiscount += isNaN(discountValue)
+                              ? 0
+                              : discountValue;
                           });
                         }
-                        
+
                         // Use calculated values if items exist, otherwise use order totals
-                        const displaySubtotal = calculatedSubtotal > 0 ? calculatedSubtotal : parseFloat(order.subtotal || order.total || "0");
+                        const displaySubtotal =
+                          calculatedSubtotal > 0
+                            ? calculatedSubtotal
+                            : parseFloat(order.subtotal || order.total || "0");
                         const displayDiscount = calculatedDiscount;
                         const displayTotal = displaySubtotal - displayDiscount;
 
                         return (
-                        <TableRow
-                          key={order.id}
-                          data-testid={`row-purchase-order-${order.id}`}
-                          className="cursor-pointer hover:bg-gray-50 transition-colors"
-                          onClick={(e) => {
-                            // Don't navigate if clicking on checkbox or button elements
-                            const target = e.target as HTMLElement;
-                            if (
-                              target.type === "checkbox" ||
-                              target.closest('input[type="checkbox"]') ||
-                              target.closest("button")
-                            )
-                              return;
-                            navigate(`/purchases/view/${order.id}`);
-                          }}
-                        >
-                          <TableCell
-                            onClick={(e) => e.stopPropagation()}
-                            className="sticky left-0 bg-white z-10"
+                          <TableRow
+                            key={order.id}
+                            data-testid={`row-purchase-order-${order.id}`}
+                            className="cursor-pointer hover:bg-gray-50 transition-colors"
+                            onClick={(e) => {
+                              // Don't navigate if clicking on checkbox or button elements
+                              const target = e.target as HTMLElement;
+                              if (
+                                target.type === "checkbox" ||
+                                target.closest('input[type="checkbox"]') ||
+                                target.closest("button")
+                              )
+                                return;
+                              navigate(`/purchases/view/${order.id}`);
+                            }}
                           >
-                            <Checkbox
-                              checked={selectedOrders.has(order.id)}
-                              onCheckedChange={(checked) =>
-                                handleSelectOrder(order.id, checked as boolean)
-                              }
-                            />
-                          </TableCell>
-                          <TableCell className="font-medium sticky left-12 bg-white z-10 text-xs sm:text-sm">
-                            <div
-                              className="max-w-[100px] truncate"
-                              title={
-                                order.receiptNumber ||
-                                order.poNumber ||
-                                order.receipt_number ||
-                                "-"
-                              }
+                            <TableCell
+                              onClick={(e) => e.stopPropagation()}
+                              className="sticky left-0 bg-white z-10"
                             >
-                              {order.receiptNumber ||
-                                order.poNumber ||
-                                order.receipt_number ||
-                                "-"}
-                            </div>
-                          </TableCell>
-                          <TableCell className="text-xs sm:text-sm">
-                            <div className="flex items-center gap-1 sm:gap-2">
-                              <Calendar className="w-3 h-3 sm:w-4 sm:h-4 text-gray-500 flex-shrink-0" />
-                              <span className="text-xs sm:text-sm">
-                                {(() => {
-                                  // Try multiple possible date fields for purchase receipts
-                                  const date =
-                                    order.purchaseDate ||
-                                    order.actualDeliveryDate ||
-                                    order.createdAt ||
-                                    order.created_at;
-                                  if (date) {
-                                    try {
-                                      return new Date(date).toLocaleDateString(
-                                        {
-                                          ko: "ko-KR",
-                                          en: "en-US",
-                                          vi: "vi-VN",
-                                        }[currentLanguage] || "en-US",
-                                      );
-                                    } catch (error) {
-                                      console.error(
-                                        "Date parsing error:",
-                                        error,
-                                      );
-                                      return "-";
-                                    }
-                                  }
-                                  return "-";
-                                })()}
-                              </span>
-                            </div>
-                          </TableCell>
-                          <TableCell className="text-xs sm:text-sm">
-                            <div className="flex items-center gap-1 sm:gap-2">
-                              <User className="w-3 h-3 sm:w-4 sm:h-4 text-gray-500 flex-shrink-0" />
-                              <span
-                                className="max-w-[120px] truncate"
-                                title={order.supplier?.name || getSupplierName(order.supplierId)}
+                              <Checkbox
+                                checked={selectedOrders.has(order.id)}
+                                onCheckedChange={(checked) =>
+                                  handleSelectOrder(
+                                    order.id,
+                                    checked as boolean,
+                                  )
+                                }
+                              />
+                            </TableCell>
+                            <TableCell className="font-medium sticky left-12 bg-white z-10 text-xs sm:text-sm">
+                              <div
+                                className="max-w-[100px] truncate"
+                                title={
+                                  order.receiptNumber ||
+                                  order.poNumber ||
+                                  order.receipt_number ||
+                                  "-"
+                                }
                               >
-                                {order.supplier?.name || getSupplierName(order.supplierId)}
+                                {order.receiptNumber ||
+                                  order.poNumber ||
+                                  order.receipt_number ||
+                                  "-"}
+                              </div>
+                            </TableCell>
+                            <TableCell className="text-xs sm:text-sm">
+                              <div className="flex items-center gap-1 sm:gap-2">
+                                <Calendar className="w-3 h-3 sm:w-4 sm:h-4 text-gray-500 flex-shrink-0" />
+                                <span className="text-xs sm:text-sm">
+                                  {(() => {
+                                    // Try multiple possible date fields for purchase receipts
+                                    const date =
+                                      order.purchaseDate ||
+                                      order.actualDeliveryDate ||
+                                      order.createdAt ||
+                                      order.created_at;
+                                    if (date) {
+                                      try {
+                                        return new Date(
+                                          date,
+                                        ).toLocaleDateString(
+                                          {
+                                            ko: "ko-KR",
+                                            en: "en-US",
+                                            vi: "vi-VN",
+                                          }[currentLanguage] || "en-US",
+                                        );
+                                      } catch (error) {
+                                        console.error(
+                                          "Date parsing error:",
+                                          error,
+                                        );
+                                        return "-";
+                                      }
+                                    }
+                                    return "-";
+                                  })()}
+                                </span>
+                              </div>
+                            </TableCell>
+                            <TableCell className="text-xs sm:text-sm">
+                              <div className="flex items-center gap-1 sm:gap-2">
+                                <User className="w-3 h-3 sm:w-4 sm:h-4 text-gray-500 flex-shrink-0" />
+                                <span
+                                  className="max-w-[120px] truncate"
+                                  title={
+                                    order.supplier?.name ||
+                                    getSupplierName(order.supplierId)
+                                  }
+                                >
+                                  {order.supplier?.name ||
+                                    getSupplierName(order.supplierId)}
+                                </span>
+                              </div>
+                            </TableCell>
+                            <TableCell className="text-right text-xs sm:text-sm">
+                              <span className="font-medium">
+                                {formatCurrency(displaySubtotal.toString())}
                               </span>
-                            </div>
-                          </TableCell>
-                          <TableCell className="text-right text-xs sm:text-sm">
-                            <span className="font-medium">
-                              {formatCurrency(displaySubtotal.toString())}
-                            </span>
-                          </TableCell>
-                          <TableCell className="text-right text-xs sm:text-sm">
-                            <span className="font-medium text-red-600">
-                              {formatCurrency(Math.round(displayDiscount).toString())}
-                            </span>
-                          </TableCell>
-                          <TableCell className="text-right text-xs sm:text-sm">
-                            <span className="font-bold text-green-600">
-                              {formatCurrency(Math.round(displayTotal).toString())}
-                            </span>
-                          </TableCell>
-                        </TableRow>
-                      );
+                            </TableCell>
+                            <TableCell className="text-right text-xs sm:text-sm">
+                              <span className="font-medium text-red-600">
+                                {formatCurrency(
+                                  Math.round(displayDiscount).toString(),
+                                )}
+                              </span>
+                            </TableCell>
+                            <TableCell className="text-right text-xs sm:text-sm">
+                              <span className="font-bold text-green-600">
+                                {formatCurrency(
+                                  Math.round(displayTotal).toString(),
+                                )}
+                              </span>
+                            </TableCell>
+                            <TableCell className="text-xs sm:text-sm">
+                              <div
+                                className="max-w-[150px] truncate"
+                                title={order.notes || ""}
+                              >
+                                {order.notes || "-"}
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        );
                       })}
                     </TableBody>
                   </Table>

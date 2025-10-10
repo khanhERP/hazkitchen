@@ -88,6 +88,13 @@ export interface CommonTranslations {
   endDate: string;
   dateRange: string;
   filters: string;
+  categoryName: string;
+  categoryGroupName: string;
+  categoryIcon: string;
+  categoryGroupIcon: string;
+  categoryId: string;
+  categoryIdPlaceholder: string;
+  icon: string;
 
   // Status translations
   statuses: {
@@ -2165,7 +2172,6 @@ export interface TablesTranslations {
   productTypePlaceholder: string;
   addTableDesc: string;
   deleteorder: string;
-  expensesType: string;
 }
 
 // Inventory translations interface

@@ -257,27 +257,7 @@ export function POSHeader({ onLogout }: POSHeaderProps) {
               {/* Dropdown Menu */}
               {posMenuOpen && (
                 <div className="absolute top-full right-0 mt-1 bg-white rounded-xl shadow-lg border border-gray-200 py-2 min-w-48 z-50">
-                  {/* 테이블 추가/관리 - 맨 위에 위치 */}
-                  {storeSettings?.businessType === "restaurant" && (
-                    <>
-                      <Link href="/tables">
-                        <button
-                          className={`w-full flex items-center px-4 py-2 text-left hover:bg-green-50 transition-colors ${
-                            location === "/tables"
-                              ? "bg-green-50 text-green-600"
-                              : "text-gray-700"
-                          }`}
-                          onClick={() => setPosMenuOpen(false)}
-                          data-testid="button-nav-tables"
-                        >
-                          <Utensils className="w-4 h-4 mr-3" />
-                          {t("nav.tablesSales")}
-                        </button>
-                      </Link>
-                      <div className="border-t border-gray-200 my-2"></div>
-                    </>
-                  )}
-
+                  {/* Bán trực tiếp */}
                   <Link href="/pos">
                     <button
                       className={`w-full flex items-center px-4 py-2 text-left hover:bg-green-50 transition-colors ${
@@ -292,6 +272,87 @@ export function POSHeader({ onLogout }: POSHeaderProps) {
                     </button>
                   </Link>
 
+                  {/* Bán tại bàn */}
+                  {storeSettings?.businessType === "restaurant" && (
+                    <Link href="/tables">
+                      <button
+                        className={`w-full flex items-center px-4 py-2 text-left hover:bg-green-50 transition-colors ${
+                          location === "/tables"
+                            ? "bg-green-50 text-green-600"
+                            : "text-gray-700"
+                        }`}
+                        onClick={() => setPosMenuOpen(false)}
+                        data-testid="button-nav-tables"
+                      >
+                        <Utensils className="w-4 h-4 mr-3" />
+                        {t("nav.tablesSales")}
+                      </button>
+                    </Link>
+                  )}
+
+                  {/* Màn hình khách hàng */}
+                  <a
+                    href="#"
+                    className="w-full flex items-center px-4 py-2 text-left hover:bg-blue-50 hover:text-blue-600 text-gray-700 transition-colors"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      setPosMenuOpen(false);
+
+                      // Detect if multiple screens are available
+                      if (
+                        screen.availWidth > window.screen.width ||
+                        window.screen.availLeft !== 0
+                      ) {
+                        // Multiple screens detected - place on secondary screen
+                        const secondaryScreenLeft =
+                          screen.availLeft !== 0 ? 0 : screen.width;
+                        const width = Math.min(1024, screen.availWidth);
+                        const height = Math.min(768, screen.availHeight);
+
+                        const customerWindow = window.open(
+                          "/customer-display",
+                          "customerDisplay",
+                          `width=${width},height=${height},left=${secondaryScreenLeft},top=0,resizable=yes,scrollbars=yes,status=no,toolbar=no,menubar=no,location=no`,
+                        );
+
+                        // Try to maximize on secondary screen after opening
+                        if (customerWindow) {
+                          setTimeout(() => {
+                            try {
+                              customerWindow.moveTo(secondaryScreenLeft, 0);
+                              customerWindow.resizeTo(
+                                screen.availWidth,
+                                screen.availHeight,
+                              );
+                            } catch (error) {
+                              console.log(
+                                "Cannot auto-resize customer display window due to browser security restrictions",
+                              );
+                            }
+                          }, 500);
+                        }
+                      } else {
+                        // Single screen - open in center with standard size
+                        const width = 1024;
+                        const height = 768;
+                        const left = (screen.width - width) / 2;
+                        const top = (screen.height - height) / 2;
+
+                        window.open(
+                          "/customer-display",
+                          "customerDisplay",
+                          `width=${width},height=${height},left=${left},top=${top},resizable=yes,scrollbars=yes,status=no,toolbar=no,menubar=no,location=no`,
+                        );
+                      }
+                    }}
+                  >
+                    <Users className="w-4 h-4 mr-3" />
+                    {t("nav.customerDisplay")}
+                  </a>
+
+                  <div className="border-t border-gray-200 my-2"></div>
+
+                  {/* Danh sách đơn hàng */}
                   <Link href="/sales-orders">
                     <button
                       className={`w-full flex items-center px-4 py-2 text-left hover:bg-green-50 transition-colors ${
@@ -307,20 +368,8 @@ export function POSHeader({ onLogout }: POSHeaderProps) {
                   </Link>
 
                   <div className="border-t border-gray-200 my-2"></div>
-                  <Link href="/suppliers">
-                    <button
-                      className={`w-full flex items-center px-4 py-2 text-left hover:bg-green-50 transition-colors ${
-                        location === "/suppliers"
-                          ? "bg-green-50 text-green-600"
-                          : "text-gray-700"
-                      }`}
-                      onClick={() => setPosMenuOpen(false)}
-                    >
-                      <Building2 className="w-4 h-4 mr-3" />
-                      {t("nav.suppliers")}
-                    </button>
-                  </Link>
 
+                  {/* Mua hàng */}
                   <Link href="/purchases">
                     <button
                       className={`w-full flex items-center px-4 py-2 text-left hover:bg-green-50 transition-colors ${
@@ -336,6 +385,9 @@ export function POSHeader({ onLogout }: POSHeaderProps) {
                     </button>
                   </Link>
 
+                  <div className="border-t border-gray-200 my-2"></div>
+
+                  {/* Kho hàng */}
                   <Link href="/inventory">
                     <button
                       className={`w-full flex items-center px-4 py-2 text-left hover:bg-green-50 transition-colors ${
@@ -351,20 +403,8 @@ export function POSHeader({ onLogout }: POSHeaderProps) {
                   </Link>
 
                   <div className="border-t border-gray-200 my-2"></div>
-                  <Link href="/employees">
-                    <button
-                      className={`w-full flex items-center px-4 py-2 text-left hover:bg-green-50 transition-colors ${
-                        location === "/employees"
-                          ? "bg-green-50 text-green-600"
-                          : "text-gray-700"
-                      }`}
-                      onClick={() => setPosMenuOpen(false)}
-                    >
-                      <Users className="w-4 h-4 mr-3" />
-                      {t("nav.employees")}
-                    </button>
-                  </Link>
 
+                  {/* Chấm công */}
                   <Link href="/attendance">
                     <button
                       className={`w-full flex items-center px-4 py-2 text-left hover:bg-green-50 transition-colors ${
@@ -381,6 +421,7 @@ export function POSHeader({ onLogout }: POSHeaderProps) {
 
                   <div className="border-t border-gray-200 my-2"></div>
 
+                  {/* Báo cáo */}
                   <div
                     className="relative"
                     onMouseLeave={handleReportsContainerMouseLeave}
@@ -513,10 +554,154 @@ export function POSHeader({ onLogout }: POSHeaderProps) {
                     )}
                   </div>
 
+                  {/* Danh mục */}
+                  <div
+                    className="relative"
+                    onMouseLeave={() => {
+                      const timer = setTimeout(() => {
+                        if (activeDropdown === "categories") {
+                          setActiveDropdown(null);
+                        }
+                      }, 300);
+                      setSubmenuTimer(timer);
+                    }}
+                  >
+                    <button
+                      className={`w-full flex items-center px-4 py-2 text-left hover:bg-green-50 transition-colors ${
+                        location === "/settings" && window.location.search === "?tab=categories" ||
+                        location === "/suppliers" ||
+                        location === "/employees"
+                          ? "bg-green-50 text-green-600"
+                          : "text-gray-700"
+                      }`}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        if (activeDropdown === "categories") {
+                          setActiveDropdown(null);
+                        } else {
+                          setActiveDropdown("categories");
+                        }
+                      }}
+                      onMouseEnter={() => {
+                        if (submenuTimer) {
+                          clearTimeout(submenuTimer);
+                          setSubmenuTimer(null);
+                        }
+                        setActiveDropdown("categories");
+                      }}
+                    >
+                      <Package className="w-4 h-4 mr-3" />
+                      {t("nav.categories")}
+                      <ChevronDown
+                        className={`w-4 h-4 ml-auto transition-transform ${activeDropdown === "categories" ? "rotate-180" : ""}`}
+                      />
+                    </button>
+                    {activeDropdown === "categories" && (
+                      <div
+                        className="absolute top-0 right-full mr-0.5 bg-white rounded-xl shadow-lg border border-gray-200 py-2 min-w-48 z-50 max-w-xs sm:max-w-none"
+                        onMouseEnter={() => {
+                          if (submenuTimer) {
+                            clearTimeout(submenuTimer);
+                            setSubmenuTimer(null);
+                          }
+                        }}
+                      >
+                        <Link href="/suppliers">
+                          <button
+                            className={`w-full flex items-center px-2 py-1.5 text-xs sm:text-sm rounded transition-colors ${
+                              location === "/suppliers"
+                                ? "text-blue-600 bg-blue-50"
+                                : "text-gray-700 hover:text-blue-600 hover:bg-gray-50"
+                            }`}
+                            onClick={() => {
+                              setActiveDropdown(null);
+                              setPosMenuOpen(false);
+                            }}
+                          >
+                            <Building2 className="w-3 h-3 sm:w-4 sm:h-4 mr-2 sm:mr-3 flex-shrink-0" />
+                            <span className="truncate">
+                              {t("nav.suppliers")}
+                            </span>
+                          </button>
+                        </Link>
+                        <Link href="/employees">
+                          <button
+                            className={`w-full flex items-center px-2 py-1.5 text-xs sm:text-sm rounded transition-colors ${
+                              location === "/employees"
+                                ? "text-blue-600 bg-blue-50"
+                                : "text-gray-700 hover:text-blue-600 hover:bg-gray-50"
+                            }`}
+                            onClick={() => {
+                              setActiveDropdown(null);
+                              setPosMenuOpen(false);
+                            }}
+                          >
+                            <Users className="w-3 h-3 sm:w-4 sm:h-4 mr-2 sm:mr-3 flex-shrink-0" />
+                            <span className="truncate">
+                              {t("nav.employees")}
+                            </span>
+                          </button>
+                        </Link>
+                        <Link href="/customers">
+                          <button
+                            className={`w-full flex items-center px-2 py-1.5 text-xs sm:text-sm rounded transition-colors ${
+                              location === "/customers"
+                                ? "text-blue-600 bg-blue-50"
+                                : "text-gray-700 hover:text-blue-600 hover:bg-gray-50"
+                            }`}
+                            onClick={() => {
+                              setActiveDropdown(null);
+                              setPosMenuOpen(false);
+                            }}
+                          >
+                            <UserCheck className="w-3 h-3 sm:w-4 sm:h-4 mr-2 sm:mr-3 flex-shrink-0" />
+                            <span className="truncate">
+                              {t("nav.customerCategories")}
+                            </span>
+                          </button>
+                        </Link>
+                        <Link href="/settings?tab=categories">
+                          <button
+                            className={`w-full flex items-center px-2 py-1.5 text-xs sm:text-sm rounded transition-colors text-gray-700 hover:text-blue-600 hover:bg-gray-50`}
+                            onClick={() => {
+                              setActiveDropdown(null);
+                              setPosMenuOpen(false);
+                            }}
+                          >
+                            <Package className="w-3 h-3 sm:w-4 sm:h-4 mr-2 sm:mr-3 flex-shrink-0" />
+                            <span className="truncate">
+                              {t("nav.productCategories")}
+                            </span>
+                          </button>
+                        </Link>
+                        <Link href="/payment-methods">
+                          <button
+                            className={`w-full flex items-center px-2 py-1.5 text-xs sm:text-sm rounded transition-colors ${
+                              location === "/payment-methods"
+                                ? "text-blue-600 bg-blue-50"
+                                : "text-gray-700 hover:text-blue-600 hover:bg-gray-50"
+                            }`}
+                            onClick={() => {
+                              setActiveDropdown(null);
+                              setPosMenuOpen(false);
+                            }}
+                          >
+                            <DollarSign className="w-3 h-3 sm:w-4 sm:h-4 mr-2 sm:mr-3 flex-shrink-0" />
+                            <span className="truncate">
+                              {t("nav.paymentMethods")}
+                            </span>
+                          </button>
+                        </Link>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Cài đặt */}
                   <Link href="/settings">
                     <button
                       className={`w-full flex items-center px-4 py-2 text-left hover:bg-green-50 transition-colors ${
-                        location === "/settings"
+                        location === "/settings" && window.location.search !== "?tab=categories"
                           ? "bg-green-50 text-green-600"
                           : "text-gray-700"
                       }`}
@@ -529,67 +714,7 @@ export function POSHeader({ onLogout }: POSHeaderProps) {
 
                   <div className="border-t border-gray-200 my-2"></div>
 
-                  <a
-                    href="#"
-                    className="w-full flex items-center px-4 py-2 text-left hover:bg-blue-50 hover:text-blue-600 text-gray-700 transition-colors"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      setPosMenuOpen(false);
-
-                      // Detect if multiple screens are available
-                      if (
-                        screen.availWidth > window.screen.width ||
-                        window.screen.availLeft !== 0
-                      ) {
-                        // Multiple screens detected - place on secondary screen
-                        const secondaryScreenLeft =
-                          screen.availLeft !== 0 ? 0 : screen.width;
-                        const width = Math.min(1024, screen.availWidth);
-                        const height = Math.min(768, screen.availHeight);
-
-                        const customerWindow = window.open(
-                          "/customer-display",
-                          "customerDisplay",
-                          `width=${width},height=${height},left=${secondaryScreenLeft},top=0,resizable=yes,scrollbars=yes,status=no,toolbar=no,menubar=no,location=no`,
-                        );
-
-                        // Try to maximize on secondary screen after opening
-                        if (customerWindow) {
-                          setTimeout(() => {
-                            try {
-                              customerWindow.moveTo(secondaryScreenLeft, 0);
-                              customerWindow.resizeTo(
-                                screen.availWidth,
-                                screen.availHeight,
-                              );
-                            } catch (error) {
-                              console.log(
-                                "Cannot auto-resize customer display window due to browser security restrictions",
-                              );
-                            }
-                          }, 500);
-                        }
-                      } else {
-                        // Single screen - open in center with standard size
-                        const width = 1024;
-                        const height = 768;
-                        const left = (screen.width - width) / 2;
-                        const top = (screen.height - height) / 2;
-
-                        window.open(
-                          "/customer-display",
-                          "customerDisplay",
-                          `width=${width},height=${height},left=${left},top=${top},resizable=yes,scrollbars=yes,status=no,toolbar=no,menubar=no,location=no`,
-                        );
-                      }
-                    }}
-                  >
-                    <Users className="w-4 h-4 mr-3" />
-                    {t("nav.customerDisplay")}
-                  </a>
-
-                  <div className="border-t border-gray-200 my-2"></div>
-
+                  {/* Đăng xuất */}
                   <button
                     className="w-full flex items-center px-4 py-2 text-left hover:bg-red-50 hover:text-red-600 text-gray-700 transition-colors"
                     onClick={() => {

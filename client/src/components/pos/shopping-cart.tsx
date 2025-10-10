@@ -14,9 +14,10 @@ import { useTranslation } from "@/lib/i18n";
 import { PaymentMethodModal } from "./payment-method-modal";
 import { ReceiptModal } from "./receipt-modal";
 import { EInvoiceModal } from "./einvoice-modal";
+import { CustomerFormModal } from "@/components/customers/customer-form-modal";
 import type { CartItem } from "@shared/schema";
 import { toast } from "@/hooks/use-toast";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 interface ShoppingCartProps {
   cart: CartItem[];
@@ -72,6 +73,25 @@ export function ShoppingCart({
 
   // State to manage the visibility of the print dialog
   const [showPrintDialog, setShowPrintDialog] = useState(false);
+
+  // Query client for invalidating queries
+  const queryClient = useQueryClient();
+
+  // State for customer search
+  const [customerSearchTerm, setCustomerSearchTerm] = useState("");
+  const [suggestedCustomers, setSuggestedCustomers] = useState<any[]>([]);
+  const [selectedCustomer, setSelectedCustomer] = useState<any>(null);
+  const [isSearching, setIsSearching] = useState(false);
+  const customerSearchDebounceTimer = useRef<NodeJS.Timeout | null>(null);
+
+  // State for customer form modal
+  const [showCustomerForm, setShowCustomerForm] = useState(false);
+  const [editingCustomer, setEditingCustomer] = useState<any>(null);
+
+  // State for managing customers per order
+  const [orderCustomers, setOrderCustomers] = useState<{
+    [orderId: string]: any | null;
+  }>({});
 
   // Fetch store settings to check price_include_tax setting
   const { data: storeSettings } = useQuery({
@@ -231,9 +251,9 @@ export function ShoppingCart({
     }
     return sum;
   }, 0);
-  const discountValue = parseFloat(discountAmount || "0");
-  const total = Math.round(subtotal + tax);
-  const finalTotal = Math.max(0, total - discountValue);
+  const discountValue = parseFloat(currentOrderDiscount || "0");
+  const total = Math.round(subtotal + tax); // Always subtract discount
+  const finalTotal = Math.max(0, total); // finalTotal is same as total
   const change =
     paymentMethod === "cash"
       ? Math.max(0, parseFloat(amountReceived || "0") - finalTotal)
@@ -248,17 +268,6 @@ export function ShoppingCart({
         const unitPrice = parseFloat(item.price);
         const quantity = item.quantity;
         const taxRate = parseFloat(item.taxRate) / 100;
-
-        let basePrice;
-        if (priceIncludesTax) {
-          // When price includes tax: base price = unit price / (1 + tax rate)
-          basePrice = unitPrice / (1 + taxRate);
-        } else {
-          // When price doesn't include tax: use unit price as base
-          basePrice = unitPrice;
-        }
-
-        const subtotal = basePrice * quantity;
 
         // Calculate discount for this item
         const orderDiscount = parseFloat(discountAmount || "0");
@@ -328,17 +337,26 @@ export function ShoppingCart({
 
             itemDiscountAmount =
               totalBeforeDiscount > 0
-                ? Math.round((orderDiscount * subtotal) / totalBeforeDiscount)
+                ? Math.round(
+                    (orderDiscount * (unitPrice * quantity)) /
+                      totalBeforeDiscount,
+                  )
                 : 0;
           }
         }
 
         // Apply discount and calculate final tax
-        const taxableAmount = Math.max(0, subtotal - itemDiscountAmount);
+        const taxableAmount = Math.max(
+          0,
+          unitPrice * quantity - itemDiscountAmount,
+        );
 
         if (priceIncludesTax) {
           // When price includes tax: tax = unit price - base price
-          return sum + Math.round(unitPrice * quantity - taxableAmount);
+          return (
+            sum +
+            Math.round(unitPrice * quantity - taxableAmount / (1 + taxRate))
+          );
         } else {
           // When price doesn't include tax, use standard calculation
           return sum + Math.round(taxableAmount * taxRate);
@@ -369,11 +387,11 @@ export function ShoppingCart({
   const getDisplayPrice = (item: any): number => {
     const basePrice = parseFloat(item.price);
 
-    // if (priceIncludesTax) {
-    //   // If store setting says to include tax, calculate price with tax
-    //   const taxRate = parseFloat(item.taxRate || "0");
-    //   return basePrice * (1 + taxRate / 100);
-    // }
+    // If store setting says to include tax, calculate price with tax
+    if (priceIncludesTax) {
+      const taxRate = parseFloat(item.taxRate || "0");
+      return basePrice * (1 + taxRate / 100);
+    }
 
     // If store setting says not to include tax, show base price
     return basePrice;
@@ -381,6 +399,82 @@ export function ShoppingCart({
 
   // Single WebSocket connection for both refresh signals and cart broadcasting
   const wsRef = useRef<WebSocket | null>(null);
+
+  // Fetch customers for search suggestions
+  const fetchCustomers = async (searchTerm: string) => {
+    try {
+      setIsSearching(true);
+      const response = await fetch(`https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/customers?search=${searchTerm}`);
+      if (!response.ok) {
+        throw new Error("Failed to fetch customers");
+      }
+      const data = await response.json();
+      setSuggestedCustomers(data);
+    } catch (error) {
+      console.error("Error fetching customers:", error);
+      setSuggestedCustomers([]);
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
+  // Optimized debounced customer search - ultra fast for phone numbers
+  useEffect(() => {
+    if (customerSearchTerm.length > 0) {
+      if (customerSearchDebounceTimer.current) {
+        clearTimeout(customerSearchDebounceTimer.current);
+      }
+      // Very short delay for phone numbers (50ms), normal delay for text search
+      const isPhoneSearch = /^\d+$/.test(customerSearchTerm);
+      const delay = isPhoneSearch ? 50 : 150;
+
+      customerSearchDebounceTimer.current = setTimeout(() => {
+        fetchCustomers(customerSearchTerm);
+      }, delay);
+    } else {
+      setSuggestedCustomers([]); // Clear suggestions if search term is empty
+      if (customerSearchDebounceTimer.current) {
+        clearTimeout(customerSearchDebounceTimer.current);
+      }
+    }
+    return () => {
+      if (customerSearchDebounceTimer.current) {
+        clearTimeout(customerSearchDebounceTimer.current);
+      }
+    };
+  }, [customerSearchTerm]);
+
+  // Filter customers locally for exact phone number matching
+  const filteredSuggestedCustomers = suggestedCustomers.filter((customer) => {
+    const searchLower = customerSearchTerm.toLowerCase().trim();
+
+    // If search term is all digits (phone number search)
+    if (/^\d+$/.test(searchLower)) {
+      // Remove all non-digit characters from customer phone
+      const cleanPhone = (customer.phone || "").replace(/\D/g, "");
+      // Check if cleaned phone STARTS WITH search term (exact match from beginning)
+      return cleanPhone.startsWith(searchLower);
+    }
+
+    // Otherwise search by name (case insensitive)
+    return customer.name?.toLowerCase().includes(searchLower);
+  });
+
+  // Function to handle customer selection
+  const handleCustomerSelect = (customer: any) => {
+    setSelectedCustomer(customer);
+    setCustomerSearchTerm(`${customer.name} (${customer.phone})`); // Display name and phone
+    setSuggestedCustomers([]); // Clear suggestions after selection
+    // Optionally, trigger other actions here if needed, e.g., updating cart with customer-specific info
+
+    // Save customer to orderCustomers state
+    if (activeOrderId) {
+      setOrderCustomers((prev) => ({
+        ...prev,
+        [activeOrderId]: customer,
+      }));
+    }
+  };
 
   useEffect(() => {
     console.log("📡 Shopping Cart: Initializing single WebSocket connection");
@@ -483,7 +577,7 @@ export function ShoppingCart({
 
         ws.onerror = (error) => {
           console.error("❌ Shopping Cart: WebSocket error:", error);
-          wsRef.current = null;
+          ws.current = null;
           if (typeof window !== "undefined") {
             (window as any).wsRef = null;
           }
@@ -660,6 +754,16 @@ export function ShoppingCart({
     setShowReceiptPreview(false);
     setPreviewReceipt(null);
     setOrderForPayment(null);
+    setSelectedCustomer(null); // Clear selected customer on cancel
+    setCustomerSearchTerm(""); // Clear search term
+    // Clear customer for the current order
+    if (activeOrderId) {
+      setOrderCustomers((prev) => {
+        const updated = { ...prev };
+        delete updated[activeOrderId];
+        return updated;
+      });
+    }
   };
 
   // Handler for payment method selection
@@ -685,6 +789,9 @@ export function ShoppingCart({
       setPreviewReceipt(null);
       setOrderForPayment(null);
       setLastCartItems([]);
+      setSelectedCustomer(null); // Clear selected customer on successful payment
+      setCustomerSearchTerm(""); // Clear search term
+      setOrderCustomers({}); // Clear all order customers
 
       // Show final receipt if needed
       if (data.shouldShowReceipt !== false) {
@@ -730,47 +837,58 @@ export function ShoppingCart({
     }
   };
 
-  const handleCheckout = async () => {
-    console.log("=== POS CHECKOUT STARTED ===");
-    console.log("Cart before checkout:", cart);
-    console.log("Cart length:", cart.length);
-    console.log("Current totals:", { subtotal, tax, total });
+  const handlePlaceOrder = async () => {
+    console.log("=== POS PLACE ORDER STARTED ===");
 
     if (cart.length === 0) {
-      alert("Giỏ hàng trống. Vui lòng thêm sản phẩm trước khi thanh toán.");
+      toast({
+        title: t("pos.emptyCart"),
+        description: t("pos.addProductsToStart"),
+        variant: "destructive",
+      });
       return;
     }
 
-    // Use the EXACT same calculation logic as the cart display
-    const calculatedSubtotal = subtotal; // Use the already calculated subtotal from cart display
-    const calculatedTax = tax; // Use the already calculated tax from cart display
+    // Check if customer is selected
+    if (!selectedCustomer) {
+      toast({
+        title: "Chưa chọn khách hàng",
+        description: "Vui lòng chọn khách hàng trước khi đặt hàng",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Use the EXACT same calculation logic as checkout
+    const calculatedSubtotal = subtotal;
+    const calculatedTax = tax;
     const baseTotal = Math.round(calculatedSubtotal + calculatedTax);
-    const finalDiscount = parseFloat(currentOrderDiscount || "0");
-    const finalTotal = Math.max(0, baseTotal);
+    const finalDiscount = parseFloat(
+      activeOrderId
+        ? orderDiscounts[activeOrderId] || "0"
+        : discountAmount || "0",
+    );
+    const finalTotal = Math.max(0, baseTotal - finalDiscount);
 
-    console.log("🔍 CHECKOUT CALCULATION DEBUG - Using exact cart logic:");
-    console.log("Calculated subtotal:", calculatedSubtotal);
-    console.log("Calculated tax (with discount consideration):", calculatedTax);
-    console.log("Base total (subtotal + tax):", baseTotal);
-    console.log("Discount amount:", finalDiscount);
-    console.log("Final total (after discount):", finalTotal);
+    console.log("📝 Place Order Calculation:", {
+      subtotal: calculatedSubtotal,
+      tax: calculatedTax,
+      discount: finalDiscount,
+      total: finalTotal,
+      customer: selectedCustomer.name,
+    });
 
-    if (calculatedSubtotal === 0 || finalTotal < 0) {
-      console.error(
-        "❌ CRITICAL ERROR: Invalid totals calculated, cannot proceed with checkout",
-      );
-      alert("Lỗi: Tổng tiền không hợp lệ. Vui lòng kiểm tra lại giỏ hàng.");
-      return;
-    }
-
-    // Step 1: Use current cart items with proper structure for E-invoice
-    const cartItemsForEInvoice = cart.map((item) => {
+    // Prepare cart items for order
+    const cartItemsForOrder = cart.map((item) => {
       const unitPrice = parseFloat(item.price);
       const quantity = item.quantity;
       const taxRate = parseFloat(item.taxRate || "0") / 100;
-      const orderDiscount = parseFloat(currentOrderDiscount || "0");
+      const orderDiscount = parseFloat(
+        activeOrderId
+          ? orderDiscounts[activeOrderId] || "0"
+          : discountAmount || "0",
+      );
 
-      // Calculate discount for this item
       let itemDiscountAmount = 0;
       let discountPerUnit = 0;
 
@@ -830,207 +948,260 @@ export function ShoppingCart({
       }
 
       return {
-        id: item.id,
-        name: item.name,
-        price: unitPrice,
+        productId: item.id,
+        productName: item.name,
         quantity: item.quantity,
+        unitPrice: item.price,
+        total: totalAfterDiscount.toString(),
+        notes: null,
+        discount: itemDiscountAmount.toString(),
+        tax: itemTax.toString(),
+        priceBeforeTax: itemPriceBeforeTax.toString(),
+      };
+    });
+
+    // Create order with "pending" status (đặt hàng chưa thanh toán)
+    const orderData = {
+      orderNumber: `ORD-${Date.now()}`,
+      tableId: null,
+      customerId: selectedCustomer.id,
+      customerName: selectedCustomer.name,
+      customerPhone: selectedCustomer.phone || null,
+      customerTaxCode: selectedCustomer.customerTaxCode || null,
+      customerAddress: selectedCustomer.address || null,
+      customerEmail: selectedCustomer.email || null,
+      status: "pending", // Trạng thái: Đặt hàng
+      paymentStatus: "pending", // Trạng thái thanh toán: Chưa thanh toán
+      customerCount: 1,
+      subtotal: Math.floor(calculatedSubtotal).toString(),
+      tax: calculatedTax.toString(),
+      discount: finalDiscount.toString(),
+      total: finalTotal.toString(),
+      paymentMethod: null, // Chưa có phương thức thanh toán
+      salesChannel: "pos",
+      priceIncludeTax: priceIncludesTax,
+      einvoiceStatus: 0,
+      notes: `Đặt hàng tại POS - Khách hàng: ${selectedCustomer.name}`,
+    };
+
+    try {
+      console.log("📤 Sending place order request:", {
+        orderData,
+        items: cartItemsForOrder,
+      });
+
+      const response = await fetch("https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          order: orderData,
+          items: cartItemsForOrder,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to place order");
+      }
+
+      const result = await response.json();
+
+      console.log("✅ Order placed successfully:", result);
+
+      toast({
+        title: "Đặt hàng thành công",
+        description: `Đơn hàng ${result.orderNumber} đã được tạo - Trạng thái: Đặt hàng chưa thanh toán`,
+      });
+
+      // Clear cart and customer info
+      onClearCart();
+      setSelectedCustomer(null);
+      setCustomerSearchTerm("");
+      if (activeOrderId) {
+        setOrderCustomers((prev) => {
+          const updated = { ...prev };
+          delete updated[activeOrderId];
+          return updated;
+        });
+      }
+
+      // Refresh orders list
+      await queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] });
+    } catch (error) {
+      console.error("❌ Error placing order:", error);
+      toast({
+        title: "Lỗi đặt hàng",
+        description:
+          error instanceof Error
+            ? error.message
+            : "Không thể đặt hàng. Vui lòng thử lại.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleCheckout = async () => {
+    console.log("=== POS CHECKOUT STARTED ===");
+
+    if (cart.length === 0) {
+      alert("Giỏ hàng trống. Vui lòng thêm sản phẩm trước khi thanh toán.");
+      return;
+    }
+
+    // SỬ DỤNG ĐÚNG GIÁ TRỊ ĐÃ HIỂN THỊ - KHÔNG TÍNH LẠI
+    const displayedSubtotal = subtotal;
+    const displayedTax = tax;
+    const displayedDiscount = parseFloat(currentOrderDiscount || "0");
+    const displayedTotal = total;
+
+    console.log("💰 Using DISPLAYED values:", {
+      subtotal: displayedSubtotal,
+      tax: displayedTax,
+      discount: displayedDiscount,
+      total: displayedTotal,
+    });
+
+    // Chuẩn bị items với đúng thông tin đã tính toán và hiển thị
+    const cartItemsForReceipt = cart.map((item) => {
+      const unitPrice = parseFloat(item.price);
+      const quantity = item.quantity;
+      const taxRate = parseFloat(item.taxRate || "0") / 100;
+      const orderDiscount = displayedDiscount;
+
+      // Tính discount cho item này (giống logic hiển thị)
+      let itemDiscountAmount = 0;
+      if (orderDiscount > 0) {
+        const totalBeforeDiscount = cart.reduce((total, cartItem) => {
+          return total + parseFloat(cartItem.price) * cartItem.quantity;
+        }, 0);
+
+        const currentIndex = cart.findIndex(
+          (cartItem) => cartItem.id === item.id,
+        );
+        const isLastItem = currentIndex === cart.length - 1;
+
+        if (isLastItem) {
+          let previousDiscounts = 0;
+          for (let i = 0; i < cart.length - 1; i++) {
+            const prevItem = cart[i];
+            const prevItemTotal =
+              parseFloat(prevItem.price) * prevItem.quantity;
+            const prevItemDiscount =
+              totalBeforeDiscount > 0
+                ? Math.round(
+                    (orderDiscount * prevItemTotal) / totalBeforeDiscount,
+                  )
+                : 0;
+            previousDiscounts += prevItemDiscount;
+          }
+          itemDiscountAmount = Math.max(0, orderDiscount - previousDiscounts);
+        } else {
+          const itemTotal = unitPrice * quantity;
+          itemDiscountAmount =
+            totalBeforeDiscount > 0
+              ? Math.round((orderDiscount * itemTotal) / totalBeforeDiscount)
+              : 0;
+        }
+      }
+
+      const discountPerUnit = quantity > 0 ? itemDiscountAmount / quantity : 0;
+
+      // Tính tax và total (giống logic hiển thị)
+      let itemPriceBeforeTax = 0;
+      let itemTax = 0;
+      let totalAfterDiscount = 0;
+
+      if (priceIncludesTax && taxRate > 0) {
+        const adjustedPrice = Math.max(0, unitPrice - discountPerUnit);
+        const giaGomThue = adjustedPrice * quantity;
+        itemPriceBeforeTax = Math.round(giaGomThue / (1 + taxRate));
+        itemTax = giaGomThue - itemPriceBeforeTax;
+        totalAfterDiscount = itemPriceBeforeTax;
+      } else {
+        const adjustedPrice = Math.max(0, unitPrice - discountPerUnit);
+        itemPriceBeforeTax = Math.round(adjustedPrice * quantity);
+        itemTax = taxRate > 0 ? Math.round(itemPriceBeforeTax * taxRate) : 0;
+        totalAfterDiscount = itemPriceBeforeTax;
+      }
+
+      return {
+        id: item.id,
+        productId: item.id,
+        productName: item.name,
+        quantity: item.quantity,
+        unitPrice: unitPrice.toString(),
+        total: totalAfterDiscount.toString(),
+        price: unitPrice.toString(),
         sku: item.sku || `FOOD${String(item.id).padStart(5, "0")}`,
         taxRate: item.taxRate || "0",
         afterTaxPrice: item.afterTaxPrice,
         discount: itemDiscountAmount.toString(),
         discountAmount: itemDiscountAmount.toString(),
         discountPerUnit: discountPerUnit.toString(),
-        originalPrice: item.originalPrice || unitPrice.toString(),
-        totalAfterDiscount: totalAfterDiscount.toString(),
-        originalTotal: originalTotal.toString(),
+        originalPrice: unitPrice.toString(),
+        originalTotal: (unitPrice * quantity).toString(),
         tax: itemTax.toString(),
         priceBeforeTax: itemPriceBeforeTax.toString(),
       };
     });
 
-    console.log("✅ Cart items prepared for E-invoice:", cartItemsForEInvoice);
-    console.log(
-      "✅ Cart items count for E-invoice:",
-      cartItemsForEInvoice.length,
-    );
-
-    // Validate cart items have valid prices
-    const hasValidItems = cartItemsForEInvoice.every(
-      (item) => item.price >= 0 && item.quantity > 0,
-    ); // Allow price 0, but quantity must be > 0
-    if (!hasValidItems) {
-      console.error(
-        "❌ CRITICAL ERROR: Some cart items have invalid price or quantity",
-      );
-      alert(
-        "Lỗi: Có sản phẩm trong giỏ hàng có giá hoặc số lượng không hợp lệ.",
-      );
-      return;
-    }
-
-    // Step 2: Create receipt preview data with EXACT calculated totals
+    // Receipt preview - sử dụng ĐÚNG giá trị hiển thị
     const receiptPreview = {
       id: `temp-${Date.now()}`,
       orderNumber: `POS-${Date.now()}`,
-      customerName: "Khách hàng lẻ",
+      customerId: selectedCustomer?.id || null,
+      customerName: selectedCustomer?.name || "Khách hàng lẻ",
+      customerPhone: selectedCustomer?.phone || null,
+      customerTaxCode: selectedCustomer?.customerTaxCode || null,
+      customerAddress: selectedCustomer?.address || null,
+      customerEmail: selectedCustomer?.email || null,
       tableId: null,
-      items: cartItemsForEInvoice.map((item) => ({
-        id: item.id,
-        productId: item.id,
-        productName: item.name,
-        quantity: item.quantity,
-        unitPrice: item.price.toString(),
-        total: item.totalAfterDiscount.toString(),
-        productSku: item.sku,
-        price: item.price.toString(),
-        sku: item.sku,
-        taxRate: item.taxRate,
-        afterTaxPrice: item.afterTaxPrice,
-        discount: item.discount,
-        discountAmount: item.discountAmount,
-        discountPerUnit: item.discountPerUnit.toString(),
-        originalPrice: item.originalPrice,
-        originalTotal: (item.price * item.quantity).toString(),
-        tax: item.tax,
-        priceBeforeTax: item.priceBeforeTax,
-      })),
-      subtotal: Math.floor(calculatedSubtotal).toString(),
-      tax: calculatedTax.toString(),
-      discount: finalDiscount.toString(),
-      total: finalTotal.toString(),
-      exactSubtotal: Math.floor(calculatedSubtotal),
-      exactTax: calculatedTax,
-      exactDiscount: finalDiscount,
-      exactTotal: finalTotal,
+      items: cartItemsForReceipt,
+      subtotal: displayedSubtotal.toString(),
+      tax: displayedTax.toString(),
+      discount: displayedDiscount.toString(),
+      total: displayedTotal.toString(),
+      exactSubtotal: displayedSubtotal,
+      exactTax: displayedTax,
+      exactDiscount: displayedDiscount,
+      exactTotal: displayedTotal,
       status: "pending",
       paymentStatus: "pending",
       orderedAt: new Date().toISOString(),
       timestamp: new Date().toISOString(),
     };
 
-    // Broadcast updated cart with discount to customer display before showing receipt preview
-    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
-      const validatedCartForBroadcast = cartItemsForEInvoice.map((item) => ({
-        ...item,
-        name: item.name,
-        productName: item.name,
-        price: item.price.toString(),
-        quantity: item.quantity,
-        total: item.totalAfterDiscount.toString(), // Use total after discount for broadcast
-      }));
-
-      wsRef.current.send(
-        JSON.stringify({
-          type: "cart_update",
-          cart: validatedCartForBroadcast,
-          subtotal: Math.floor(calculatedSubtotal),
-          tax: Math.floor(calculatedTax),
-          total: Math.floor(finalTotal), // Final total after discount
-          discount: finalDiscount, // Include discount in broadcast message
-          orderNumber: `POS-${Date.now()}`,
-          timestamp: new Date().toISOString(),
-          updateType: "checkout_preview",
-        }),
-      );
-
-      console.log(
-        "📡 Shopping Cart: Checkout preview broadcasted with discount:",
-        {
-          discount: finalDiscount,
-          cartItems: validatedCartForBroadcast.length,
-          finalTotal: finalTotal,
-        },
-      );
-    }
-
-    console.log("📋 POS: Receipt preview data prepared:", receiptPreview);
-    console.log(
-      "📋 POS: Receipt preview items count:",
-      receiptPreview.items.length,
-    );
-    console.log("📋 POS: Receipt preview total verification:", {
-      exactTotal: receiptPreview.exactTotal,
-      stringTotal: receiptPreview.total,
-      calculatedTotal: finalTotal,
-    });
-
-    // Step 3: Prepare order data for payment with EXACT calculated totals
+    // Order for payment - sử dụng ĐÚNG giá trị hiển thị
     const orderForPaymentData = {
       id: `temp-${Date.now()}`,
       orderNumber: `POS-${Date.now()}`,
       tableId: null,
-      customerName: "Khách hàng lẻ",
+      customerId: selectedCustomer?.id || null,
+      customerName: selectedCustomer?.name || "Khách hàng lẻ",
+      customerPhone: selectedCustomer?.phone || null,
+      customerTaxCode: selectedCustomer?.customerTaxCode || null,
+      customerAddress: selectedCustomer?.address || null,
+      customerEmail: selectedCustomer?.email || null,
       status: "pending",
       paymentStatus: "pending",
-      items: cartItemsForEInvoice.map((item) => ({
-        id: item.id,
-        productId: item.id,
-        productName: item.name,
-        quantity: item.quantity,
-        unitPrice: item.price.toString(),
-        total: item.totalAfterDiscount.toString(),
-        productSku: item.sku,
-        price: item.price.toString(),
-        sku: item.sku,
-        taxRate: item.taxRate,
-        afterTaxPrice: item.afterTaxPrice,
-        discount: item.discount,
-        discountAmount: item.discountAmount,
-        discountPerUnit: item.discountPerUnit.toString(),
-        originalPrice: item.originalPrice,
-        originalTotal: (item.price * item.quantity).toString(),
-        tax: item.tax,
-        priceBeforeTax: item.priceBeforeTax,
-      })),
-      subtotal: Math.floor(calculatedSubtotal),
-      tax: calculatedTax,
-      discount: finalDiscount.toString(),
-      total: finalTotal,
-      exactSubtotal: Math.floor(calculatedSubtotal),
-      exactTax: calculatedTax,
-      exactDiscount: finalDiscount,
-      exactTotal: finalTotal,
+      items: cartItemsForReceipt,
+      subtotal: displayedSubtotal,
+      tax: displayedTax,
+      discount: displayedDiscount.toString(),
+      total: displayedTotal,
+      exactSubtotal: displayedSubtotal,
+      exactTax: displayedTax,
+      exactDiscount: displayedDiscount,
+      exactTotal: displayedTotal,
       orderedAt: new Date().toISOString(),
     };
 
-    console.log("📦 POS: Order for payment prepared:", orderForPaymentData);
-    console.log(
-      "📦 POS: Order for payment items count:",
-      orderForPaymentData.items.length,
-    );
-    console.log("📦 POS: Order for payment total verification:", {
-      exactTotal: orderForPaymentData.exactTotal,
-      total: orderForPaymentData.total,
-      calculatedTotal: finalTotal,
-    });
+    console.log("✅ Receipt & Order data prepared with DISPLAYED values");
 
-    // Step 4: Set all data and show receipt preview modal
-    setLastCartItems([...cartItemsForEInvoice]);
+    setLastCartItems([...cartItemsForReceipt]);
     setOrderForPayment(orderForPaymentData);
     setPreviewReceipt(receiptPreview);
     setShowReceiptPreview(true);
-
-    console.log("🚀 POS: Showing receipt preview modal with VALIDATED data");
-    console.log("📦 POS: orderForPayment FINAL verification:", {
-      id: orderForPaymentData.id,
-      total: orderForPaymentData.total,
-      exactTotal: orderForPaymentData.exactTotal,
-      itemsCount: orderForPaymentData.items.length,
-      hasValidItems: orderForPaymentData.items.length > 0,
-      items: orderForPaymentData.items,
-      subtotal: orderForPaymentData.subtotal,
-      tax: orderForPaymentData.tax,
-    });
-    console.log("📄 POS: previewReceipt FINAL verification:", {
-      id: receiptPreview.id,
-      total: receiptPreview.total,
-      exactTotal: receiptPreview.exactTotal,
-      itemsCount: receiptPreview.items.length,
-      hasValidItems: receiptPreview.items.length > 0,
-      items: receiptPreview.items,
-      subtotal: receiptPreview.subtotal,
-      tax: receiptPreview.tax,
-    });
   };
 
   // Handler for E-invoice completion
@@ -1044,8 +1215,12 @@ export function ShoppingCart({
       invoiceNumber: invoiceData.invoiceNumber,
       createdAt: new Date().toISOString(),
       cashierName: "Nhân viên",
-      customerName: invoiceData.customerName || "Khách hàng lẻ",
-      customerTaxCode: invoiceData.taxCode,
+      customerName:
+        invoiceData.customerName || selectedCustomer?.name || "Khách hàng lẻ",
+      customerPhone:
+        invoiceData.customerPhone || selectedCustomer?.phone || null,
+      customerTaxCode:
+        invoiceData.taxCode || selectedCustomer?.customerTaxCode || null,
       paymentMethod: "einvoice",
       originalPaymentMethod:
         invoiceData.paymentMethod || selectedPaymentMethod || "cash",
@@ -1098,6 +1273,9 @@ export function ShoppingCart({
     setShowEInvoiceModal(false);
     setShowReceiptModal(false);
     setSelectedReceipt(null);
+    setSelectedCustomer(null); // Clear selected customer
+    setCustomerSearchTerm(""); // Clear search term
+    setOrderCustomers({}); // Clear all order customers
 
     // Clear any active orders
     if (typeof window !== "undefined" && (window as any).clearActiveOrder) {
@@ -1107,6 +1285,29 @@ export function ShoppingCart({
     // Broadcast empty cart
     broadcastCartUpdate();
   }, [onClearCart, broadcastCartUpdate]);
+
+  const removeOrder = (orderId: string) => {
+    if (orders.length <= 1) {
+      toast({
+        title: "Không thể xóa",
+        description: "Phải có ít nhất một đơn hàng.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Remove customer for this order
+    setOrderCustomers((prev) => {
+      const updated = { ...prev };
+      delete updated[orderId];
+      return updated;
+    });
+
+    // Use the onRemoveOrder callback from parent component
+    if (onRemoveOrder) {
+      onRemoveOrder(orderId);
+    }
+  };
 
   // Cleanup when component unmounts and handle global events
   useEffect(() => {
@@ -1129,6 +1330,9 @@ export function ShoppingCart({
       setOrderForPayment(null);
       setSelectedReceipt(null);
       setLastCartItems([]);
+      setSelectedCustomer(null); // Clear selected customer
+      setCustomerSearchTerm(""); // Clear search term
+      setOrderCustomers({}); // Clear all order customers
 
       // Clear cart after print completion
       if (
@@ -1173,6 +1377,9 @@ export function ShoppingCart({
       setOrderForPayment(null);
       setSelectedReceipt(null);
       setLastCartItems([]);
+      setSelectedCustomer(null); // Clear selected customer
+      setCustomerSearchTerm(""); // Clear search term
+      setOrderCustomers({}); // Clear all order customers
 
       // Clear cart
       clearCart();
@@ -1227,19 +1434,303 @@ export function ShoppingCart({
     };
   }, [clearCart, toast, wsRef]); // Depend on clearCart, toast, and wsRef
 
+  // Effect to sync selected customer with active order customer
+  useEffect(() => {
+    if (activeOrderId) {
+      const customerForOrder = orderCustomers[activeOrderId];
+      setSelectedCustomer(customerForOrder || null);
+      setCustomerSearchTerm(
+        customerForOrder
+          ? `${customerForOrder.name} (${customerForOrder.phone})`
+          : "",
+      );
+    } else {
+      // If no active order, clear customer selection
+      setSelectedCustomer(null);
+      setCustomerSearchTerm("");
+    }
+  }, [activeOrderId, orderCustomers]);
+
   return (
     <aside className="w-96 bg-white shadow-material border-l pos-border flex flex-col">
-      <div className="p-4 border-b pos-border mt-2">
+      {/* Customer Search Input - Always visible for all business types */}
+      <div className="p-4 border-b pos-border bg-gradient-to-r from-blue-50 to-indigo-50 mt-3">
+        <div className="flex items-center gap-2 mb-3">
+          <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center">
+            <svg
+              className="w-6 h-6 text-white"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+              />
+            </svg>
+          </div>
+          <div className="flex-1">
+            <h3 className="text-base font-semibold text-gray-900">
+              Thông tin khách hàng
+            </h3>
+            <p className="text-xs text-gray-500">
+              Tìm kiếm hoặc tạo mới khách hàng
+            </p>
+          </div>
+        </div>
+        <div className="relative">
+          <div className="relative">
+            <svg
+              className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+              />
+            </svg>
+            <Input
+              type="text"
+              value={customerSearchTerm}
+              onChange={(e) => {
+                setCustomerSearchTerm(e.target.value);
+                // Clear selected customer when user types
+                if (selectedCustomer) {
+                  setSelectedCustomer(null);
+                }
+              }}
+              placeholder="Nhập số điện thoại hoặc tên khách hàng..."
+              className="w-full pl-10 pr-4 py-2 border-2 border-gray-200 focus:border-blue-500 rounded-lg transition-colors"
+            />
+          </div>
+
+          {/* Dropdown suggestions */}
+          {customerSearchTerm.length > 0 && !selectedCustomer && (
+            <div className="absolute top-full left-0 right-0 bg-white border-2 border-blue-200 rounded-lg shadow-2xl z-50 mt-2 max-h-72 overflow-hidden">
+              <div className="px-4 py-2 bg-gradient-to-r from-blue-500 to-indigo-500">
+                <p className="text-xs font-medium text-white">
+                  {isSearching ? (
+                    <>⏳ Đang tìm kiếm...</>
+                  ) : (
+                    <>
+                      🔍 Tìm thấy {filteredSuggestedCustomers.length} khách hàng
+                    </>
+                  )}
+                </p>
+              </div>
+              {filteredSuggestedCustomers.length > 0 && (
+                <div className="max-h-60 overflow-y-auto">
+                  {filteredSuggestedCustomers.map((customer, index) => (
+                    <div
+                      key={customer.id}
+                      className={`p-3 cursor-pointer hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 transition-all duration-200 ${
+                        index !== filteredSuggestedCustomers.length - 1
+                          ? "border-b border-gray-100"
+                          : ""
+                      }`}
+                      onClick={() => handleCustomerSelect(customer)}
+                    >
+                      <div className="flex justify-between items-start gap-3">
+                        <div className="flex-1 min-w-0">
+                          <p className="font-semibold text-sm text-gray-900 truncate">
+                            {customer.name}
+                          </p>
+                          <div className="flex items-center gap-2 mt-1">
+                            <span className="text-xs text-gray-600">
+                              📞 {customer.phone}
+                            </span>
+                            {customer.customerTaxCode && (
+                              <span className="text-xs text-gray-500 px-2 py-0.5 bg-gray-100 rounded">
+                                MST: {customer.customerTaxCode}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-1 text-blue-600">
+                          <span className="text-xs font-medium">Chọn</span>
+                          <svg
+                            className="w-4 h-4"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M9 5l7 7-7 7"
+                            />
+                          </svg>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* No results message with quick create button */}
+          {customerSearchTerm.length > 0 &&
+            filteredSuggestedCustomers.length === 0 &&
+            !selectedCustomer && (
+              <div className="absolute top-full left-0 right-0 bg-white border border-gray-300 rounded-md shadow-xl z-50 mt-1 p-4">
+                <p className="text-sm text-gray-500 text-center mb-3">
+                  {/^\d+$/.test(customerSearchTerm)
+                    ? `Không tìm thấy khách hàng có SĐT bắt đầu bằng "${customerSearchTerm}"`
+                    : `Không tìm thấy khách hàng "${customerSearchTerm}"`}
+                </p>
+                {/^\d+$/.test(customerSearchTerm) && (
+                  <Button
+                    onClick={() => {
+                      // Pre-fill phone number and open customer form
+                      setEditingCustomer(null); // Clear editing customer to create new
+                      setShowCustomerForm(true);
+                    }}
+                    className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+                    size="sm"
+                  >
+                    + Tạo khách hàng mới với SĐT {customerSearchTerm}
+                  </Button>
+                )}
+              </div>
+            )}
+        </div>
+
+        {/* Selected customer display */}
+        {selectedCustomer && (
+          <div className="mt-3 p-4 bg-gradient-to-br from-green-50 to-emerald-50 border-2 border-green-200 rounded-lg shadow-sm">
+            <div className="flex items-start gap-3">
+              <div className="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center flex-shrink-0">
+                <svg
+                  className="w-6 h-6 text-white"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M5 13l4 4L19 7"
+                  />
+                </svg>
+              </div>
+              <div className="flex-1 min-w-0">
+                <button
+                  onClick={() => {
+                    setEditingCustomer(selectedCustomer);
+                    setShowCustomerForm(true);
+                  }}
+                  className="text-sm font-bold text-green-900 hover:text-green-700 transition-colors inline-flex items-center gap-1 group"
+                  title="Xem chi tiết khách hàng"
+                >
+                  {selectedCustomer.name}
+                  <svg
+                    className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M13 7l5 5m0 0l-5 5m5-5H6"
+                    />
+                  </svg>
+                </button>
+                <div className="flex flex-wrap items-center gap-2 mt-2">
+                  <span className="text-xs text-green-700 bg-white px-2 py-1 rounded-md flex items-center gap-1">
+                    <svg
+                      className="w-3 h-3"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"
+                      />
+                    </svg>
+                    {selectedCustomer.phone}
+                  </span>
+                  {selectedCustomer.customerTaxCode && (
+                    <span className="text-xs text-green-600 bg-white px-2 py-1 rounded-md">
+                      MST: {selectedCustomer.customerTaxCode}
+                    </span>
+                  )}
+                </div>
+              </div>
+              <button
+                onClick={() => {
+                  setSelectedCustomer(null);
+                  setCustomerSearchTerm("");
+                  // Clear customer for the current order
+                  if (activeOrderId) {
+                    setOrderCustomers((prev) => {
+                      const updated = { ...prev };
+                      delete updated[activeOrderId];
+                      return updated;
+                    });
+                  }
+                }}
+                className="w-7 h-7 flex items-center justify-center bg-red-100 hover:bg-red-200 text-red-600 rounded-full transition-colors flex-shrink-0"
+                title="Xóa khách hàng"
+              >
+                <svg
+                  className="w-4 h-4"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
+                </svg>
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Purchase History Section */}
+      <div className="p-4 border-b pos-border bg-gray-50">
         <div className="flex items-center justify-between mb-3">
-          <h2 className="text-xl pos-text-primary font-semibold">
-            {t("pos.purchaseHistory")}
-          </h2>
+          <div className="flex items-center gap-2">
+            <svg
+              className="w-5 h-5 text-gray-600"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"
+              />
+            </svg>
+            <h2 className="text-lg pos-text-primary font-semibold">
+              {t("pos.purchaseHistory")}
+            </h2>
+          </div>
           {onCreateNewOrder && (
             <Button
               onClick={onCreateNewOrder}
               size="sm"
-              variant="outline"
-              className="text-xs px-2 py-1"
+              className="bg-blue-500 hover:bg-blue-600 text-white text-xs px-3 py-1 rounded-md shadow-sm"
             >
               + {t("pos.newOrder")}
             </Button>
@@ -1248,26 +1739,34 @@ export function ShoppingCart({
 
         {/* Order Tabs */}
         {orders.length > 0 && (
-          <div className="flex flex-wrap gap-1 mb-3 max-h-20 overflow-y-auto">
+          <div className="flex flex-wrap gap-2 mb-3 max-h-20 overflow-y-auto">
             {orders.map((order) => (
               <div
                 key={order.id}
-                className={`flex items-center px-2 py-1 rounded text-xs cursor-pointer transition-colors ${
+                className={`flex items-center px-3 py-1.5 rounded-lg text-xs cursor-pointer transition-all duration-200 ${
                   activeOrderId === order.id
-                    ? "bg-blue-100 text-blue-800 border border-blue-300"
-                    : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                    ? "bg-blue-500 text-white border-2 border-blue-600 shadow-md"
+                    : "bg-white text-gray-600 hover:bg-gray-100 border border-gray-200"
                 }`}
                 onClick={() => onSwitchOrder?.(order.id)}
               >
-                <span className="truncate max-w-16">{order.name}</span>
-                <span className="ml-1 text-xs">({order.cart.length})</span>
+                <span className="truncate max-w-16 font-medium">
+                  {order.name}
+                </span>
+                <span className="ml-1.5 text-xs opacity-90">
+                  ({order.cart.length})
+                </span>
                 {orders.length > 1 && (
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
-                      onRemoveOrder?.(order.id);
+                      removeOrder(order.id); // Use the new removeOrder function
                     }}
-                    className="ml-1 text-red-500 hover:text-red-700"
+                    className={`ml-2 w-4 h-4 flex items-center justify-center rounded-full transition-colors ${
+                      activeOrderId === order.id
+                        ? "bg-white/20 hover:bg-white/30 text-white"
+                        : "bg-red-100 hover:bg-red-200 text-red-600"
+                    }`}
                   >
                     ×
                   </button>
@@ -1277,23 +1776,51 @@ export function ShoppingCart({
           </div>
         )}
 
-        <div className="flex items-center justify-between text-sm pos-text-secondary">
-          <span>
-            {cart.length} {t("common.items")}
+        <div className="flex items-center justify-between text-sm pos-text-secondary bg-white px-3 py-2 rounded-md">
+          <span className="flex items-center gap-1">
+            <svg
+              className="w-4 h-4"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"
+              />
+            </svg>
+            <span className="font-medium">{cart.length}</span>{" "}
+            {t("common.items")}
           </span>
           {cart.length > 0 && (
             <button
               onClick={() => {
                 console.log("🧹 Shopping Cart: Clear cart button clicked");
-                clearCart(); // Use the memoized clearCart function
+                clearCart();
               }}
-              className="text-red-500 hover:text-red-700 transition-colors"
+              className="flex items-center gap-1 text-red-500 hover:text-red-700 transition-colors font-medium"
             >
+              <svg
+                className="w-4 h-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                />
+              </svg>
               {t("pos.clearCart")}
             </button>
           )}
         </div>
       </div>
+
       <div className="flex-1 overflow-y-auto p-4 space-y-3">
         {cart.length === 0 ? (
           <div className="text-center py-12">
@@ -1406,7 +1933,7 @@ export function ShoppingCart({
                             );
                             const tamTinh = adjustedPrice * quantity;
                             // tax = subtotal * (taxRate / 100) (làm tròn)
-                            return Math.round(tamTinh * taxRate);
+                            return Math.round(tamtinh * taxRate);
                           }
                         })().toLocaleString("vi-VN")}{" "}
                         ₫
@@ -1555,9 +2082,15 @@ export function ShoppingCart({
                     <Button
                       size="sm"
                       variant="outline"
-                      onClick={() =>
-                        onUpdateQuantity(parseInt(item.id), item.quantity - 1)
-                      }
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        const productId =
+                          typeof item.id === "string"
+                            ? parseInt(item.id)
+                            : item.id;
+                        onUpdateQuantity(productId, item.quantity - 1);
+                      }}
                       className="w-6 h-6 p-0"
                       disabled={item.quantity <= 1}
                     >
@@ -1566,12 +2099,29 @@ export function ShoppingCart({
                     <Input
                       type="number"
                       min="1"
-                      max={item.stock}
+                      max={item.trackInventory !== false ? item.stock : 999999}
                       value={item.quantity}
                       onChange={(e) => {
                         const newQuantity = parseInt(e.target.value) || 1;
-                        if (newQuantity >= 1 && newQuantity <= item.stock) {
-                          onUpdateQuantity(parseInt(item.id), newQuantity);
+                        if (item.trackInventory !== false) {
+                          // Sản phẩm có check tồn kho - giới hạn theo stock
+                          const maxQuantity = item.stock || 0;
+                          if (newQuantity >= 1 && newQuantity <= maxQuantity) {
+                            const productId =
+                              typeof item.id === "string"
+                                ? parseInt(item.id)
+                                : item.id;
+                            onUpdateQuantity(productId, newQuantity);
+                          }
+                        } else {
+                          // Sản phẩm không check tồn kho - cho phép nhập tự do
+                          if (newQuantity >= 1 && newQuantity <= 999999) {
+                            const productId =
+                              typeof item.id === "string"
+                                ? parseInt(item.id)
+                                : item.id;
+                            onUpdateQuantity(productId, newQuantity);
+                          }
                         }
                       }}
                       className="w-12 h-6 text-center text-xs p-1 border rounded"
@@ -1579,22 +2129,37 @@ export function ShoppingCart({
                     <Button
                       size="sm"
                       variant="outline"
-                      onClick={() =>
-                        onUpdateQuantity(parseInt(item.id), item.quantity + 1)
-                      }
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        const productId =
+                          typeof item.id === "string"
+                            ? parseInt(item.id)
+                            : item.id;
+                        onUpdateQuantity(productId, item.quantity + 1);
+                      }}
                       className="w-6 h-6 p-0"
-                      disabled={item.quantity >= item.stock}
+                      disabled={
+                        item.trackInventory === true &&
+                        item.quantity >= (item.stock || 0)
+                      }
                     >
                       <Plus size={10} />
                     </Button>
                     <Button
                       size="sm"
                       variant="outline"
-                      onClick={() => {
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        const productId =
+                          typeof item.id === "string"
+                            ? parseInt(item.id)
+                            : item.id;
                         console.log(
-                          `🗑️ Shopping Cart: Remove item ${item.id} (${item.name})`,
+                          `🗑️ Shopping Cart: Remove item ${productId} (${item.name})`,
                         );
-                        onRemoveItem(parseInt(item.id));
+                        onRemoveItem(productId);
                       }}
                       className="w-6 h-6 p-0 text-red-500 hover:text-red-700 border-red-300 hover:border-red-500"
                     >
@@ -1619,9 +2184,7 @@ export function ShoppingCart({
         <div className="border-t pos-border p-4 space-y-4">
           <div className="space-y-2">
             <div className="flex justify-between text-sm">
-              <span className="pos-text-secondary">
-                {t("pos.totalAmount")}
-              </span>
+              <span className="pos-text-secondary">{t("pos.totalAmount")}</span>
               <span className="font-medium">
                 {Math.round(subtotal).toLocaleString("vi-VN")} ₫
               </span>
@@ -1767,13 +2330,24 @@ export function ShoppingCart({
             </div>
           )}
 
-          <Button
-            onClick={handleCheckout}
-            disabled={cart.length === 0 || isProcessing}
-            className="w-full bg-green-600 hover:bg-green-700 text-white font-medium py-3 text-lg"
-          >
-            {isProcessing ? t("tables.placing") : t("pos.checkout")}
-          </Button>
+          <div className="flex gap-2">
+            {storeSettings?.businessType === "laundry" && (
+              <Button
+                onClick={handlePlaceOrder}
+                disabled={cart.length === 0 || isProcessing}
+                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 text-lg"
+              >
+                {t("pos.placeOrder")}
+              </Button>
+            )}
+            <Button
+              onClick={handleCheckout}
+              disabled={cart.length === 0 || isProcessing}
+              className={`${storeSettings?.businessType !== "laundry" ? "w-full" : "flex-1"} bg-green-600 hover:bg-green-700 text-white font-medium py-3 text-lg`}
+            >
+              {isProcessing ? t("tables.placing") : t("pos.checkout")}
+            </Button>
+          </div>
         </div>
       )}
 
@@ -2094,6 +2668,9 @@ export function ShoppingCart({
             console.log("🔴 POS: Closing E-invoice modal");
             setShowEInvoiceModal(false);
             setIsProcessingPayment(false);
+            
+            // Don't clear cart here - let the e-invoice modal handle it
+            console.log("🔴 POS: E-invoice modal closed without clearing cart");
           }}
           onConfirm={handleEInvoiceComplete}
           total={(() => {
@@ -2171,6 +2748,23 @@ export function ShoppingCart({
             return itemsToUse;
           })()}
           source="pos"
+        />
+      )}
+
+      {/* Customer Form Modal */}
+      {showCustomerForm && (
+        <CustomerFormModal
+          isOpen={showCustomerForm}
+          onClose={() => {
+            setShowCustomerForm(false);
+            setEditingCustomer(null);
+            // Refresh customer search after creating new customer
+            if (customerSearchTerm.length > 0) {
+              fetchCustomers(customerSearchTerm);
+            }
+          }}
+          customer={editingCustomer}
+          initialPhone={editingCustomer ? undefined : customerSearchTerm}
         />
       )}
     </aside>

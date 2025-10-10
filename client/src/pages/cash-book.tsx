@@ -175,7 +175,7 @@ export default function CashBookPage({ onLogout }: CashBookPageProps) {
       },
       {
         id: 2,
-        nameKey: "creditCard",
+        nameKey: "credit_card",
         type: "card",
         enabled: false,
         icon: "💳",
@@ -255,13 +255,15 @@ export default function CashBookPage({ onLogout }: CashBookPageProps) {
         // Apply payment method filter
         if (paymentMethodFilter !== "all") {
           // Check if payment method is multi-payment (JSON array)
-          if (order.paymentMethod && order.paymentMethod.startsWith('[')) {
+          if (order.paymentMethod && order.paymentMethod.startsWith("[")) {
             try {
               const paymentMethods = JSON.parse(order.paymentMethod);
               // Check if any payment method in the array matches the filter
-              return paymentMethods.some((pm: any) => pm.method === paymentMethodFilter);
+              return paymentMethods.some(
+                (pm: any) => pm.method === paymentMethodFilter,
+              );
             } catch (e) {
-              console.error('Error parsing payment method:', e);
+              console.error("Error parsing payment method:", e);
               return false;
             }
           }
@@ -272,24 +274,30 @@ export default function CashBookPage({ onLogout }: CashBookPageProps) {
       })
       .forEach((order) => {
         const orderDate = new Date(order.orderedAt || order.paidAt);
-        
+
         // Calculate amount based on payment method filter
         let transactionAmount = parseFloat(order.total || "0");
-        
+
         // If filtering by specific payment method and order has multi-payment
-        if (paymentMethodFilter !== "all" && order.paymentMethod && order.paymentMethod.startsWith('[')) {
+        if (
+          paymentMethodFilter !== "all" &&
+          order.paymentMethod &&
+          order.paymentMethod.startsWith("[")
+        ) {
           try {
             const paymentMethods = JSON.parse(order.paymentMethod);
-            const matchedMethod = paymentMethods.find((pm: any) => pm.method === paymentMethodFilter);
+            const matchedMethod = paymentMethods.find(
+              (pm: any) => pm.method === paymentMethodFilter,
+            );
             if (matchedMethod) {
               // Use the specific amount for this payment method
               transactionAmount = parseFloat(matchedMethod.amount || "0");
             }
           } catch (e) {
-            console.error('Error parsing payment method for amount:', e);
+            console.error("Error parsing payment method for amount:", e);
           }
         }
-        
+
         transactions.push({
           id: order.orderNumber || `ORDER-${order.id}`, // Use actual order number
           date: orderDate.toISOString().split("T")[0],
@@ -324,7 +332,7 @@ export default function CashBookPage({ onLogout }: CashBookPageProps) {
             id: voucher.voucherNumber, // Use actual voucher number instead of internal ID
             date: voucher.date || new Date().toISOString().split("T")[0],
             description: voucher.category || "orther",
-            source: voucher.recipient || "Không rõ",
+            source: voucher.recipient || "",
             type: "thu",
             amount: parseFloat(voucher.amount || "0"),
             balance: 0, // Will be calculated later
@@ -373,10 +381,51 @@ export default function CashBookPage({ onLogout }: CashBookPageProps) {
       });
 
     // Add expense transactions from purchase receipts (chi)
+    // Only include receipts with purchaseType = 'expenses' AND isPaid = true
     purchaseReceipts
       .filter((receipt) => {
-        // Apply payment method filter
+        // Filter 1: Must be expense type AND paid
+        const isExpenseAndPaid = receipt.isPaid === true;
+        if (!isExpenseAndPaid) return false;
+
+        // Filter 2: Apply payment method filter
         if (paymentMethodFilter !== "all") {
+          // Handle null/undefined payment method
+          if (!receipt.paymentMethod) {
+            return false;
+          }
+
+          // Check if payment method is JSON object (single payment)
+          if (receipt.paymentMethod.startsWith("{")) {
+            try {
+              const paymentData = JSON.parse(receipt.paymentMethod);
+              return paymentData.method === paymentMethodFilter;
+            } catch (e) {
+              console.error(
+                "Error parsing purchase receipt payment method (object):",
+                e,
+              );
+              return false;
+            }
+          }
+
+          // Check if payment method is JSON array (multi-payment)
+          if (receipt.paymentMethod.startsWith("[")) {
+            try {
+              const paymentMethods = JSON.parse(receipt.paymentMethod);
+              return paymentMethods.some(
+                (pm: any) => pm.method === paymentMethodFilter,
+              );
+            } catch (e) {
+              console.error(
+                "Error parsing purchase receipt payment method (array):",
+                e,
+              );
+              return false;
+            }
+          }
+
+          // Single payment method string
           return receipt.paymentMethod === paymentMethodFilter;
         }
         return true;
@@ -391,16 +440,67 @@ export default function CashBookPage({ onLogout }: CashBookPageProps) {
 
         if (isValidDate) {
           const supplier = suppliers.find((s) => s.id === receipt.supplierId);
-          transactions.push({
-            id: receipt.receiptNumber || `PURCHASE-${receipt.id}`, // Use actual receipt number
-            date: receiptDate.toISOString().split("T")[0],
-            description: "purchaseTransaction",
-            source: supplier?.name || t("common.supplier"),
-            type: "chi",
-            amount: parseFloat(receipt.total || "0"),
-            balance: 0, // Will be calculated later
-            voucherType: "purchase_receipt",
-          });
+
+          // Calculate amount based on payment method filter
+          let transactionAmount = 0;
+
+          if (paymentMethodFilter === "all") {
+            // Show payment_amount when filter is "all"
+            transactionAmount = parseFloat(receipt.paymentAmount || "0");
+          } else {
+            // If filtering by specific payment method
+            if (receipt.paymentMethod) {
+              // Check if JSON object (single payment)
+              if (receipt.paymentMethod.startsWith("{")) {
+                try {
+                  const paymentData = JSON.parse(receipt.paymentMethod);
+                  if (paymentData.method === paymentMethodFilter) {
+                    transactionAmount = parseFloat(paymentData.amount || "0");
+                  }
+                } catch (e) {
+                  console.error(
+                    "Error parsing payment method for amount (object):",
+                    e,
+                  );
+                }
+              }
+              // Check if JSON array (multi-payment)
+              else if (receipt.paymentMethod.startsWith("[")) {
+                try {
+                  const paymentMethods = JSON.parse(receipt.paymentMethod);
+                  const matchedMethod = paymentMethods.find(
+                    (pm: any) => pm.method === paymentMethodFilter,
+                  );
+                  if (matchedMethod) {
+                    transactionAmount = parseFloat(matchedMethod.amount || "0");
+                  }
+                } catch (e) {
+                  console.error(
+                    "Error parsing payment method for amount (array):",
+                    e,
+                  );
+                }
+              }
+              // Single payment method string
+              else if (receipt.paymentMethod === paymentMethodFilter) {
+                transactionAmount = parseFloat(receipt.paymentAmount || "0");
+              }
+            }
+          }
+
+          // Only add transaction if amount > 0
+          if (transactionAmount > 0) {
+            transactions.push({
+              id: receipt.receiptNumber || `PURCHASE-${receipt.id}`, // Use actual receipt number
+              date: receiptDate.toISOString().split("T")[0],
+              description: "purchaseTransaction",
+              source: supplier?.name || t("common.supplier"),
+              type: "chi",
+              amount: transactionAmount,
+              balance: 0, // Will be calculated later
+              voucherType: "purchase_receipt",
+            });
+          }
         }
       });
 

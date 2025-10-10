@@ -2053,7 +2053,6 @@ export function EInvoiceModal({
                 e.stopPropagation();
                 setLastActionTime(0); // Reset debounce timer
                 handleCancel();
-                onClose();
               }}
               className="flex-1"
               disabled={

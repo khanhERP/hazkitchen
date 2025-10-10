@@ -26,8 +26,19 @@ export default function TablesPage({ onLogout }: TablesPageProps) {
 
     const connectWebSocket = () => {
       try {
+        // For custom domains, always use secure WebSocket
         const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-        const wsUrl = `${protocol}//${window.location.host}/ws`;
+        const host = window.location.host;
+
+        // Check if we're on a custom domain (not replit.dev)
+        const isCustomDomain = !host.includes('replit.dev');
+
+        // For custom domains, use the Replit deployment proxy
+        const wsUrl = isCustomDomain && protocol === "wss:" 
+          ? `wss://${host}/ws`
+          : `${protocol}//${host}/ws`;
+
+        console.log(`📡 Tables: Connecting to WebSocket at ${wsUrl}`);
         ws = new WebSocket(wsUrl);
 
         ws.onopen = () => {

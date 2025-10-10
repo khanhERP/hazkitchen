@@ -42,7 +42,8 @@ export default function PurchaseViewPage({ onLogout }: PurchaseViewPageProps) {
     purchaseDate: "",
     purchaseType: "",
     employeeId: "",
-    notes: ""
+    notes: "",
+    isPaid: false // Add isPaid to form state
   });
 
   // State for editing items
@@ -57,6 +58,9 @@ export default function PurchaseViewPage({ onLogout }: PurchaseViewPageProps) {
     discountAmountInput?: string; // Temporary input for discount amount
     isEditingDiscountAmount?: boolean; // Flag to know if user is typing discount amount
   }>>({});
+
+  // State for managing payment methods in edit mode
+  const [editPaymentMethods, setEditPaymentMethods] = useState<Array<{method: string, amount: string}>>([]);
 
   // Fetch purchase receipt details
   const { data: purchaseOrder, isLoading: isOrderLoading, error: orderError } = useQuery<PurchaseOrder>({
@@ -133,7 +137,8 @@ export default function PurchaseViewPage({ onLogout }: PurchaseViewPageProps) {
         purchaseDate: purchaseOrder.purchaseDate || purchaseOrder.actualDeliveryDate || "",
         purchaseType: purchaseOrder.purchaseType || "",
         employeeId: purchaseOrder.employeeId?.toString() || "",
-        notes: purchaseOrder.notes || ""
+        notes: purchaseOrder.notes || "",
+        isPaid: purchaseOrder.isPaid || false // Initialize isPaid
       });
     }
   }, [purchaseOrder]);
@@ -167,6 +172,60 @@ export default function PurchaseViewPage({ onLogout }: PurchaseViewPageProps) {
       setEditedItems(initialItems);
     }
   }, [purchaseItems]);
+
+  // Initialize payment methods from purchaseOrder
+  useEffect(() => {
+    if (purchaseOrder) {
+      const paymentMethodStr = purchaseOrder.paymentMethods || purchaseOrder.paymentMethod || "";
+      
+      // Calculate total from items
+      const itemsTotal = purchaseItems.reduce((sum: number, item: any) => {
+        const { total } = calculateItemValues(item.id, item);
+        return sum + total;
+      }, 0);
+      
+      let initialMethod = { method: 'cash', amount: Math.round(itemsTotal).toString() };
+
+      // Try to parse as JSON first
+      if (paymentMethodStr && paymentMethodStr.trim() !== '') {
+        try {
+          const parsed = JSON.parse(paymentMethodStr);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            // Chỉ lấy phương thức đầu tiên
+            initialMethod = {
+              method: parsed[0].method || 'cash',
+              amount: parsed[0].amount?.toString() || Math.round(itemsTotal).toString()
+            };
+          } else if (typeof parsed === 'object' && parsed !== null && parsed.method) {
+            initialMethod = {
+              method: parsed.method,
+              amount: parsed.amount?.toString() || Math.round(itemsTotal).toString()
+            };
+          }
+        } catch (e) {
+          // Not JSON, treat as simple string (legacy format)
+          const amount = purchaseOrder.paymentAmount || Math.round(itemsTotal).toString();
+          initialMethod = {
+            method: paymentMethodStr,
+            amount: amount.toString()
+          };
+        }
+      }
+
+      // Fallback: if no method but is paid, use cash with total amount
+      if ((purchaseOrder.isPaid || formData.isPaid)) {
+        if (!initialMethod.method || initialMethod.amount === '0') {
+          initialMethod = { 
+            method: "cash", 
+            amount: Math.round(itemsTotal).toString()
+          };
+        }
+      }
+
+      console.log('🔍 Initialized payment method:', initialMethod);
+      setEditPaymentMethods([initialMethod]);
+    }
+  }, [purchaseOrder, formData.isPaid, purchaseItems]);
 
   // Fetch employees for display
   const { data: employees = [] } = useQuery({
@@ -501,7 +560,7 @@ export default function PurchaseViewPage({ onLogout }: PurchaseViewPageProps) {
   const handleFileDownload = async (document: any) => {
     try {
       console.log('📥 Starting file download:', document);
-      
+
       const response = await fetch(`https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/purchase-receipts/documents/${document.id}/download`, {
         method: 'GET',
         headers: {
@@ -529,7 +588,7 @@ export default function PurchaseViewPage({ onLogout }: PurchaseViewPageProps) {
       a.style.display = 'none';
       window.document.body.appendChild(a);
       a.click();
-      
+
       // Cleanup after a short delay
       setTimeout(() => {
         window.URL.revokeObjectURL(url);
@@ -537,7 +596,7 @@ export default function PurchaseViewPage({ onLogout }: PurchaseViewPageProps) {
       }, 100);
 
       console.log('✅ File download triggered successfully');
-      
+
       toast({
         title: "Thành công",
         description: "Đã tải xuống tệp",
@@ -556,7 +615,7 @@ export default function PurchaseViewPage({ onLogout }: PurchaseViewPageProps) {
   const handleFileDelete = async (documentId: number) => {
     try {
       console.log('🗑️ Deleting document:', documentId);
-      
+
       const response = await fetch(`https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/purchase-receipts/documents/${documentId}`, {
         method: 'DELETE',
       });
@@ -568,7 +627,7 @@ export default function PurchaseViewPage({ onLogout }: PurchaseViewPageProps) {
       }
 
       console.log('✅ Document deleted successfully');
-      
+
       toast({
         title: "Đã xóa",
         description: "Xóa tệp đính kèm thành công",
@@ -633,7 +692,7 @@ export default function PurchaseViewPage({ onLogout }: PurchaseViewPageProps) {
       discountAmount = parseFloat(originalItem.discountAmount || originalItem.discount_amount || '0');
       let dbDiscountPercent = originalItem.discountPercent || originalItem.discount_percent || '0';
       discountPercent = parseFloat(dbDiscountPercent);
-      
+
       // If stored as decimal (0.1), convert to percentage (10)
       if (discountPercent > 0 && discountPercent < 1) {
         discountPercent = discountPercent * 100;
@@ -811,6 +870,30 @@ export default function PurchaseViewPage({ onLogout }: PurchaseViewPageProps) {
         return;
       }
 
+      // Validate payment method if isPaid = true
+      if (formData.isPaid) {
+        if (!editPaymentMethods || editPaymentMethods.length === 0 || !editPaymentMethods[0].method) {
+          toast({
+            variant: "destructive",
+            title: "Lỗi validation",
+            description: "Vui lòng chọn phương thức thanh toán",
+          });
+          setIsSaving(false);
+          return;
+        }
+
+        const paymentAmount = parseFloat(editPaymentMethods[0].amount || '0');
+        if (paymentAmount <= 0) {
+          toast({
+            variant: "destructive",
+            title: "Lỗi validation",
+            description: "Số tiền thanh toán phải lớn hơn 0",
+          });
+          setIsSaving(false);
+          return;
+        }
+      }
+
       // Validate at least one valid item
       const validItems = purchaseItems.filter(item => {
         const edited = editedItems[item.id] || {};
@@ -829,17 +912,42 @@ export default function PurchaseViewPage({ onLogout }: PurchaseViewPageProps) {
         return;
       }
 
-      // Update basic order information
+      // CRITICAL: Prepare payment methods data - CHỈ LẤY 1 PHƯƠNG THỨC
+      let paymentMethodData = null;
+      let paymentAmountData = null;
+
+      if (formData.isPaid && editPaymentMethods.length > 0) {
+        // Chỉ lấy phương thức đầu tiên
+        const firstMethod = editPaymentMethods[0];
+        paymentMethodData = JSON.stringify({
+          method: firstMethod.method,
+          amount: parseFloat(firstMethod.amount || '0')
+        });
+        
+        paymentAmountData = firstMethod.amount;
+      }
+
+      console.log("💰 Payment data to save:", {
+        isPaid: formData.isPaid,
+        paymentMethod: paymentMethodData,
+        paymentAmount: paymentAmountData,
+        rawMethods: editPaymentMethods
+      });
+
+      // Update basic order information WITH payment data
       const orderUpdateData = {
         supplierId: parseInt(formData.supplierId),
         purchaseDate: formData.purchaseDate,
         actualDeliveryDate: formData.purchaseDate || null,
         purchaseType: formData.purchaseType || 'raw_materials',
         employeeId: formData.employeeId ? parseInt(formData.employeeId) : null,
-        notes: formData.notes || ''
+        notes: formData.notes || '',
+        isPaid: formData.isPaid,
+        paymentMethod: paymentMethodData, // CRITICAL: Include payment method
+        paymentAmount: paymentAmountData  // CRITICAL: Include payment amount
       };
 
-      console.log("📝 Updating purchase receipt:", orderUpdateData);
+      console.log("📝 Updating purchase receipt with payment info:", orderUpdateData);
 
       // Update purchase receipt
       const receiptResponse = await fetch(`https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/purchase-receipts/${purchaseId}`, {
@@ -930,7 +1038,7 @@ export default function PurchaseViewPage({ onLogout }: PurchaseViewPageProps) {
         // Skip if product not selected
         const productName = edited.productName || item.productName || '';
         const productId = edited.productId || item.productId;
-        
+
         if (!productName || productName.trim() === '' || !productId) {
           console.log(`⏭️ Skipping item at position ${index + 1} without valid product`);
           continue;
@@ -1017,9 +1125,9 @@ export default function PurchaseViewPage({ onLogout }: PurchaseViewPageProps) {
       <POSHeader />
       <RightSidebar />
 
-      <div className="container mx-auto px-4 py-6 max-w-7xl pt-24">
+      <div className="container mx-auto px-4 pt-24 pb-6 max-w-7xl">
         {/* Header */}
-        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 mb-6 bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm mt-4">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 mb-6 bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm">
           <div className="flex items-center gap-4">
             <Button
               variant="ghost"
@@ -1272,6 +1380,129 @@ export default function PurchaseViewPage({ onLogout }: PurchaseViewPageProps) {
                         rows={3}
                         className="text-sm resize-none"
                       />
+                    </div>
+
+                    {/* Payment Status and Methods - Same Row */}
+                    <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
+                      {/* Payment Status Checkbox */}
+                      <div className="md:col-span-5">
+                        <div className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4 h-full">
+                          <input
+                            type="checkbox"
+                            checked={formData.isPaid} // Use formData.isPaid for editing
+                            disabled={!isEditMode}
+                            onChange={(e) => {
+                              // Update form data when checkbox changes
+                              setFormData(prev => ({ ...prev, isPaid: e.target.checked }));
+                            }}
+                            className="h-4 w-4 rounded border-gray-300"
+                          />
+                          <div className="space-y-1 leading-none">
+                            <label className="text-sm font-medium">
+                              Đã thanh toán
+                            </label>
+                            <p className="text-sm text-muted-foreground">
+                              Đánh dấu nếu phiếu nhập đã được thanh toán
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Payment Method & Amount - Single payment method only */}
+                      {(purchaseOrder?.isPaid || formData.isPaid) && (
+                        <div className="md:col-span-5">
+                          <div className="border rounded-lg p-3 bg-blue-50 h-full">
+                            <h4 className="font-semibold mb-2 text-sm">Phương thức thanh toán</h4>
+
+                            {(() => {
+                              const getMethodName = (method: string) => {
+                                const names: Record<string, string> = {
+                                  'cash': 'Tiền mặt',
+                                  'bank_transfer': 'Chuyển khoản',
+                                  'credit_card': 'Thẻ tín dụng',
+                                  'other': 'Khác'
+                                };
+                                return names[method] || method;
+                              };
+
+                              // Tính tổng tiền từ items
+                              const itemsTotal = purchaseItems.reduce((sum: number, item: any) => {
+                                const { total } = calculateItemValues(item.id, item);
+                                return sum + total;
+                              }, 0);
+
+                              const updatePaymentMethod = (field: 'method' | 'amount', value: string) => {
+                                const currentMethod = editPaymentMethods[0] || { method: 'cash', amount: Math.round(itemsTotal).toString() };
+                                const updated = [{ ...currentMethod, [field]: value }];
+                                setEditPaymentMethods(updated);
+                                setFormData(prev => ({ ...prev, paymentMethod: JSON.stringify(updated[0]) }));
+                              };
+
+                              const currentMethod = editPaymentMethods[0] || { method: 'cash', amount: Math.round(itemsTotal).toString() };
+
+                              return (
+                                <div className="space-y-2">
+                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2 p-2 bg-white rounded border text-xs">
+                                    <div className="space-y-1">
+                                      <label className="text-xs font-medium">Phương thức</label>
+                                      {isEditMode ? (
+                                        <Select 
+                                          value={currentMethod.method || "cash"}
+                                          onValueChange={(value) => updatePaymentMethod('method', value)}
+                                        >
+                                          <SelectTrigger className="h-8 text-xs">
+                                            <SelectValue />
+                                          </SelectTrigger>
+                                          <SelectContent>
+                                            <SelectItem value="cash">Tiền mặt</SelectItem>
+                                            <SelectItem value="bank_transfer">Chuyển khoản</SelectItem>
+                                            <SelectItem value="credit_card">Thẻ tín dụng</SelectItem>
+                                            <SelectItem value="other">Khác</SelectItem>
+                                          </SelectContent>
+                                        </Select>
+                                      ) : (
+                                        <div className="h-8 px-2 py-1 bg-blue-50 border border-blue-200 rounded flex items-center">
+                                          <span className="font-medium text-blue-900 text-xs">{getMethodName(currentMethod.method)}</span>
+                                        </div>
+                                      )}
+                                    </div>
+
+                                    <div className="space-y-1">
+                                      <label className="text-xs font-medium">Số tiền</label>
+                                      <div className="h-8 px-2 py-1 bg-green-50 border border-green-200 rounded flex items-center justify-end">
+                                        <span className="font-semibold text-green-800 text-xs">
+                                          {Math.round(itemsTotal).toLocaleString('vi-VN')} ₫
+                                        </span>
+                                      </div>
+                                    </div>
+                                  </div>
+
+                                  {/* Payment status display */}
+                                  {(() => {
+                                    const paymentAmount = Number(currentMethod.amount || 0);
+                                    const difference = itemsTotal - paymentAmount;
+                                    const isExact = Math.abs(difference) < 1;
+                                    const isUnderpaid = difference > 1;
+
+                                    return (
+                                      <div className="space-y-1 mt-2">
+                                        <div className="flex justify-between items-center pt-2 border-t">
+                                          <span className="font-semibold text-sm">Tổng cần thanh toán:</span>
+                                          <span className="text-base font-bold text-gray-900">
+                                            {Math.round(itemsTotal).toLocaleString('vi-VN')} ₫
+                                          </span>
+                                        </div>
+
+                                        
+                                      </div>
+                                    );
+                                  })()}
+                                </div>
+                              );
+                            })()}
+                          </div>
+                        </div>
+                      )}
                     </div>
             </CardContent>
           </Card>
@@ -1740,7 +1971,7 @@ export default function PurchaseViewPage({ onLogout }: PurchaseViewPageProps) {
                                     const newTotal = parseFloat(rawValue) || 0;
                                     const newDiscountAmount = subtotal - newTotal;
                                     const newDiscountPercent = subtotal > 0 ? (newDiscountAmount / subtotal) * 100 : 0;
-                                    
+
                                     // Cập nhật cả discountAmount và discountPercent, set flag để không tính lại
                                     setEditedItems(prev => ({
                                       ...prev,
@@ -1938,7 +2169,7 @@ export default function PurchaseViewPage({ onLogout }: PurchaseViewPageProps) {
                   await queryClient.invalidateQueries({ 
                     queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/purchase-receipts", purchaseId, "documents"] 
                   });
-                  
+
                   // Đợi dữ liệu load xong (refetch data)
                   await queryClient.refetchQueries({ 
                     queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/purchase-receipts", purchaseId] 
@@ -1946,7 +2177,7 @@ export default function PurchaseViewPage({ onLogout }: PurchaseViewPageProps) {
                   await queryClient.refetchQueries({ 
                     queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/purchase-receipts", purchaseId, "items"] 
                   });
-                  
+
                   // Bật chế độ chỉnh sửa
                   setIsEditMode(true);
                 }}
@@ -1961,7 +2192,7 @@ export default function PurchaseViewPage({ onLogout }: PurchaseViewPageProps) {
                   variant="outline"
                   onClick={async () => {
                     setIsEditMode(false);
-                    
+
                     // Reload all data from server
                     await queryClient.invalidateQueries({ 
                       queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/purchase-receipts", purchaseId] 
@@ -1972,7 +2203,7 @@ export default function PurchaseViewPage({ onLogout }: PurchaseViewPageProps) {
                     await queryClient.invalidateQueries({ 
                       queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/purchase-receipts", purchaseId, "documents"] 
                     });
-                    
+
                     // Reset form data to original values
                     if (purchaseOrder) {
                       setFormData({
@@ -1980,7 +2211,8 @@ export default function PurchaseViewPage({ onLogout }: PurchaseViewPageProps) {
                         purchaseDate: purchaseOrder.purchaseDate || purchaseOrder.actualDeliveryDate || "",
                         purchaseType: purchaseOrder.purchaseType || "",
                         employeeId: purchaseOrder.employeeId?.toString() || "",
-                        notes: purchaseOrder.notes || ""
+                        notes: purchaseOrder.notes || "",
+                        isPaid: purchaseOrder.isPaid || false // Reset isPaid
                       });
                     }
                     // Reset edited items to original values

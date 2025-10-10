@@ -88,18 +88,25 @@ export function ProductGrid({
       console.log("Total products received:", allProducts.length);
       console.log("Selected category:", selectedCategory);
 
-      // Filter out raw materials (productType = 2) and inactive products
+      // Filter out raw materials (productType = 2), inactive products, and expense category products
       let filteredProducts = allProducts.filter((product: any) => {
-        const isNotRawMaterial = product.productType !== 2;
+        const isNotRawMaterial =
+          product.productType !== 2 || product.productType !== 4;
         const isActive = product.isActive !== false;
-        return isNotRawMaterial && isActive;
+
+        // Exclude products from expense categories
+        const isExpenseCategory =
+          product.categoryId == 15 || product.categoryId == 17;
+
+        return isNotRawMaterial && isActive && !isExpenseCategory;
       });
 
       // Apply category filter if not "all"
       if (selectedCategory !== "all") {
         filteredProducts = filteredProducts.filter((product: any) => {
           const categoryMatch = product.categoryId === selectedCategory;
-          const isNotRawMaterial = product.productType !== 2;
+          const isNotRawMaterial =
+            product.productType !== 2 || product.productType !== 4;
           console.log(
             `Product ${product.name}: categoryId=${product.categoryId}, selectedCategory=${selectedCategory}, match=${categoryMatch}`,
           );

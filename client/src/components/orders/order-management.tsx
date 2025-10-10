@@ -3180,7 +3180,7 @@ export function OrderManagement() {
                 </p>
                 {mixedPaymentData && (
                   <p className="text-sm text-blue-600">
-                    Đã sử d  �ng {mixedPaymentData.pointsToUse.toLocaleString()}P
+                    Đã sử d  ng {mixedPaymentData.pointsToUse.toLocaleString()}P
                     ( -
                     {(mixedPaymentData.pointsToUse * 1000).toLocaleString(
                       "vi-VN",
@@ -3684,7 +3684,6 @@ export function OrderManagement() {
             sku: item.sku,
             taxRate: item.taxRate,
             afterTaxPrice: item.afterTaxPrice,
-            discount: item.discount,
           })) || []
         }
         orderForPayment={orderForPayment}
@@ -3810,7 +3809,6 @@ export function OrderManagement() {
                 discount: item.discount || "0",
               })) || []
             }
-            autoClose={true}
           />
         ))}
     </div>

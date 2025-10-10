@@ -41,8 +41,8 @@ export const products = pgTable("products", {
   priceIncludesTax: boolean("price_includes_tax").notNull().default(false),
   afterTaxPrice: decimal("after_tax_price", { precision: 10, scale: 2 }),
   beforeTaxPrice: decimal("before_tax_price", { precision: 18, scale: 2 }),
-  floor: varchar("floor", { length: 50 }).default("1층"),
-  zone: varchar("zone", { length: 50 }).default("A구역"),
+  floor: varchar("floor", { length: 50 }).default("1"),
+  zone: varchar("zone", { length: 50 }).default("A"),
   unit: text("unit").default("Cái"),
 });
 
@@ -173,6 +173,9 @@ export const purchaseReceipts = pgTable("purchase_receipts", {
   total: decimal("total", { precision: 18, scale: 2 })
     .notNull()
     .default("0.00"),
+  isPaid: boolean("is_paid").notNull().default(false),
+  paymentMethod: text("payment_method"),
+  paymentAmount: decimal("payment_amount", { precision: 18, scale: 2 }),
   notes: text("notes"),
   createdAt: timestamp("created_at", { withTimezone: true })
     .defaultNow()
@@ -231,8 +234,8 @@ export const tables = pgTable("tables", {
   tableNumber: varchar("table_number", { length: 50 }).notNull(),
   capacity: integer("capacity").default(4),
   status: varchar("status", { length: 20 }).default("available"),
-  floor: varchar("floor", { length: 50 }).default("1층"), // Added floor field
-  zone: varchar("zone", { length: 50 }).default("A구역"), // Added zone field
+  floor: varchar("floor", { length: 50 }).default("1"), // Added floor field
+  zone: varchar("zone", { length: 50 }).default("A"), // Added zone field
   qrCode: text("qr_code"),
   createdAt: timestamp("created_at", { withTimezone: true })
     .defaultNow()
@@ -246,6 +249,8 @@ export const orders = pgTable("orders", {
   employeeId: integer("employee_id").references(() => employees.id),
   status: text("status").notNull().default("pending"), // "pending", "confirmed", "preparing", "ready", "served", "paid", "cancelled"
   customerName: text("customer_name"),
+  customerPhone: text("customer_phone"), // Add customer phone field
+  customerTaxCode: text("customer_tax_code"), // Add customer tax code field
   customerCount: integer("customer_count").default(1),
   subtotal: decimal("subtotal", { precision: 10, scale: 2 }).notNull(),
   tax: decimal("tax", { precision: 10, scale: 2 }).notNull().default("0.00"),
@@ -255,6 +260,7 @@ export const orders = pgTable("orders", {
   total: decimal("total", { precision: 10, scale: 2 }).notNull(),
   paymentMethod: text("payment_method"), // "cash", "card", "mobile", "einvoice"
   paymentStatus: text("payment_status").notNull().default("pending"), // "pending", "paid", "refunded"
+  isPaid: boolean("is_paid").notNull().default(false), // Payment status flag
   einvoiceStatus: integer("einvoice_status").notNull().default(0), // 0=Chưa phát hành, 1=Đã phát hành, 2=Tạo nháp, 3=Đã duyệt, 4=Đã bị thay thế (hủy), 5=Thay thế tạm, 6=Thay thế, 7=Đã bị điều chỉnh, 8=Điều chỉnh tạm, 9=Điều chỉnh, 10=Đã hủy
   templateNumber: varchar("template_number", { length: 50 }),
   symbol: varchar("symbol", { length: 20 }),
@@ -318,6 +324,11 @@ export const insertProductSchema = createInsertSchema(products)
     stock: z.number().min(0, "Stock cannot be negative"),
     productType: z.number().min(1).max(4, "Product type is required"),
     taxRate: z.union([z.string(), z.number()]).transform((val) => {
+      // Handle special tax rate values
+      if (val === "KCT" || val === "KKKNT") {
+        return "0"; // Store as "0" for database, taxRateName will store the display value
+      }
+      
       // Accept integer percentage values: 0, 5, 8, 10
       const numVal = typeof val === "string" ? parseFloat(val) : val;
 
@@ -363,8 +374,8 @@ export const insertProductSchema = createInsertSchema(products)
     sku: z.string().optional(),
     name: z.string().min(1, "Product name is required"),
     categoryId: z.number().min(1, "Category is required"),
-    floor: z.union([z.string(), z.number()]).optional().default("1층"),
-    zone: z.union([z.string(), z.number()]).optional().default("A구역"),
+    floor: z.union([z.string(), z.number()]).optional().default("1"),
+    zone: z.union([z.string(), z.number()]).optional().default("A"),
     unit: z.string().optional(),
   });
 
@@ -424,7 +435,7 @@ export const insertTableSchema = createInsertSchema(tables)
         message: "Status must be available, occupied, reserved, or maintenance",
       }),
     }),
-    floor: z.string().optional().default("1층"),
+    floor: z.string().optional().default("1"),
   });
 
 export const insertOrderSchema = createInsertSchema(orders)
@@ -529,6 +540,9 @@ export const insertPurchaseReceiptSchema = createInsertSchema(purchaseReceipts)
     total: z.string().refine((val) => !isNaN(Number(val)) && Number(val) >= 0, {
       message: "Total must be a positive number",
     }),
+    isPaid: z.boolean().optional().default(false),
+    paymentMethod: z.string().optional(),
+    paymentAmount: z.string().optional(),
   });
 
 export const insertPurchaseReceiptItemSchema = createInsertSchema(
@@ -747,8 +761,8 @@ export const printerConfigs = pgTable("printer_configs", {
   macAddress: varchar("mac_address", { length: 17 }),
   paperWidth: integer("paper_width").notNull().default(80),
   printSpeed: integer("print_speed").default(100),
-  isPrimary: boolean("is_primary").notNull().default(false),
-  isSecondary: boolean("is_secondary").notNull().default(false),
+  isEmployee: boolean("is_employee").notNull().default(false),
+  isKitchen: boolean("is_kitchen").notNull().default(false),
   isActive: boolean("is_active").notNull().default(true),
   copies: integer("copies").notNull().default(0),
   floor: varchar("floor", { length: 50 }).default("1"),
@@ -1095,6 +1109,7 @@ export const expenseVouchers = pgTable("expense_vouchers", {
   phone: varchar("phone", { length: 20 }),
   category: varchar("category", { length: 50 }).notNull(),
   description: text("description"),
+  supplierId: integer("supplier_id").references(() => suppliers.id),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
 });

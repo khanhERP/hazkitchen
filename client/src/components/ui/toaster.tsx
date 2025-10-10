@@ -16,12 +16,43 @@ export function Toaster() {
   return (
     <ToastProvider>
       {toasts.map(function ({ id, title, description, action, ...props }) {
+        // Handle translation for title
+        const translatedTitle = title 
+          ? (typeof title === 'string' && title.includes('.') ? t(title as any) : title)
+          : null;
+
+        // Handle translation for description with better error formatting
+        let translatedDescription = description;
+        if (description) {
+          if (typeof description === 'string') {
+            // Check if it's a translation key (contains dot notation like "settings.productCreatedSuccess")
+            if (description.includes('.')) {
+              // Try to translate - the t() function already handles dot notation
+              const translated = t(description as any);
+              // Only use translation if it's different from the key (meaning translation was found)
+              if (translated !== description) {
+                translatedDescription = translated;
+              }
+            }
+            // Handle "Failed to create product" errors with more context
+            else if (description.includes('Failed to create product')) {
+              translatedDescription = 'Không thể tạo sản phẩm. Vui lòng kiểm tra lại thông tin và thử lại.';
+            }
+          }
+        }
+
         return (
           <Toast key={id} {...props}>
             <div className="grid gap-2">
-              {title && <ToastTitle className="text-sm font-semibold">{t(title as any)}</ToastTitle>}
-              {description && (
-                <ToastDescription className="text-sm opacity-90 mt-1">{t(description as any)}</ToastDescription>
+              {translatedTitle && (
+                <ToastTitle className="text-sm font-semibold">
+                  {translatedTitle}
+                </ToastTitle>
+              )}
+              {translatedDescription && (
+                <ToastDescription className="text-sm opacity-90 mt-1">
+                  {translatedDescription}
+                </ToastDescription>
               )}
             </div>
             {action}

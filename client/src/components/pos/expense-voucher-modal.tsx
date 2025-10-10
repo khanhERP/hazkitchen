@@ -396,7 +396,7 @@ export default function ExpenseVoucherModal({
     console.log(`✅ Using voucher number: ${voucherNumber}`);
 
     // Prepare clean data for submission - only include necessary fields
-    const cleanData = {
+    const cleanData: any = {
       voucherNumber: voucherNumber,
       recipient: formData.recipient.trim(),
       account: formData.account || "cash",
@@ -407,6 +407,19 @@ export default function ExpenseVoucherModal({
       description: formData.description?.trim() || "",
       amount: Number(formData.amount),
     };
+
+    // Add supplierId if recipient is a supplier
+    const selectedRecipient = recipientOptions.find(option => option.name === formData.recipient);
+    if (selectedRecipient && selectedRecipient.id) {
+      cleanData.supplierId = selectedRecipient.id;
+      console.log("💾 Adding supplierId to expense voucher:", {
+        recipientName: formData.recipient,
+        supplierId: selectedRecipient.id,
+        mode: mode
+      });
+    } else {
+      console.warn("⚠️ No supplierId found for recipient:", formData.recipient);
+    }
 
     // Add id for update mode
     if (mode === "edit" && formData.id) {

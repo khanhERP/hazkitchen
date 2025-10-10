@@ -28,12 +28,15 @@ import {
   Users,
   Calendar,
   ShoppingCart,
+  Building2,
 } from "lucide-react";
 import { Link, useSearch } from "wouter";
 import { useTranslation } from "@/lib/i18n";
 import { EmployeeReport } from "@/components/reports/employee-report";
 import { SalesChannelReport } from "@/components/reports/sales-channel-report";
 import { FinancialReport } from "@/components/reports/financial-report";
+import { SupplierReport } from "@/components/reports/supplier-report";
+import { ExpenseProductsReport } from "@/components/reports/expense-products-report";
 
 interface ReportsPageProps {
   onLogout: () => void;
@@ -43,17 +46,30 @@ export default function ReportsPage({ onLogout }: ReportsPageProps) {
   const { t } = useTranslation();
   const search = useSearch();
   const [activeTab, setActiveTab] = useState("overview");
+  const [startDate, setStartDate] = useState<Date | undefined>(undefined);
+  const [endDate, setEndDate] = useState<Date | undefined>(undefined);
 
   useEffect(() => {
     const params = new URLSearchParams(search);
     const tab = params.get("tab");
     if (
       tab &&
-      ["overview", "sales", "menu", "table", "saleschart"].includes(tab)
+      ["overview", "sales", "menu", "table", "saleschart", "spending"].includes(tab)
     ) {
       setActiveTab(tab);
     }
+
+    const start = params.get("startDate");
+    const end = params.get("endDate");
+
+    if (start) {
+      setStartDate(new Date(start));
+    }
+    if (end) {
+      setEndDate(new Date(end));
+    }
   }, [search]);
+
   return (
     <div className="min-h-screen bg-green-50 grocery-bg">
       {/* Header */}

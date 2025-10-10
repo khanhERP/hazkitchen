@@ -1,4 +1,3 @@
-
 import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "@/lib/i18n";
@@ -20,7 +19,13 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { Calendar, DollarSign, TrendingDown, Building2, RefreshCw } from "lucide-react";
+import {
+  Calendar,
+  DollarSign,
+  TrendingDown,
+  Building2,
+  RefreshCw,
+} from "lucide-react";
 import { format } from "date-fns";
 
 export function SpendingReport() {
@@ -29,16 +34,41 @@ export function SpendingReport() {
   const [endDate, setEndDate] = useState(format(new Date(), "yyyy-MM-dd"));
 
   // Fetch purchase receipts
-  const { data: purchaseReceipts, isLoading: isLoadingReceipts, refetch } = useQuery({
+  const {
+    data: purchaseReceipts,
+    isLoading: isLoadingReceipts,
+    refetch: refetchPurchaseReceipts,
+  } = useQuery({
     queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/purchase-receipts", { startDate, endDate }],
     queryFn: async () => {
-      const params = new URLSearchParams({
+      const params = new URLSearchParams();
+
+      // Add date filters if they exist
+      if (startDate) {
+        params.append("startDate", startDate);
+      }
+      if (endDate) {
+        params.append("endDate", endDate);
+      }
+
+      console.log("📊 Fetching purchase receipts with date filter:", {
         startDate,
         endDate,
+        url: `https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/purchase-receipts?${params.toString()}`,
       });
-      const response = await fetch(`https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/purchase-receipts?${params}`);
+
+      const response = await fetch(
+        `https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/purchase-receipts?${params.toString()}`,
+      );
       if (!response.ok) throw new Error("Failed to fetch purchase receipts");
       const result = await response.json();
+
+      console.log("📊 Purchase receipts API response:", {
+        success: result.success,
+        dataCount: result.data?.length || 0,
+        sampleData: result.data?.[0],
+      });
+
       return result.data || [];
     },
   });
@@ -58,11 +88,48 @@ export function SpendingReport() {
     queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/suppliers"],
   });
 
+  // Fetch expense vouchers for debt calculation with date filter
+  const { data: expenseVouchers = [], refetch: refetchExpenseVouchers } =
+    useQuery({
+      queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/expense-vouchers", { startDate, endDate }],
+      queryFn: async () => {
+        const params = new URLSearchParams();
+
+        if (startDate) {
+          params.append("startDate", startDate);
+        }
+        if (endDate) {
+          params.append("endDate", endDate);
+        }
+
+        console.log("💰 Fetching expense vouchers with date filter:", {
+          startDate,
+          endDate,
+          url: `https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/expense-vouchers?${params.toString()}`,
+        });
+
+        const response = await fetch(
+          `https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/expense-vouchers?${params.toString()}`,
+        );
+        if (!response.ok) throw new Error("Failed to fetch expense vouchers");
+        const result = await response.json();
+
+        console.log("💰 Expense vouchers API response:", {
+          dataCount: result?.length || 0,
+          sampleData: result?.[0],
+        });
+
+        return result || [];
+      },
+    });
+
   // Fetch orders for revenue calculation
-  const { data: orders = [] } = useQuery({
+  const { data: orders = [], refetch: refetchOrders } = useQuery({
     queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders/date-range", startDate, endDate],
     queryFn: async () => {
-      const response = await fetch(`https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders/date-range/${startDate}/${endDate}/all`);
+      const response = await fetch(
+        `https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders/date-range/${startDate}/${endDate}/all`,
+      );
       if (!response.ok) throw new Error("Failed to fetch orders");
       return response.json();
     },
@@ -91,12 +158,18 @@ export function SpendingReport() {
       };
     }
 
-    // Access data from the response object
-    const receiptsData = Array.isArray(purchaseReceipts) 
-      ? purchaseReceipts 
-      : (purchaseReceipts?.data || []);
+    // Extract data from API response structure: { success: true, data: [...] }
+    let receiptsData = [];
+    if (purchaseReceipts?.success && Array.isArray(purchaseReceipts.data)) {
+      receiptsData = purchaseReceipts.data;
+    } else if (purchaseReceipts?.data && Array.isArray(purchaseReceipts.data)) {
+      receiptsData = purchaseReceipts.data;
+    } else if (Array.isArray(purchaseReceipts)) {
+      receiptsData = purchaseReceipts;
+    }
 
-    console.log("📊 Purchase Receipts for Spending Report:", receiptsData);
+    console.log("📊 Purchase Receipts API Response:", purchaseReceipts);
+    console.log("📊 Extracted receipts data:", receiptsData);
     console.log("📊 Total receipts:", receiptsData.length);
 
     const rawMaterialsMap = new Map();
@@ -109,70 +182,92 @@ export function SpendingReport() {
         id: receipt.id,
         receiptNumber: receipt.receiptNumber,
         purchaseType: receipt.purchaseType,
-        itemsCount: receipt.items?.length
+        itemsCount: receipt.items?.length,
       });
-      const supplier = suppliers.find((s: any) => s.id === receipt.supplierId);
-      const supplierName = supplier?.name || "Không xác định";
+
+      // Get supplier name from receipt.supplier object (API returns full supplier object)
+      const supplierName = receipt.supplier?.name || "Không xác định";
 
       // I. Nguyên vật liệu đã mua (raw_materials)
-      // Only process receipts with purchaseType = "raw_materials"
-      if (receipt.purchaseType === "raw_materials") {
-        console.log(`📦 Processing raw materials receipt ${receipt.receiptNumber}:`, {
-          receiptId: receipt.id,
-          itemsCount: receipt.items?.length,
-          purchaseType: receipt.purchaseType
-        });
+      // Only process receipts with purchaseType = 'raw_materials'
+      // Skip if purchaseType is explicitly set to other values like 'expenses'
+      const isRawMaterial =
+        receipt.purchaseType === "raw_materials" ||
+        receipt.purchaseType === null ||
+        receipt.purchaseType === undefined ||
+        receipt.purchaseType === "";
+
+      if (isRawMaterial) {
+        console.log(
+          `📦 Processing raw materials receipt ${receipt.receiptNumber}:`,
+          {
+            receiptId: receipt.id,
+            itemsCount: receipt.items?.length,
+            purchaseType: receipt.purchaseType,
+          },
+        );
 
         (receipt.items || []).forEach((item: any) => {
           console.log(`📦 Processing item:`, {
             productId: item.productId,
             productName: item.productName,
-            categoryId: item.categoryId,
-            total: item.total
+            total: item.total,
           });
 
-          // Get category from product's categoryId
-          let categoryName = "Chưa phân loại";
-          
-          if (item.productId) {
-            // Find product to get its category
-            const product = products.find((p: any) => p.id === item.productId);
-            if (product && product.categoryId) {
-              const category = categories.find((c: any) => c.id === product.categoryId);
-              categoryName = category?.name || categoryName;
-            }
-          }
+          // Use product name as key to group by product
+          const productName = item.productName || "Không xác định";
 
-          console.log(`📦 Category for item ${item.productName}:`, categoryName);
-
-          if (!rawMaterialsMap.has(categoryName)) {
-            rawMaterialsMap.set(categoryName, {
-              categoryName,
+          if (!rawMaterialsMap.has(productName)) {
+            rawMaterialsMap.set(productName, {
+              productName,
               totalValue: 0,
             });
           }
 
-          const categoryData = rawMaterialsMap.get(categoryName);
-          const itemTotal = parseFloat(item.total || "0");
-          categoryData.totalValue += itemTotal;
+          const productData = rawMaterialsMap.get(productName);
+          const itemTotal = parseFloat(item.total?.toString() || "0");
 
-          console.log(`📦 Updated category ${categoryName} total:`, categoryData.totalValue);
+          productData.totalValue += itemTotal;
+
+          console.log(
+            `📦 Updated product ${productName} total:`,
+            productData.totalValue,
+          );
         });
       }
 
       // II & III. Chi phí (expenses)
       if (receipt.purchaseType === "expenses") {
         (receipt.items || []).forEach((item: any) => {
-          const category = categories.find((c: any) => item.categoryId === c.id);
-          const categoryName = category?.name || item.categoryName || "Chưa phân loại";
+          // Find the actual product from products list
+          const product = products.find((p: any) => p.id === item.productId);
 
-          // Check if it's management expenses or fixed expenses based on category
-          const isManagementExpense = categoryName.toLowerCase().includes("quản lý") ||
-            categoryName.toLowerCase().includes("management");
-          const isFixedExpense = categoryName.toLowerCase().includes("cố định") ||
-            categoryName.toLowerCase().includes("fixed");
+          console.log(`📦 Checking item:`, {
+            productId: item.productId,
+            productName: item.productName,
+            productType: product?.productType,
+            categoryId: product?.categoryId,
+          });
+
+          if (!product) {
+            console.log(`⚠️ Product not found for item ${item.productId}`);
+            return;
+          }
+
+          // Check if product_type == 4 and category_id == 15 for management expenses
+          const isManagementExpense =
+            product.productType === 4 && product.categoryId === 15;
+
+          // Check if product_type == 4 and category_id == 17 for fixed expenses
+          const isFixedExpense =
+            product.productType === 4 && product.categoryId === 17;
 
           if (isManagementExpense) {
+            console.log(`✅ Management expense found:`, {
+              productName: item.productName,
+              total: item.total,
+            });
+
             // Management expenses - group by product
             const key = item.productName;
             if (!managementExpensesMap.has(key)) {
@@ -182,8 +277,18 @@ export function SpendingReport() {
               });
             }
             const expenseData = managementExpensesMap.get(key);
-            expenseData.totalValue += parseFloat(item.total || "0");
+            const itemDiscount = parseFloat(
+              item.discountAmount?.toString() || "0",
+            );
+
+            expenseData.totalValue +=
+              parseFloat(item.total?.toString() || "0");
           } else if (isFixedExpense) {
+            console.log(`✅ Fixed expense found:`, {
+              productName: item.productName,
+              total: item.total,
+            });
+
             // Fixed expenses - group by product
             const key = item.productName;
             if (!fixedExpensesMap.has(key)) {
@@ -193,36 +298,145 @@ export function SpendingReport() {
               });
             }
             const expenseData = fixedExpensesMap.get(key);
-            expenseData.totalValue += parseFloat(item.total || "0");
+            const itemDiscount = parseFloat(
+              item.discountAmount?.toString() || "0",
+            );
+
+            expenseData.totalValue +=
+              parseFloat(item.total?.toString() || "0");
+          } else {
+            console.log(`❌ Item filtered out:`, {
+              productName: item.productName,
+              productType: product.productType,
+              categoryId: product.categoryId,
+              reason: `productType=${product.productType} (need 4), categoryId=${product.categoryId} (need 15 or 17)`,
+            });
           }
         });
       }
 
       // IV. Công nợ nhà cung cấp (unpaid supplier debt)
-      // Calculate based on payment status
-      if (receipt.paymentStatus !== "paid") {
-        const key = receipt.supplierId;
-        if (!supplierDebtsMap.has(key)) {
-          supplierDebtsMap.set(key, {
-            supplierName,
-            debtAmount: 0,
-          });
-        }
-        const debtData = supplierDebtsMap.get(key);
-        debtData.debtAmount += parseFloat(receipt.total || "0");
+      // Initialize supplier debt data if not exists
+      const supplierId = receipt.supplier?.id;
+      if (!supplierDebtsMap.has(supplierId)) {
+        supplierDebtsMap.set(supplierId, {
+          supplierName,
+          totalDebt: 0, // Số tiền thiếu
+          paidExpenses: 0, // Số tiền đã chi
+        });
       }
+
+      let sumDiscount = receipt.items.reduce((sum: number, item: any) => {
+        return sum + parseFloat(item.discountAmount?.toString() || "0");
+      }, 0);
+      const debtData = supplierDebtsMap.get(supplierId);
+
+      // Số tiền thiếu calculation from purchase receipts
+      if (receipt.isPaid === false) {
+        // Unpaid: add full total to debt
+        debtData.totalDebt += parseFloat(receipt.total?.toString() || "0");
+      } else if (receipt.isPaid === true && receipt.paymentAmount) {
+        // Partially paid: add remaining amount (total - payment_amount)
+        const total = parseFloat(receipt.total?.toString() || "0");
+        const paymentAmount = parseFloat(
+          receipt.paymentAmount?.toString() || "0",
+        );
+        const remainingDebt = Math.max(0, total - paymentAmount);
+        debtData.totalDebt += remainingDebt;
+      }
+      debtData.totalDebt = debtData.totalDebt;
     });
 
     const rawMaterials = Array.from(rawMaterialsMap.values());
     const managementExpenses = Array.from(managementExpensesMap.values());
     const fixedExpenses = Array.from(fixedExpensesMap.values());
-    const supplierDebts = Array.from(supplierDebtsMap.values());
 
-    const totalRawMaterials = rawMaterials.reduce((sum, item) => sum + item.totalValue, 0);
-    const totalManagementExpenses = managementExpenses.reduce((sum, item) => sum + item.totalValue, 0);
-    const totalFixedExpenses = fixedExpenses.reduce((sum, item) => sum + item.totalValue, 0);
-    const totalSupplierDebt = supplierDebts.reduce((sum, item) => sum + item.debtAmount, 0);
-    const totalSpending = totalRawMaterials + totalManagementExpenses + totalFixedExpenses;
+    // Calculate expense vouchers by supplier (số tiền đã chi)
+    // Filter expense vouchers by date range
+    console.log("💰 Processing expense vouchers:", {
+      total: expenseVouchers?.length || 0,
+      dateRange: `${startDate} to ${endDate}`,
+    });
+
+    if (Array.isArray(expenseVouchers)) {
+      expenseVouchers.forEach((voucher: any) => {
+        // Check if voucher date is within range
+        const voucherDate =
+          voucher.date || voucher.voucherDate || voucher.createdAt;
+        if (voucherDate) {
+          const voucherDateOnly = new Date(voucherDate);
+          voucherDateOnly.setHours(0, 0, 0, 0);
+
+          const start = new Date(startDate);
+          start.setHours(0, 0, 0, 0);
+          const end = new Date(endDate);
+          end.setHours(23, 59, 59, 999);
+
+          const dateMatch = voucherDateOnly >= start && voucherDateOnly <= end;
+
+          if (!dateMatch) {
+            console.log("💰 Voucher filtered out (date):", {
+              voucherNumber: voucher.voucherNumber,
+              date: voucherDate,
+              dateRange: `${startDate} to ${endDate}`,
+            });
+            return; // Skip this voucher
+          }
+        }
+
+        const supplierId = voucher.supplierId || voucher.supplier_id;
+        if (supplierId) {
+          // Initialize if supplier not in map yet
+          if (!supplierDebtsMap.has(supplierId)) {
+            // Try to get supplier info
+            const supplier = suppliers?.find((s: any) => s.id === supplierId);
+            supplierDebtsMap.set(supplierId, {
+              supplierName: supplier?.name || "Không xác định",
+              totalDebt: 0,
+              paidExpenses: 0,
+            });
+          }
+          const debtData = supplierDebtsMap.get(supplierId);
+          const amount = parseFloat(voucher.amount?.toString() || "0");
+          debtData.paidExpenses += amount;
+
+          console.log("💰 Added expense voucher:", {
+            voucherNumber: voucher.voucherNumber,
+            supplierId,
+            amount,
+            totalPaidExpenses: debtData.paidExpenses,
+          });
+        }
+      });
+    }
+
+    // Calculate final debt: số tiền nợ = số tiền thiếu - số tiền đã chi
+    // Only include suppliers with final debt > 0
+    const supplierDebts = Array.from(supplierDebtsMap.values())
+      .map((item) => ({
+        supplierName: item.supplierName,
+        debtAmount: item.totalDebt - item.paidExpenses,
+      }))
+      .filter((item) => item.debtAmount > 0);
+
+    const totalRawMaterials = rawMaterials.reduce(
+      (sum, item) => sum + item.totalValue,
+      0,
+    );
+    const totalManagementExpenses = managementExpenses.reduce(
+      (sum, item) => sum + item.totalValue,
+      0,
+    );
+    const totalFixedExpenses = fixedExpenses.reduce(
+      (sum, item) => sum + item.totalValue,
+      0,
+    );
+    const totalSupplierDebt = supplierDebts.reduce(
+      (sum, item) => sum + item.debtAmount,
+      0,
+    );
+    const totalSpending =
+      totalRawMaterials + totalManagementExpenses + totalFixedExpenses;
 
     return {
       rawMaterials,
@@ -235,14 +449,17 @@ export function SpendingReport() {
       totalSupplierDebt,
       totalSpending,
     };
-  }, [purchaseReceipts, categories, suppliers, products]);
+  }, [purchaseReceipts, categories, suppliers, products, expenseVouchers]);
 
   // Calculate total revenue from orders
   const totalRevenue = useMemo(() => {
     if (!orders || !Array.isArray(orders)) return 0;
     return orders
       .filter((order: any) => order.paymentStatus === "paid")
-      .reduce((sum: number, order: any) => sum + parseFloat(order.total || "0"), 0);
+      .reduce(
+        (sum: number, order: any) => sum + parseFloat(order.total || "0"),
+        0,
+      );
   }, [orders]);
 
   const netProfit = totalRevenue - reportData.totalSpending;
@@ -269,7 +486,7 @@ export function SpendingReport() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-2 gap-4">
             <div>
               <Label>{t("reports.startDate")}</Label>
               <Input
@@ -285,12 +502,6 @@ export function SpendingReport() {
                 value={endDate}
                 onChange={(e) => setEndDate(e.target.value)}
               />
-            </div>
-            <div className="flex items-end">
-              <Button onClick={() => refetch()} className="w-full">
-                <RefreshCw className="w-4 h-4 mr-2" />
-                {t("reports.refresh")}
-              </Button>
             </div>
           </div>
         </CardContent>
@@ -331,7 +542,9 @@ export function SpendingReport() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className={`text-2xl font-bold ${netProfit >= 0 ? "text-blue-600" : "text-red-600"}`}>
+            <div
+              className={`text-2xl font-bold ${netProfit >= 0 ? "text-blue-600" : "text-red-600"}`}
+            >
               {formatCurrency(netProfit)}
             </div>
           </CardContent>
@@ -359,24 +572,29 @@ export function SpendingReport() {
             I. {t("reports.rawMaterialsPurchased")}
           </CardTitle>
           <CardDescription>
-            {t("reports.totalValue")}: <span className="font-bold text-red-700">{formatCurrency(reportData.totalRawMaterials)}</span>
+            {t("reports.totalValue")}:{" "}
+            <span className="font-bold text-red-700">
+              {formatCurrency(reportData.totalRawMaterials)}
+            </span>
           </CardDescription>
         </CardHeader>
         <CardContent>
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>No</TableHead>
-                <TableHead>{t("reports.categoryName")}</TableHead>
-                <TableHead className="text-right">{t("reports.totalValue")}</TableHead>
+                <TableHead className="w-20">STT</TableHead>
+                <TableHead>Tên sản phẩm</TableHead>
+                <TableHead className="text-right">Tổng tiền</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {reportData.rawMaterials.length > 0 ? (
                 reportData.rawMaterials.map((item, index) => (
                   <TableRow key={index}>
-                    <TableCell>{index + 1}</TableCell>
-                    <TableCell className="font-medium">{item.categoryName}</TableCell>
+                    <TableCell className="text-center">{index + 1}</TableCell>
+                    <TableCell className="font-medium">
+                      {item.productName}
+                    </TableCell>
                     <TableCell className="text-right text-red-600 font-semibold">
                       {formatCurrency(item.totalValue)}
                     </TableCell>
@@ -385,7 +603,7 @@ export function SpendingReport() {
               ) : (
                 <TableRow>
                   <TableCell colSpan={3} className="text-center text-gray-500">
-                    {t("reports.noDataAvailable")}
+                    Không có dữ liệu
                   </TableCell>
                 </TableRow>
               )}
@@ -402,7 +620,10 @@ export function SpendingReport() {
             II. {t("reports.managementExpenses")}
           </CardTitle>
           <CardDescription>
-            {t("reports.totalValue")}: <span className="font-bold text-red-700">{formatCurrency(reportData.totalManagementExpenses)}</span>
+            {t("reports.totalValue")}:{" "}
+            <span className="font-bold text-red-700">
+              {formatCurrency(reportData.totalManagementExpenses)}
+            </span>
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -411,7 +632,9 @@ export function SpendingReport() {
               <TableRow>
                 <TableHead>No</TableHead>
                 <TableHead>{t("reports.itemName")}</TableHead>
-                <TableHead className="text-right">{t("reports.totalValue")}</TableHead>
+                <TableHead className="text-right">
+                  {t("reports.totalValue")}
+                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -419,7 +642,9 @@ export function SpendingReport() {
                 reportData.managementExpenses.map((item, index) => (
                   <TableRow key={index}>
                     <TableCell>{index + 1}</TableCell>
-                    <TableCell className="font-medium">{item.itemName}</TableCell>
+                    <TableCell className="font-medium">
+                      {item.itemName}
+                    </TableCell>
                     <TableCell className="text-right text-red-600 font-semibold">
                       {formatCurrency(item.totalValue)}
                     </TableCell>
@@ -445,7 +670,10 @@ export function SpendingReport() {
             III. {t("reports.fixedExpenses")}
           </CardTitle>
           <CardDescription>
-            {t("reports.totalValue")}: <span className="font-bold text-red-700">{formatCurrency(reportData.totalFixedExpenses)}</span>
+            {t("reports.totalValue")}:{" "}
+            <span className="font-bold text-red-700">
+              {formatCurrency(reportData.totalFixedExpenses)}
+            </span>
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -454,7 +682,9 @@ export function SpendingReport() {
               <TableRow>
                 <TableHead>No</TableHead>
                 <TableHead>{t("reports.itemName")}</TableHead>
-                <TableHead className="text-right">{t("reports.totalValue")}</TableHead>
+                <TableHead className="text-right">
+                  {t("reports.totalValue")}
+                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -462,7 +692,9 @@ export function SpendingReport() {
                 reportData.fixedExpenses.map((item, index) => (
                   <TableRow key={index}>
                     <TableCell>{index + 1}</TableCell>
-                    <TableCell className="font-medium">{item.itemName}</TableCell>
+                    <TableCell className="font-medium">
+                      {item.itemName}
+                    </TableCell>
                     <TableCell className="text-right text-red-600 font-semibold">
                       {formatCurrency(item.totalValue)}
                     </TableCell>
@@ -488,7 +720,10 @@ export function SpendingReport() {
             {t("reports.unpaidSupplierDebt")}
           </CardTitle>
           <CardDescription>
-            {t("reports.totalValue")}: <span className="font-bold text-orange-700">{formatCurrency(reportData.totalSupplierDebt)}</span>
+            {t("reports.totalValue")}:{" "}
+            <span className="font-bold text-orange-700">
+              {formatCurrency(reportData.totalSupplierDebt)}
+            </span>
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -497,7 +732,9 @@ export function SpendingReport() {
               <TableRow>
                 <TableHead>No</TableHead>
                 <TableHead>{t("reports.supplierName")}</TableHead>
-                <TableHead className="text-right">{t("reports.debtAmount")}</TableHead>
+                <TableHead className="text-right">
+                  {t("reports.debtAmount")}
+                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -505,7 +742,9 @@ export function SpendingReport() {
                 reportData.supplierDebts.map((item, index) => (
                   <TableRow key={index}>
                     <TableCell>{index + 1}</TableCell>
-                    <TableCell className="font-medium">{item.supplierName}</TableCell>
+                    <TableCell className="font-medium">
+                      {item.supplierName}
+                    </TableCell>
                     <TableCell className="text-right text-orange-600 font-semibold">
                       {formatCurrency(item.debtAmount)}
                     </TableCell>

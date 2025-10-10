@@ -21,14 +21,40 @@ import CustomerDisplay from "@/pages/customer-display";
 import SalesOrders from "@/pages/sales-orders";
 import CashBookPage from "./pages/cash-book";
 import NotFoundPage from "./pages/not-found";
+import PaymentMethodsPage from "@/pages/payment-methods";
+import CustomersPage from "./pages/customers";
+import { useQuery } from "@tanstack/react-query";
+import { Navigate } from "wouter/use-location"; // Assuming Navigate is available or similar functionality
+
+// Define StoreSettings interface if not already defined elsewhere
+interface StoreSettings {
+  businessType: string;
+  // other properties of storeSettings
+}
 
 function Router({ onLogout }: { onLogout: () => void }) {
   const RedirectToSales = () => {
     const [, setLocation] = useLocation();
 
+    // Fetch store settings to determine business type
+    const { data: storeSettings } = useQuery<StoreSettings>({
+      queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/store-settings"],
+    });
+
     useEffect(() => {
-      setLocation("/tables", { replace: true });
-    }, [setLocation]);
+      if (storeSettings) {
+        const businessType = storeSettings.businessType;
+
+        // Route based on business type
+        if (businessType === "laundry" || businessType === "retail") {
+          // POS Giặt là or POS Bán lẻ -> Direct sales screen
+          setLocation("/pos", { replace: true });
+        } else {
+          // POS Nhà hàng or default -> Table selection screen
+          setLocation("/tables", { replace: true });
+        }
+      }
+    }, [storeSettings, setLocation]);
 
     return null;
   };
@@ -85,12 +111,21 @@ function Router({ onLogout }: { onLogout: () => void }) {
       />
       <Route path="/attendance-qr" component={AttendanceQRPage} />
       <Route
+        path="/payment-methods"
+        component={() => <PaymentMethodsPage onLogout={onLogout} />}
+      />
+      <Route
         path="/inventory"
         component={() => <InventoryPage onLogout={onLogout} />}
       />
       <Route path="/customer-display" component={CustomerDisplay} />
       <Route path="/sales-orders" component={SalesOrders} />
-      <Route path="/cash-book" component={() => <CashBookPage onLogout={onLogout} />} />
+      <Route
+        path="/cash-book"
+        component={() => <CashBookPage onLogout={onLogout} />}
+      />
+      {/* New route for customers */}
+      <Route path="/customers" component={() => <CustomersPage onLogout={onLogout} />} />
       <Route path="*" component={NotFoundPage} />
     </Switch>
   );

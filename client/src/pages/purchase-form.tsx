@@ -151,8 +151,12 @@ export default function PurchaseFormPage({
       updatedFromPercent?: boolean; // Flag for UI update source
     }>
   >([]);
-  const [skuSuggestions, setSkuSuggestions] = useState<Record<number, any[]>>({});
-  const [activeSuggestionIndex, setActiveSuggestionIndex] = useState<Record<number, number>>({});
+  const [skuSuggestions, setSkuSuggestions] = useState<Record<number, any[]>>(
+    {},
+  );
+  const [activeSuggestionIndex, setActiveSuggestionIndex] = useState<
+    Record<number, number>
+  >({});
   const [attachedFiles, setAttachedFiles] = useState<
     Array<{
       id?: number;
@@ -169,6 +173,11 @@ export default function PurchaseFormPage({
   const [showProductSelector, setShowProductSelector] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false); // State to control submit button
 
+  // State for managing payment methods
+  const [editPaymentMethods, setEditPaymentMethods] = useState<
+    Array<{ method: string; amount: string }>
+  >([]);
+
   const isEditMode = Boolean(id) && !viewOnly;
 
   // Form setup
@@ -183,6 +192,9 @@ export default function PurchaseFormPage({
       subtotal: "0.00",
       tax: "0.00",
       total: "0.00",
+      isPaid: false,
+      paymentMethod: "",
+      paymentAmount: "",
     },
     mode: "onChange", // Enable real-time validation
   });
@@ -224,7 +236,10 @@ export default function PurchaseFormPage({
     select: (data: any[]) =>
       (data || []).map((emp: any) => ({
         id: emp.id,
-        name: emp.name || `${emp.firstName || ''} ${emp.lastName || ''}`.trim() || 'Unnamed Employee',
+        name:
+          emp.name ||
+          `${emp.firstName || ""} ${emp.lastName || ""}`.trim() ||
+          "Unnamed Employee",
       })),
   });
 
@@ -386,7 +401,10 @@ export default function PurchaseFormPage({
       // Load basic order information
       form.setValue("supplierId", order.supplierId || order.supplierid);
       form.setValue("receiptNumber", order.receiptNumber || order.ponumber);
-      form.setValue("purchaseDate", order.purchaseDate || order.purchasedate || "");
+      form.setValue(
+        "purchaseDate",
+        order.purchaseDate || order.purchasedate || "",
+      );
       form.setValue("notes", order.notes || "");
       form.setValue("purchaseType", order.purchaseType || "");
       form.setValue("employeeId", order.employeeId || order.employeeid);
@@ -395,6 +413,55 @@ export default function PurchaseFormPage({
       form.setValue("subtotal", order.subtotal || "0.00");
       form.setValue("tax", order.tax || "0.00");
       form.setValue("total", order.total || "0.00");
+
+      // Set payment information
+      form.setValue("isPaid", order.isPaid || order.is_paid || false);
+      form.setValue(
+        "paymentMethod",
+        order.paymentMethod || order.payment_method || "",
+      );
+      form.setValue(
+        "paymentAmount",
+        order.paymentAmount || order.payment_amount || "",
+      );
+
+      // Initialize payment methods
+      const paymentMethodStr =
+        order.paymentMethod || order.payment_method || "";
+      let initialMethods: Array<{ method: string; amount: string }> = [];
+
+      try {
+        const parsed = JSON.parse(paymentMethodStr);
+        if (Array.isArray(parsed)) {
+          initialMethods = parsed;
+        } else if (
+          typeof parsed === "object" &&
+          parsed !== null &&
+          parsed.method &&
+          parsed.amount
+        ) {
+          initialMethods = [parsed];
+        }
+      } catch (e) {
+        if (paymentMethodStr && (order.paymentAmount || order.payment_amount)) {
+          initialMethods = [
+            {
+              method: paymentMethodStr,
+              amount: (
+                order.paymentAmount ||
+                order.payment_amount ||
+                "0"
+              ).toString(),
+            },
+          ];
+        }
+      }
+
+      if (initialMethods.length === 0 && (order.isPaid || order.is_paid)) {
+        initialMethods = [{ method: "cash", amount: "0" }];
+      }
+
+      setEditPaymentMethods(initialMethods);
 
       // Load existing items - fix the items loading logic
       if (order.items && Array.isArray(order.items) && order.items.length > 0) {
@@ -415,7 +482,9 @@ export default function PurchaseFormPage({
           })),
         );
       } else {
-        console.log("⚠️ No items found in order or items is not an array, adding default row");
+        console.log(
+          "⚠️ No items found in order or items is not an array, adding default row",
+        );
         // Add a default empty row for editing
         const defaultEmptyRow = {
           productId: 0,
@@ -536,12 +605,17 @@ export default function PurchaseFormPage({
     // Auto-focus to product name field after selection
     setTimeout(() => {
       // Find the index of the item that was just updated
-      const targetIndex = selectedItemId !== null
-        ? selectedItems.findIndex(item => item.productId === selectedItemId)
-        : selectedItems.findIndex(item => item.productId === 0 || item.productId === product.id);
+      const targetIndex =
+        selectedItemId !== null
+          ? selectedItems.findIndex((item) => item.productId === selectedItemId)
+          : selectedItems.findIndex(
+              (item) => item.productId === 0 || item.productId === product.id,
+            );
 
       if (targetIndex >= 0) {
-        const productInput = document.querySelector(`[data-testid="input-product-${targetIndex}"]`) as HTMLInputElement;
+        const productInput = document.querySelector(
+          `[data-testid="input-product-${targetIndex}"]`,
+        ) as HTMLInputElement;
         if (productInput) {
           productInput.focus();
           productInput.select();
@@ -670,7 +744,10 @@ export default function PurchaseFormPage({
     if (e.key === "Enter" || e.key === "Tab") {
       e.preventDefault();
 
-      if (fieldType === "total" || currentFieldIndex === fieldOrder.length - 1) {
+      if (
+        fieldType === "total" ||
+        currentFieldIndex === fieldOrder.length - 1
+      ) {
         // At the last field (total), check if this is the last row
         if (index === selectedItems.length - 1) {
           // Last row - add new row and focus on SKU field of new row
@@ -781,17 +858,22 @@ export default function PurchaseFormPage({
       discountAmount: 0,
     };
     setSelectedItems([...selectedItems, newEmptyRow]);
-    console.log("➕ Added new empty row, total items:", selectedItems.length + 1);
+    console.log(
+      "➕ Added new empty row, total items:",
+      selectedItems.length + 1,
+    );
   };
 
   // Check if form has valid data for submission
   const hasValidData = () => {
     const formData = form.getValues();
     const hasSupplier = formData.supplierId && formData.supplierId > 0;
-    const hasValidItems = selectedItems.some(item =>
-      item.productName && item.productName.trim() !== "" &&
-      item.quantity > 0 &&
-      item.unitPrice >= 0
+    const hasValidItems = selectedItems.some(
+      (item) =>
+        item.productName &&
+        item.productName.trim() !== "" &&
+        item.quantity > 0 &&
+        item.unitPrice >= 0,
     );
 
     return hasSupplier && hasValidItems;
@@ -799,21 +881,23 @@ export default function PurchaseFormPage({
 
   // Filter products based on SKU/name input
   const filterProductsBySku = (itemId: number, searchTerm: string) => {
-    if (!searchTerm || searchTerm.trim() === '') {
-      setSkuSuggestions(prev => ({ ...prev, [itemId]: [] }));
+    if (!searchTerm || searchTerm.trim() === "") {
+      setSkuSuggestions((prev) => ({ ...prev, [itemId]: [] }));
       return;
     }
 
-    const filtered = allProducts.filter((product: any) => {
-      const search = searchTerm.toLowerCase();
-      return (
-        product.name.toLowerCase().includes(search) ||
-        product.sku?.toLowerCase().includes(search)
-      );
-    }).slice(0, 5); // Limit to 5 suggestions
+    const filtered = allProducts
+      .filter((product: any) => {
+        const search = searchTerm.toLowerCase();
+        return (
+          product.name.toLowerCase().includes(search) ||
+          product.sku?.toLowerCase().includes(search)
+        );
+      })
+      .slice(0, 5); // Limit to 5 suggestions
 
-    setSkuSuggestions(prev => ({ ...prev, [itemId]: filtered }));
-    setActiveSuggestionIndex(prev => ({ ...prev, [itemId]: 0 }));
+    setSkuSuggestions((prev) => ({ ...prev, [itemId]: filtered }));
+    setActiveSuggestionIndex((prev) => ({ ...prev, [itemId]: 0 }));
   };
 
   // Select product from suggestions
@@ -838,12 +922,14 @@ export default function PurchaseFormPage({
     }
 
     setSelectedItems(updatedItems);
-    setSkuSuggestions(prev => ({ ...prev, [index]: [] }));
-    setActiveSuggestionIndex(prev => ({ ...prev, [index]: 0 }));
+    setSkuSuggestions((prev) => ({ ...prev, [index]: [] }));
+    setActiveSuggestionIndex((prev) => ({ ...prev, [index]: 0 }));
 
     // Auto-focus to product name field after selection
     setTimeout(() => {
-      const productInput = document.querySelector(`[data-testid="input-product-${index}"]`) as HTMLInputElement;
+      const productInput = document.querySelector(
+        `[data-testid="input-product-${index}"]`,
+      ) as HTMLInputElement;
       if (productInput) {
         productInput.focus();
         productInput.select(); // Also select the text for easy viewing
@@ -936,7 +1022,9 @@ export default function PurchaseFormPage({
   };
 
   // Form submission
-  const onSubmit = async (values: z.infer<typeof insertPurchaseReceiptSchema>) => {
+  const onSubmit = async (
+    values: z.infer<typeof insertPurchaseReceiptSchema>,
+  ) => {
     try {
       setIsSubmitting(true);
       console.log("🔍 Form submission values:", values);
@@ -953,8 +1041,9 @@ export default function PurchaseFormPage({
       }
 
       // Filter out valid items - be more lenient with validation
-      const validItems = selectedItems.filter(item => {
-        const hasProductName = item.productName && item.productName.trim() !== "";
+      const validItems = selectedItems.filter((item) => {
+        const hasProductName =
+          item.productName && item.productName.trim() !== "";
         const hasQuantity = item.quantity > 0;
         const hasPrice = item.unitPrice >= 0;
 
@@ -964,13 +1053,14 @@ export default function PurchaseFormPage({
       console.log("📋 Item validation result:", {
         totalItems: selectedItems.length,
         validItems: validItems.length,
-        invalidItems: selectedItems.length - validItems.length
+        invalidItems: selectedItems.length - validItems.length,
       });
 
       if (validItems.length === 0) {
         toast({
           title: "Lỗi",
-          description: "Vui lòng thêm ít nhất một sản phẩm với tên, số lượng và giá hợp lệ",
+          description:
+            "Vui lòng thêm ít nhất một sản phẩm với tên, số lượng và giá hợp lệ",
           variant: "destructive",
         });
         setIsSubmitting(false);
@@ -991,7 +1081,10 @@ export default function PurchaseFormPage({
           const timestamp = Date.now().toString().slice(-6);
           finalReceiptNumber = `PN${timestamp}/${currentYear}`;
         }
-        console.log("🔢 Using auto-generated receipt number:", finalReceiptNumber);
+        console.log(
+          "🔢 Using auto-generated receipt number:",
+          finalReceiptNumber,
+        );
       }
 
       // Validate required fields
@@ -1015,8 +1108,6 @@ export default function PurchaseFormPage({
         return;
       }
 
-
-
       if (!formValues.purchaseDate) {
         toast({
           title: "Lỗi",
@@ -1027,8 +1118,35 @@ export default function PurchaseFormPage({
         return;
       }
 
+      // Validate payment method if isPaid = true
+      if (formValues.isPaid) {
+        if (!editPaymentMethods || editPaymentMethods.length === 0 || !editPaymentMethods[0].method) {
+          toast({
+            title: "Lỗi",
+            description: "Vui lòng chọn phương thức thanh toán",
+            variant: "destructive",
+          });
+          setIsSubmitting(false);
+          return;
+        }
+
+        const paymentAmount = parseFloat(editPaymentMethods[0].amount || '0');
+        if (paymentAmount <= 0) {
+          toast({
+            title: "Lỗi",
+            description: "Số tiền thanh toán phải lớn hơn 0",
+            variant: "destructive",
+          });
+          setIsSubmitting(false);
+          return;
+        }
+      }
+
       // Calculate totals
-      const subtotalAmount = validItems.reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0);
+      const subtotalAmount = validItems.reduce(
+        (sum, item) => sum + item.quantity * item.unitPrice,
+        0,
+      );
 
       // Prepare submission data
       const submissionData = {
@@ -1041,10 +1159,22 @@ export default function PurchaseFormPage({
         subtotal: subtotalAmount.toFixed(2),
         tax: "0.00",
         total: subtotalAmount.toFixed(2),
+        isPaid: formValues.isPaid || false,
+        paymentMethod: formValues.isPaid && editPaymentMethods.length > 0 
+          ? JSON.stringify({
+              method: editPaymentMethods[0].method,
+              amount: parseFloat(editPaymentMethods[0].amount || '0')
+            })
+          : null,
+        paymentAmount: formValues.isPaid && editPaymentMethods.length > 0
+          ? editPaymentMethods[0].amount
+          : null,
         notes: formValues.notes?.trim() || null,
         items: validItems.map((item) => {
           // Lấy CHÍNH XÁC giá trị từ UI - không tính toán lại
-          const discountPercent = parseFloat((item as any).discountPercent || 0);
+          const discountPercent = parseFloat(
+            (item as any).discountPercent || 0,
+          );
           const discountAmount = parseFloat((item as any).discountAmount || 0);
 
           return {
@@ -1057,7 +1187,7 @@ export default function PurchaseFormPage({
             total: (item.quantity * item.unitPrice).toFixed(2),
             taxRate: "0.00",
             discountPercent: discountPercent.toFixed(2),
-            discountAmount: discountAmount.toFixed(2)
+            discountAmount: discountAmount.toFixed(2),
           };
         }),
       };
@@ -1067,19 +1197,21 @@ export default function PurchaseFormPage({
       // Submit data
       const response = isEditMode
         ? await fetch(`https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/purchase-receipts/${id}`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(submissionData)
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(submissionData),
           })
-        : await fetch('https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/purchase-receipts', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(submissionData)
+        : await fetch("https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/purchase-receipts", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(submissionData),
           });
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+        throw new Error(
+          errorData.message || `HTTP error! status: ${response.status}`,
+        );
       }
 
       const result = await response.json();
@@ -1096,11 +1228,13 @@ export default function PurchaseFormPage({
           }
 
           if (!fileData.file) {
-            console.warn('⚠️ File data missing file object:', fileData);
+            console.warn("⚠️ File data missing file object:", fileData);
             return;
           }
 
-          console.log(`📤 Processing file: ${fileData.originalFileName}, size: ${fileData.file.size} bytes`);
+          console.log(
+            `📤 Processing file: ${fileData.originalFileName}, size: ${fileData.file.size} bytes`,
+          );
 
           // Read file content as base64 - this preserves exact file content
           const reader = new FileReader();
@@ -1109,23 +1243,38 @@ export default function PurchaseFormPage({
               const base64 = reader.result as string;
 
               // Verify file content
-              const hasDataPrefix = base64.startsWith('data:');
-              const base64Content = hasDataPrefix ? base64.split(',')[1] : base64;
+              const hasDataPrefix = base64.startsWith("data:");
+              const base64Content = hasDataPrefix
+                ? base64.split(",")[1]
+                : base64;
               const calculatedSize = Math.floor((base64Content.length * 3) / 4);
 
-              console.log(`UPLOAD VERIFICATION for ${fileData.originalFileName}:`);
-              console.log(`   - Original file size: ${fileData.file.size} bytes`);
+              console.log(
+                `UPLOAD VERIFICATION for ${fileData.originalFileName}:`,
+              );
+              console.log(
+                `   - Original file size: ${fileData.file.size} bytes`,
+              );
               console.log(`   - Base64 length: ${base64.length} chars`);
               console.log(`   - Has data URL prefix: ${hasDataPrefix}`);
-              console.log(`   - Calculated decoded size: ${calculatedSize} bytes`);
-              console.log(`   - Size match: ${Math.abs(fileData.file.size - calculatedSize) < 10 ? '✅ YES' : '❌ NO'}`);
+              console.log(
+                `   - Calculated decoded size: ${calculatedSize} bytes`,
+              );
+              console.log(
+                `   - Size match: ${Math.abs(fileData.file.size - calculatedSize) < 10 ? "✅ YES" : "❌ NO"}`,
+              );
               console.log(`   - MIME type: ${fileData.fileType}`);
-              console.log(`   - Base64 preview: ${base64.substring(0, 100)}...`);
+              console.log(
+                `   - Base64 preview: ${base64.substring(0, 100)}...`,
+              );
 
               resolve(base64);
             };
             reader.onerror = (error) => {
-              console.error(`❌ File read error for ${fileData.originalFileName}:`, error);
+              console.error(
+                `❌ File read error for ${fileData.originalFileName}:`,
+                error,
+              );
               reject(error);
             };
             reader.readAsDataURL(fileData.file!);
@@ -1135,54 +1284,75 @@ export default function PurchaseFormPage({
             const fileContent = await fileContentPromise;
 
             // Verify file size matches
-            const base64Content = fileContent.includes(',') ? fileContent.split(',')[1] : fileContent;
+            const base64Content = fileContent.includes(",")
+              ? fileContent.split(",")[1]
+              : fileContent;
             const padding = (base64Content.match(/=/g) || []).length;
-            const calculatedSize = Math.floor((base64Content.length * 3) / 4) - padding;
+            const calculatedSize =
+              Math.floor((base64Content.length * 3) / 4) - padding;
 
-            console.log(`📊 File size verification for ${fileData.originalFileName}:`, {
-              originalSize: fileData.file.size,
-              calculatedSize: calculatedSize,
-              matches: Math.abs(fileData.file.size - calculatedSize) < 10 // Allow small tolerance
-            });
+            console.log(
+              `📊 File size verification for ${fileData.originalFileName}:`,
+              {
+                originalSize: fileData.file.size,
+                calculatedSize: calculatedSize,
+                matches: Math.abs(fileData.file.size - calculatedSize) < 10, // Allow small tolerance
+              },
+            );
 
             // Send file data as JSON with original filename preserved
-            const uploadResponse = await fetch(`https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/purchase-receipts/${result.id}/documents`, {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
+            const uploadResponse = await fetch(
+              `https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/purchase-receipts/${result.id}/documents`,
+              {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                  fileName: fileData.fileName,
+                  originalFileName: fileData.originalFileName,
+                  fileType: fileData.fileType,
+                  fileSize: fileData.file.size, // Use actual file size from File object
+                  description: fileData.description || "",
+                  fileContent: fileContent, // Send full data URL with prefix
+                }),
               },
-              body: JSON.stringify({
-                fileName: fileData.fileName,
-                originalFileName: fileData.originalFileName,
-                fileType: fileData.fileType,
-                fileSize: fileData.file.size, // Use actual file size from File object
-                description: fileData.description || '',
-                fileContent: fileContent, // Send full data URL with prefix
-              }),
-            });
+            );
 
             if (!uploadResponse.ok) {
               const errorText = await uploadResponse.text();
-              console.error(`❌ Upload failed for ${fileData.originalFileName}:`, errorText);
-              throw new Error(`Failed to upload ${fileData.originalFileName}: ${errorText}`);
+              console.error(
+                `❌ Upload failed for ${fileData.originalFileName}:`,
+                errorText,
+              );
+              throw new Error(
+                `Failed to upload ${fileData.originalFileName}: ${errorText}`,
+              );
             }
 
             const uploadResult = await uploadResponse.json();
-            console.log(`✅ Uploaded file: ${fileData.originalFileName}, server response:`, uploadResult);
+            console.log(
+              `✅ Uploaded file: ${fileData.originalFileName}, server response:`,
+              uploadResult,
+            );
           } catch (uploadError) {
-            console.error(`❌ Error uploading ${fileData.originalFileName}:`, uploadError);
+            console.error(
+              `❌ Error uploading ${fileData.originalFileName}:`,
+              uploadError,
+            );
             throw uploadError;
           }
         });
 
         try {
           await Promise.all(uploadPromises);
-          console.log('✅ All files uploaded successfully');
+          console.log("✅ All files uploaded successfully");
         } catch (uploadError) {
-          console.error('❌ Error uploading files:', uploadError);
+          console.error("❌ Error uploading files:", uploadError);
           toast({
             title: "Cảnh báo",
-            description: "Phiếu nhập đã được tạo nhưng có lỗi khi tải lên tệp đính kèm",
+            description:
+              "Phiếu nhập đã được tạo nhưng có lỗi khi tải lên tệp đính kèm",
             variant: "destructive",
           });
         }
@@ -1202,7 +1372,6 @@ export default function PurchaseFormPage({
       setTimeout(() => {
         navigate("/purchases");
       }, 1000);
-
     } catch (error: any) {
       console.error("❌ Error in form submission:", error);
 
@@ -1498,7 +1667,12 @@ export default function PurchaseFormPage({
                             className="border border-dashed border-gray-300 rounded-md p-3 hover:border-gray-400 transition-colors cursor-pointer bg-gray-50/50 min-h-[42px] flex flex-col"
                             onClick={(e) => {
                               // Only trigger file input if clicking on empty area
-                              if (e.target === e.currentTarget || (e.target as HTMLElement).closest('.upload-prompt')) {
+                              if (
+                                e.target === e.currentTarget ||
+                                (e.target as HTMLElement).closest(
+                                  ".upload-prompt",
+                                )
+                              ) {
                                 document.getElementById("file-upload")?.click();
                               }
                             }}
@@ -1573,7 +1747,11 @@ export default function PurchaseFormPage({
                                 <button
                                   type="button"
                                   className="upload-prompt w-full text-xs text-blue-600 hover:text-blue-700 py-1 flex items-center justify-center gap-1"
-                                  onClick={() => document.getElementById("file-upload")?.click()}
+                                  onClick={() =>
+                                    document
+                                      .getElementById("file-upload")
+                                      ?.click()
+                                  }
                                 >
                                   <Plus className="h-3 w-3" />
                                   {t("purchases.addItem")}
@@ -1623,6 +1801,156 @@ export default function PurchaseFormPage({
                         </FormItem>
                       )}
                     />
+
+                    {/* Payment Status and Methods - Same Row */}
+                    <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
+                      {/* Payment Status Checkbox */}
+                      <div className="md:col-span-5">
+                        <FormField
+                          control={form.control}
+                          name="isPaid"
+                          render={({ field }) => (
+                            <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4 h-full">
+                              <FormControl>
+                                <Checkbox
+                                  checked={field.value}
+                                  onCheckedChange={(checked) => {
+                                    field.onChange(checked);
+                                    // Khi check isPaid, tự động điền số tiền = tổng tiền
+                                    if (checked) {
+                                      const itemsTotal = selectedItems.reduce((sum, item) => {
+                                        const subtotal = (item.quantity || 0) * (item.unitPrice || 0);
+                                        const discountAmount = parseFloat((item as any).discountAmount || 0);
+                                        return sum + (subtotal - discountAmount);
+                                      }, 0);
+                                      
+                                      setEditPaymentMethods([{
+                                        method: 'cash',
+                                        amount: Math.round(itemsTotal).toString()
+                                      }]);
+                                      
+                                      // Cập nhật form values
+                                      form.setValue("paymentMethod", JSON.stringify({
+                                        method: 'cash',
+                                        amount: Math.round(itemsTotal)
+                                      }));
+                                      form.setValue("paymentAmount", Math.round(itemsTotal).toString());
+                                    }
+                                  }}
+                                  disabled={viewOnly}
+                                />
+                              </FormControl>
+                              <div className="space-y-1 leading-none">
+                                <FormLabel>Đã thanh toán</FormLabel>
+                                <p className="text-sm text-muted-foreground">
+                                  Đánh dấu nếu phiếu nhập đã được thanh toán
+                                </p>
+                              </div>
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+
+                      {/* Payment Method & Amount - Single payment method only */}
+                      {form.watch("isPaid") && (
+                        <div className="md:col-span-5">
+                          <div className="border rounded-lg p-3 bg-blue-50 h-full">
+                            <h4 className="font-semibold mb-2 text-sm">
+                              Phương thức thanh toán
+                            </h4>
+
+                            {(() => {
+                              const getMethodName = (method: string) => {
+                                const names: Record<string, string> = {
+                                  cash: "Tiền mặt",
+                                  bank_transfer: "Chuyển khoản",
+                                  credit_card: "Thẻ tín dụng",
+                                  other: "Khác",
+                                };
+                                return names[method] || method;
+                              };
+
+                              // Tính tổng tiền từ items - tự động cập nhật
+                              const itemsTotal = selectedItems.reduce((sum, item) => {
+                                const subtotal = (item.quantity || 0) * (item.unitPrice || 0);
+                                const discountAmount = parseFloat((item as any).discountAmount || 0);
+                                return sum + (subtotal - discountAmount);
+                              }, 0);
+
+                              // Lấy method hiện tại hoặc mặc định
+                              const currentMethod = editPaymentMethods[0] || { 
+                                method: 'cash', 
+                                amount: Math.round(itemsTotal).toString() 
+                              };
+
+                              // Auto-update payment amount khi items thay đổi
+                              if (editPaymentMethods[0]) {
+                                editPaymentMethods[0].amount = Math.round(itemsTotal).toString();
+                              }
+
+                              return (
+                                <div className="space-y-2">
+                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2 p-2 bg-white rounded border text-xs">
+                                    <div className="space-y-1">
+                                      <label className="text-xs font-medium">Phương thức</label>
+                                      {!viewOnly ? (
+                                        <Select
+                                          value={currentMethod.method || "cash"}
+                                          onValueChange={(value) => {
+                                            const updated = [{ 
+                                              method: value,
+                                              amount: Math.round(itemsTotal).toString()
+                                            }];
+                                            setEditPaymentMethods(updated);
+                                            form.setValue("paymentMethod", JSON.stringify(updated[0]));
+                                            form.setValue("paymentAmount", Math.round(itemsTotal).toString());
+                                          }}
+                                        >
+                                          <SelectTrigger className="h-8 text-xs">
+                                            <SelectValue />
+                                          </SelectTrigger>
+                                          <SelectContent>
+                                            <SelectItem value="cash">Tiền mặt</SelectItem>
+                                            <SelectItem value="bank_transfer">Chuyển khoản</SelectItem>
+                                            <SelectItem value="credit_card">Thẻ tín dụng</SelectItem>
+                                            <SelectItem value="other">Khác</SelectItem>
+                                          </SelectContent>
+                                        </Select>
+                                      ) : (
+                                        <div className="h-8 px-2 py-1 bg-blue-50 border border-blue-200 rounded flex items-center">
+                                          <span className="font-medium text-blue-900 text-xs">
+                                            {getMethodName(currentMethod.method)}
+                                          </span>
+                                        </div>
+                                      )}
+                                    </div>
+
+                                    <div className="space-y-1">
+                                      <label className="text-xs font-medium">Số tiền</label>
+                                      <div className="h-8 px-2 py-1 bg-gray-100 border border-gray-300 rounded flex items-center justify-end">
+                                        <span className="font-semibold text-gray-800 text-xs">
+                                          {Math.round(itemsTotal).toLocaleString("vi-VN")} ₫
+                                        </span>
+                                      </div>
+                                    </div>
+                                  </div>
+
+                                  {/* Payment status display */}
+                                  <div className="space-y-1 mt-2">
+                                    <div className="flex justify-between items-center pt-2 border-t">
+                                      <span className="font-semibold text-sm">Tổng thanh toán:</span>
+                                      <span className="text-base font-bold text-gray-900">
+                                        {Math.round(itemsTotal).toLocaleString("vi-VN")} ₫
+                                      </span>
+                                    </div>
+                                  </div>
+                                </div>
+                              );
+                            })()}
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   </CardContent>
                 </Card>
 
@@ -1692,19 +2020,26 @@ export default function PurchaseFormPage({
                                   setSelectedProductIndex(0);
                                 }}
                                 onKeyDown={(e) => {
-                                  if (e.key === 'ArrowDown') {
+                                  if (e.key === "ArrowDown") {
                                     e.preventDefault();
-                                    setSelectedProductIndex(prev =>
-                                      prev < products.length - 1 ? prev + 1 : prev
+                                    setSelectedProductIndex((prev) =>
+                                      prev < products.length - 1
+                                        ? prev + 1
+                                        : prev,
                                     );
-                                  } else if (e.key === 'ArrowUp') {
+                                  } else if (e.key === "ArrowUp") {
                                     e.preventDefault();
-                                    setSelectedProductIndex(prev =>
-                                      prev > 0 ? prev - 1 : 0
+                                    setSelectedProductIndex((prev) =>
+                                      prev > 0 ? prev - 1 : 0,
                                     );
-                                  } else if (e.key === 'Enter' && products.length > 0) {
+                                  } else if (
+                                    e.key === "Enter" &&
+                                    products.length > 0
+                                  ) {
                                     e.preventDefault();
-                                    handleProductSelect(products[selectedProductIndex]);
+                                    handleProductSelect(
+                                      products[selectedProductIndex],
+                                    );
                                   }
                                 }}
                                 className="pl-10"
@@ -1720,8 +2055,8 @@ export default function PurchaseFormPage({
                                     data-product-index={index}
                                     className={`flex items-center justify-between p-3 border rounded-lg cursor-pointer transition-colors ${
                                       index === selectedProductIndex
-                                        ? 'bg-blue-50 border-blue-500'
-                                        : 'hover:bg-gray-50 dark:hover:bg-gray-800'
+                                        ? "bg-blue-50 border-blue-500"
+                                        : "hover:bg-gray-50 dark:hover:bg-gray-800"
                                     }`}
                                     onClick={() => handleProductSelect(product)}
                                     data-testid={`product-${product.id}`}
@@ -1820,12 +2155,18 @@ export default function PurchaseFormPage({
                                 const subtotal = item.total; // Use item.total directly
 
                                 // Xử lý logic chiết khấu - ƯU TIÊN GIÁ TRỊ TỪ UI
-                                let discountPercent = (item as any).discountPercent || 0;
-                                let discountAmount = (item as any).discountAmount || 0;
+                                let discountPercent =
+                                  (item as any).discountPercent || 0;
+                                let discountAmount =
+                                  (item as any).discountAmount || 0;
 
                                 // Nếu user vừa nhập %CK → tính lại tiền chiết khấu
-                                if ((item as any).updatedFromPercent && !(item as any).updatedFromAmount) {
-                                   discountAmount = subtotal * (discountPercent / 100);
+                                if (
+                                  (item as any).updatedFromPercent &&
+                                  !(item as any).updatedFromAmount
+                                ) {
+                                  discountAmount =
+                                    subtotal * (discountPercent / 100);
                                 }
                                 // Nếu user vừa nhập tiền chiết khấu → GIỮ NGUYÊN, KHÔNG tính lại %CK
                                 // discountAmount đã có giá trị từ UI, không cần làm gì thêm
@@ -1858,82 +2199,117 @@ export default function PurchaseFormPage({
                                           }}
                                           onClick={() => {
                                             // Open product selector dialog when clicking on SKU field
-                                            setSelectedItemId(item.productId || index);
+                                            setSelectedItemId(
+                                              item.productId || index,
+                                            );
                                             setIsProductDialogOpen(true);
                                           }}
                                           onKeyDown={(e) => {
-                                            const suggestions = skuSuggestions[index] || [];
-                                            const activeIndex = activeSuggestionIndex[index] || 0;
-                                            const hasSelectedProduct = item.productId && item.productId > 0;
-                                            const hasSuggestions = suggestions.length > 0;
+                                            const suggestions =
+                                              skuSuggestions[index] || [];
+                                            const activeIndex =
+                                              activeSuggestionIndex[index] || 0;
+                                            const hasSelectedProduct =
+                                              item.productId &&
+                                              item.productId > 0;
+                                            const hasSuggestions =
+                                              suggestions.length > 0;
 
                                             // Arrow Down/Up - Navigate suggestions OR move to next/prev row
-                                            if (e.key === 'ArrowDown') {
+                                            if (e.key === "ArrowDown") {
                                               if (hasSuggestions) {
                                                 e.preventDefault();
-                                                setActiveSuggestionIndex(prev => ({
-                                                  ...prev,
-                                                  [index]: Math.min(activeIndex + 1, suggestions.length - 1)
-                                                }));
+                                                setActiveSuggestionIndex(
+                                                  (prev) => ({
+                                                    ...prev,
+                                                    [index]: Math.min(
+                                                      activeIndex + 1,
+                                                      suggestions.length - 1,
+                                                    ),
+                                                  }),
+                                                );
                                               } else {
                                                 // Move to same field in next row
-                                                handleKeyDown(e, index, 'sku');
+                                                handleKeyDown(e, index, "sku");
                                               }
-                                            } else if (e.key === 'ArrowUp') {
+                                            } else if (e.key === "ArrowUp") {
                                               if (hasSuggestions) {
                                                 e.preventDefault();
-                                                setActiveSuggestionIndex(prev => ({
-                                                  ...prev,
-                                                  [index]: Math.max(activeIndex - 1, 0)
-                                                }));
+                                                setActiveSuggestionIndex(
+                                                  (prev) => ({
+                                                    ...prev,
+                                                    [index]: Math.max(
+                                                      activeIndex - 1,
+                                                      0,
+                                                    ),
+                                                  }),
+                                                );
                                               } else {
                                                 // Move to same field in previous row
-                                                handleKeyDown(e, index, 'sku');
+                                                handleKeyDown(e, index, "sku");
                                               }
                                             }
                                             // Enter - Select suggestion OR move to product name field
-                                            else if (e.key === 'Enter') {
+                                            else if (e.key === "Enter") {
                                               e.preventDefault();
 
                                               if (hasSuggestions) {
                                                 // Select from suggestion list and auto-focus to product name
-                                                selectProductFromSuggestion(index, suggestions[activeIndex]);
+                                                selectProductFromSuggestion(
+                                                  index,
+                                                  suggestions[activeIndex],
+                                                );
                                               } else {
                                                 // Move to product name field
                                                 setTimeout(() => {
-                                                  const nextInput = document.querySelector(`[data-testid="input-product-${index}"]`) as HTMLInputElement;
+                                                  const nextInput =
+                                                    document.querySelector(
+                                                      `[data-testid="input-product-${index}"]`,
+                                                    ) as HTMLInputElement;
                                                   nextInput?.focus();
                                                 }, 50);
                                               }
                                             }
                                             // Tab - Same as Enter
-                                            else if (e.key === 'Tab') {
+                                            else if (e.key === "Tab") {
                                               e.preventDefault();
 
                                               if (hasSuggestions) {
-                                                selectProductFromSuggestion(index, suggestions[activeIndex]);
+                                                selectProductFromSuggestion(
+                                                  index,
+                                                  suggestions[activeIndex],
+                                                );
                                               } else {
                                                 // Move to product name field
                                                 setTimeout(() => {
-                                                  const nextInput = document.querySelector(`[data-testid="input-product-${index}"]`) as HTMLInputElement;
+                                                  const nextInput =
+                                                    document.querySelector(
+                                                      `[data-testid="input-product-${index}"]`,
+                                                    ) as HTMLInputElement;
                                                   nextInput?.focus();
                                                 }, 50);
                                               }
                                             }
                                             // Arrow Right - Move to product name field
-                                            else if (e.key === 'ArrowRight') {
+                                            else if (e.key === "ArrowRight") {
                                               e.preventDefault();
                                               setTimeout(() => {
-                                                const nextInput = document.querySelector(`[data-testid="input-product-${index}"]`) as HTMLInputElement;
+                                                const nextInput =
+                                                  document.querySelector(
+                                                    `[data-testid="input-product-${index}"]`,
+                                                  ) as HTMLInputElement;
                                                 nextInput?.focus();
                                               }, 50);
                                             }
                                             // Arrow Left - Move to previous row's total field
-                                            else if (e.key === 'ArrowLeft') {
+                                            else if (e.key === "ArrowLeft") {
                                               if (index > 0) {
                                                 e.preventDefault();
                                                 setTimeout(() => {
-                                                  const prevInput = document.querySelector(`[data-testid="input-total-${index - 1}"]`) as HTMLInputElement;
+                                                  const prevInput =
+                                                    document.querySelector(
+                                                      `[data-testid="input-total-${index - 1}"]`,
+                                                    ) as HTMLInputElement;
                                                   prevInput?.focus();
                                                 }, 50);
                                               }
@@ -1947,27 +2323,45 @@ export default function PurchaseFormPage({
                                         <Search className="absolute right-2 top-1/2 transform -translate-y-1/2 h-3 w-3 text-gray-400 pointer-events-none" />
 
                                         {/* Suggestions dropdown */}
-                                        {skuSuggestions[index] && skuSuggestions[index].length > 0 && (
-                                          <div className="absolute z-50 w-64 mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-auto">
-                                            {skuSuggestions[index].map((product: any, idx: number) => (
-                                              <div
-                                                key={product.id}
-                                                className={`px-3 py-2 cursor-pointer text-xs ${
-                                                  idx === (activeSuggestionIndex[index] || 0)
-                                                    ? 'bg-blue-50 text-blue-700'
-                                                    : 'hover:bg-gray-50'
-                                                }`}
-                                                onClick={() => {
-                                                  selectProductFromSuggestion(index, product);
-                                                }}
-                                              >
-                                                <div className="font-medium">{product.name}</div>
-                                                <div className="text-gray-500">SKU: {product.sku}</div>
-                                                <div className="text-gray-600">{product.unitPrice?.toLocaleString('vi-VN')} ₫</div>
-                                              </div>
-                                            ))}
-                                          </div>
-                                        )}
+                                        {skuSuggestions[index] &&
+                                          skuSuggestions[index].length > 0 && (
+                                            <div className="absolute z-50 w-64 mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-auto">
+                                              {skuSuggestions[index].map(
+                                                (product: any, idx: number) => (
+                                                  <div
+                                                    key={product.id}
+                                                    className={`px-3 py-2 cursor-pointer text-xs ${
+                                                      idx ===
+                                                      (activeSuggestionIndex[
+                                                        index
+                                                      ] || 0)
+                                                        ? "bg-blue-50 text-blue-700"
+                                                        : "hover:bg-gray-50"
+                                                    }`}
+                                                    onClick={() => {
+                                                      selectProductFromSuggestion(
+                                                        index,
+                                                        product,
+                                                      );
+                                                    }}
+                                                  >
+                                                    <div className="font-medium">
+                                                      {product.name}
+                                                    </div>
+                                                    <div className="text-gray-500">
+                                                      SKU: {product.sku}
+                                                    </div>
+                                                    <div className="text-gray-600">
+                                                      {product.unitPrice?.toLocaleString(
+                                                        "vi-VN",
+                                                      )}{" "}
+                                                      ₫
+                                                    </div>
+                                                  </div>
+                                                ),
+                                              )}
+                                            </div>
+                                          )}
                                       </div>
                                     </TableCell>
 
@@ -1978,7 +2372,10 @@ export default function PurchaseFormPage({
                                         value={item.productName}
                                         data-testid={`input-product-${index}`}
                                         onKeyDown={(e) => {
-                                          if (e.key === 'Enter' || e.key === 'Tab') {
+                                          if (
+                                            e.key === "Enter" ||
+                                            e.key === "Tab"
+                                          ) {
                                             e.preventDefault();
                                             handleKeyDown(e, index, "product");
                                           } else {
@@ -2006,9 +2403,16 @@ export default function PurchaseFormPage({
                                         inputMode="numeric"
                                         value={item.quantity}
                                         onChange={(e) => {
-                                          const value = e.target.value.replace(/[^0-9]/g, '');
+                                          const value = e.target.value.replace(
+                                            /[^0-9]/g,
+                                            "",
+                                          );
                                           const numValue = parseInt(value) || 0;
-                                          updateItem(index, "quantity", numValue);
+                                          updateItem(
+                                            index,
+                                            "quantity",
+                                            numValue,
+                                          );
                                         }}
                                         onKeyDown={(e) =>
                                           handleKeyDown(e, index, "quantity")
@@ -2070,8 +2474,11 @@ export default function PurchaseFormPage({
                                             newUnitPrice,
                                           );
                                           // Also update the total to reflect the new subtotal
-                                          const updatedItems = [...selectedItems];
-                                          updatedItems[index].total = newSubtotal;
+                                          const updatedItems = [
+                                            ...selectedItems,
+                                          ];
+                                          updatedItems[index].total =
+                                            newSubtotal;
                                           setSelectedItems(updatedItems);
                                         }}
                                         onKeyDown={(e) =>
@@ -2089,15 +2496,30 @@ export default function PurchaseFormPage({
                                         type="number"
                                         value={Math.round(discountPercent)}
                                         onChange={(e) => {
-                                          const newDiscountPercent = parseInt(e.target.value) || 0;
-                                          const updatedItems = [...selectedItems];
-                                          const subtotal = item.quantity * item.unitPrice;
+                                          const newDiscountPercent =
+                                            parseInt(e.target.value) || 0;
+                                          const updatedItems = [
+                                            ...selectedItems,
+                                          ];
+                                          const subtotal =
+                                            item.quantity * item.unitPrice;
 
                                           // Cập nhật %CK và TỰ ĐỘNG tính lại tiền chiết khấu
-                                          (updatedItems[index] as any).discountPercent = newDiscountPercent;
-                                          (updatedItems[index] as any).discountAmount = subtotal * (newDiscountPercent / 100);
-                                          (updatedItems[index] as any).updatedFromPercent = true;
-                                          (updatedItems[index] as any).updatedFromAmount = false;
+                                          (
+                                            updatedItems[index] as any
+                                          ).discountPercent =
+                                            newDiscountPercent;
+                                          (
+                                            updatedItems[index] as any
+                                          ).discountAmount =
+                                            subtotal *
+                                            (newDiscountPercent / 100);
+                                          (
+                                            updatedItems[index] as any
+                                          ).updatedFromPercent = true;
+                                          (
+                                            updatedItems[index] as any
+                                          ).updatedFromAmount = false;
 
                                           setSelectedItems(updatedItems);
                                         }}
@@ -2129,13 +2551,22 @@ export default function PurchaseFormPage({
                                             /[^0-9]/g,
                                             "",
                                           );
-                                          const newDiscountAmount = parseFloat(value) || 0;
-                                          const updatedItems = [...selectedItems];
+                                          const newDiscountAmount =
+                                            parseFloat(value) || 0;
+                                          const updatedItems = [
+                                            ...selectedItems,
+                                          ];
 
                                           // LƯU CHÍNH XÁC discountAmount từ UI - GIỮ NGUYÊN %CK
-                                          (updatedItems[index] as any).discountAmount = newDiscountAmount;
-                                          (updatedItems[index] as any).updatedFromAmount = true;
-                                          (updatedItems[index] as any).updatedFromPercent = false;
+                                          (
+                                            updatedItems[index] as any
+                                          ).discountAmount = newDiscountAmount;
+                                          (
+                                            updatedItems[index] as any
+                                          ).updatedFromAmount = true;
+                                          (
+                                            updatedItems[index] as any
+                                          ).updatedFromPercent = false;
 
                                           setSelectedItems(updatedItems);
                                         }}
@@ -2193,109 +2624,159 @@ export default function PurchaseFormPage({
                             )}
 
                             {/* Summary Row */}
-                            {selectedItems.length > 0 && (
-                              <TableRow className="bg-blue-50 dark:bg-blue-900/20 border-t-2 border-blue-200 font-semibold">
-                                {/* No */}
-                                <TableCell className="text-center p-2">
-                                  <div className="flex items-center justify-center w-8 h-8 bg-blue-200 text-blue-800 rounded-full text-xs font-bold">
-                                    Σ
-                                  </div>
-                                </TableCell>
+                            {selectedItems.length > 0 &&
+                              (() => {
+                                // Calculate all totals using useMemo-like logic
+                                const totalQuantity = selectedItems.reduce(
+                                  (sum, item) => sum + (item.quantity || 0),
+                                  0,
+                                );
 
-                                {/* Mã sản phẩm - empty for summary */}
-                                <TableCell className="text-center p-2">
-                                  <span className="text-sm text-blue-600">-</span>
-                                </TableCell>
+                                const totalSubtotal = selectedItems.reduce(
+                                  (sum, item) => {
+                                    const subtotal =
+                                      (item.quantity || 0) *
+                                      (item.unitPrice || 0);
+                                    return sum + subtotal;
+                                  },
+                                  0,
+                                );
 
-                                {/* Tên sản phẩm - Placeholder for "TỔNG CỘNG" */}
-                                <TableCell className="p-2 font-bold text-blue-800">
-                                  TỔNG CỘNG
-                                </TableCell>
+                                const totalDiscount = selectedItems.reduce(
+                                  (sum, item) => {
+                                    const discountPercent = parseFloat(
+                                      (item as any).discountPercent || 0,
+                                    );
+                                    const discountAmount = parseFloat(
+                                      (item as any).discountAmount || 0,
+                                    );
+                                    const subtotal =
+                                      (item.quantity || 0) *
+                                      (item.unitPrice || 0);
 
-                                {/* Đơn vị tính */}
-                                <TableCell className="text-center p-2">
-                                  <span className="text-sm text-blue-600">-</span>
-                                </TableCell>
+                                    let finalDiscountAmount = discountAmount;
+                                    if (
+                                      discountAmount === 0 &&
+                                      discountPercent > 0
+                                    ) {
+                                      finalDiscountAmount =
+                                        subtotal * (discountPercent / 100);
+                                    }
 
-                                {/* Tổng số lượng */}
-                                <TableCell className="p-2">
-                                  <div className="w-20 text-center font-bold text-blue-800 bg-blue-100 border border-blue-300 rounded px-2 py-1">
-                                    {selectedItems.reduce((sum, item) => sum + item.quantity, 0)}
-                                  </div>
-                                </TableCell>
+                                    return sum + finalDiscountAmount;
+                                  },
+                                  0,
+                                );
 
-                                {/* Đơn giá - không hiển thị */}
-                                <TableCell className="p-2">
-                                  <span className="text-sm text-blue-600">-</span>
-                                </TableCell>
+                                const grandTotal = selectedItems.reduce(
+                                  (sum, item) => {
+                                    const subtotal =
+                                      (item.quantity || 0) *
+                                      (item.unitPrice || 0);
+                                    const discountPercent = parseFloat(
+                                      (item as any).discountPercent || 0,
+                                    );
+                                    const discountAmount = parseFloat(
+                                      (item as any).discountAmount || 0,
+                                    );
 
-                                {/* Tổng thành tiền (Subtotal before discount) */}
-                                <TableCell className="p-2">
-                                  <div className="w-24 text-right font-bold text-blue-800 bg-blue-100 border border-blue-300 rounded px-2 py-1">
-                                    {selectedItems.reduce((sum, item) => {
-                                      const subtotal = item.quantity * item.unitPrice;
-                                      return sum + subtotal;
-                                    }, 0).toLocaleString("ko-KR")}
-                                  </div>
-                                </TableCell>
+                                    let finalDiscountAmount = discountAmount;
+                                    if (
+                                      discountAmount === 0 &&
+                                      discountPercent > 0
+                                    ) {
+                                      finalDiscountAmount =
+                                        subtotal * (discountPercent / 100);
+                                    }
 
-                                {/* % Chiết khấu - không hiển thị */}
-                                <TableCell className="p-2">
-                                  <span className="text-sm text-blue-600">-</span>
-                                </TableCell>
+                                    const finalTotal =
+                                      subtotal - finalDiscountAmount;
+                                    return sum + finalTotal;
+                                  },
+                                  0,
+                                );
 
-                                {/* Total Discount */}
-                                <TableCell className="p-2">
-                                  <div className="w-24 text-right font-bold text-red-800 bg-red-100 border border-red-300 rounded px-2 py-1">
-                                    {selectedItems.reduce((sum, item) => {
-                                      // Lấy giá trị chiết khấu đã được tính toán từ item
-                                      const discountPercent = parseFloat((item as any).discountPercent || 0);
-                                      const discountAmount = parseFloat((item as any).discountAmount || 0);
-                                      const subtotal = item.quantity * item.unitPrice;
+                                return (
+                                  <TableRow className="bg-blue-50 dark:bg-blue-900/20 border-t-2 border-blue-200 font-semibold">
+                                    {/* No */}
+                                    <TableCell className="text-center p-2">
+                                      <div className="flex items-center justify-center w-8 h-8 bg-blue-200 text-blue-800 rounded-full text-xs font-bold">
+                                        Σ
+                                      </div>
+                                    </TableCell>
 
-                                      // Nếu có discountAmount được set rõ ràng, dùng nó
-                                      // Nếu không, tính từ discountPercent
-                                      let finalDiscountAmount = discountAmount;
-                                      if (discountAmount === 0 && discountPercent > 0) {
-                                        finalDiscountAmount = subtotal * (discountPercent / 100);
-                                      }
+                                    {/* Mã sản phẩm - empty for summary */}
+                                    <TableCell className="text-center p-2">
+                                      <span className="text-sm text-blue-600">
+                                        -
+                                      </span>
+                                    </TableCell>
 
-                                      return sum + finalDiscountAmount;
-                                    }, 0).toLocaleString("ko-KR")}
-                                  </div>
-                                </TableCell>
+                                    {/* Tên sản phẩm - Placeholder for "TỔNG CỘNG" */}
+                                    <TableCell className="p-2 font-bold text-blue-800">
+                                      TỔNG CỘNG
+                                    </TableCell>
 
-                                {/* Tổng tiền cuối cùng (after discount) */}
-                                <TableCell className="p-2">
-                                  <div className="w-28 text-right font-bold text-green-800 bg-green-100 border border-green-300 rounded px-2 py-1">
-                                    {selectedItems.reduce((sum, item) => {
-                                      const subtotal = item.quantity * item.unitPrice;
+                                    {/* Đơn vị tính */}
+                                    <TableCell className="text-center p-2">
+                                      <span className="text-sm text-blue-600">
+                                        -
+                                      </span>
+                                    </TableCell>
 
-                                      // Lấy giá trị chiết khấu đã được tính toán từ item
-                                      const discountPercent = parseFloat((item as any).discountPercent || 0);
-                                      const discountAmount = parseFloat((item as any).discountAmount || 0);
+                                    {/* Tổng số lượng */}
+                                    <TableCell className="p-2">
+                                      <div className="w-20 text-center font-bold text-blue-800 bg-blue-100 border border-blue-300 rounded px-2 py-1">
+                                        {totalQuantity}
+                                      </div>
+                                    </TableCell>
 
-                                      // Nếu có discountAmount được set rõ ràng, dùng nó
-                                      // Nếu không, tính từ discountPercent
-                                      let finalDiscountAmount = discountAmount;
-                                      if (discountAmount === 0 && discountPercent > 0) {
-                                        finalDiscountAmount = subtotal * (discountPercent / 100);
-                                      }
+                                    {/* Đơn giá - không hiển thị */}
+                                    <TableCell className="p-2">
+                                      <span className="text-sm text-blue-600">
+                                        -
+                                      </span>
+                                    </TableCell>
 
-                                      const finalTotal = subtotal - finalDiscountAmount;
-                                      return sum + finalTotal;
-                                    }, 0).toLocaleString("ko-KR")}
-                                  </div>
-                                </TableCell>
+                                    {/* Tổng thành tiền (Subtotal before discount) */}
+                                    <TableCell className="p-2">
+                                      <div className="w-24 text-right font-bold text-blue-800 bg-blue-100 border border-blue-300 rounded px-2 py-1">
+                                        {totalSubtotal.toLocaleString("ko-KR")}
+                                      </div>
+                                    </TableCell>
 
-                                {/* Actions - empty for summary row */}
-                                {!viewOnly && (
-                                  <TableCell className="text-center p-2">
-                                    <span className="text-sm text-blue-600">-</span>
-                                  </TableCell>
-                                )}
-                              </TableRow>
-                            )}
+                                    {/* % Chiết khấu - không hiển thị */}
+                                    <TableCell className="p-2">
+                                      <span className="text-sm text-blue-600">
+                                        -
+                                      </span>
+                                    </TableCell>
+
+                                    {/* Total Discount */}
+                                    <TableCell className="p-2">
+                                      <div className="w-24 text-right font-bold text-red-800 bg-red-100 border border-red-300 rounded px-2 py-1">
+                                        {totalDiscount.toLocaleString("ko-KR")}
+                                      </div>
+                                    </TableCell>
+
+                                    {/* Tổng tiền cuối cùng (after discount) */}
+                                    <TableCell className="p-2">
+                                      <div className="w-28 text-right font-bold text-green-800 bg-green-100 border border-green-300 rounded px-2 py-1">
+                                        {grandTotal.toLocaleString("ko-KR")}
+                                      </div>
+                                    </TableCell>
+
+                                    {/* Actions - empty for summary row */}
+                                    {!viewOnly && (
+                                      <TableCell className="text-center p-2">
+                                        <span className="text-sm text-blue-600">
+                                          -
+                                        </span>
+                                      </TableCell>
+                                    )}
+                                  </TableRow>
+                                );
+                              })()}
                           </TableBody>
                         </Table>
                       </div>
@@ -2318,7 +2799,7 @@ export default function PurchaseFormPage({
                   <Button
                     type="submit"
                     disabled={isSubmitting || !hasValidData()}
-                    className={`${isSubmitting ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    className={`${isSubmitting ? "opacity-50 cursor-not-allowed" : ""}`}
                     data-testid="button-submit"
                   >
                     {isSubmitting ? (
@@ -2329,9 +2810,7 @@ export default function PurchaseFormPage({
                     ) : (
                       <>
                         <Save className="h-4 w-4 mr-2" />
-                        {isEditMode
-                          ? "Cập nhật phiếu nhập"
-                          : "Lưu phiếu nhập"}
+                        {isEditMode ? "Cập nhật phiếu nhập" : "Lưu phiếu nhập"}
                       </>
                     )}
                   </Button>

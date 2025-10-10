@@ -365,6 +365,18 @@ export function usePOS() {
     }
   };
 
+  // Expose shopping cart ref for cross-component communication
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      (window as any).posRemoveOrder = removeOrder;
+    }
+    return () => {
+      if (typeof window !== 'undefined') {
+        delete (window as any).posRemoveOrder;
+      }
+    };
+  }, [removeOrder]);
+
   return {
     cart,
     orders,
