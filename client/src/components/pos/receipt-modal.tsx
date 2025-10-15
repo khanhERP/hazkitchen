@@ -130,7 +130,7 @@ export function ReceiptModal({
           return;
         }
 
-        const allConfigs = await printerResponse.json();
+        let allConfigs = await printerResponse.json();
         console.log(`📋 Total printer configs found: ${allConfigs.length}`);
 
         // Get table floor if receipt has tableId
@@ -150,42 +150,42 @@ export function ReceiptModal({
           }
         }
 
-        let activePrinterConfigs = [];
+        let activePrinterConfigs = [...allConfigs];
 
         // For kitchen receipts, get kitchen printers matching the floor + one employee printer
-        let employeePrinter = allConfigs.filter(
-          (config) => config.isActive && config.isEmployee,
-        );
+        // let employeePrinter = allConfigs.filter(
+        //   (config) => config.isActive && config.isEmployee,
+        // );
 
-        let kitchenPrinters = allConfigs.filter(
-          (config) => config.isActive && config.isKitchen,
-        );
+        // let kitchenPrinters = allConfigs.filter(
+        //   (config) => config.isActive && config.isKitchen,
+        // );
 
-        console.log(
-          `🍳 Kitchen receipt mode - Found ${kitchenPrinters.length} active kitchen printers`,
-        );
+        // console.log(
+        //   `🍳 Kitchen receipt mode - Found ${kitchenPrinters.length} active kitchen printers`,
+        // );
 
         // Filter kitchen printers by floor if we have table floor info
-        if (tableFloor) {
-          kitchenPrinters = kitchenPrinters.filter(
-            (config) => config.floor === tableFloor,
-          );
-          console.log(
-            `🖨️ Filtered to ${kitchenPrinters.length} kitchen printers for floor ${tableFloor}`,
-          );
-        }
+        // if (tableFloor) {
+        //   kitchenPrinters = kitchenPrinters.filter(
+        //     (config) => config.floor === tableFloor,
+        //   );
+        //   console.log(
+        //     `🖨️ Filtered to ${kitchenPrinters.length} kitchen printers for floor ${tableFloor}`,
+        //   );
+        // }
 
         // Combine kitchen printers with one employee printer
-        activePrinterConfigs = [...kitchenPrinters, ...employeePrinter];
+        // activePrinterConfigs = [...kitchenPrinters, ...employeePrinter];
 
-        if (isTitle) {
-          activePrinterConfigs = activePrinterConfigs.filter(
-            (config) => config.isEmployee,
-          );
-        }
+        // if (isTitle) {
+        //   activePrinterConfigs = activePrinterConfigs.filter(
+        //     (config) => config.isEmployee,
+        //   );
+        // }
 
         if (activePrinterConfigs.length > 0) {
-          let lstPrinters = activePrinterConfigs.map((printer) => {
+          let lstPrinters = activePrinterConfigs.filter(x => x.isActive).map((printer) => {
             return {
               name: printer.name,
               type: printer.printerType,
