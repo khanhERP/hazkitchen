@@ -1149,6 +1149,8 @@ export function OrderManagement() {
         return;
       }
 
+      console.log("📦 Order items fetched:", orderItemsData);
+
       // Create cart items format for payment modal
       const cartItems = orderItemsData.map((item: any) => {
         const unitPrice = Number(item.unitPrice || 0);
@@ -1168,7 +1170,7 @@ export function OrderManagement() {
           afterTaxPrice: product?.afterTaxPrice || null,
           unitPrice: unitPrice,
           total: unitPrice * quantity,
-          discount: item.discount,
+          discount: item.discount || "0",
         };
       });
 
@@ -1196,6 +1198,7 @@ export function OrderManagement() {
           ...item,
           unitPrice: item.unitPrice,
           productName: item.productName,
+          discount: item.discount || "0",
         })),
         // Additional metadata
         orderedAt: order.orderedAt,
@@ -1249,20 +1252,28 @@ export function OrderManagement() {
         invoiceNumber: order.invoiceNumber,
         symbol: order.symbol,
         templateNumber: order.templateNumber,
+        isPreview: false,
+        isInvoice: false,
       };
 
       console.log("💰 Payment data prepared:", {
         orderId: order.id,
+        orderNumber: order.orderNumber,
         total: order.total,
+        exactTotal: orderForPayment.exactTotal,
         itemsCount: cartItems.length,
-        orderForPayment: orderForPayment,
-        receiptData: receiptData,
+        hasProducts: !!products,
+        productsCount: products?.length || 0,
       });
 
       // Store data globally for modals
       if (typeof window !== "undefined") {
         (window as any).previewReceipt = receiptData;
         (window as any).orderForPayment = orderForPayment;
+        console.log("✅ Data stored globally:", {
+          previewReceipt: receiptData,
+          orderForPayment: orderForPayment,
+        });
       }
 
       // Open payment modal with correct props
@@ -1270,6 +1281,12 @@ export function OrderManagement() {
       setOrderForPayment(orderForPayment);
       setPreviewReceipt(receiptData);
       setShowPaymentMethodModal(true);
+
+      console.log("✅ Opening PaymentMethodModal with data:", {
+        orderForPayment,
+        receiptData,
+        products: products?.length || 0,
+      });
     } catch (error) {
       console.error("❌ Error preparing payment data:", error);
       toast({
@@ -1300,7 +1317,6 @@ export function OrderManagement() {
 
         // Close all modals immediately and prevent any reopening
         setShowPaymentMethodModal(false);
-        setOrderForPayment(null);
         setOrderDetailsOpen(false);
         setSelectedOrder(null);
         setShowReceiptPreview(false);
@@ -1365,11 +1381,11 @@ export function OrderManagement() {
 
       // Close all modals immediately - no receipt display for direct payments
       setShowPaymentMethodModal(false);
-      setOrderForPayment(null);
+      // setOrderForPayment(null);
       setOrderDetailsOpen(false);
       setSelectedOrder(null);
       setShowReceiptPreview(false);
-      setPreviewReceipt(null);
+      // setPreviewReceipt(null);
 
       toast({
         title: "Thành công",
@@ -3533,6 +3549,7 @@ export function OrderManagement() {
 
             // Close preview and show payment method modal
             setShowReceiptPreview(false);
+            
             setShowPaymentMethodModal(true);
           }}
           isPreview={true}
@@ -3567,128 +3584,30 @@ export function OrderManagement() {
       <PaymentMethodModal
         isOpen={showPaymentMethodModal}
         onClose={() => {
-          console.log("🔴 Payment Method Modal closed");
           setShowPaymentMethodModal(false);
           setOrderForPayment(null);
           setPreviewReceipt(null);
         }}
-        onSelectMethod={(method, data) => {
-          console.log(
-            "🎯 Order Management payment method selected:",
-            method,
-            data,
-          );
-          console.log("🔍 Current orderForPayment state:", {
-            orderForPayment: !!orderForPayment,
-            orderForPaymentId: orderForPayment?.id,
-            calculatedTotal: orderForPayment?.calculatedTotal,
-            itemsCount: orderForPayment?.processedItems?.length || 0,
-          });
-
+        onSelectMethod={handlePaymentMethodSelect}
+        total={orderForPayment?.exactTotal || orderForPayment?.total || 0}
+        onShowEInvoice={() => {
           setShowPaymentMethodModal(false);
-
-          // Handle different payment completion scenarios
-          if (method === "paymentCompleted" && data?.success) {
-            console.log("✅ Payment completed successfully from payment modal");
-
-            // Close all modals
-            setOrderForPayment(null);
-            setOrderDetailsOpen(null);
-            setSelectedOrder(null);
-            setPreviewReceipt(null);
-
-            // Only show receipt if explicitly provided and not already shown
-            if (data.receipt && data.shouldShowReceipt !== false) {
-              console.log("📄 Showing receipt from payment completion");
-              setSelectedReceipt(data.receipt);
-              setShowReceiptModal(true);
-            }
-
-            // Force UI refresh
-            queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] });
-            queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/tables"] });
-
-            toast({
-              title: "Thành công",
-              description: "Đơn hàng đã được thanh toán thành công",
-            });
-
-            return;
-          }
-
-          if (method === "paymentError" && data?.error) {
-            console.error("❌ Payment failed from payment modal:", data.error);
-
-            toast({
-              title: "Lỗi thanh toán",
-              description: data.error || "Không thể hoàn tất thanh toán",
-              variant: "destructive",
-            });
-
-            return;
-          }
-
-          // For E-Invoice flows that already handled receipt display, don't show again
-          if (method === "einvoice" && data?.receiptAlreadyShown) {
-            console.log(
-              "📄 E-Invoice already handled receipt, skipping duplicate",
-            );
-            setOrderForPayment(null);
-            setPreviewReceipt(null);
-            return;
-          }
-
-          // If payment method returns receipt data (like from "phát hành sau"), handle it
-          if (data && data.receipt && !data.receiptAlreadyShown) {
-            console.log(
-              "📄 Order Management: Payment method returned receipt data, showing receipt",
-            );
-            setSelectedReceipt(data.receipt);
-            setShowReceiptModal(true);
-            setOrderForPayment(null);
-            setPreviewReceipt(null);
-          } else {
-            // For other payment methods, proceed with payment completion
-            console.log("💳 Processing payment for order:", {
-              orderId: orderForPayment?.id,
-              paymentMethod: method.nameKey || method,
-              calculatedTotal: orderForPayment?.calculatedTotal,
-            });
-
-            if (orderForPayment?.id && orderForPayment?.calculatedTotal > 0) {
-              completePaymentMutation.mutate({
-                orderId: orderForPayment.id,
-                paymentMethod: method.nameKey || method,
-              });
-            } else {
-              console.error("❌ Invalid order data for payment:", {
-                orderId: orderForPayment?.id,
-                calculatedTotal: orderForPayment?.calculatedTotal,
-              });
-              toast({
-                title: "Lỗi",
-                description: "Dữ liệu đơn hàng không hợp lệ để thanh toán",
-                variant: "destructive",
-              });
-            }
-          }
+          setShowEInvoiceModal(true);
         }}
-        total={orderForPayment?.total ? Math.round(orderForPayment.total) : 0}
-        onShowEInvoice={() => setShowEInvoiceModal(true)}
-        cartItems={
-          orderForPayment?.processedItems?.map((item: any) => ({
-            id: item.productId,
-            name: item.productName,
-            price: item.price,
-            quantity: item.quantity,
-            sku: item.sku,
-            taxRate: item.taxRate,
-            afterTaxPrice: item.afterTaxPrice,
-          })) || []
-        }
+        cartItems={orderForPayment?.items || orderForPayment?.orderItems || []}
         orderForPayment={orderForPayment}
         products={products}
+        getProductName={(productId: number) => {
+          const product = Array.isArray(products)
+            ? products.find((p: any) => p.id === productId)
+            : null;
+          return product?.name || `Product #${productId}`;
+        }}
         receipt={previewReceipt}
+        onReceiptReady={(receiptData) => {
+          console.log("📄 Order Management: Receipt ready from payment modal:", receiptData);
+          setPreviewReceipt(receiptData);
+        }}
       />
 
       {/* E-Invoice Modal */}
@@ -3809,6 +3728,7 @@ export function OrderManagement() {
                 discount: item.discount || "0",
               })) || []
             }
+            autoClose={true}
           />
         ))}
     </div>

@@ -1766,11 +1766,16 @@ export function EInvoiceModal({
     setIsProcessingPublish(false); // Reset specific publish button state
     setIsProcessingPublishLater(false); // Reset specific publish later button state
     setLastActionTime(0); // Reset debounce timer
+    window.dispatchEvent(
+      new CustomEvent("printCompleted", {
+        detail: { closeAllModals: true, refreshData: true },
+      }),
+    );
     onClose();
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
+    <Dialog open={isOpen} onOpenChange={handleCancel}>
       <DialogContent className="max-w-2xl max-h-screen overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-blue-700 bg-blue-100 p-3 rounded-t-lg">

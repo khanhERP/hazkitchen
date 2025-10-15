@@ -22,7 +22,7 @@ interface ReceiptModalProps {
   cartItems?: any[];
   total?: number;
   isPreview?: boolean;
-  onConfirm?: () => void;
+  onConfirm?: (orderData?: any) => void;
   isTitle?: boolean;
 }
 
@@ -1017,24 +1017,42 @@ export function ReceiptModal({
     console.log(
       "📄 Receipt Modal: Confirming receipt and proceeding to payment method selection",
     );
-    console.log("🎯 Receipt data being passed:", {
-      receipt,
-      cartItems,
-      total,
-      subtotal: receipt?.subtotal,
-      tax: receipt?.tax,
-      exactTotal: receipt?.exactTotal,
-      exactSubtotal: receipt?.exactSubtotal,
-      exactTax: receipt?.exactTax,
-    });
+    
+    // Prepare complete order data with exact values
+    const orderDataForPayment = {
+      ...receipt,
+      items: receipt?.items || cartItems.map((item: any) => ({
+        id: item.id,
+        productId: item.productId || item.id,
+        productName: item.productName || item.name,
+        sku: item.sku || `FOOD${String(item.productId || item.id).padStart(5, "0")}`,
+        quantity: item.quantity,
+        price: parseFloat(item.price || item.unitPrice || "0"),
+        unitPrice: parseFloat(item.unitPrice || item.price || "0"),
+        discount: parseFloat(item.discount || "0"),
+        taxRate: parseFloat(item.taxRate || "0"),
+        total: (parseFloat(item.price || item.unitPrice || "0") * item.quantity) - parseFloat(item.discount || "0")
+      })),
+      exactSubtotal: receipt?.exactSubtotal || parseFloat(receipt?.subtotal || "0"),
+      exactTax: receipt?.exactTax || parseFloat(receipt?.tax || "0"),
+      exactDiscount: receipt?.exactDiscount || parseFloat(receipt?.discount || "0"),
+      exactTotal: receipt?.exactTotal || parseFloat(receipt?.total || "0") || total,
+    };
+
+    console.log("🎯 Complete order data being passed:", orderDataForPayment);
+
+    // Store in window for parent component to access
+    if (typeof window !== "undefined") {
+      (window as any).orderForPayment = orderDataForPayment;
+    }
 
     // Close preview modal first
     onClose();
 
-    // Call onConfirm if provided (this will open payment method modal from parent)
+    // Call onConfirm with order data if provided
     if (onConfirm) {
-      console.log("📄 Receipt Modal: Calling onConfirm callback");
-      onConfirm();
+      console.log("📄 Receipt Modal: Calling onConfirm callback with order data");
+      onConfirm(orderDataForPayment);
     }
   };
 
@@ -1703,42 +1721,7 @@ export function ReceiptModal({
             0
           }
           cartItems={receipt?.items || cartItems}
-          orderForPayment={
-            typeof window !== "undefined" && (window as any).orderForPayment
-              ? (window as any).orderForPayment
-              : {
-                  id: receipt?.id,
-                  orderNumber:
-                    receipt?.orderNumber ||
-                    receipt?.transactionId ||
-                    `ORD-${Date.now()}`,
-                  tableId: receipt?.tableId || null,
-                  customerName: receipt?.customerName || "Khách hàng lẻ",
-                  status: "pending",
-                  paymentStatus: "pending",
-                  items: receipt?.items || cartItems || [],
-                  subtotal:
-                    receipt?.exactSubtotal ||
-                    parseFloat(receipt?.subtotal || "0"),
-                  tax: receipt?.exactTax || parseFloat(receipt?.tax || "0"),
-                  discount:
-                    receipt?.exactDiscount ||
-                    parseFloat(receipt?.discount || "0"),
-                  total:
-                    receipt?.exactTotal || parseFloat(receipt?.total || "0"),
-                  exactSubtotal:
-                    receipt?.exactSubtotal ||
-                    parseFloat(receipt?.subtotal || "0"),
-                  exactTax:
-                    receipt?.exactTax || parseFloat(receipt?.tax || "0"),
-                  exactDiscount:
-                    receipt?.exactDiscount ||
-                    parseFloat(receipt?.discount || "0"),
-                  exactTotal:
-                    receipt?.exactTotal || parseFloat(receipt?.total || "0"),
-                  orderedAt: new Date().toISOString(),
-                }
-          }
+          orderForPayment={receipt}
           receipt={receipt}
           onReceiptReady={(receiptData) => {
             console.log("📋 Receipt ready from payment method:", receiptData);
