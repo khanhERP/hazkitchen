@@ -1028,9 +1028,9 @@ export function PaymentMethodModal({
               try {
                 // Check if there are any other unpaid orders on this table
                 const ordersResponse = await fetch("https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders", {
-                  cache: "no-store",
+                  method: "GET",
                   headers: {
-                    "Cache-Control": "no-cache, no-store, must-revalidate",
+                    "Content-Type": "application/json",
                   },
                 });
 
@@ -1041,9 +1041,6 @@ export function PaymentMethodModal({
                 }
 
                 const allOrders = await ordersResponse.json();
-                orderInfo.id = allOrders.id;
-                receipt.id = allOrders.id;
-                orderForPayment.id = allOrders.id;
 
                 const otherActiveOrders = Array.isArray(allOrders)
                   ? allOrders.filter(
@@ -1374,17 +1371,14 @@ export function PaymentMethodModal({
             try {
               // Check if there are any other unpaid orders on this table
               const ordersResponse = await fetch("https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders", {
-                cache: "no-store",
+                method: "GET",
                 headers: {
-                  "Cache-Control": "no-cache, no-store, must-revalidate",
+                  "Content-Type": "application/json",
                 },
               });
 
               if (ordersResponse.ok) {
                 const allOrders = await ordersResponse.json();
-                orderInfo.id = allOrders.id;
-                receipt.id = allOrders.id;
-                orderForPayment.id = allOrders.id;
 
                 const otherActiveOrders = Array.isArray(allOrders)
                   ? allOrders.filter(
@@ -1658,9 +1652,9 @@ export function PaymentMethodModal({
           try {
             // Check if there are any other unpaid orders on this table
             const ordersResponse = await fetch("https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders", {
-              cache: "no-store",
+              method: "GET",
               headers: {
-                "Cache-Control": "no-cache, no-store, must-revalidate",
+                "Content-Type": "application/json",
               },
             });
 
@@ -1669,9 +1663,6 @@ export function PaymentMethodModal({
             }
 
             const allOrders = await ordersResponse.json();
-            orderInfo.id = allOrders.id;
-            receipt.id = allOrders.id;
-            orderForPayment.id = allOrders.id;
 
             const otherActiveOrders = Array.isArray(allOrders)
               ? allOrders.filter(
@@ -2022,9 +2013,9 @@ export function PaymentMethodModal({
             try {
               // Check if there are any other unpaid orders on this table
               const ordersResponse = await fetch("https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders", {
-                cache: "no-store",
+                method: "GET",
                 headers: {
-                  "Cache-Control": "no-cache, no-store, must-revalidate",
+                  "Content-Type": "application/json",
                 },
               });
 
@@ -2035,9 +2026,6 @@ export function PaymentMethodModal({
               }
 
               const allOrders = await ordersResponse.json();
-              orderInfo.id = allOrders.id;
-              receipt.id = allOrders.id;
-              orderForPayment.id = allOrders.id;
 
               const otherActiveOrders = Array.isArray(allOrders)
                 ? allOrders.filter(
