@@ -1933,7 +1933,7 @@ export function ShoppingCart({
                             );
                             const tamTinh = adjustedPrice * quantity;
                             // tax = subtotal * (taxRate / 100) (làm tròn)
-                            return Math.round(tamtinh * taxRate);
+                            return Math.round(tamTinh * taxRate);
                           }
                         })().toLocaleString("vi-VN")}{" "}
                         ₫
