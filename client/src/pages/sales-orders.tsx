@@ -1210,7 +1210,6 @@ export default function SalesOrders() {
           matchingOrder.displayNumber,
         );
         setSelectedInvoice(matchingOrder);
-        setShowInvoiceDetails(true);
 
         // Clear URL parameter after auto-expand
         setTimeout(() => {
