@@ -249,6 +249,21 @@ export default function PurchaseFormPage({
     select: (data: any) => data || [],
   });
 
+  // Fetch payment methods
+  const { data: paymentMethods = [] } = useQuery({
+    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/payment-methods"],
+    select: (data: any[]) =>
+      (data || [])
+        .filter((method: any) => method.enabled === true) // Only show enabled payment methods
+        .map((method: any) => ({
+          id: method.id,
+          name: method.name,
+          nameKey: method.nameKey,
+          icon: method.icon || "",
+        })),
+  });
+
+
   // Fetch products for selection
   const { data: allProducts = [] } = useQuery({
     queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products"],
@@ -1160,7 +1175,7 @@ export default function PurchaseFormPage({
         tax: "0.00",
         total: subtotalAmount.toFixed(2),
         isPaid: formValues.isPaid || false,
-        paymentMethod: formValues.isPaid && editPaymentMethods.length > 0 
+        paymentMethod: formValues.isPaid && editPaymentMethods.length > 0
           ? JSON.stringify({
               method: editPaymentMethods[0].method,
               amount: parseFloat(editPaymentMethods[0].amount || '0')
@@ -1233,7 +1248,7 @@ export default function PurchaseFormPage({
           }
 
           console.log(
-            `📤 Processing file: ${fileData.originalFileName}, size: ${fileData.file.size} bytes`,
+            `UPLOAD: Processing file: ${fileData.originalFileName}, size: ${fileData.file.size} bytes`,
           );
 
           // Read file content as base64 - this preserves exact file content
@@ -1823,12 +1838,12 @@ export default function PurchaseFormPage({
                                         const discountAmount = parseFloat((item as any).discountAmount || 0);
                                         return sum + (subtotal - discountAmount);
                                       }, 0);
-                                      
+
                                       setEditPaymentMethods([{
                                         method: 'cash',
                                         amount: Math.round(itemsTotal).toString()
                                       }]);
-                                      
+
                                       // Cập nhật form values
                                       form.setValue("paymentMethod", JSON.stringify({
                                         method: 'cash',
@@ -1910,10 +1925,11 @@ export default function PurchaseFormPage({
                                             <SelectValue />
                                           </SelectTrigger>
                                           <SelectContent>
-                                            <SelectItem value="cash">Tiền mặt</SelectItem>
-                                            <SelectItem value="bank_transfer">Chuyển khoản</SelectItem>
-                                            <SelectItem value="credit_card">Thẻ tín dụng</SelectItem>
-                                            <SelectItem value="other">Khác</SelectItem>
+                                            {paymentMethods.map((method) => (
+                                              <SelectItem key={method.id} value={method.nameKey}>
+                                                {method.icon} {method.name}
+                                              </SelectItem>
+                                            ))}
                                           </SelectContent>
                                         </Select>
                                       ) : (

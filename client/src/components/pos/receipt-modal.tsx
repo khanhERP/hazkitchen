@@ -252,8 +252,8 @@ export function ReceiptModal({
     }
     let content = printContent?.innerHTML ?? "";
     if (content) {
-      content = formatForMiniPrinter(receipt, storeSettings);
-      // content = generatePrintHTML(printContent, false);
+      // content = formatForMiniPrinter(receipt, storeSettings);
+      content = generatePrintHTML(printContent, false);
     }
 
     console.log("🖨{�� ============ BẮT ĐẦU IN HÓA ĐƠN ============");
@@ -1017,7 +1017,7 @@ export function ReceiptModal({
     console.log(
       "📄 Receipt Modal: Confirming receipt and proceeding to payment method selection",
     );
-    
+
     // Prepare complete order data with exact values
     const orderDataForPayment = {
       ...receipt,
@@ -1137,7 +1137,7 @@ export function ReceiptModal({
             <div className="border-t border-b border-gray-300 py-3 mb-3">
               <div className="flex justify-between text-sm">
                 <span>{t("pos.transactionNumber")}</span>
-                <span>{receipt.transactionId}</span>
+                <span>{receipt.orderNumber || receipt.transactionId}</span>
               </div>
               <div className="flex justify-between text-sm">
                 <span>{t("pos.date")}</span>
@@ -1147,10 +1147,20 @@ export function ReceiptModal({
                 <span>{t("pos.cashier")}</span>
                 <span>{receipt.cashierName}</span>
               </div>
-              {receipt?.customerName && (
+              <div className="flex justify-between text-sm">
+                <span>{t("einvoice.customer")}:</span>
+                <span>{receipt.customerName || "Khách hàng lẻ"}</span>
+              </div>
+              {(receipt.customerPhone ||
+                receipt.phone ||
+                receipt.customer_phone) && (
                 <div className="flex justify-between text-sm">
-                  <span>{t("einvoice.customer")}:</span>
-                  <span>{receipt.customerName}</span>
+                  <span>Điện thoại:</span>
+                  <span>
+                    {receipt.customerPhone ||
+                      receipt.phone ||
+                      receipt.customer_phone}
+                  </span>
                 </div>
               )}
               {receipt?.customerTaxCode && (
@@ -1258,47 +1268,83 @@ export function ReceiptModal({
               </div>
               {(() => {
                 // Group items by tax rate and calculate tax for each group
+                const priceIncludeTax =
+                  receipt.priceIncludeTax ??
+                  storeSettings?.priceIncludesTax ??
+                  false;
+
                 const taxGroups = (receipt.items || []).reduce(
                   (groups, item) => {
                     const taxRate = parseFloat(
                       item.taxRate || item.product?.taxRate || "0",
                     );
-                    const unitPrice = parseFloat(
-                      item.unitPrice || item.price || "0",
-                    );
-                    const quantity = item.quantity || 1;
-                    const itemDiscount = parseFloat(item.discount || "0");
-                    const itemSubtotal = unitPrice * quantity;
-                    // Calculate tax for this item based on its tax rate
-                    const itemTax =
-                      (itemSubtotal - itemDiscount) *
-                      (taxRate / (100 + taxRate));
 
-                    if (!groups[taxRate]) {
-                      groups[taxRate] = 0;
+                    // Nếu có tax từ database, dùng luôn
+                    const itemTaxFromDB = parseFloat(item.tax || "0");
+
+                    if (taxRate > 0) {
+                      if (!groups[taxRate]) {
+                        groups[taxRate] = 0;
+                      }
+
+                      // Ưu tiên dùng tax đã tính từ database
+                      if (itemTaxFromDB > 0) {
+                        groups[taxRate] += itemTaxFromDB;
+                      } else {
+                        // Nếu không có, tính lại
+                        const unitPrice = parseFloat(
+                          item.unitPrice || item.price || "0",
+                        );
+                        const quantity = item.quantity || 1;
+                        const itemDiscount = parseFloat(item.discount || "0");
+                        const itemSubtotal = unitPrice * quantity;
+
+                        let itemTax = 0;
+                        if (priceIncludeTax) {
+                          // Giá đã bao gồm thuế: thuế = (giá - giảm giá) * (thuế suất / (100 + thuế suất))
+                          const priceAfterDiscount =
+                            itemSubtotal - itemDiscount;
+                          itemTax =
+                            priceAfterDiscount * (taxRate / (100 + taxRate));
+                        } else {
+                          // Giá chưa bao gồm thuế: thuế = (giá - giảm giá) * (thuế suất / 100)
+                          const priceAfterDiscount =
+                            itemSubtotal - itemDiscount;
+                          itemTax = priceAfterDiscount * (taxRate / 100);
+                        }
+                        groups[taxRate] += itemTax;
+                      }
                     }
-                    groups[taxRate] += itemTax;
 
                     return groups;
                   },
                   {} as Record<number, number>,
                 );
 
-                // Sort tax rates in descending order
+                // Sort tax rates in descending order and filter out 0% tax
                 const sortedTaxRates = Object.keys(taxGroups)
                   .map(Number)
+                  .filter((taxRate) => taxRate > 0 && taxGroups[taxRate] > 0) // Chỉ hiển thị khi có thuế > 0
                   .sort((a, b) => b - a);
 
-                return sortedTaxRates.map((taxRate) => (
-                  <div key={taxRate} className="flex justify-between text-sm">
-                    <span>
-                      {t("reports.tax")} ({taxRate}%):
-                    </span>
-                    <span>
-                      {Math.floor(taxGroups[taxRate]).toLocaleString("vi-VN")} ₫
-                    </span>
-                  </div>
-                ));
+                return (
+                  <>
+                    {sortedTaxRates.map((taxRate) => (
+                      <div
+                        key={taxRate}
+                        className="flex justify-between text-sm"
+                      >
+                        <span>Thuế ({taxRate}%):</span>
+                        <span>
+                          {Math.floor(taxGroups[taxRate]).toLocaleString(
+                            "vi-VN",
+                          )}{" "}
+                          ₫
+                        </span>
+                      </div>
+                    ))}
+                  </>
+                );
               })()}
               {(() => {
                 // Only show discount if there are item-level discounts or order-level discount
@@ -1595,9 +1641,10 @@ export function ReceiptModal({
                   {} as Record<number, number>,
                 );
 
-                // Sort tax rates in descending order
+                // Sort tax rates in descending order and filter out 0% tax
                 const sortedTaxRates = Object.keys(taxGroups)
                   .map(Number)
+                  .filter((taxRate) => taxRate > 0) // Chỉ hiển thị thuế suất > 0%
                   .sort((a, b) => b - a);
 
                 return sortedTaxRates.map((taxRate) => (
@@ -1721,7 +1768,42 @@ export function ReceiptModal({
             0
           }
           cartItems={receipt?.items || cartItems}
-          orderForPayment={receipt}
+          orderForPayment={
+            typeof window !== "undefined" && (window as any).orderForPayment
+              ? (window as any).orderForPayment
+              : {
+                  id: receipt?.id,
+                  orderNumber:
+                    receipt?.orderNumber ||
+                    receipt?.transactionId ||
+                    `ORD-${Date.now()}`,
+                  tableId: receipt?.tableId || null,
+                  customerName: receipt?.customerName || "Khách hàng lẻ",
+                  status: "pending",
+                  paymentStatus: "pending",
+                  items: receipt?.items || cartItems || [],
+                  subtotal:
+                    receipt?.exactSubtotal ||
+                    parseFloat(receipt?.subtotal || "0"),
+                  tax: receipt?.exactTax || parseFloat(receipt?.tax || "0"),
+                  discount:
+                    receipt?.exactDiscount ||
+                    parseFloat(receipt?.discount || "0"),
+                  total:
+                    receipt?.exactTotal || parseFloat(receipt?.total || "0"),
+                  exactSubtotal:
+                    receipt?.exactSubtotal ||
+                    parseFloat(receipt?.subtotal || "0"),
+                  exactTax:
+                    receipt?.exactTax || parseFloat(receipt?.tax || "0"),
+                  exactDiscount:
+                    receipt?.exactDiscount ||
+                    parseFloat(receipt?.discount || "0"),
+                  exactTotal:
+                    receipt?.exactTotal || parseFloat(receipt?.total || "0"),
+                  orderedAt: new Date().toISOString(),
+                }
+          }
           receipt={receipt}
           onReceiptReady={(receiptData) => {
             console.log("📋 Receipt ready from payment method:", receiptData);

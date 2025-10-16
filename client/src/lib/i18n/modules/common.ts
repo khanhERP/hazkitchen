@@ -4,10 +4,12 @@ export const commonTranslations: { [key: string]: CommonTranslations } = {
   ko: {
     loading: "로딩 중...",
     save: "저장",
+    icon: "아이콘",
     paymentMethodLabel: "결제 방법",
     completed: "완료됨",
     cancel: "취소",
     invoice: "송장",
+    saving: "저장 중...",
     zone: "구역",
     no: "번호",
     selectImageFile: "이미지 파일을 선택하거나",
@@ -656,6 +658,8 @@ export const commonTranslations: { [key: string]: CommonTranslations } = {
   en: {
     save: "Save",
     cancel: "Cancel",
+    saving: "Saving...",
+    icon: "Icon",
     paymentMethodLabel: "Payment Method",
     delete: "Delete",
     completed: "Completed",
@@ -1211,7 +1215,9 @@ export const commonTranslations: { [key: string]: CommonTranslations } = {
   vi: {
     save: "Lưu",
     cancel: "Hủy",
+    icon: "Biểu tượng",
     delete: "Xóa",
+    saving: "Đang lưu...",
     paymentMethodLabel: "Phương thức thanh toán",
     completed: "Hoàn thành",
     serving: "Đang phục vụ",

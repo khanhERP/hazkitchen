@@ -36,6 +36,21 @@ export default function PurchaseViewPage({ onLogout }: PurchaseViewPageProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
+  // Fetch categories for new product form
+  const { data: categories = [] } = useQuery({
+    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/categories"],
+    select: (data: any) => data || [],
+  });
+
+  // Fetch payment methods from API
+  const { data: paymentMethodsData } = useQuery({
+    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/payment-methods"],
+    queryFn: async () => {
+      const response = await fetch("https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/payment-methods");
+      return response.json();
+    },
+  });
+
   // Form state for editing
   const [formData, setFormData] = useState({
     supplierId: "",
@@ -59,8 +74,19 @@ export default function PurchaseViewPage({ onLogout }: PurchaseViewPageProps) {
     isEditingDiscountAmount?: boolean; // Flag to know if user is typing discount amount
   }>>({});
 
-  // State for managing payment methods in edit mode
-  const [editPaymentMethods, setEditPaymentMethods] = useState<Array<{method: string, amount: string}>>([]);
+  // State for managing payment methods
+  const [editPaymentMethods, setEditPaymentMethods] = useState<
+    Array<{ method: string; amount: string }>
+  >([]);
+
+  // Get enabled payment methods from API
+  const getPaymentMethods = () => {
+    const paymentMethods = paymentMethodsData || [];
+    // Filter to only return enabled payment methods
+    return paymentMethods.filter((method: any) => method.enabled === true);
+  };
+
+  const paymentMethods = getPaymentMethods();
 
   // Fetch purchase receipt details
   const { data: purchaseOrder, isLoading: isOrderLoading, error: orderError } = useQuery<PurchaseOrder>({
@@ -177,13 +203,13 @@ export default function PurchaseViewPage({ onLogout }: PurchaseViewPageProps) {
   useEffect(() => {
     if (purchaseOrder) {
       const paymentMethodStr = purchaseOrder.paymentMethods || purchaseOrder.paymentMethod || "";
-      
+
       // Calculate total from items
       const itemsTotal = purchaseItems.reduce((sum: number, item: any) => {
         const { total } = calculateItemValues(item.id, item);
         return sum + total;
       }, 0);
-      
+
       let initialMethod = { method: 'cash', amount: Math.round(itemsTotal).toString() };
 
       // Try to parse as JSON first
@@ -923,7 +949,7 @@ export default function PurchaseViewPage({ onLogout }: PurchaseViewPageProps) {
           method: firstMethod.method,
           amount: parseFloat(firstMethod.amount || '0')
         });
-        
+
         paymentAmountData = firstMethod.amount;
       }
 
@@ -1454,15 +1480,34 @@ export default function PurchaseViewPage({ onLogout }: PurchaseViewPageProps) {
                                             <SelectValue />
                                           </SelectTrigger>
                                           <SelectContent>
-                                            <SelectItem value="cash">Tiền mặt</SelectItem>
-                                            <SelectItem value="bank_transfer">Chuyển khoản</SelectItem>
-                                            <SelectItem value="credit_card">Thẻ tín dụng</SelectItem>
-                                            <SelectItem value="other">Khác</SelectItem>
+                                            {paymentMethods.map((method: any) => (
+                                              <SelectItem key={method.id} value={method.nameKey}>
+                                                {method.name} {method.icon}
+                                              </SelectItem>
+                                            ))}
                                           </SelectContent>
                                         </Select>
                                       ) : (
                                         <div className="h-8 px-2 py-1 bg-blue-50 border border-blue-200 rounded flex items-center">
-                                          <span className="font-medium text-blue-900 text-xs">{getMethodName(currentMethod.method)}</span>
+                                          <span className="font-medium text-blue-900 text-xs">
+                                            {(() => {
+                                              // Get the payment method key from currentMethod or purchaseOrder
+                                              const methodKey = currentMethod.method || purchaseOrder.paymentMethod;
+                                              if (!methodKey) return "-";
+                                              
+                                              // Try to parse if it's JSON
+                                              try {
+                                                const parsed = JSON.parse(methodKey);
+                                                const key = parsed.method || methodKey;
+                                                const foundMethod = paymentMethods.find((m: any) => m.nameKey === key);
+                                                return foundMethod ? `${foundMethod.icon} ${foundMethod.name}` : key;
+                                              } catch {
+                                                // Not JSON, treat as plain string
+                                                const foundMethod = paymentMethods.find((m: any) => m.nameKey === methodKey);
+                                                return foundMethod ? `${foundMethod.icon} ${foundMethod.name}` : methodKey;
+                                              }
+                                            })()}
+                                          </span>
                                         </div>
                                       )}
                                     </div>
@@ -1493,7 +1538,7 @@ export default function PurchaseViewPage({ onLogout }: PurchaseViewPageProps) {
                                           </span>
                                         </div>
 
-                                        
+
                                       </div>
                                     );
                                   })()}
@@ -1622,7 +1667,6 @@ export default function PurchaseViewPage({ onLogout }: PurchaseViewPageProps) {
                                       onKeyDown={(e) => {
                                         const suggestions = skuSuggestions[item.id] || [];
                                         const activeIndex = activeSuggestionIndex[item.id] || 0;
-                                        const currentSku = editedItems[item.id]?.sku ?? item.sku ?? '';
                                         const hasSelectedProduct = editedItems[item.id]?.productId && editedItems[item.id]?.productId > 0;
                                         const hasSuggestions = suggestions.length > 0;
 

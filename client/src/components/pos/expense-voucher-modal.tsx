@@ -77,78 +77,17 @@ export default function ExpenseVoucherModal({
   const queryClient = useQueryClient();
 
   // Load payment methods from localStorage (same as cash-book page)
+  // Query payment methods from API
+  const { data: paymentMethodsData } = useQuery({
+    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/payment-methods"],
+    queryFn: async () => {
+      const response = await fetch("https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/payment-methods");
+      return response.json();
+    },
+  });
+
   const getPaymentMethods = () => {
-    const savedPaymentMethods = localStorage.getItem("paymentMethods");
-
-    const defaultPaymentMethods = [
-      {
-        id: 1,
-        nameKey: "cash",
-        type: "cash",
-        enabled: true,
-        icon: "💵",
-      },
-      {
-        id: 2,
-        nameKey: "creditCard",
-        type: "card",
-        enabled: false,
-        icon: "💳",
-      },
-      {
-        id: 3,
-        nameKey: "debitCard",
-        type: "debit",
-        enabled: false,
-        icon: "💳",
-      },
-      {
-        id: 4,
-        nameKey: "momo",
-        type: "digital",
-        enabled: false,
-        icon: "📱",
-      },
-      {
-        id: 5,
-        nameKey: "zalopay",
-        type: "digital",
-        enabled: false,
-        icon: "📱",
-      },
-      {
-        id: 6,
-        nameKey: "vnpay",
-        type: "digital",
-        enabled: false,
-        icon: "💳",
-      },
-      {
-        id: 7,
-        nameKey: "qrCode",
-        type: "qr",
-        enabled: true,
-        icon: "📱",
-      },
-      {
-        id: 8,
-        nameKey: "shopeepay",
-        type: "digital",
-        enabled: false,
-        icon: "🛒",
-      },
-      {
-        id: 9,
-        nameKey: "grabpay",
-        type: "digital",
-        enabled: false,
-        icon: "🚗",
-      },
-    ];
-
-    const paymentMethods = savedPaymentMethods
-      ? JSON.parse(savedPaymentMethods)
-      : defaultPaymentMethods;
+    const paymentMethods = paymentMethodsData || [];
 
     // Filter to only return enabled payment methods
     return paymentMethods.filter((method: any) => method.enabled === true);

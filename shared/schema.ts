@@ -328,7 +328,7 @@ export const insertProductSchema = createInsertSchema(products)
       if (val === "KCT" || val === "KKKNT") {
         return "0"; // Store as "0" for database, taxRateName will store the display value
       }
-      
+
       // Accept integer percentage values: 0, 5, 8, 10
       const numVal = typeof val === "string" ? parseFloat(val) : val;
 
@@ -1086,15 +1086,15 @@ export const incomeVouchers = pgTable("income_vouchers", {
   id: serial("id").primaryKey(),
   voucherNumber: varchar("voucher_number", { length: 50 }).notNull(),
   date: varchar("date", { length: 10 }).notNull(),
-  amount: numeric("amount", { precision: 12, scale: 2 }).notNull(),
+  amount: decimal("amount", { precision: 12, scale: 2 }).notNull(),
   account: varchar("account", { length: 50 }).notNull(),
   recipient: varchar("recipient", { length: 255 }).notNull(),
   receiverName: varchar("receiver_name", { length: 255 }),
   phone: varchar("phone", { length: 20 }),
   category: varchar("category", { length: 50 }).notNull(),
   description: text("description"),
-  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
-  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
 // Expense vouchers table
@@ -1113,3 +1113,23 @@ export const expenseVouchers = pgTable("expense_vouchers", {
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
 });
+
+// Payment methods table
+export const paymentMethods = pgTable("payment_methods", {
+  id: serial("id").primaryKey(),
+  nameKey: varchar("name_key", { length: 50 }).notNull().unique(),
+  name: varchar("name", { length: 100 }).notNull(),
+  type: varchar("type", { length: 50 }).notNull(),
+  icon: text("icon").notNull(),
+  enabled: boolean("enabled").notNull().default(true),
+  sortOrder: integer("sort_order").default(0),
+  isSystem: boolean("is_system").notNull().default(false),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export type IncomeVoucher = typeof incomeVouchers.$inferSelect;
+export type InsertIncomeVoucher = typeof incomeVouchers.$inferInsert;
+
+export type PaymentMethod = typeof paymentMethods.$inferSelect;
+export type InsertPaymentMethod = typeof paymentMethods.$inferInsert;

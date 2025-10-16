@@ -155,6 +155,15 @@ export default function PurchasesPage({ onLogout }: PurchasesPageProps) {
     queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/suppliers"],
   });
 
+  // Fetch payment methods
+  const { data: paymentMethodsData } = useQuery({
+    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/payment-methods"],
+    queryFn: async () => {
+      const response = await fetch("https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/payment-methods");
+      return response.json();
+    },
+  });
+
   // Calculate dashboard statistics
   const stats = useMemo(() => {
     const currentMonth = new Date().getMonth();

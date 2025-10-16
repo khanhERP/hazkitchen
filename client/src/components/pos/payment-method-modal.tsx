@@ -174,107 +174,26 @@ export function PaymentMethodModal({
   const [receiptDataForModal, setReceiptDataForModal] = useState<any>(null);
   const [showPrintDialog, setShowPrintDialog] = useState(false); // Add showPrintDialog state
 
-  // Load payment methods from settings
+  // Query payment methods from API
+  const { data: paymentMethodsData } = useQuery({
+    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/payment-methods"],
+    queryFn: async () => {
+      const response = await apiRequest("GET", "https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/payment-methods");
+      return response.json();
+    },
+    enabled: isOpen, // Only fetch when modal is open
+  });
+
+  // Load payment methods from API
   const getPaymentMethods = () => {
-    const savedPaymentMethods = localStorage.getItem("paymentMethods");
+    const paymentMethods = paymentMethodsData || [];
 
-    const defaultPaymentMethods = [
-      {
-        id: 1,
-        nameKey: "cash",
-        type: "cash",
-        enabled: true,
-        icon: "💵",
-      },
-      {
-        id: 2,
-        nameKey: "creditCard",
-        type: "card",
-        enabled: false,
-        icon: "💳",
-      },
-      {
-        id: 3,
-        nameKey: "debitCard",
-        type: "debit",
-        enabled: false,
-        icon: "💳",
-      },
-      {
-        id: 4,
-        nameKey: "momo",
-        type: "digital",
-        enabled: false,
-        icon: "📱",
-      },
-      {
-        id: 5,
-        nameKey: "zalopay",
-        type: "digital",
-        enabled: false,
-        icon: "📱",
-      },
-      {
-        id: 6,
-        nameKey: "vnpay",
-        type: "digital",
-        enabled: false,
-        icon: "💳",
-      },
-      {
-        id: 7,
-        nameKey: "qrCode",
-        type: "qr",
-        enabled: true,
-        icon: "📱",
-      },
-      {
-        id: 8,
-        nameKey: "shopeepay",
-        type: "digital",
-        enabled: false,
-        icon: "🛒",
-      },
-      {
-        id: 9,
-        nameKey: "grabpay",
-        type: "digital",
-        enabled: false,
-        icon: "🚗",
-      },
-    ];
-
-    const paymentMethods = savedPaymentMethods
-      ? JSON.parse(savedPaymentMethods)
-      : defaultPaymentMethods;
-
-    console.log("All payment methods:", paymentMethods);
-
-    // Ensure cash payment is always available
-    const cashMethodExists = paymentMethods.find(
-      (method) => method.nameKey === "cash" && method.enabled,
-    );
-    if (!cashMethodExists) {
-      const cashMethod = paymentMethods.find(
-        (method) => method.nameKey === "cash",
-      );
-      if (cashMethod) {
-        cashMethod.enabled = true;
-      } else {
-        paymentMethods.unshift({
-          id: 1,
-          nameKey: "cash",
-          type: "cash",
-          enabled: true,
-          icon: "💵",
-        });
-      }
-    }
+    console.log("All payment methods from API:", paymentMethods);
 
     // Filter to only return enabled payment methods and map to modal format
     const enabledMethods = paymentMethods
-      .filter((method) => method.enabled === true)
-      .map((method) => ({
+      .filter((method: any) => method.enabled === true)
+      .map((method: any) => ({
         id: method.nameKey,
         name: getPaymentMethodName(method.nameKey),
         icon: getIconComponent(method.type),
@@ -3257,7 +3176,7 @@ export function PaymentMethodModal({
                 };
               });
             })()}
-            orderId={receipt.id || orderInfo.id || orderForPayment.id}
+            orderId={receipt?.id || orderInfo?.id || orderForPayment?.id}
           />
         )}
 

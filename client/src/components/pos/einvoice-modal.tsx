@@ -206,10 +206,25 @@ export function EInvoiceModal({
     enabled: isOpen,
   });
 
-  // Fetch active invoice templates for dropdown
-  const { data: allInvoiceTemplates = [] } = useQuery<any[]>({
+  // Fetch active invoice templates for dropdown - use correct query key
+  const { data: invoiceTemplates = [] } = useQuery<any[]>({
     queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/invoice-templates/active"],
+    queryFn: async () => {
+      try {
+        const response = await apiRequest("GET", "https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/invoice-templates/active");
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const data = await response.json();
+        console.log("📋 Fetched active invoice templates:", data);
+        return Array.isArray(data) ? data : [];
+      } catch (error) {
+        console.error("Error fetching active invoice templates:", error);
+        return [];
+      }
+    },
     enabled: isOpen,
+    staleTime: 300000,
   });
 
   // Query all products to get tax rates
@@ -251,11 +266,6 @@ export function EInvoiceModal({
     staleTime: 300000,
   });
 
-  // Filter templates to only show ones that are in use (useCK: true)
-  const invoiceTemplates = allInvoiceTemplates.filter(
-    (template) => template.useCK === true,
-  );
-
   // Reset form only when modal opens, not when cartItems/total changes
   useEffect(() => {
     if (isOpen) {
@@ -270,11 +280,15 @@ export function EInvoiceModal({
         Array.isArray(cartItems),
       );
       console.log("🔥 total when modal opens:", total);
+      console.log("🔥 Available invoice templates:", invoiceTemplates);
 
+      // Set default template from available templates
+      const defaultTemplate = invoiceTemplates.find((t: any) => t.isDefault) || invoiceTemplates[0];
+      
       setFormData({
         invoiceProvider: "EasyInvoice", // Default provider
-        invoiceTemplate: "1C25TYY", // Default template
-        selectedTemplateId: "",
+        invoiceTemplate: defaultTemplate?.name || "1C25TYY", // Use actual template name
+        selectedTemplateId: defaultTemplate?.id?.toString() || "",
         taxCode: "0123456789", // Default tax code
         customerName: "Khách hàng lẻ", // Default customer name
         address: "",
@@ -282,7 +296,7 @@ export function EInvoiceModal({
         email: "",
       });
     }
-  }, [isOpen]); // Only reset when modal opens/closes
+  }, [isOpen, invoiceTemplates]); // Add invoiceTemplates dependency
 
   // Separate effect for debugging cartItems changes without resetting form
   useEffect(() => {
@@ -1766,11 +1780,14 @@ export function EInvoiceModal({
     setIsProcessingPublish(false); // Reset specific publish button state
     setIsProcessingPublishLater(false); // Reset specific publish later button state
     setLastActionTime(0); // Reset debounce timer
+    
+    // Dispatch event for other components
     window.dispatchEvent(
-      new CustomEvent("printCompleted", {
-        detail: { closeAllModals: true, refreshData: true },
+      new CustomEvent("einvoiceModalClosed", {
+        detail: { refreshData: true, timestamp: new Date().toISOString() },
       }),
     );
+    
     onClose();
   };
 

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "@/lib/i18n";
@@ -31,6 +30,7 @@ import {
 } from "@/components/ui/select";
 import { ArrowLeft, Trash2, Edit, Save, X } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import { useQuery } from "@tanstack/react-query";
 
 interface IncomeVoucher {
   id?: string;
@@ -54,17 +54,17 @@ interface IncomeVoucherModalProps {
 
 const INCOME_CATEGORY_KEYS = [
   "sales",
-  "service", 
+  "service",
   "debtCollection",
   "other",
   "refund",
 ];
 
-export default function IncomeVoucherModal({ 
-  isOpen, 
-  onClose, 
-  voucher, 
-  mode 
+export default function IncomeVoucherModal({
+  isOpen,
+  onClose,
+  voucher,
+  mode,
 }: IncomeVoucherModalProps) {
   const { t } = useTranslation();
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
@@ -72,88 +72,33 @@ export default function IncomeVoucherModal({
   const queryClient = useQueryClient();
 
   // Load payment methods from localStorage (same as expense voucher)
+  // Query payment methods from API
+  const { data: paymentMethodsData } = useQuery({
+    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/payment-methods"],
+    queryFn: async () => {
+      const response = await fetch("https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/payment-methods");
+      return response.json();
+    },
+  });
+
   const getPaymentMethods = () => {
-    const savedPaymentMethods = localStorage.getItem("paymentMethods");
+    const paymentMethods = paymentMethodsData || [];
 
-    const defaultPaymentMethods = [
-      {
-        id: 1,
-        nameKey: "cash",
-        type: "cash",
-        enabled: true,
-        icon: "💵",
-      },
-      {
-        id: 2,
-        nameKey: "creditCard",
-        type: "card",
-        enabled: false,
-        icon: "💳",
-      },
-      {
-        id: 3,
-        nameKey: "debitCard",
-        type: "debit",
-        enabled: false,
-        icon: "💳",
-      },
-      {
-        id: 4,
-        nameKey: "momo",
-        type: "digital",
-        enabled: false,
-        icon: "📱",
-      },
-      {
-        id: 5,
-        nameKey: "zalopay",
-        type: "digital",
-        enabled: false,
-        icon: "📱",
-      },
-      {
-        id: 6,
-        nameKey: "vnpay",
-        type: "digital",
-        enabled: false,
-        icon: "💳",
-      },
-      {
-        id: 7,
-        nameKey: "qrCode",
-        type: "qr",
-        enabled: true,
-        icon: "📱",
-      },
-      {
-        id: 8,
-        nameKey: "shopeepay",
-        type: "digital",
-        enabled: false,
-        icon: "🛒",
-      },
-      {
-        id: 9,
-        nameKey: "grabpay",
-        type: "digital",
-        enabled: false,
-        icon: "🚗",
-      },
-    ];
-
-    const paymentMethods = savedPaymentMethods
-      ? JSON.parse(savedPaymentMethods)
-      : defaultPaymentMethods;
+    console.log("📋 All payment methods from API:", paymentMethods);
 
     // Filter to only return enabled payment methods
-    return paymentMethods.filter((method: any) => method.enabled === true);
+    const enabledMethods = paymentMethods.filter((method: any) => method.enabled === true);
+    
+    console.log("✅ Enabled payment methods:", enabledMethods);
+    
+    return enabledMethods;
   };
 
   const paymentMethods = getPaymentMethods();
-  
+
   const [formData, setFormData] = useState<IncomeVoucher>({
     voucherNumber: "",
-    date: new Date().toISOString().split('T')[0],
+    date: new Date().toISOString().split("T")[0],
     amount: 0,
     account: "cash", // Use nameKey instead of hardcoded Vietnamese
     recipient: "",
@@ -170,9 +115,9 @@ export default function IncomeVoucherModal({
     } else if (mode === "create") {
       // Generate voucher number for new voucher
       const today = new Date();
-      const dateStr = today.toISOString().split('T')[0].replace(/-/g, '');
+      const dateStr = today.toISOString().split("T")[0].replace(/-/g, "");
       const timeStr = Date.now().toString().slice(-3);
-      setFormData(prev => ({
+      setFormData((prev) => ({
         ...prev,
         voucherNumber: `PT${dateStr}${timeStr}`,
         account: "cash", // Use nameKey instead of hardcoded Vietnamese
@@ -217,19 +162,20 @@ export default function IncomeVoucherModal({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
       });
-      
+
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        const errorMessage = errorData.error || `HTTP ${response.status}: ${response.statusText}`;
+        const errorMessage =
+          errorData.error || `HTTP ${response.status}: ${response.statusText}`;
         throw new Error(errorMessage);
       }
-      
+
       return response.json();
     },
     onSuccess: (data) => {
       console.log("Income voucher updated successfully:", data);
       toast({
-        title: "Thành công", 
+        title: "Thành công",
         description: `Đã cập nhật phiếu thu ${formData.voucherNumber} thành công`,
       });
       queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/income-vouchers"] });
@@ -238,7 +184,8 @@ export default function IncomeVoucherModal({
     },
     onError: (error) => {
       console.error("Failed to update income voucher:", error);
-      const errorMessage = error instanceof Error ? error.message : "Không thể cập nhật phiếu thu";
+      const errorMessage =
+        error instanceof Error ? error.message : "Không thể cập nhật phiếu thu";
       toast({
         title: "Lỗi cập nhật phiếu thu",
         description: errorMessage,
@@ -267,7 +214,7 @@ export default function IncomeVoucherModal({
     },
     onError: (error) => {
       toast({
-        title: "Lỗi", 
+        title: "Lỗi",
         description: "Không thể xóa phiếu thu",
         variant: "destructive",
       });
@@ -278,8 +225,8 @@ export default function IncomeVoucherModal({
     // Validate required fields
     if (!formData.voucherNumber?.trim()) {
       toast({
-        title: t('common.error'),
-        description: t('common.enterVoucherNumber'),
+        title: t("common.error"),
+        description: t("common.enterVoucherNumber"),
         variant: "destructive",
       });
       return;
@@ -287,8 +234,8 @@ export default function IncomeVoucherModal({
 
     if (!formData.recipient?.trim()) {
       toast({
-        title: t('common.error'),
-        description: t('common.enterRecipient'),
+        title: t("common.error"),
+        description: t("common.enterRecipient"),
         variant: "destructive",
       });
       return;
@@ -296,8 +243,8 @@ export default function IncomeVoucherModal({
 
     if (!formData.amount || formData.amount <= 0) {
       toast({
-        title: t('common.error'),
-        description: t('common.enterValidAmount'),
+        title: t("common.error"),
+        description: t("common.enterValidAmount"),
         variant: "destructive",
       });
       return;
@@ -305,8 +252,8 @@ export default function IncomeVoucherModal({
 
     if (!formData.date?.trim()) {
       toast({
-        title: t('common.error'),
-        description: t('common.selectDate'),
+        title: t("common.error"),
+        description: t("common.selectDate"),
         variant: "destructive",
       });
       return;
@@ -330,7 +277,7 @@ export default function IncomeVoucherModal({
       account: cleanData.account,
       accountType: typeof cleanData.account,
       voucherNumber: cleanData.voucherNumber,
-      fullData: cleanData
+      fullData: cleanData,
     });
 
     if (mode === "create") {
@@ -347,7 +294,7 @@ export default function IncomeVoucherModal({
   };
 
   const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('vi-VN').format(value);
+    return new Intl.NumberFormat("vi-VN").format(value);
   };
 
   return (
@@ -359,7 +306,9 @@ export default function IncomeVoucherModal({
               <Button variant="ghost" size="sm" onClick={onClose}>
                 <ArrowLeft className="w-5 h-5" />
               </Button>
-              <span className="font-bold">{t('common.incomeVoucherTitle')}</span>
+              <span className="font-bold">
+                {t("common.incomeVoucherTitle")}
+              </span>
             </DialogTitle>
           </DialogHeader>
 
@@ -368,16 +317,27 @@ export default function IncomeVoucherModal({
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               {/* Left Column */}
               <div className="space-y-5 p-4 bg-gray-50 rounded-lg border">
-                <h3 className="font-bold text-lg text-gray-800 mb-4">{t('common.voucherInfo')}</h3>
-                
+                <h3 className="font-bold text-lg text-gray-800 mb-4">
+                  {t("common.voucherInfo")}
+                </h3>
+
                 <div>
-                  <Label htmlFor="voucherNumber" className="text-base font-bold mb-2">
-                    {t('common.incomeVoucherNumber')} <span className="text-red-600">*</span>
+                  <Label
+                    htmlFor="voucherNumber"
+                    className="text-base font-bold mb-2"
+                  >
+                    {t("common.incomeVoucherNumber")}{" "}
+                    <span className="text-red-600">*</span>
                   </Label>
                   <Input
                     id="voucherNumber"
                     value={formData.voucherNumber}
-                    onChange={(e) => setFormData(prev => ({ ...prev, voucherNumber: e.target.value }))}
+                    onChange={(e) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        voucherNumber: e.target.value,
+                      }))
+                    }
                     disabled={!isEditing}
                     className={`h-11 text-base font-bold ${!isEditing ? "bg-gray-100 text-gray-900" : "bg-white"}`}
                   />
@@ -385,13 +345,16 @@ export default function IncomeVoucherModal({
 
                 <div>
                   <Label htmlFor="date" className="text-base font-bold mb-2">
-                    {t('common.incomeDate')} <span className="text-red-600">*</span>
+                    {t("common.incomeDate")}{" "}
+                    <span className="text-red-600">*</span>
                   </Label>
                   <Input
                     id="date"
                     type="date"
                     value={formData.date}
-                    onChange={(e) => setFormData(prev => ({ ...prev, date: e.target.value }))}
+                    onChange={(e) =>
+                      setFormData((prev) => ({ ...prev, date: e.target.value }))
+                    }
                     disabled={!isEditing}
                     className={`h-11 text-base font-bold ${!isEditing ? "bg-gray-100 text-gray-900" : "bg-white"}`}
                   />
@@ -399,15 +362,21 @@ export default function IncomeVoucherModal({
 
                 <div>
                   <Label htmlFor="amount" className="text-base font-bold mb-2">
-                    {t('common.amountLabel')} <span className="text-red-600">*</span>
+                    {t("common.amountLabel")}{" "}
+                    <span className="text-red-600">*</span>
                   </Label>
                   <Input
                     id="amount"
                     type="text"
-                    value={formData.amount > 0 ? formatCurrency(formData.amount) : ""}
+                    value={
+                      formData.amount > 0 ? formatCurrency(formData.amount) : ""
+                    }
                     onChange={(e) => {
-                      const value = e.target.value.replace(/\D/g, '');
-                      setFormData(prev => ({ ...prev, amount: parseFloat(value) || 0 }));
+                      const value = e.target.value.replace(/\D/g, "");
+                      setFormData((prev) => ({
+                        ...prev,
+                        amount: parseFloat(value) || 0,
+                      }));
                     }}
                     disabled={!isEditing}
                     className={`h-11 text-base font-bold ${!isEditing ? "bg-gray-100 text-gray-900" : "bg-white"}`}
@@ -417,19 +386,28 @@ export default function IncomeVoucherModal({
 
                 <div>
                   <Label htmlFor="account" className="text-base font-bold mb-2">
-                    {t('common.incomeAccount')} <span className="text-red-600">*</span>
+                    {t("common.incomeAccount")}{" "}
+                    <span className="text-red-600">*</span>
                   </Label>
                   <Select
                     value={formData.account}
-                    onValueChange={(value) => setFormData(prev => ({ ...prev, account: value }))}
+                    onValueChange={(value) =>
+                      setFormData((prev) => ({ ...prev, account: value }))
+                    }
                     disabled={!isEditing}
                   >
-                    <SelectTrigger className={`h-11 text-base font-bold ${!isEditing ? "bg-gray-100 text-gray-900" : "bg-white"}`}>
+                    <SelectTrigger
+                      className={`h-11 text-base font-bold ${!isEditing ? "bg-gray-100 text-gray-900" : "bg-white"}`}
+                    >
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
                       {paymentMethods.map((method) => (
-                        <SelectItem key={method.id} value={method.nameKey} className="text-base">
+                        <SelectItem
+                          key={method.id}
+                          value={method.nameKey}
+                          className="text-base"
+                        >
                           {t(`common.${method.nameKey}`)} {method.icon}
                         </SelectItem>
                       ))}
@@ -438,20 +416,32 @@ export default function IncomeVoucherModal({
                 </div>
 
                 <div>
-                  <Label htmlFor="category" className="text-base font-bold mb-2">
-                    {t('common.incomeCategory')} <span className="text-red-600">*</span>
+                  <Label
+                    htmlFor="category"
+                    className="text-base font-bold mb-2"
+                  >
+                    {t("common.incomeCategory")}{" "}
+                    <span className="text-red-600">*</span>
                   </Label>
                   <Select
                     value={formData.category}
-                    onValueChange={(value) => setFormData(prev => ({ ...prev, category: value }))}
+                    onValueChange={(value) =>
+                      setFormData((prev) => ({ ...prev, category: value }))
+                    }
                     disabled={!isEditing}
                   >
-                    <SelectTrigger className={`h-11 text-base font-bold ${!isEditing ? "bg-gray-100 text-gray-900" : "bg-white"}`}>
+                    <SelectTrigger
+                      className={`h-11 text-base font-bold ${!isEditing ? "bg-gray-100 text-gray-900" : "bg-white"}`}
+                    >
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
                       {INCOME_CATEGORY_KEYS.map((categoryKey) => (
-                        <SelectItem key={categoryKey} value={categoryKey} className="text-base">
+                        <SelectItem
+                          key={categoryKey}
+                          value={categoryKey}
+                          className="text-base"
+                        >
                           {t(`common.incomeCategories.${categoryKey}`)}
                         </SelectItem>
                       ))}
@@ -462,43 +452,71 @@ export default function IncomeVoucherModal({
 
               {/* Right Column */}
               <div className="space-y-5 p-4 bg-blue-50 rounded-lg border border-blue-200">
-                <h3 className="font-bold text-lg text-gray-800 mb-4">{t('common.recipientInfo')}</h3>
-                
+                <h3 className="font-bold text-lg text-gray-800 mb-4">
+                  {t("common.recipientInfo")}
+                </h3>
+
                 <div>
-                  <Label htmlFor="recipient" className="text-base font-bold mb-2">
-                    {t('common.recipient')} <span className="text-red-600">*</span>
+                  <Label
+                    htmlFor="recipient"
+                    className="text-base font-bold mb-2"
+                  >
+                    {t("common.recipient")}{" "}
+                    <span className="text-red-600">*</span>
                   </Label>
                   <Input
                     id="recipient"
                     value={formData.recipient}
-                    onChange={(e) => setFormData(prev => ({ ...prev, recipient: e.target.value }))}
+                    onChange={(e) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        recipient: e.target.value,
+                      }))
+                    }
                     disabled={!isEditing}
                     className={`h-11 text-base font-bold ${!isEditing ? "bg-blue-100 text-gray-900" : "bg-white"}`}
-                    placeholder={t('common.recipientPlaceholder')}
+                    placeholder={t("common.recipientPlaceholder")}
                   />
                 </div>
 
                 <div>
-                  <Label htmlFor="receiverName" className="text-base font-bold mb-2">{t('common.receiverName')}</Label>
+                  <Label
+                    htmlFor="receiverName"
+                    className="text-base font-bold mb-2"
+                  >
+                    {t("common.receiverName")}
+                  </Label>
                   <Input
                     id="receiverName"
                     value={formData.receiverName || ""}
-                    onChange={(e) => setFormData(prev => ({ ...prev, receiverName: e.target.value }))}
+                    onChange={(e) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        receiverName: e.target.value,
+                      }))
+                    }
                     disabled={!isEditing}
                     className={`h-11 text-base font-bold ${!isEditing ? "bg-blue-100 text-gray-900" : "bg-white"}`}
-                    placeholder={t('common.receiverNamePlaceholder')}
+                    placeholder={t("common.receiverNamePlaceholder")}
                   />
                 </div>
 
                 <div>
-                  <Label htmlFor="phone" className="text-base font-bold mb-2">{t('common.phone')}</Label>
+                  <Label htmlFor="phone" className="text-base font-bold mb-2">
+                    {t("common.phone")}
+                  </Label>
                   <Input
                     id="phone"
                     value={formData.phone}
-                    onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
+                    onChange={(e) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        phone: e.target.value,
+                      }))
+                    }
                     disabled={!isEditing}
                     className={`h-11 text-base font-bold ${!isEditing ? "bg-blue-100 text-gray-900" : "bg-white"}`}
-                    placeholder={t('common.phoneNumberPlaceholder')}
+                    placeholder={t("common.phoneNumberPlaceholder")}
                   />
                 </div>
               </div>
@@ -506,14 +524,21 @@ export default function IncomeVoucherModal({
 
             {/* Description */}
             <div className="p-4 bg-green-50 rounded-lg border border-green-200">
-              <Label htmlFor="description" className="text-base font-bold mb-2">{t('common.explanation')}</Label>
+              <Label htmlFor="description" className="text-base font-bold mb-2">
+                {t("common.explanation")}
+              </Label>
               <Textarea
                 id="description"
                 value={formData.description}
-                onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+                onChange={(e) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    description: e.target.value,
+                  }))
+                }
                 disabled={!isEditing}
                 className={`text-base font-semibold ${!isEditing ? "bg-green-100 text-gray-900" : "bg-white"}`}
-                placeholder={t('common.explanationPlaceholder')}
+                placeholder={t("common.explanationPlaceholder")}
                 rows={4}
               />
             </div>
@@ -531,7 +556,7 @@ export default function IncomeVoucherModal({
                       className="h-11 text-base"
                     >
                       <Trash2 className="w-5 h-5 mr-2" />
-                      {t('common.delete')}
+                      {t("common.delete")}
                     </Button>
                     <Button
                       variant="outline"
@@ -541,7 +566,7 @@ export default function IncomeVoucherModal({
                       className="h-11 text-base"
                     >
                       <Edit className="w-5 h-5 mr-2" />
-                      {t('common.edit')}
+                      {t("common.edit")}
                     </Button>
                   </>
                 )}
@@ -552,21 +577,27 @@ export default function IncomeVoucherModal({
                   variant="outline"
                   size="lg"
                   onClick={onClose}
-                  disabled={createVoucherMutation.isPending || updateVoucherMutation.isPending}
+                  disabled={
+                    createVoucherMutation.isPending ||
+                    updateVoucherMutation.isPending
+                  }
                   className="h-11 text-base"
                 >
                   <X className="w-5 h-5 mr-2" />
-                  {t('common.close')}
+                  {t("common.close")}
                 </Button>
                 {isEditing && (
                   <Button
                     size="lg"
                     onClick={handleSave}
-                    disabled={createVoucherMutation.isPending || updateVoucherMutation.isPending}
+                    disabled={
+                      createVoucherMutation.isPending ||
+                      updateVoucherMutation.isPending
+                    }
                     className="bg-green-600 hover:bg-green-700 h-11 text-base px-8"
                   >
                     <Save className="w-5 h-5 mr-2" />
-                    {t('common.save')}
+                    {t("common.save")}
                   </Button>
                 )}
               </div>
@@ -579,21 +610,24 @@ export default function IncomeVoucherModal({
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>{t('common.confirmDelete')}</AlertDialogTitle>
+            <AlertDialogTitle>{t("common.confirmDelete")}</AlertDialogTitle>
             <AlertDialogDescription>
-              {t('common.confirmDeleteVoucher').replace('{voucherNumber}', formData.voucherNumber)}
+              {t("common.confirmDeleteVoucher").replace(
+                "{voucherNumber}",
+                formData.voucherNumber,
+              )}
               <br />
-              <span className="text-red-600">{t('common.cannotUndo')}</span>
+              <span className="text-red-600">{t("common.cannotUndo")}</span>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>{t('common.skip')}</AlertDialogCancel>
+            <AlertDialogCancel>{t("common.skip")}</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDelete}
               disabled={deleteVoucherMutation.isPending}
               className="bg-red-600 hover:bg-red-700"
             >
-              {t('common.agree')}
+              {t("common.agree")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

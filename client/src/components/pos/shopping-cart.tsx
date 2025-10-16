@@ -2334,9 +2334,15 @@ export function ShoppingCart({
             {storeSettings?.businessType === "laundry" && (
               <Button
                 onClick={handlePlaceOrder}
-                disabled={cart.length === 0 || isProcessing || !selectedCustomer}
+                disabled={
+                  cart.length === 0 || isProcessing || !selectedCustomer
+                }
                 className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 text-lg disabled:opacity-50 disabled:cursor-not-allowed"
-                title={!selectedCustomer ? "Vui lòng chọn khách hàng trước khi đặt hàng" : ""}
+                title={
+                  !selectedCustomer
+                    ? "Vui lòng chọn khách hàng trước khi đặt hàng"
+                    : ""
+                }
               >
                 {t("pos.placeOrder")}
               </Button>
@@ -2344,8 +2350,8 @@ export function ShoppingCart({
             <Button
               onClick={handleCheckout}
               disabled={
-                cart.length === 0 || 
-                isProcessing || 
+                cart.length === 0 ||
+                isProcessing ||
                 (storeSettings?.businessType === "laundry" && !selectedCustomer)
               }
               className={`${storeSettings?.businessType !== "laundry" ? "w-full" : "flex-1"} bg-green-600 hover:bg-green-700 text-white font-medium py-3 text-lg disabled:opacity-50 disabled:cursor-not-allowed`}
@@ -2375,7 +2381,10 @@ export function ShoppingCart({
           total={previewReceipt?.exactTotal || 0}
           isPreview={true}
           onConfirm={(orderData) => {
-            console.log("📦 Shopping Cart: Received order data from receipt modal:", orderData);
+            console.log(
+              "📦 Shopping Cart: Received order data from receipt modal:",
+              orderData,
+            );
             // Update orderForPayment with complete data
             setOrderForPayment(orderData || previewReceipt);
             handleReceiptPreviewConfirm();
@@ -2683,7 +2692,7 @@ export function ShoppingCart({
             console.log("🔴 POS: Closing E-invoice modal");
             setShowEInvoiceModal(false);
             setIsProcessingPayment(false);
-            
+
             // Don't clear cart here - let the e-invoice modal handle it
             console.log("🔴 POS: E-invoice modal closed without clearing cart");
           }}

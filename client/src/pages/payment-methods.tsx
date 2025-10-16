@@ -1,5 +1,6 @@
 
 import { useState, useEffect } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { POSHeader } from "@/components/pos/header";
 import { RightSidebar } from "@/components/ui/right-sidebar";
 import { Button } from "@/components/ui/button";
@@ -8,7 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { CreditCard, Plus, Edit, Trash2, Save } from "lucide-react";
+import { CreditCard, Plus, Edit, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useTranslation } from "@/lib/i18n";
 import {
@@ -27,6 +28,7 @@ interface PaymentMethodsPageProps {
 export default function PaymentMethodsPage({ onLogout }: PaymentMethodsPageProps) {
   const { t } = useTranslation();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   const [paymentMethods, setPaymentMethods] = useState<any[]>([]);
   const [editingMethod, setEditingMethod] = useState<any>(null);
@@ -35,33 +37,22 @@ export default function PaymentMethodsPage({ onLogout }: PaymentMethodsPageProps
     icon: "",
   });
 
-  // Load payment methods from localStorage
+  // Query payment methods from API
+  const { data: paymentMethodsFromAPI } = useQuery({
+    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/payment-methods"],
+    queryFn: async () => {
+      const response = await fetch("https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/payment-methods");
+      return response.json();
+    },
+  });
+
+  // Update local state when API data is loaded
   useEffect(() => {
-    const savedMethods = localStorage.getItem("paymentMethods");
-    if (savedMethods) {
-      try {
-        const parsed = JSON.parse(savedMethods);
-        setPaymentMethods(parsed);
-        console.log("✅ Loaded payment methods from localStorage:", parsed);
-      } catch (error) {
-        console.error("❌ Error parsing payment methods:", error);
-        // Fallback to default if parsing fails
-        const defaultMethods = [
-          { id: 1, nameKey: "cash", type: "cash", enabled: true, icon: "💵" },
-          { id: 2, nameKey: "creditCard", type: "card", enabled: false, icon: "💳" },
-          { id: 3, nameKey: "debitCard", type: "debit", enabled: false, icon: "💳" },
-          { id: 4, nameKey: "momo", type: "digital", enabled: false, icon: "📱" },
-          { id: 5, nameKey: "zalopay", type: "digital", enabled: false, icon: "📱" },
-          { id: 6, nameKey: "vnpay", type: "digital", enabled: false, icon: "💳" },
-          { id: 7, nameKey: "qrCode", type: "qr", enabled: true, icon: "📱" },
-          { id: 8, nameKey: "shopeepay", type: "digital", enabled: false, icon: "🛒" },
-          { id: 9, nameKey: "grabpay", type: "digital", enabled: false, icon: "🚗" },
-        ];
-        setPaymentMethods(defaultMethods);
-        localStorage.setItem("paymentMethods", JSON.stringify(defaultMethods));
-      }
+    if (paymentMethodsFromAPI) {
+      setPaymentMethods(paymentMethodsFromAPI);
+      console.log("✅ Loaded payment methods from API:", paymentMethodsFromAPI);
     } else {
-      // Default payment methods
+      // Default payment methods (fallback only)
       const defaultMethods = [
         { id: 1, nameKey: "cash", type: "cash", enabled: true, icon: "💵" },
         { id: 2, nameKey: "creditCard", type: "card", enabled: false, icon: "💳" },
@@ -74,22 +65,38 @@ export default function PaymentMethodsPage({ onLogout }: PaymentMethodsPageProps
         { id: 9, nameKey: "grabpay", type: "digital", enabled: false, icon: "🚗" },
       ];
       setPaymentMethods(defaultMethods);
-      localStorage.setItem("paymentMethods", JSON.stringify(defaultMethods));
       console.log("ℹ️ Created default payment methods");
     }
-  }, []);
+  }, [paymentMethodsFromAPI]);
 
-  const saveToLocalStorage = (methods: any[]) => {
-    localStorage.setItem("paymentMethods", JSON.stringify(methods));
-    setPaymentMethods(methods);
-  };
+  // Mutation to update payment method
+  const updatePaymentMethodMutation = useMutation({
+    mutationFn: async ({ id, data }: { id: number; data: any }) => {
+      const response = await fetch(`https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/payment-methods/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/payment-methods"] });
+      toast({
+        title: t("common.success"),
+        description: "Đã cập nhật phương thức thanh toán",
+      });
+    },
+  });
 
   const toggleMethod = (id: number) => {
-    const updated = paymentMethods.map((method) =>
-      method.id === id ? { ...method, enabled: !method.enabled } : method
-    );
-    console.log("🔄 Toggling payment method:", id, "New state:", updated.find(m => m.id === id));
-    saveToLocalStorage(updated);
+    const method = paymentMethods.find((m) => m.id === id);
+    if (!method) return;
+
+    console.log("🔄 Toggling payment method:", id, "New enabled state:", !method.enabled);
+    updatePaymentMethodMutation.mutate({
+      id,
+      data: { enabled: !method.enabled },
+    });
   };
 
   const handleEdit = (method: any) => {
@@ -103,41 +110,42 @@ export default function PaymentMethodsPage({ onLogout }: PaymentMethodsPageProps
   const handleUpdate = () => {
     if (!editingMethod) return;
 
-    const updated = paymentMethods.map((method) =>
-      method.id === editingMethod.id
-        ? { ...method, icon: methodForm.icon }
-        : method
-    );
+    updatePaymentMethodMutation.mutate({
+      id: editingMethod.id,
+      data: { icon: methodForm.icon },
+    });
 
-    saveToLocalStorage(updated);
     setShowForm(false);
     setEditingMethod(null);
     setMethodForm({ icon: "" });
-
-    toast({
-      title: t("common.success"),
-      description: "Đã cập nhật phương thức thanh toán",
-    });
   };
 
-  const handleDelete = (id: number) => {
-    // Only allow deleting methods with id > 9 (custom methods)
-    if (id <= 9) {
+  // Mutation to delete payment method
+  const deletePaymentMethodMutation = useMutation({
+    mutationFn: async (id: number) => {
+      const response = await fetch(`https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/payment-methods/${id}`, {
+        method: "DELETE",
+      });
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/payment-methods"] });
+      toast({
+        title: t("common.success"),
+        description: "Đã xóa phương thức thanh toán",
+      });
+    },
+    onError: () => {
       toast({
         title: t("common.error"),
-        description: "Không thể xóa phương thức thanh toán mặc định",
+        description: "Không thể xóa phương thức thanh toán hệ thống",
         variant: "destructive",
       });
-      return;
-    }
+    },
+  });
 
-    const updated = paymentMethods.filter((method) => method.id !== id);
-    saveToLocalStorage(updated);
-
-    toast({
-      title: t("common.success"),
-      description: "Đã xóa phương thức thanh toán",
-    });
+  const handleDelete = (id: number) => {
+    deletePaymentMethodMutation.mutate(id);
   };
 
   const addPaymentMethod = () => {
@@ -149,7 +157,7 @@ export default function PaymentMethodsPage({ onLogout }: PaymentMethodsPageProps
       icon: "💳",
     };
     const updatedMethods = [...paymentMethods, newMethod];
-    saveToLocalStorage(updatedMethods);
+    setPaymentMethods(updatedMethods);
   };
 
   const getPaymentMethodName = (nameKey: string) => {

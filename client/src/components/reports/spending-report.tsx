@@ -281,8 +281,7 @@ export function SpendingReport() {
               item.discountAmount?.toString() || "0",
             );
 
-            expenseData.totalValue +=
-              parseFloat(item.total?.toString() || "0");
+            expenseData.totalValue += parseFloat(item.total?.toString() || "0");
           } else if (isFixedExpense) {
             console.log(`✅ Fixed expense found:`, {
               productName: item.productName,
@@ -302,8 +301,7 @@ export function SpendingReport() {
               item.discountAmount?.toString() || "0",
             );
 
-            expenseData.totalValue +=
-              parseFloat(item.total?.toString() || "0");
+            expenseData.totalValue += parseFloat(item.total?.toString() || "0");
           } else {
             console.log(`❌ Item filtered out:`, {
               productName: item.productName,
@@ -329,22 +327,18 @@ export function SpendingReport() {
       let sumDiscount = receipt.items.reduce((sum: number, item: any) => {
         return sum + parseFloat(item.discountAmount?.toString() || "0");
       }, 0);
-      const debtData = supplierDebtsMap.get(supplierId);
+      let debtData = supplierDebtsMap.get(supplierId);
 
       // Số tiền thiếu calculation from purchase receipts
       if (receipt.isPaid === false) {
         // Unpaid: add full total to debt
-        debtData.totalDebt += parseFloat(receipt.total?.toString() || "0");
-      } else if (receipt.isPaid === true && receipt.paymentAmount) {
-        // Partially paid: add remaining amount (total - payment_amount)
-        const total = parseFloat(receipt.total?.toString() || "0");
-        const paymentAmount = parseFloat(
-          receipt.paymentAmount?.toString() || "0",
+        debtData.totalDebt += receipt?.items?.reduce(
+          (sum: number, item: any) => {
+            return sum + parseFloat(item.total?.toString() || "0");
+          },
+          0,
         );
-        const remainingDebt = Math.max(0, total - paymentAmount);
-        debtData.totalDebt += remainingDebt;
       }
-      debtData.totalDebt = debtData.totalDebt;
     });
 
     const rawMaterials = Array.from(rawMaterialsMap.values());

@@ -291,7 +291,7 @@ export function POSHeader({ onLogout }: POSHeaderProps) {
                   )}
 
                   {/* Màn hình khách hàng */}
-                  {/* <a
+                  <a
                     href="#"
                     className="w-full flex items-center px-4 py-2 text-left hover:bg-blue-50 hover:text-blue-600 text-gray-700 transition-colors"
                     onClick={(e) => {
@@ -348,7 +348,7 @@ export function POSHeader({ onLogout }: POSHeaderProps) {
                   >
                     <Users className="w-4 h-4 mr-3" />
                     {t("nav.customerDisplay")}
-                  </a> */}
+                  </a>
 
                   <div className="border-t border-gray-200 my-2"></div>
 

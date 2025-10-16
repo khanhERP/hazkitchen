@@ -378,18 +378,17 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
     }
   }, [storeData]);
 
-  // Load payment methods from localStorage on mount
+  // Fetch payment methods from API
+  const { data: paymentMethodsData, isLoading: paymentMethodsLoading } = useQuery<any[]>({
+    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/payment-methods"],
+  });
+
+  // Update local state when data is loaded
   useEffect(() => {
-    const savedPaymentMethods = localStorage.getItem("paymentMethods");
-    if (savedPaymentMethods) {
-      try {
-        const parsed = JSON.parse(savedPaymentMethods);
-        setPaymentMethods(parsed);
-      } catch (error) {
-        console.error("Error parsing saved payment methods:", error);
-      }
+    if (paymentMethodsData) {
+      setPaymentMethods(paymentMethodsData);
     }
-  }, []);
+  }, [paymentMethodsData]);
 
   // Mutation to update store settings
   const updateStoreSettingsMutation = useMutation({
@@ -499,38 +498,100 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
 
   const saveStoreSettings = () => {
     updateStoreSettingsMutation.mutate(storeSettings);
-    // Save payment methods to localStorage so other components can access them
-    localStorage.setItem("paymentMethods", JSON.stringify(paymentMethods));
   };
 
+  // Mutation to create payment method
+  const createPaymentMethodMutation = useMutation({
+    mutationFn: async (data: any) => {
+      const response = await apiRequest("POST", "https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/payment-methods", data);
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/payment-methods"] });
+      toast({
+        title: t("common.success"),
+        description: "Đã thêm phương thức thanh toán mới",
+      });
+    },
+    onError: () => {
+      toast({
+        title: t("common.error"),
+        description: "Không thể thêm phương thức thanh toán",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Mutation to update payment method
+  const updatePaymentMethodMutation = useMutation({
+    mutationFn: async ({ id, data }: { id: number; data: any }) => {
+      const response = await apiRequest("PUT", `https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/payment-methods/${id}`, data);
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/payment-methods"] });
+      toast({
+        title: t("common.success"),
+        description: t("settings.paymentUpdateSuccessDesc"),
+      });
+    },
+    onError: () => {
+      toast({
+        title: t("common.error"),
+        description: t("settings.updateError"),
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Mutation to delete payment method
+  const deletePaymentMethodMutation = useMutation({
+    mutationFn: async (id: number) => {
+      const response = await apiRequest("DELETE", `https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/payment-methods/${id}`);
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/payment-methods"] });
+      toast({
+        title: t("common.success"),
+        description: "Đã xóa phương thức thanh toán",
+      });
+    },
+    onError: () => {
+      toast({
+        title: t("common.error"),
+        description: "Không thể xóa phương thức thanh toán",
+        variant: "destructive",
+      });
+    },
+  });
+
   const togglePaymentMethod = (id: number) => {
-    const updatedMethods = paymentMethods.map((method) =>
-      method.id === id ? { ...method, enabled: !method.enabled } : method,
-    );
-    setPaymentMethods(updatedMethods);
-    // Save to localStorage immediately when toggled
-    localStorage.setItem("paymentMethods", JSON.stringify(updatedMethods));
+    const method = paymentMethods.find((m) => m.id === id);
+    if (!method) return;
+
+    updatePaymentMethodMutation.mutate({
+      id,
+      data: { enabled: !method.enabled },
+    });
   };
 
   const addPaymentMethod = () => {
-    const newMethod = {
-      id: paymentMethods.length + 1,
+    // Create new payment method in database
+    const newMethodData = {
       nameKey: "newPayment",
+      name: "Phương thức thanh toán mới",
       type: "custom",
       enabled: false,
       icon: "💳",
+      sortOrder: paymentMethods.length,
     };
-    const updatedMethods = [...paymentMethods, newMethod];
-    setPaymentMethods(updatedMethods);
-    // Save to localStorage immediately when added
-    localStorage.setItem("paymentMethods", JSON.JSON.stringify(updatedMethods));
+    
+    createPaymentMethodMutation.mutate(newMethodData);
   };
 
   const removePaymentMethod = (id: number) => {
-    const updatedMethods = paymentMethods.filter((method) => method.id !== id);
-    setPaymentMethods(updatedMethods);
-    // Save to localStorage immediately when removed
-    localStorage.setItem("paymentMethods", JSON.stringify(updatedMethods));
+    deletePaymentMethodMutation.mutate(id);
   };
 
   // Payment method management functions
@@ -545,30 +606,18 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
   const handleUpdatePaymentMethod = () => {
     if (!editingPaymentMethod) return;
 
-    const updatedMethods = paymentMethods.map((method) =>
-      method.id === editingPaymentMethod.id
-        ? {
-            ...method,
-            icon: paymentMethodForm.icon,
-          }
-        : method,
-    );
-
-    setPaymentMethods(updatedMethods);
-    localStorage.setItem("paymentMethods", JSON.stringify(updatedMethods));
+    updatePaymentMethodMutation.mutate({
+      id: editingPaymentMethod.id,
+      data: { icon: paymentMethodForm.icon },
+    });
 
     setShowPaymentMethodForm(false);
     setEditingPaymentMethod(null);
     setPaymentMethodForm({ icon: "" });
-
-    toast({
-      title: t("settings.paymentUpdateSuccessTitle"),
-      description: t("settings.paymentUpdateSuccessDesc"),
-    });
   };
 
   const resetPaymentMethodForm = () => {
-    setPaymentMethodForm({ name: "", icon: "" });
+    setPaymentMethodForm({ icon: "" });
     setEditingPaymentMethod(null);
   };
 
@@ -999,6 +1048,27 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
     }
   };
 
+  const handleEditProduct = (product: any) => {
+    setProductForm({
+      name: product.name || "",
+      sku: product.sku || "",
+      price: product.price || "",
+      stock: product.stock || 0,
+      categoryId: product.categoryId?.toString() || "",
+      imageUrl: product.imageUrl || "",
+      floor: product.floor || "1",
+      zone: product.zone || "A",
+      imageInputMethod: "url",
+      selectedImageFile: null,
+      trackInventory: product.trackInventory !== false,
+      productType: product.productType || 1,
+      taxRate: product.taxRate || "8",
+      unit: product.unit || "Cái",
+    });
+    setEditingProduct(product);
+    setShowProductForm(true);
+  };
+
   const handleDeleteProduct = async (
     productId: number,
     productName: string,
@@ -1423,6 +1493,8 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
       templateCode: templateForm.templateCode.trim(), // Include templateCode
       symbol: templateForm.symbol.trim(),
       notes: templateForm.notes.trim() || null,
+      useCK: templateForm.useCK, // Explicitly include useCK
+      isDefault: templateForm.isDefault, // Explicitly include isDefault
     };
 
     createTemplateMutation.mutate(templateData);
@@ -1451,6 +1523,8 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
       templateCode: templateForm.templateCode.trim(), // Include templateCode
       symbol: templateForm.symbol.trim(),
       notes: templateForm.notes.trim() || null,
+      useCK: templateForm.useCK, // Explicitly include useCK
+      isDefault: templateForm.isDefault, // Explicitly include isDefault
     };
 
     updateTemplateMutation.mutate({
@@ -2298,16 +2372,12 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
                                                 </td>
                                                 <td className="px-3 py-3 text-center">
                                                   <Badge
-                                                    variant="default"
+                                                    variant={template.useCK ? "default" : "secondary"}
                                                     className={`text-xs ${template.useCK ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-800"}`}
                                                   >
-                                                    {template.useCK
-                                                      ? t(
-                                                          "settings.usageStatusActive",
-                                                        )
-                                                      : t(
-                                                          "settings.usageStatusInactive",
-                                                        )}
+                                                    {template.useCK === true || template.useCK === 1
+                                                      ? t("settings.usageStatusActive")
+                                                      : t("settings.usageStatusInactive")}
                                                   </Badge>
                                                 </td>
                                                 <td className="px-3 py-3">
@@ -4925,13 +4995,18 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
                   <Label htmlFor="useCK" className="text-right">
                     {t("settings.templateUsage")}
                   </Label>
-                  <Switch
-                    id="useCK"
-                    checked={templateForm.useCK}
-                    onCheckedChange={(checked) =>
-                      setTemplateForm((prev) => ({ ...prev, useCK: checked }))
-                    }
-                  />
+                  <div className="col-span-3 flex items-center space-x-2">
+                    <Switch
+                      id="useCK"
+                      checked={templateForm.useCK}
+                      onCheckedChange={(checked) =>
+                        setTemplateForm((prev) => ({ ...prev, useCK: checked }))
+                      }
+                    />
+                    <Label htmlFor="useCK" className="text-sm">
+                      {templateForm.useCK ? t("settings.usageStatusActive") : t("settings.usageStatusInactive")}
+                    </Label>
+                  </div>
                 </div>
                 <div className="grid grid-cols-4 items-center gap-4">
                   <Label htmlFor="notes" className="text-right">
