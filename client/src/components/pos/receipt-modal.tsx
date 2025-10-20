@@ -1284,6 +1284,14 @@ export function ReceiptModal({
                     {receipt.cashierName || "Thu ngân"}
                   </td>
                 </tr>
+                {storeSettings?.businessType === "laundry" && receipt?.customerPhone && (
+                  <tr>
+                    <td style={{ padding: "2px 0" }}>SĐT khách hàng:</td>
+                    <td style={{ padding: "2px 0", textAlign: "right" }}>
+                      {receipt.customerPhone}
+                    </td>
+                  </tr>
+                )}
               </tbody>
             </table>
 
