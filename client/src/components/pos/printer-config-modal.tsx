@@ -647,17 +647,6 @@ export function PrinterConfigModal({
                             <Button
                               size="sm"
                               variant="outline"
-                              onClick={() =>
-                                testConnectionMutation.mutate(config.id)
-                              }
-                              disabled={testConnectionMutation.isPending}
-                            >
-                              <TestTube className="h-3 w-3 mr-1" />
-                              {t("pos.test")}
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="outline"
                               onClick={() => handleEdit(config)}
                             >
                               {t("pos.edit")}

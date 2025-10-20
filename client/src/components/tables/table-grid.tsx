@@ -3120,7 +3120,7 @@ export function TableGrid({ onTableSelect, selectedTableId }: TableGridProps) {
         <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
-              Danh sách đơn hàng - Bàn {selectedTable?.tableNumber}
+              Danh sách đơn hàng - {selectedTable?.tableNumber}
             </DialogTitle>
             <DialogDescription>
               {selectedTable &&
@@ -3257,18 +3257,23 @@ export function TableGrid({ onTableSelect, selectedTableId }: TableGridProps) {
                                   variant="default"
                                   onClick={async () => {
                                     console.log(
-                                      "🎯 Payment button for order:",
+                                      "🎯 Payment button clicked for order:",
                                       order.id,
+                                      order.orderNumber,
                                     );
 
                                     try {
-                                      // Fetch order items for this specific order
+                                      // Fetch order items for THIS SPECIFIC order - not any cached data
                                       const response = await apiRequest(
                                         "GET",
                                         `https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/order-items/${order.id}`,
                                       );
                                       const orderItemsData =
                                         await response.json();
+
+                                      console.log(
+                                        `📦 Fetched ${orderItemsData.length} items for order ${order.id}`,
+                                      );
 
                                       const processedItems = orderItemsData.map(
                                         (item: any) => ({
@@ -3295,38 +3300,58 @@ export function TableGrid({ onTableSelect, selectedTableId }: TableGridProps) {
                                               : null;
                                             return product?.taxRate
                                               ? parseFloat(product.taxRate)
-                                              : 10;
+                                              : 0;
                                           })(),
                                         }),
                                       );
 
-                                      const previewData = {
+                                      // SỬ DỤNG DỮ LIỆU TỪ ORDER HIỆN TẠI - KHÔNG DÙNG orderForPayment hay receipt cũ
+                                      const currentOrderData = {
                                         ...order,
-                                        transactionId: `PREVIEW-${Date.now()}`,
+                                        transactionId:
+                                          order.orderNumber ||
+                                          `PREVIEW-${Date.now()}`,
                                         createdAt: new Date().toISOString(),
                                         cashierName: "Table Service",
                                         paymentMethod: "preview",
                                         items: processedItems,
+                                        // Dùng giá trị từ order HIỆN TẠI
                                         subtotal: order.subtotal,
                                         tax: order.tax,
                                         total: order.total,
                                         discount: order.discount || "0",
-                                        exactTotal: Number(order.total || 0),
-                                        exactSubtotal: Number(
-                                          order.subtotal || 0,
+                                        exactTotal: Math.floor(
+                                          Number(order.total || 0),
                                         ),
-                                        exactTax: Number(order.tax || 0),
-                                        exactDiscount: Number(
-                                          order.discount || 0,
+                                        exactSubtotal: Math.floor(
+                                          Number(order.subtotal || 0),
+                                        ),
+                                        exactTax: Math.floor(
+                                          Number(order.tax || 0),
+                                        ),
+                                        exactDiscount: Math.floor(
+                                          Number(order.discount || 0),
                                         ),
                                         orderItems: orderItemsData,
                                       };
 
-                                      setPreviewReceipt(previewData);
-                                      setOrderDetailsOpen(false);
                                       console.log(
-                                        "📄 Showing receipt preview for payment confirmation",
+                                        "💰 Prepared payment data for order:",
+                                        {
+                                          orderId: order.id,
+                                          orderNumber: order.orderNumber,
+                                          subtotal: currentOrderData.subtotal,
+                                          tax: currentOrderData.tax,
+                                          discount: currentOrderData.discount,
+                                          total: currentOrderData.total,
+                                          exactTotal:
+                                            currentOrderData.exactTotal,
+                                        },
                                       );
+
+                                      // Set orderForPayment với dữ liệu đúng
+                                      setPreviewReceipt(currentOrderData);
+                                      setOrderDetailsOpen(false);
                                       setShowReceiptPreview(true);
                                     } catch (error) {
                                       console.error(
@@ -3464,6 +3489,7 @@ export function TableGrid({ onTableSelect, selectedTableId }: TableGridProps) {
 
                                           setSelectedReceipt(billData);
                                           setOrderDetailsOpen(false);
+                                          setIsTitle(false);
                                           setShowReceiptModal(true);
                                         } catch (error) {
                                           console.error(
@@ -3552,7 +3578,7 @@ export function TableGrid({ onTableSelect, selectedTableId }: TableGridProps) {
             setShowReceiptPreview(false);
             setPreviewReceipt(null);
           }}
-          onConfirm={() => {
+          onConfirm={(itemReceipt: any) => {
             console.log(
               "📄 Table: Receipt preview confirmed, starting payment flow like POS",
             );
@@ -3563,7 +3589,7 @@ export function TableGrid({ onTableSelect, selectedTableId }: TableGridProps) {
             }
 
             // Prepare complete order data for payment flow - exactly like POS
-            const completeOrderData = {
+            const completeOrderData = itemReceipt || {
               ...selectedOrder,
               orderItems: previewReceipt.orderItems || orderItems || [],
               items:
@@ -3587,12 +3613,8 @@ export function TableGrid({ onTableSelect, selectedTableId }: TableGridProps) {
             // Close preview first
             setShowReceiptPreview(false);
             setPreviewReceipt(null);
-
-            // Then show payment method modal after a short delay to ensure state updates
-            setTimeout(() => {
-              console.log("📄 Table: Opening payment method modal");
-              setShowPaymentMethodModal(true);
-            }, 100);
+            setIsTitle(true);
+            setShowPaymentMethodModal(true);
           }}
           isPreview={showReceiptPreview}
           receipt={previewReceipt}

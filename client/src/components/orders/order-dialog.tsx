@@ -673,20 +673,23 @@ export function OrderDialog({
         }
       }
 
-      if (priceIncludesTax) {
-        // When price includes tax: subtotal = (price - discount/qty) / (1 + tax_rate/100) * qty
-        const taxRate = product?.taxRate ? parseFloat(product.taxRate) : 0;
+      // Calculate item subtotal (price before tax)
+      const taxRate = product?.taxRate ? parseFloat(product.taxRate) : 0;
+
+      if (priceIncludesTax && taxRate > 0) {
+        // When price includes tax:
+        // Step 1: Calculate price after discount per unit
         const discountPerUnit = itemDiscountAmount / quantity;
-        const adjustedPrice = Math.max(0, originalPrice - discountPerUnit);
-        itemSubtotal =
-          taxRate > 0
-            ? (adjustedPrice / (1 + taxRate / 100)) * quantity
-            : adjustedPrice * quantity;
+        const priceAfterDiscount = Math.max(0, originalPrice - discountPerUnit);
+
+        // Step 2: Extract the pre-tax price from the discounted price
+        const priceBeforeTaxPerUnit = priceAfterDiscount / (1 + taxRate / 100);
+        itemSubtotal = Math.round(priceBeforeTaxPerUnit * quantity);
       } else {
         // When price doesn't include tax: subtotal = (price - discount/qty) * qty
         const discountPerUnit = itemDiscountAmount / quantity;
         const adjustedPrice = Math.max(0, originalPrice - discountPerUnit);
-        itemSubtotal = adjustedPrice * quantity;
+        itemSubtotal = Math.round(adjustedPrice * quantity);
       }
 
       totalSubtotal += Math.round(itemSubtotal);
@@ -768,22 +771,25 @@ export function OrderDialog({
 
         if (priceIncludesTax) {
           // When price includes tax:
-          // giá bao gồm thuế = (price - (discount/quantity)) * quantity
           const discountPerUnit = itemDiscountAmount / quantity;
-          const adjustedPrice = Math.max(0, originalPrice - discountPerUnit);
-          const giaGomThue = adjustedPrice * quantity;
-          // subtotal = giá bao gồm thuế / (1 + (taxRate / 100)) (làm tròn)
-          const tamTinh = giaGomThue / (1 + taxRate);
-          // tax = giá bao gồm thuế - subtotal
-          itemTax = Math.round(giaGomThue - tamTinh);
+          const priceAfterDiscount = Math.max(
+            0,
+            originalPrice - discountPerUnit,
+          );
+          const totalAfterDiscount = priceAfterDiscount * quantity;
+
+          // Calculate pre-tax amount from discounted price
+          const priceBeforeTax = Math.round(totalAfterDiscount / (1 + taxRate));
+
+          // Tax = total after discount - pre-tax amount
+          itemTax = Math.round(totalAfterDiscount - priceBeforeTax);
         } else {
           // When price doesn't include tax:
-          // subtotal = (price - (discount/quantity)) * quantity
           const discountPerUnit = itemDiscountAmount / quantity;
           const adjustedPrice = Math.max(0, originalPrice - discountPerUnit);
-          const tamTinh = adjustedPrice * quantity;
-          // tax = subtotal * (taxRate / 100) (làm tròn)
-          itemTax = Math.round(tamTinh * taxRate);
+          const priceBeforeTax = adjustedPrice * quantity;
+          // tax = subtotal * taxRate
+          itemTax = Math.round(priceBeforeTax * taxRate);
         }
 
         return sum + Math.max(0, itemTax);
@@ -795,7 +801,17 @@ export function OrderDialog({
   const calculateTotal = () => {
     const subtotal = calculateSubtotal();
     const tax = calculateTax();
-    return Math.max(0, subtotal + tax);
+    const total = subtotal + tax;
+
+    console.log("💰 calculateTotal:", {
+      subtotal,
+      tax,
+      total,
+      discount,
+      mode,
+    });
+
+    return Math.max(0, total);
   };
 
   const calculateGrandTotal = () => {
@@ -2030,83 +2046,35 @@ export function OrderDialog({
                                 ) : null;
                               })()}
                               {(() => {
-                                const basePrice = Number(item.product.price);
+                                const originalPrice = Number(item.product.price);
                                 const quantity = item.quantity;
-                                const product = products?.find(
-                                  (p: Product) => p.id === item.product.id,
-                                );
-                                const priceIncludesTax =
-                                  storeSettings?.priceIncludesTax || false;
-                                const taxRate = product?.taxRate
-                                  ? parseFloat(product.taxRate)
-                                  : 0;
-
-                                let itemSubtotal = 0;
-                                let itemTax = 0;
+                                const itemTotal = originalPrice * quantity;
+          
+                                // Calculate total before discount for all items
+                                const totalBeforeDiscount =
+                                  existingItems.reduce((sum, item) => {
+                                    return (
+                                      sum +
+                                      Number(item.unitPrice || 0) *
+                                        Number(item.quantity || 0)
+                                    );
+                                  }, 0) +
+                                  cart.reduce((sum, item) => {
+                                    return (
+                                      sum +
+                                      Number(item.product.price) * item.quantity
+                                    );
+                                  }, 0);
+          
                                 let itemDiscountAmount = 0;
-
-                                if (priceIncludesTax) {
-                                  // When priceIncludesTax = true:
-                                  if (
-                                    product?.beforeTaxPrice &&
-                                    product.beforeTaxPrice !== null &&
-                                    product.beforeTaxPrice !== ""
-                                  ) {
-                                    const beforeTaxPrice = parseFloat(
-                                      product.beforeTaxPrice,
-                                    );
-                                    itemSubtotal = beforeTaxPrice * quantity;
-                                    itemTax = Math.max(
-                                      0,
-                                      (basePrice - beforeTaxPrice) * quantity,
-                                    );
-                                  } else {
-                                    itemSubtotal = basePrice * quantity;
-                                  }
-                                } else {
-                                  // When priceIncludesTax = false:
-                                  itemSubtotal = basePrice * quantity;
-                                  // Calculate tax using afterTaxPrice
-                                  if (
-                                    product?.afterTaxPrice &&
-                                    product.afterTaxPrice !== null &&
-                                    product.afterTaxPrice !== ""
-                                  ) {
-                                    const afterTaxPrice = parseFloat(
-                                      product.afterTaxPrice,
-                                    );
-                                    const taxPerUnit =
-                                      afterTaxPrice - basePrice;
-                                    itemTax = Math.max(
-                                      0,
-                                      taxPerUnit * quantity,
-                                    );
-                                  }
+          
+                                if (totalBeforeDiscount > 0) {
+                                  // Calculate proportional discount
+                                  itemDiscountAmount = Math.round(
+                                    (discount * itemTotal) / totalBeforeDiscount,
+                                  );
                                 }
-
-                                // Calculate discount for this item using subtotal (not including tax)
-                                if (discount > 0) {
-                                  const totalBeforeDiscount =
-                                    calculateSubtotal();
-                                  itemDiscountAmount =
-                                    totalBeforeDiscount > 0
-                                      ? Math.floor(
-                                          (discount * itemSubtotal) /
-                                            totalBeforeDiscount,
-                                        )
-                                      : 0;
-                                }
-
-                                let finalTotal;
-                                if (priceIncludesTax) {
-                                  // When priceIncludesTax = true: final total = original price - discount
-                                  finalTotal =
-                                    basePrice * quantity - itemDiscountAmount;
-                                } else {
-                                  // When priceIncludesTax = false: final total = subtotal + tax - discount
-                                  finalTotal =
-                                    itemSubtotal + itemTax - itemDiscountAmount;
-                                }
+                                let finalTotal = itemTotal - itemDiscountAmount;
 
                                 return (
                                   <div className="font-medium text-blue-600">

@@ -754,16 +754,10 @@ export function ShoppingCart({
     setShowReceiptPreview(false);
     setPreviewReceipt(null);
     setOrderForPayment(null);
-    setSelectedCustomer(null); // Clear selected customer on cancel
-    setCustomerSearchTerm(""); // Clear search term
-    // Clear customer for the current order
-    if (activeOrderId) {
-      setOrderCustomers((prev) => {
-        const updated = { ...prev };
-        delete updated[activeOrderId];
-        return updated;
-      });
-    }
+    // DON'T clear selected customer on cancel - keep it for retry
+    // setSelectedCustomer(null); 
+    // setCustomerSearchTerm("");
+    // Don't clear customer for the current order on cancel
   };
 
   // Handler for payment method selection
@@ -785,13 +779,17 @@ export function ShoppingCart({
         (window as any).clearActiveOrder();
       }
 
-      // Reset states
+      // Reset states including discount
       setPreviewReceipt(null);
       setOrderForPayment(null);
       setLastCartItems([]);
       setSelectedCustomer(null); // Clear selected customer on successful payment
       setCustomerSearchTerm(""); // Clear search term
       setOrderCustomers({}); // Clear all order customers
+      
+      // Clear discount for all orders
+      setOrderDiscounts({});
+      setDiscountAmount("0");
 
       // Show final receipt if needed
       if (data.shouldShowReceipt !== false) {
@@ -1276,6 +1274,10 @@ export function ShoppingCart({
     setSelectedCustomer(null); // Clear selected customer
     setCustomerSearchTerm(""); // Clear search term
     setOrderCustomers({}); // Clear all order customers
+    
+    // Clear all discounts
+    setOrderDiscounts({});
+    setDiscountAmount("0");
 
     // Clear any active orders
     if (typeof window !== "undefined" && (window as any).clearActiveOrder) {
@@ -1298,6 +1300,13 @@ export function ShoppingCart({
 
     // Remove customer for this order
     setOrderCustomers((prev) => {
+      const updated = { ...prev };
+      delete updated[orderId];
+      return updated;
+    });
+
+    // Remove discount for this order
+    setOrderDiscounts((prev) => {
       const updated = { ...prev };
       delete updated[orderId];
       return updated;

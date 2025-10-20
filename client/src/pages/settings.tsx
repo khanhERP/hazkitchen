@@ -379,9 +379,10 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
   }, [storeData]);
 
   // Fetch payment methods from API
-  const { data: paymentMethodsData, isLoading: paymentMethodsLoading } = useQuery<any[]>({
-    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/payment-methods"],
-  });
+  const { data: paymentMethodsData, isLoading: paymentMethodsLoading } =
+    useQuery<any[]>({
+      queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/payment-methods"],
+    });
 
   // Update local state when data is loaded
   useEffect(() => {
@@ -525,7 +526,11 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
   // Mutation to update payment method
   const updatePaymentMethodMutation = useMutation({
     mutationFn: async ({ id, data }: { id: number; data: any }) => {
-      const response = await apiRequest("PUT", `https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/payment-methods/${id}`, data);
+      const response = await apiRequest(
+        "PUT",
+        `https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/payment-methods/${id}`,
+        data,
+      );
       return response.json();
     },
     onSuccess: () => {
@@ -586,7 +591,7 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
       icon: "💳",
       sortOrder: paymentMethods.length,
     };
-    
+
     createPaymentMethodMutation.mutate(newMethodData);
   };
 
@@ -1309,7 +1314,7 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
 
   const handleEditEInvoice = (eInvoice: any) => {
     console.log("Editing E-invoice:", eInvoice);
-    
+
     // Reset errors first
     setEInvoiceFormErrors({
       taxCode: "",
@@ -1318,7 +1323,7 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
       softwareName: "",
       loginUrl: "",
     });
-    
+
     // Set form data
     setEInvoiceForm({
       taxCode: eInvoice.taxCode || "",
@@ -1331,11 +1336,11 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
       notes: eInvoice.notes === "-" ? "" : eInvoice.notes || "",
       isActive: eInvoice.isActive !== undefined ? eInvoice.isActive : true,
     });
-    
+
     // Set editing state and show form
     setEditingEInvoice(eInvoice);
     setShowEInvoiceForm(true);
-    
+
     console.log("E-invoice form opened for editing");
   };
 
@@ -2372,12 +2377,21 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
                                                 </td>
                                                 <td className="px-3 py-3 text-center">
                                                   <Badge
-                                                    variant={template.useCK ? "default" : "secondary"}
+                                                    variant={
+                                                      template.useCK
+                                                        ? "default"
+                                                        : "secondary"
+                                                    }
                                                     className={`text-xs ${template.useCK ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-800"}`}
                                                   >
-                                                    {template.useCK === true || template.useCK === 1
-                                                      ? t("settings.usageStatusActive")
-                                                      : t("settings.usageStatusInactive")}
+                                                    {template.useCK === true ||
+                                                    template.useCK === 1
+                                                      ? t(
+                                                          "settings.usageStatusActive",
+                                                        )
+                                                      : t(
+                                                          "settings.usageStatusInactive",
+                                                        )}
                                                   </Badge>
                                                 </td>
                                                 <td className="px-3 py-3">
@@ -2818,7 +2832,8 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
                                           ? "bg-purple-500"
                                           : customer.membershipLevel === "GOLD"
                                             ? "bg-yellow-500"
-                                            : customer.membershipLevel === "SILVER"
+                                            : customer.membershipLevel ===
+                                                "SILVER"
                                               ? "bg-gray-300 text-black"
                                               : "bg-gray-400"
                                       } text-white`}
@@ -3004,7 +3019,9 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
                             <div className="flex justify-between items-center mb-6">
                               <div className="flex items-center gap-4">
                                 <Input
-                                  placeholder={t("settings.productNamePlaceholder")}
+                                  placeholder={t(
+                                    "settings.productNamePlaceholder",
+                                  )}
                                   className="w-64"
                                   value={productSearchTerm}
                                   onChange={(e) =>
@@ -3115,138 +3132,143 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
                                     </tr>
                                   </thead>
                                   <tbody className="divide-y">
-                                    {filteredProducts.map((product: any, index: number) => {
-                                      const category = categoriesData?.find(
-                                        (c: any) => c.id === product.categoryId,
-                                      );
-                                      return (
-                                        <tr
-                                          key={product.id}
-                                          className="hover:bg-gray-50"
-                                        >
-                                          <td className="py-3 px-4 text-center text-gray-600">
-                                            {index + 1}
-                                          </td>
-                                          <td className="px-4 py-3">
-                                            <div className="flex items-center gap-3">
-                                              {product.imageUrl ? (
-                                                <img
-                                                  src={product.imageUrl}
-                                                  alt={product.name}
-                                                  className="w-10 h-10 rounded object-cover"
-                                                />
-                                              ) : (
-                                                <div className="w-10 h-10 rounded bg-gray-200 flex items-center justify-center">
-                                                  <Package className="w-5 h-5 text-gray-400" />
-                                                </div>
-                                              )}
-                                              <span className="font-medium">
-                                                {product.name}
-                                              </span>
-                                            </div>
-                                          </td>
-                                          <td className="px-4 py-3">
-                                            <div
-                                              className="font-mono text-sm truncate"
-                                              title={product.sku}
-                                            >
-                                              {product.sku}
-                                            </div>
-                                          </td>
-                                          <td className="px-4 py-3">
-                                            <Badge
-                                              variant="outline"
-                                              className="text-xs max-w-full break-words whitespace-normal leading-tight"
-                                            >
-                                              <span
-                                                className="block max-w-[100px] truncate"
-                                                title={category?.name || "N/A"}
+                                    {filteredProducts.map(
+                                      (product: any, index: number) => {
+                                        const category = categoriesData?.find(
+                                          (c: any) =>
+                                            c.id === product.categoryId,
+                                        );
+                                        return (
+                                          <tr
+                                            key={product.id}
+                                            className="hover:bg-gray-50"
+                                          >
+                                            <td className="py-3 px-4 text-center text-gray-600">
+                                              {index + 1}
+                                            </td>
+                                            <td className="px-4 py-3">
+                                              <div className="flex items-center gap-3">
+                                                {product.imageUrl ? (
+                                                  <img
+                                                    src={product.imageUrl}
+                                                    alt={product.name}
+                                                    className="w-10 h-10 rounded object-cover"
+                                                  />
+                                                ) : (
+                                                  <div className="w-10 h-10 rounded bg-gray-200 flex items-center justify-center">
+                                                    <Package className="w-5 h-5 text-gray-400" />
+                                                  </div>
+                                                )}
+                                                <span className="font-medium">
+                                                  {product.name}
+                                                </span>
+                                              </div>
+                                            </td>
+                                            <td className="px-4 py-3">
+                                              <div
+                                                className="font-mono text-sm truncate"
+                                                title={product.sku}
                                               >
-                                                {category?.name || "N/A"}
-                                              </span>
-                                            </Badge>
-                                          </td>
-                                          <td className="px-4 py-3 text-right">
-                                            <div className="font-medium text-sm">
-                                              {parseFloat(
-                                                product.price || "0",
-                                              ).toLocaleString()}{" "}
-                                              ₫
-                                            </div>
-                                          </td>
-                                          <td className="px-4 py-3 text-center">
-                                            <div className="text-sm">
-                                              {product.stock || 0}
-                                            </div>
-                                          </td>
-                                          <td className="px-4 py-3 text-center">
-                                            <Badge
-                                              variant={
-                                                product.stock > 0
-                                                  ? "default"
-                                                  : "destructive"
-                                              }
-                                              className={`text-xs ${
-                                                product.stock > 0
-                                                  ? "bg-green-100 text-green-800"
-                                                  : ""
-                                              }`}
-                                            >
-                                              {product.stock > 0
-                                                ? t("common.inStock")
-                                                : t("common.outOfStock")}
-                                            </Badge>
-                                          </td>
-                                          <td className="px-4 py-3 text-center">
-                                            <Badge
-                                              variant={
-                                                product.isActive === true ||
-                                                product.isActive === 1
-                                                  ? "default"
-                                                  : "secondary"
-                                              }
-                                              className={`text-xs ${
-                                                product.isActive === true ||
-                                                product.isActive === 1
-                                                  ? "bg-blue-100 text-blue-800"
-                                                  : "bg-gray-100 text-gray-800"
-                                              }`}
-                                            >
-                                              {product.isActive === true ||
-                                              product.isActive === 1
-                                                ? t("settings.yes")
-                                                : t("common.no")}
-                                            </Badge>
-                                          </td>
-                                          <td className="px-4 py-3">
-                                            <div className="flex items-center justify-center gap-1">
-                                              <Button
-                                                variant="ghost"
-                                                size="sm"
-                                                onClick={() =>
-                                                  handleEditProduct(product)
+                                                {product.sku}
+                                              </div>
+                                            </td>
+                                            <td className="px-4 py-3">
+                                              <Badge
+                                                variant="outline"
+                                                className="text-xs max-w-full break-words whitespace-normal leading-tight"
+                                              >
+                                                <span
+                                                  className="block max-w-[100px] truncate"
+                                                  title={
+                                                    category?.name || "N/A"
+                                                  }
+                                                >
+                                                  {category?.name || "N/A"}
+                                                </span>
+                                              </Badge>
+                                            </td>
+                                            <td className="px-4 py-3 text-right">
+                                              <div className="font-medium text-sm">
+                                                {parseFloat(
+                                                  product.price || "0",
+                                                ).toLocaleString()}{" "}
+                                                ₫
+                                              </div>
+                                            </td>
+                                            <td className="px-4 py-3 text-center">
+                                              <div className="text-sm">
+                                                {product.stock || 0}
+                                              </div>
+                                            </td>
+                                            <td className="px-4 py-3 text-center">
+                                              <Badge
+                                                variant={
+                                                  product.stock > 0
+                                                    ? "default"
+                                                    : "destructive"
                                                 }
+                                                className={`text-xs ${
+                                                  product.stock > 0
+                                                    ? "bg-green-100 text-green-800"
+                                                    : ""
+                                                }`}
                                               >
-                                                <Edit className="w-4 h-4" />
-                                              </Button>
-                                              <Button
-                                                variant="ghost"
-                                                size="sm"
-                                                className="text-red-500 hover:text-red-700"
-                                                onClick={() =>
-                                                  handleDeleteProduct(
-                                                    product.id,
-                                                    product.name,
-                                                  )
+                                                {product.stock > 0
+                                                  ? t("common.inStock")
+                                                  : t("common.outOfStock")}
+                                              </Badge>
+                                            </td>
+                                            <td className="px-4 py-3 text-center">
+                                              <Badge
+                                                variant={
+                                                  product.isActive === true ||
+                                                  product.isActive === 1
+                                                    ? "default"
+                                                    : "secondary"
                                                 }
+                                                className={`text-xs ${
+                                                  product.isActive === true ||
+                                                  product.isActive === 1
+                                                    ? "bg-blue-100 text-blue-800"
+                                                    : "bg-gray-100 text-gray-800"
+                                                }`}
                                               >
-                                                <Trash2 className="w-4 h-4" />
-                                              </Button>
-                                            </div>
-                                          </td>
-                                        </tr>
-                                      );
-                                    })}
+                                                {product.isActive === true ||
+                                                product.isActive === 1
+                                                  ? t("settings.yes")
+                                                  : t("common.no")}
+                                              </Badge>
+                                            </td>
+                                            <td className="px-4 py-3">
+                                              <div className="flex items-center justify-center gap-1">
+                                                <Button
+                                                  variant="ghost"
+                                                  size="sm"
+                                                  onClick={() =>
+                                                    handleEditProduct(product)
+                                                  }
+                                                >
+                                                  <Edit className="w-4 h-4" />
+                                                </Button>
+                                                <Button
+                                                  variant="ghost"
+                                                  size="sm"
+                                                  className="text-red-500 hover:text-red-700"
+                                                  onClick={() =>
+                                                    handleDeleteProduct(
+                                                      product.id,
+                                                      product.name,
+                                                    )
+                                                  }
+                                                >
+                                                  <Trash2 className="w-4 h-4" />
+                                                </Button>
+                                              </div>
+                                            </td>
+                                          </tr>
+                                        );
+                                      },
+                                    )}
                                   </tbody>
                                 </table>
                               </div>
@@ -3278,7 +3300,9 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
                             <div className="flex justify-between items-center mb-6">
                               <div className="flex items-center gap-4">
                                 <Input
-                                  placeholder={t("settings.searchCategoriesPlaceholder")}
+                                  placeholder={t(
+                                    "settings.searchCategoriesPlaceholder",
+                                  )}
                                   className="w-64"
                                   value={productSearchTerm}
                                   onChange={(e) =>
@@ -3328,7 +3352,8 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
                                   {t("common.loading")}
                                 </p>
                               </div>
-                            ) : categoriesData && categoriesData.length === 0 ? (
+                            ) : categoriesData &&
+                              categoriesData.length === 0 ? (
                               <div className="text-center py-8">
                                 <Tag className="w-12 h-12 mx-auto text-gray-400 mb-4" />
                                 <p className="text-gray-500">
@@ -3377,21 +3402,28 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
                                       ?.filter((category: any) => {
                                         const matchesSearch = category.name
                                           .toLowerCase()
-                                          .includes(productSearchTerm.toLowerCase());
+                                          .includes(
+                                            productSearchTerm.toLowerCase(),
+                                          );
                                         const matchesCategory =
                                           selectedCategoryFilter === "all" ||
-                                          category.id.toString() === selectedCategoryFilter;
+                                          category.id.toString() ===
+                                            selectedCategoryFilter;
                                         return matchesSearch && matchesCategory;
                                       })
                                       .map((category: any, index) => {
                                         const productCount = productsData
                                           ? productsData.filter(
-                                              (p: any) => p.categoryId === category.id,
+                                              (p: any) =>
+                                                p.categoryId === category.id,
                                             ).length
                                           : 0;
 
                                         return (
-                                          <tr key={category.id} className="hover:bg-gray-50">
+                                          <tr
+                                            key={category.id}
+                                            className="hover:bg-gray-50"
+                                          >
                                             <td className="px-2 py-3 text-center text-sm text-gray-600">
                                               {index + 1}
                                             </td>
@@ -3404,17 +3436,23 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
                                               <div className="flex justify-center">
                                                 <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
                                                   <span className="text-xl">
-                                                    {category.icon === "fas fa-utensils"
+                                                    {category.icon ===
+                                                    "fas fa-utensils"
                                                       ? "🍽️"
-                                                      : category.icon === "fas fa-coffee"
+                                                      : category.icon ===
+                                                          "fas fa-coffee"
                                                         ? "☕"
-                                                        : category.icon === "fas fa-cookie"
+                                                        : category.icon ===
+                                                            "fas fa-cookie"
                                                           ? "🍪"
-                                                          : category.icon === "fas fa-ice-cream"
+                                                          : category.icon ===
+                                                              "fas fa-ice-cream"
                                                             ? "🍨"
-                                                            : category.icon === "fas fa-beer"
+                                                            : category.icon ===
+                                                                "fas fa-beer"
                                                               ? "🍺"
-                                                              : category.icon === "fas fa-apple-alt"
+                                                              : category.icon ===
+                                                                  "fas fa-apple-alt"
                                                                 ? "🍎"
                                                                 : "🍽️"}
                                                   </span>
@@ -3422,13 +3460,20 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
                                               </div>
                                             </td>
                                             <td className="px-4 py-3">
-                                              <div className="text-sm font-medium truncate" title={category.name}>
+                                              <div
+                                                className="text-sm font-medium truncate"
+                                                title={category.name}
+                                              >
                                                 {category.name}
                                               </div>
                                             </td>
                                             <td className="px-4 py-3 text-center">
-                                              <Badge variant="outline" className="text-xs">
-                                                {productCount} {t("settings.productsCount")}
+                                              <Badge
+                                                variant="outline"
+                                                className="text-xs"
+                                              >
+                                                {productCount}{" "}
+                                                {t("settings.productsCount")}
                                               </Badge>
                                             </td>
                                             <td className="px-4 py-3">
@@ -3436,7 +3481,9 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
                                                 <Button
                                                   variant="ghost"
                                                   size="sm"
-                                                  onClick={() => handleEditCategory(category)}
+                                                  onClick={() =>
+                                                    handleEditCategory(category)
+                                                  }
                                                 >
                                                   <Edit className="w-4 h-4" />
                                                 </Button>
@@ -3444,7 +3491,11 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
                                                   variant="ghost"
                                                   size="sm"
                                                   className="text-red-500 hover:text-red-700"
-                                                  onClick={() => handleDeleteCategory(category.id)}
+                                                  onClick={() =>
+                                                    handleDeleteCategory(
+                                                      category.id,
+                                                    )
+                                                  }
                                                 >
                                                   <Trash2 className="w-4 h-4" />
                                                 </Button>
@@ -3934,9 +3985,7 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
                   />
                 </div>
                 <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="sku">
-                    {t("settings.skuAutoGenerate")}
-                  </Label>
+                  <Label htmlFor="sku">{t("settings.skuAutoGenerate")}</Label>
                   <div className="col-span-3 flex gap-2">
                     <Input
                       id="productSku"
@@ -4104,7 +4153,9 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
                 {/* Row 3: Product Type, Tax Rate, Unit - GIỐNG PRODUCT MANAGER MODAL */}
                 <div className="grid grid-cols-3 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="productType">{t("tables.productType")}</Label>
+                    <Label htmlFor="productType">
+                      {t("tables.productType")}
+                    </Label>
                     <Select
                       value={productForm.productType?.toString() || "1"}
                       onValueChange={(value) =>
@@ -4115,7 +4166,9 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
                       }
                     >
                       <SelectTrigger>
-                        <SelectValue placeholder={t("tables.selectProductType")} />
+                        <SelectValue
+                          placeholder={t("tables.selectProductType")}
+                        />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="1">
@@ -4149,8 +4202,12 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
                         <SelectValue placeholder="Chọn thuế suất" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="KCT">KCT (Không chịu thuế)</SelectItem>
-                        <SelectItem value="KKKNT">KKKNT (Không kê khai nộp thuế)</SelectItem>
+                        <SelectItem value="KCT">
+                          KCT (Không chịu thuế)
+                        </SelectItem>
+                        <SelectItem value="KKKNT">
+                          KKKNT (Không kê khai nộp thuế)
+                        </SelectItem>
                         <SelectItem value="0">0%</SelectItem>
                         <SelectItem value="5">5%</SelectItem>
                         <SelectItem value="8">8%</SelectItem>
@@ -4982,7 +5039,9 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
                       }
                     />
                     <Label htmlFor="useCK" className="text-sm">
-                      {templateForm.useCK ? t("settings.usageStatusActive") : t("settings.usageStatusInactive")}
+                      {templateForm.useCK
+                        ? t("settings.usageStatusActive")
+                        : t("settings.usageStatusInactive")}
                     </Label>
                   </div>
                 </div>

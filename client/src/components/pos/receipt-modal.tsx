@@ -14,6 +14,7 @@ import { EInvoiceModal } from "./einvoice-modal";
 import { PaymentMethodModal } from "./payment-method-modal";
 import { useState, useEffect, useMemo } from "react";
 import { useTranslation } from "@/lib/i18n";
+import { useToast } from "@/hooks/use-toast";
 
 interface ReceiptModalProps {
   isOpen: boolean;
@@ -42,6 +43,7 @@ export function ReceiptModal({
   const [hasAutoOpened, setHasAutoOpened] = useState(false);
   const [printers, setPrinters] = useState([]);
   const { t } = useTranslation();
+  const { toast } = useToast();
 
   console.log("🔍 ReceiptModal rendered with props:", {
     isOpen,
@@ -63,8 +65,8 @@ export function ReceiptModal({
   // Calculate title: isTitle=true always shows payment invoice, otherwise use isPreview
   let title =
     isTitle === false
-      ? `${t("pos.receiptPreview")}`
-      : `${t("common.paymentInvoice")}`;
+      ? `${t("pos.receiptPreview").toUpperCase()}`
+      : `${t("common.paymentInvoice").toUpperCase()}`;
 
   // Query store settings
   const { data: storeSettings } = useQuery({
@@ -76,6 +78,48 @@ export function ReceiptModal({
     },
     enabled: isOpen, // Only fetch when modal is open
   });
+
+  // Query to get table info based on orderId
+  const { data: tableInfo } = useQuery({
+    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/tables/by-order", receipt?.id],
+    queryFn: async () => {
+      if (!receipt?.id) return null;
+
+      // First get the order to find tableId
+      const orderResponse = await apiRequest(
+        "GET",
+        `https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders/${receipt.id}`,
+      );
+      const order = await orderResponse.json();
+      receipt.orderNumber = order.orderNumber;
+
+      if (!order?.tableId) return null;
+
+      // Then get the table info
+      const tableResponse = await apiRequest(
+        "GET",
+        `https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/tables/${order.tableId}`,
+      );
+      const table = await tableResponse.json();
+
+      console.log("📍 Table info fetched for order:", {
+        orderId: receipt.id,
+        orderNumber: order.orderNumber,
+        tableId: order.tableId,
+        tableNumber: table.tableNumber,
+      });
+
+      return table;
+    },
+    enabled: isOpen && !!receipt?.id,
+  });
+
+  // Get table number from query result
+  const displayTableNumber = useMemo(() => {
+    if (receipt?.tableNumber) return receipt.tableNumber;
+    if (tableInfo?.tableNumber) return tableInfo.tableNumber;
+    return "-";
+  }, [receipt?.tableNumber, tableInfo?.tableNumber]);
 
   // Log receipt modal state for debugging - ALWAYS CALL THIS HOOK
   useEffect(() => {
@@ -256,7 +300,7 @@ export function ReceiptModal({
       content = generatePrintHTML(printContent, false);
     }
 
-    console.log("🖨{�� ============ BẮT ĐẦU IN HÓA ĐƠN ============");
+    console.log("🖨{ ============ BẮT ĐẦU IN HÓA ĐƠN ============");
     console.log(
       `📝 Loại hóa đơn: ${isTitle ? "Hóa đơn nhân viên" : "Hóa đơn bếp"}`,
     );
@@ -315,27 +359,18 @@ export function ReceiptModal({
         );
       });
       console.log("🖨️ ============ KẾT THÚC IN HÓA ĐƠN ============\n");
-      alert("Kết quả in: " + result);
+      toast({
+        title: `${t("common.success")}`,
+        description: `${t("common.success")}`,
+      });
 
       onClose();
     } catch (error) {
-      console.error("❌ ==========================================");
-      console.error("❌ LỖI KHI IN HÓA ĐƠN!");
-      console.error("❌ ==========================================");
-      console.error("❌ Chi tiết lỗi:", error);
-      console.error("❌ Số máy in đã cấu hình:", printers.length);
-      if (printers.length > 0) {
-        console.error("❌ Danh sách máy in:");
-        printers.forEach((printer, index) => {
-          console.error(
-            `   ✗ Máy in #${index + 1}: ${printer.name} (${printer.ip || "USB"})`,
-          );
-        });
-      }
-      console.error("🖨️ ============ LỖI IN HÓA ĐƠN ============\n");
-      alert(
-        "Bạn chưa thiết lập cài đặt máy in. Vui lòng liên hệ với edpos để được hỗ trợ.",
-      );
+      toast({
+        title: `${t("common.error")}`,
+        description:
+          "Bạn chưa mở phần mềm hỗ trợ máy in. Vui lòng mở phần mềm Edposprintservice",
+      });
       onClose();
     }
   };
@@ -440,7 +475,7 @@ export function ReceiptModal({
 
             // Show success message based on device type
             const successMessage = isMobile
-              ? "✅ Hóa đơn đã được gửi đến máy in thành công!\nKiểm tra máy in POS của bạn."
+              ? "✅ H=�a đơn đã được gửi đến máy in thành công!\nKiểm tra máy in POS của bạn."
               : "✅ Hóa đơn đã được gửi đến máy in POS thành công!";
 
             alert(successMessage);
@@ -492,32 +527,63 @@ export function ReceiptModal({
   const formatForMiniPrinter = (receipt: any, config: any) => {
     const lineBreak = "\n";
     let formattedText = `
-      ${config.storeName || "Tên cửa hàng"}
-      Vị trí cửa hàng: ${config.address || "Địa chỉ cửa hàng"}
-      Điện thoại: ${config.phone || "Số điện thoại"}
-      ${title}
-      Số giao dịch: ${receipt.transactionId}
-      Ngày: ${new Date().toLocaleString("vi-VN")}
-      Thu ngân: ${receipt.cashierName || "Tên thu ngân"}
-      Phí ship: ${receipt.shippingFee ? `${receipt.shippingFee.toLocaleString("vi-VN")} ₫` : "0 ₫"}
+        ${config.storeName || "Tên cửa hàng"}
+        Vị trí cửa hàng: ${config.address || "Địa chỉ cửa hàng"}
+        Điện thoại: ${config.phone || "Số điện thoại"}
+        Phiếu tạm tính
+        Số giao dịch: ${receipt.transactionId}
+        Ngày: ${new Date().toLocaleString("vi-VN")}
+        Thu ngân: ${receipt.cashierName || "Tên thu ngân"}
     `;
+    const taxGroups = receipt.items.reduce(
+      (groups: Record<number, number>, item: any) => {
+        const taxRate = parseFloat(item.taxRate || "0");
+        const unitPrice = parseFloat(item.unitPrice || item.price || "0");
+        const quantity = item.quantity || 1;
+        const itemDiscount = parseFloat(item.discount || "0");
+
+        const itemSubtotal = unitPrice * quantity - itemDiscount;
+        if (!groups[taxRate]) {
+          groups[taxRate] = 0;
+        }
+        const itemTax = (itemSubtotal * taxRate) / (100 + taxRate);
+        groups[taxRate] += itemTax;
+        return groups;
+      },
+      {},
+    );
+    const sortedTaxRates = Object.keys(taxGroups)
+      .map(Number)
+      .sort((a, b) => b - a);
     receipt.items.forEach((item: any) => {
       formattedText += `
-      Tên sản phẩm: ${item.productName || "Không xác định"}
-      SKU: ${item.sku} x ${item.quantity} (${Math.round(item.price, 0).toLocaleString("vi-VN")} ₫)
-      Giảm giá: -${Math.round(item.discount, 0).toLocaleString("vi-VN")} ₫
+        Tên sản phẩm: ${item.productName || "Không xác định"}
+        SKU: ${item.sku} x ${item.quantity} (${(item.unitPrice || "0").toLocaleString("vi-VN")})
+        Tổng: ${(parseFloat(item.unitPrice || "0") * (item.quantity || 1)).toLocaleString("vi-VN")} ₫
+        Giảm giá: -${(item.discount || 0).toLocaleString("vi-VN")} ₫
       `;
     });
-
-    let sumSubtotal = receipt.items.reduce((sum: any, item: any) => {
-      return sum + item.price * item.quantity;
+    formattedText += lineBreak;
+    let taxText = "";
+    sortedTaxRates.forEach((taxRate) => {
+      taxText += `
+        Thuế (${taxRate}%): ${Math.floor(taxGroups[taxRate]).toLocaleString("vi-VN")} ₫
+      `;
+    });
+    const total = receipt.items.reduce((sum: number, item: any) => {
+      return (
+        sum +
+        parseFloat(item.unitPrice || "0") * (item.quantity || 1) -
+        (item.discount || 0)
+      );
     }, 0);
+
     formattedText += `
-      Thành tiền: ${sumSubtotal.toLocaleString("vi-VN")} ₫
-      Thuế: ${receipt.tax.toLocaleString("vi-VN")} ₫
-      Giảm giá tổng: -${receipt.discount.toLocaleString("vi-VN")} ₫
-      Tổng tiền: ${receipt.total.toLocaleString("vi-VN")} ₫
+        Thành tiền: ${total.toLocaleString("vi-VN")} ₫
+        ${taxText}
+        Tổng tiền: ${(total + Object.values(taxGroups).reduce((sum, tax) => sum + tax, 0)).toLocaleString("vi-VN")} ₫
     `;
+
     return formattedText.trim();
   };
 
@@ -623,9 +689,6 @@ export function ReceiptModal({
 
   // Generate optimized print HTML
   const generatePrintHTML = (printContent: HTMLElement, isMobile: boolean) => {
-    const isIOS = /iphone|ipad|ipod/.test(navigator.userAgent.toLowerCase());
-    const isAndroid = /android/.test(navigator.userAgent.toLowerCase());
-
     // Get clean HTML content and ensure consistent formatting
     let cleanContent = printContent.innerHTML;
 
@@ -642,112 +705,121 @@ export function ReceiptModal({
       <html>
       <head>
         <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta name="viewport" content="width=576px, initial-scale=1.0">
         <title>Hóa đơn - ${receipt?.transactionId || "HĐ"}</title>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR&display=swap">
         <style>
-          body {
-            font-family: 'Courier New', monospace;
-            font-weight: bold;
-            font-size: 14px;
-            line-height: 1.3;
-            margin: ${isMobile ? "10px" : "15px"};
+          * {
+            margin: 0;
             padding: 0;
-            background: white;
-            color: black;
-            width: ${isMobile ? "350px" : "280px"};
+            box-sizing: border-box;
           }
-          .text-center { text-align: center; }
-          .text-right { text-align: right; }
-          .text-left { text-align: left; }
-          .font-bold { font-weight: bold; }
-          .text-blue-600 { color: #2563eb; }
-          .text-green-800 { color: #166534; }
-          .text-red-600 { color: #dc2626; }
-          .text-gray-600 { color: #4b5563; }
-          .border-t { border-top: 1px solid #000; margin: 8px 0; padding-top: 8px; }
-          .border-b { border-bottom: 1px solid #000; margin: 8px 0; padding-bottom: 8px; }
-          .border-gray-300 { border-color: #d1d5db; }
-          .flex { display: flex; justify-content: space-between; align-items: center; }
-          .flex-1 { flex: 1; }
-          .justify-between { justify-content: space-between; }
-          .items-center { align-items: center; }
-          .space-y-1 > * + * { margin-top: 2px; }
-          .space-y-2 > * + * { margin-top: 4px; }
-          .mb-1 { margin-bottom: 2px; }
-          .mb-2 { margin-bottom: 4px; }
-          .mb-3 { margin-bottom: 6px; }
-          .mb-4 { margin-bottom: 8px; }
-          .py-1 { padding: 2px 0; }
-          .py-2 { padding: 4px 0; }
-          .py-3 { padding: 6px 0; }
-          .pt-3 { padding-top: 6px; }
-          img { max-width: 80px; height: auto; display: block; margin: 0 auto; }
-          .receipt-container { max-width: 100%; margin: 0 auto; }
-          ${
-            isMobile
-              ? `
-          .print-instructions {
-            margin-top: 20px;
-            padding: 15px;
-            background: #f0f0f0;
-            border-radius: 8px;
-            font-size: 14px;
+
+          body {
+            font-family: 'Noto Sans KR', 'Arial Unicode MS', sans-serif;
+            font-size: 16px;
+            line-height: 1.4;
+            width: 100%;
+            max-width: 576px;
+            margin: 0 auto;
+            padding: 0;
+            background: #ffffff;
+            color: #000000;
+          }
+
+          table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 8px;
+          }
+
+          th, td {
+            padding: 4px 2px;
+            text-align: left;
+            vertical-align: top;
+          }
+
+          th {
             font-weight: bold;
-          }`
-              : ""
+            border-bottom: 1px dashed #000;
           }
+
+          td {
+            font-weight: bold;
+          }
+
+          .center {
+            text-align: center;
+          }
+          .right {
+            text-align: right;
+          }
+          p, div, span {
+            font-size: 16px !important;
+            font-weight: bold !important;
+          }
+          h2 {
+            font-size: 20px !important;
+            font-weight: bold !important;
+          }
+          .text-center { text-align: center !important; }
+          .text-right { text-align: right !important; }
+          .text-left { text-align: left !important; }
+          .font-bold { font-weight: bold !important; }
+          .font-semibold { font-weight: 600 !important; }
+          .text-blue-600 { color: #000 !important; }
+          .text-green-800 { color: #000 !important; }
+          .text-red-600 { color: #000 !important; }
+          .text-gray-600 { color: #000 !important; }
+          .border-t { border-top: 1px dashed #000; margin: 8px 0; padding-top: 8px; }
+          .border-b { border-bottom: 1px dashed #000; margin: 8px 0; padding-bottom: 8px; }
+          .border-gray-300 { border-color: #d1d5db; }
+          .flex { 
+            display: flex !important; 
+            justify-content: space-between !important; 
+            align-items: center !important; 
+          }
+          .flex-1 { flex: 1 !important; }
+          .justify-between { justify-content: space-between !important; }
+          .items-center { align-items: center !important; }
+          .space-y-1 > * + * { margin-top: 2px !important; }
+          .space-y-2 > * + * { margin-top: 4px !important; }
+          .mb-0 { margin-bottom: 0 !important; }
+          .mb-1 { margin-bottom: 2px !important; }
+          .mb-2 { margin-bottom: 4px !important; }
+          .mb-3 { margin-bottom: 6px !important; }
+          .mb-4 { margin-bottom: 8px !important; }
+          .py-1 { padding: 2px 0 !important; }
+          .py-2 { padding: 4px 0 !important; }
+          .py-3 { padding: 6px 0 !important; }
+          .pt-3 { padding-top: 6px !important; }
+          img { max-width: 80px; height: auto; display: block; margin: 0 auto; }
+
+          .receipt-container { 
+            width: 100%;
+            max-width: 576px;
+            margin: 0 auto;
+            padding: 16px;
+            box-sizing: border-box;
+            background: #ffffff;
+          }
+
           @media print {
-            body { 
-              margin: 0; 
-              padding: 10px;
-              font-size: 14px;
-              font-weight: bold;
-              width: 280px;
+            body {
+              width: 576px;
+              max-width: 576px;
             }
-            .receipt-container { max-width: 100%; }
-            .print-instructions { display: none; }
-            .text-blue-600 { color: #000 !important; }
-            .text-green-800 { color: #000 !important; }
-            .text-red-600 { color: #000 !important; }
-            .text-gray-600 { color: #666 !important; }
-          }
-          /* iOS Safari specific optimizations */
-          @supports (-webkit-touch-callout: none) {
-            body { -webkit-print-color-adjust: exact; }
-          }
-          /* Android Chrome specific optimizations */
-          @media (max-device-width: 480px) {
-            .receipt-container { max-width: 100%; padding: 0 5px; }
+            .receipt-container {
+              width: 576px;
+              max-width: 576px;
+            }
           }
         </style>
       </head>
       <body>
         <div class="receipt-container">
           ${cleanContent}
-          ${
-            isMobile
-              ? `
-          <div class="print-instructions">
-            <div class="font-bold text-center">Hướng dẫn in:</div>
-            <div>• Nhấn nút Menu hoặc Share trên trình duyệt</div>
-            <div>• Chọn "Print" hoặc "In"</div>
-            <div>• Hoặc chia sẻ với ứng dụng in khác</div>
-            ${isIOS ? "<div>• Trên iOS: Chọn Share → Print</div>" : ""}
-            ${isAndroid ? "<div>• Trên Android: Menu → Print hoặc Share</div>" : ""}
-          </div>`
-              : ""
-          }
         </div>
-        <script>
-          // Auto-open print dialog after short delay (more reliable timing)
-          setTimeout(() => {
-            try {
-              window.print();
-            } catch (e) {
-              console.log("Auto-print failed, user needs to print manually");
-            }
-          }, ${isMobile ? "1500" : "800"});
-        </script>
       </body>
       </html>
     `;
@@ -875,7 +947,7 @@ export function ReceiptModal({
           const browserTip = isSafari
             ? "Vui lòng sử dụng menu Safari → Share → Print"
             : isChrome
-              ? "Vui lòng sử dụng menu Chrome (⋮) → Print"
+              ? "Vui lòng s  � dụng menu Chrome (⋮) → Print"
               : "Vui lòng sử dụng menu trình duyệt để in";
 
           alert(browserTip);
@@ -1021,22 +1093,31 @@ export function ReceiptModal({
     // Prepare complete order data with exact values
     const orderDataForPayment = {
       ...receipt,
-      items: receipt?.items || cartItems.map((item: any) => ({
-        id: item.id,
-        productId: item.productId || item.id,
-        productName: item.productName || item.name,
-        sku: item.sku || `FOOD${String(item.productId || item.id).padStart(5, "0")}`,
-        quantity: item.quantity,
-        price: parseFloat(item.price || item.unitPrice || "0"),
-        unitPrice: parseFloat(item.unitPrice || item.price || "0"),
-        discount: parseFloat(item.discount || "0"),
-        taxRate: parseFloat(item.taxRate || "0"),
-        total: (parseFloat(item.price || item.unitPrice || "0") * item.quantity) - parseFloat(item.discount || "0")
-      })),
-      exactSubtotal: receipt?.exactSubtotal || parseFloat(receipt?.subtotal || "0"),
+      items:
+        receipt?.items ||
+        cartItems.map((item: any) => ({
+          id: item.id,
+          productId: item.productId || item.id,
+          productName: item.productName || item.name,
+          sku:
+            item.sku ||
+            `FOOD${String(item.productId || item.id).padStart(5, "0")}`,
+          quantity: item.quantity,
+          price: parseFloat(item.price || item.unitPrice || "0"),
+          unitPrice: parseFloat(item.unitPrice || item.price || "0"),
+          discount: parseFloat(item.discount || "0"),
+          taxRate: parseFloat(item.taxRate || "0"),
+          total:
+            parseFloat(item.price || item.unitPrice || "0") * item.quantity -
+            parseFloat(item.discount || "0"),
+        })),
+      exactSubtotal:
+        receipt?.exactSubtotal || parseFloat(receipt?.subtotal || "0"),
       exactTax: receipt?.exactTax || parseFloat(receipt?.tax || "0"),
-      exactDiscount: receipt?.exactDiscount || parseFloat(receipt?.discount || "0"),
-      exactTotal: receipt?.exactTotal || parseFloat(receipt?.total || "0") || total,
+      exactDiscount:
+        receipt?.exactDiscount || parseFloat(receipt?.discount || "0"),
+      exactTotal:
+        receipt?.exactTotal || parseFloat(receipt?.total || "0") || total,
     };
 
     console.log("🎯 Complete order data being passed:", orderDataForPayment);
@@ -1051,7 +1132,9 @@ export function ReceiptModal({
 
     // Call onConfirm with order data if provided
     if (onConfirm) {
-      console.log("📄 Receipt Modal: Calling onConfirm callback with order data");
+      console.log(
+        "📄 Receipt Modal: Calling onConfirm callback with order data",
+      );
       onConfirm(orderDataForPayment);
     }
   };
@@ -1114,286 +1197,361 @@ export function ReceiptModal({
           <div
             id="receipt-content"
             className="receipt-print bg-white"
-            style={{ padding: "16px", fontSize: "16px", fontWeight: "bold" }}
+            style={{
+              width: "100%",
+              maxWidth: "100%",
+              padding: "16px",
+              fontSize: "16px",
+              fontWeight: "bold",
+              margin: "0 auto",
+              boxSizing: "border-box",
+              backgroundColor: "#ffffff",
+            }}
           >
-            <div className="text-center mb-4">
-              <p className="text-xs font-semibold mb-1">
-                {storeSettings?.storeName ||
-                  "Easy Digital Point Of Sale Service"}
+            {/* Header - Store Info */}
+            <div
+              className="text-left mb-3"
+              style={{
+                fontSize: "16px",
+                lineHeight: "1.4",
+                fontWeight: "bold",
+              }}
+            >
+              <p className="font-bold mb-0">
+                Tên cửa hàng: {storeSettings?.storeName || "Cửa hàng ABC"}
               </p>
-              <p className="text-xs mb-0.5">{t("pos.mainStoreLocation")}</p>
-              <p className="text-xs mb-0.5">
-                {storeSettings?.address || "123 Commerce St, City, State 12345"}
+              <p className="mb-0 font-bold">
+                Địa chỉ: {storeSettings?.address || ""}
               </p>
-              <p className="text-xs mb-2">
-                {t("pos.phone")} {storeSettings?.phone || "(555) 123-4567"}
+              <p className="mb-0 font-bold">
+                SĐT: {storeSettings?.phone || "xxxxxxxxxx"}
               </p>
-              <div className="flex items-center justify-center">
-                <img src={logoPath} alt="EDPOS Logo" className="h-6" />
-              </div>
-              <p className="text-lg mb-2 invoice_title">{title}</p>
             </div>
 
-            <div className="border-t border-b border-gray-300 py-3 mb-3">
-              <div className="flex justify-between text-sm">
-                <span>{t("pos.transactionNumber")}</span>
-                <span>{receipt.orderNumber || receipt.transactionId}</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span>{t("pos.date")}</span>
-                <span>{new Date().toLocaleString()}</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span>{t("pos.cashier")}</span>
-                <span>{receipt.cashierName}</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span>{t("einvoice.customer")}:</span>
-                <span>{receipt.customerName || "Khách hàng lẻ"}</span>
-              </div>
-              {(receipt.customerPhone ||
-                receipt.phone ||
-                receipt.customer_phone) && (
-                <div className="flex justify-between text-sm">
-                  <span>Điện thoại:</span>
-                  <span>
-                    {receipt.customerPhone ||
-                      receipt.phone ||
-                      receipt.customer_phone}
-                  </span>
-                </div>
-              )}
-              {receipt?.customerTaxCode && (
-                <div className="flex justify-between text-sm">
-                  <span>{t("einvoice.taxCode")}</span>
-                  <span>{receipt.customerTaxCode}</span>
-                </div>
-              )}
-              {receipt.paymentMethod === "einvoice" && (
-                <div className="flex justify-between text-sm text-blue-600">
-                  <span>{t("einvoice.invoicestatus")}:</span>
-                  <span>
-                    {receipt.invoiceNumber
-                      ? `${t("einvoice.released")}`
-                      : `${t("einvoice.notReleased")}`}
-                  </span>
-                </div>
-              )}
+            {/* Title */}
+            <div className="text-center mb-3">
+              <h2
+                className="font-bold"
+                style={{
+                  fontSize: "20px",
+                  textTransform: "uppercase",
+                  margin: "0",
+                  fontWeight: "bold",
+                }}
+              >
+                {title}
+              </h2>
             </div>
 
-            <div className="space-y-2 mb-3">
-              {(receipt.items || []).map((item, index) => {
-                // Use exact values from database
-                const unitPrice = parseFloat(
-                  item.unitPrice || item.price || "0",
-                );
-                const quantity = item.quantity || 1;
-                // Get item-level discount from order_items.discount - THIS IS THE DISCOUNT PER ITEM
-                const itemDiscount = parseFloat(item.discount || "0");
-                // Calculate subtotal before discount for this item
-                const itemSubtotal = unitPrice * quantity;
-                // Calculate final amount after discount
-                const itemFinalAmount = itemSubtotal - itemDiscount;
+            {/* Invoice Info - Using Table */}
+            <table
+              style={{
+                width: "100%",
+                borderCollapse: "collapse",
+                marginBottom: "8px",
+                fontSize: "16px",
+                fontWeight: "bold",
+              }}
+            >
+              <tbody>
+                <tr>
+                  <td style={{ padding: "2px 0" }}>Số hóa đơn:</td>
+                  <td style={{ padding: "2px 0", textAlign: "right" }}>
+                    {receipt?.orderNumber || `ORD-${receipt?.id}`}
+                  </td>
+                </tr>
+                <tr>
+                  <td style={{ padding: "2px 0" }}>Bàn:</td>
+                  <td style={{ padding: "2px 0", textAlign: "right" }}>
+                    {tableInfo?.tableNumber || receipt?.tableNumber || "-"}
+                  </td>
+                </tr>
+                <tr>
+                  <td style={{ padding: "2px 0" }}>Thời gian:</td>
+                  <td style={{ padding: "2px 0", textAlign: "right" }}>
+                    {new Date().toLocaleString("vi-VN", {
+                      day: "2-digit",
+                      month: "2-digit",
+                      year: "numeric",
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
+                  </td>
+                </tr>
+                <tr>
+                  <td style={{ padding: "2px 0" }}>Thu ngân:</td>
+                  <td style={{ padding: "2px 0", textAlign: "right" }}>
+                    {receipt.cashierName || "Thu ngân"}
+                  </td>
+                </tr>
+              </tbody>
+            </table>
 
-                console.log(`Receipt Item ${index + 1}:`, {
-                  name: item.productName || item.name,
-                  unitPrice,
-                  quantity,
-                  itemDiscount,
-                  itemSubtotal,
-                  itemFinalAmount,
-                  hasDiscount: itemDiscount > 0,
-                  rawDiscount: item.discount,
-                });
+            {/* Divider */}
+            <div
+              style={{ borderTop: "1px dashed #000", margin: "8px 0" }}
+            ></div>
 
-                return (
-                  <div key={item.id || Math.random()}>
-                    <div className="flex justify-between text-sm">
-                      <div className="flex-1">
-                        <div className="font-medium">
-                          {item.productName || item.name || "Unknown Product"}
-                        </div>
-                        <div className="text-xs text-gray-600">
-                          SKU:{" "}
-                          {item.productSku ||
-                            `FOOD${String(item.productId || item.id || "0").padStart(5, "0")}`}
-                        </div>
-                        <div className="text-xs text-gray-600">
-                          {quantity} x{" "}
-                          {Math.floor(unitPrice).toLocaleString("vi-VN")} ₫
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <div className="text-xs text-gray-600">
-                          {Math.floor(itemSubtotal).toLocaleString("vi-VN")} ₫
-                        </div>
-                      </div>
-                    </div>
-                    {/* Show discount as a separate line below item for better visibility */}
-                    {itemDiscount > 0 && (
-                      <div className="flex justify-between text-xs mt-1 pl-4">
-                        <div className="text-red-600 font-medium">
-                          Giảm giá:
-                        </div>
-                        <div className="text-red-600 font-medium">
-                          -{Math.floor(itemDiscount).toLocaleString("vi-VN")} ₫
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
+            {/* Items List - Using HTML Table */}
+            <table
+              style={{
+                width: "100%",
+                borderCollapse: "collapse",
+                marginBottom: "8px",
+                fontSize: "16px",
+                fontWeight: "bold",
+              }}
+            >
+              <thead>
+                <tr>
+                  <th
+                    style={{
+                      textAlign: "left",
+                      padding: "4px 2px",
+                      borderBottom: "1px dashed #000",
+                    }}
+                  >
+                    Tên hàng
+                  </th>
+                  <th
+                    style={{
+                      textAlign: "center",
+                      padding: "4px 2px",
+                      borderBottom: "1px dashed #000",
+                      width: "60px",
+                    }}
+                  >
+                    SL
+                  </th>
+                  <th
+                    style={{
+                      textAlign: "right",
+                      padding: "4px 2px",
+                      borderBottom: "1px dashed #000",
+                      width: "100px",
+                    }}
+                  >
+                    Thành tiền
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {(receipt.items || []).map((item, index) => {
+                  const unitPrice = parseFloat(
+                    item.unitPrice || item.price || "0",
+                  );
+                  const quantity = item.quantity || 1;
+                  const itemSubtotal = unitPrice * quantity;
 
-            <div className="border-t border-gray-300 pt-3 space-y-1">
-              <div className="flex justify-between text-sm">
-                <span>{t("pos.totalAmount")}</span>
-                <span>
-                  {(() => {
-                    // Calculate subtotal as sum of unit price * quantity for all items (before discount)
-                    const itemsSubtotal = (receipt.items || []).reduce(
-                      (sum, item) => {
-                        const unitPrice = parseFloat(
-                          item.unitPrice || item.price || "0",
-                        );
-                        const quantity = item.quantity || 1;
-                        return sum + unitPrice * quantity;
-                      },
-                      0,
-                    );
-                    return Math.floor(itemsSubtotal).toLocaleString("vi-VN");
-                  })()}{" "}
-                  ₫
-                </span>
-              </div>
-              {(() => {
-                // Group items by tax rate and calculate tax for each group
-                const priceIncludeTax =
-                  receipt.priceIncludeTax ??
-                  storeSettings?.priceIncludesTax ??
-                  false;
-
-                const taxGroups = (receipt.items || []).reduce(
-                  (groups, item) => {
-                    const taxRate = parseFloat(
-                      item.taxRate || item.product?.taxRate || "0",
-                    );
-
-                    // Nếu có tax từ database, dùng luôn
-                    const itemTaxFromDB = parseFloat(item.tax || "0");
-
-                    if (taxRate > 0) {
-                      if (!groups[taxRate]) {
-                        groups[taxRate] = 0;
-                      }
-
-                      // Ưu tiên dùng tax đã tính từ database
-                      if (itemTaxFromDB > 0) {
-                        groups[taxRate] += itemTaxFromDB;
-                      } else {
-                        // Nếu không có, tính lại
-                        const unitPrice = parseFloat(
-                          item.unitPrice || item.price || "0",
-                        );
-                        const quantity = item.quantity || 1;
-                        const itemDiscount = parseFloat(item.discount || "0");
-                        const itemSubtotal = unitPrice * quantity;
-
-                        let itemTax = 0;
-                        if (priceIncludeTax) {
-                          // Giá đã bao gồm thuế: thuế = (giá - giảm giá) * (thuế suất / (100 + thuế suất))
-                          const priceAfterDiscount =
-                            itemSubtotal - itemDiscount;
-                          itemTax =
-                            priceAfterDiscount * (taxRate / (100 + taxRate));
-                        } else {
-                          // Giá chưa bao gồm thuế: thuế = (giá - giảm giá) * (thuế suất / 100)
-                          const priceAfterDiscount =
-                            itemSubtotal - itemDiscount;
-                          itemTax = priceAfterDiscount * (taxRate / 100);
-                        }
-                        groups[taxRate] += itemTax;
-                      }
-                    }
-
-                    return groups;
-                  },
-                  {} as Record<number, number>,
-                );
-
-                // Sort tax rates in descending order and filter out 0% tax
-                const sortedTaxRates = Object.keys(taxGroups)
-                  .map(Number)
-                  .filter((taxRate) => taxRate > 0 && taxGroups[taxRate] > 0) // Chỉ hiển thị khi có thuế > 0
-                  .sort((a, b) => b - a);
-
-                return (
-                  <>
-                    {sortedTaxRates.map((taxRate) => (
-                      <div
-                        key={taxRate}
-                        className="flex justify-between text-sm"
+                  return (
+                    <tr key={item.id || index}>
+                      <td style={{ padding: "4px 2px", verticalAlign: "top" }}>
+                        {item.productName || item.name || "Sản phẩm"}
+                      </td>
+                      <td
+                        style={{
+                          padding: "4px 2px",
+                          textAlign: "center",
+                          verticalAlign: "top",
+                        }}
                       >
-                        <span>Thuế ({taxRate}%):</span>
-                        <span>
-                          {Math.floor(taxGroups[taxRate]).toLocaleString(
-                            "vi-VN",
-                          )}{" "}
-                          ₫
-                        </span>
-                      </div>
-                    ))}
-                  </>
-                );
-              })()}
-              {(() => {
-                // Only show discount if there are item-level discounts or order-level discount
-                // Calculate total discount: sum of item discounts + order discount
-                const totalItemDiscount = (receipt.items || []).reduce(
-                  (sum, item) => {
-                    return sum + parseFloat(item.discount || "0");
-                  },
-                  0,
-                );
-                const orderDiscount = parseFloat(receipt.discount || "0");
-                // Discount is already distributed to items, so only show order-level discount if it exists separately
-                const totalDiscount =
-                  orderDiscount > 0 ? orderDiscount : totalItemDiscount;
-                return totalDiscount > 0;
-              })() && (
-                <div className="flex justify-between text-sm text-red-600">
-                  <span>{t("reports.discount")}:</span>
-                  <span className="font-medium">
-                    -
+                        {quantity}
+                      </td>
+                      <td
+                        style={{
+                          padding: "4px 2px",
+                          textAlign: "right",
+                          verticalAlign: "top",
+                        }}
+                      >
+                        {Math.floor(itemSubtotal).toLocaleString("vi-VN")}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+
+            {/* Divider */}
+            <div
+              style={{ borderTop: "1px dashed #000", margin: "8px 0" }}
+            ></div>
+
+            {/* Summary */}
+            <table
+              style={{
+                width: "100%",
+                marginBottom: "8px",
+                fontSize: "16px",
+                fontWeight: "bold",
+              }}
+            >
+              <tbody>
+                <tr>
+                  <td style={{ padding: "2px 0" }}>Tổng tiền:</td>
+                  <td style={{ padding: "2px 0", textAlign: "right" }}>
                     {(() => {
-                      // Show total discount (items + order level)
-                      const totalItemDiscount = (receipt.items || []).reduce(
+                      const itemsSubtotal = (receipt.items || []).reduce(
                         (sum, item) => {
-                          return sum + parseFloat(item.discount || "0");
+                          const unitPrice = parseFloat(
+                            item.unitPrice || item.price || "0",
+                          );
+                          const quantity = item.quantity || 1;
+                          return sum + unitPrice * quantity;
                         },
                         0,
                       );
-                      const orderDiscount = parseFloat(receipt.discount || "0");
-                      // Only add order discount if it's not already distributed to items
-                      const totalDiscount =
-                        orderDiscount > 0 ? orderDiscount : totalItemDiscount;
-                      return Math.floor(totalDiscount).toLocaleString("vi-VN");
-                    })()}{" "}
-                    ₫
-                  </span>
-                </div>
-              )}
-              <div className="flex justify-between font-bold">
-                <span>{t("reports.totalMoney")}:</span>
-                <span>
-                  {(() => {
-                    // Always use total directly from database
-                    const totalValue = parseFloat(receipt.total || "0");
-                    return Math.floor(totalValue).toLocaleString("vi-VN");
-                  })()}{" "}
-                  ₫
-                </span>
+                      return Math.floor(itemsSubtotal).toLocaleString("vi-VN");
+                    })()}
+                  </td>
+                </tr>
+
+                {(() => {
+                  const totalItemDiscount = (receipt.items || []).reduce(
+                    (sum, item) => {
+                      return sum + parseFloat(item.discount || "0");
+                    },
+                    0,
+                  );
+                  const orderDiscount = parseFloat(receipt.discount || "0");
+                  const totalDiscount =
+                    orderDiscount > 0 ? orderDiscount : totalItemDiscount;
+                  return totalDiscount > 0 ? (
+                    <tr>
+                      <td style={{ padding: "2px 0" }}>Giảm giá:</td>
+                      <td style={{ padding: "2px 0", textAlign: "right" }}>
+                        {Math.floor(totalDiscount).toLocaleString("vi-VN")}
+                      </td>
+                    </tr>
+                  ) : null;
+                })()}
+
+                {(() => {
+                  const priceIncludeTax =
+                    receipt.priceIncludeTax ??
+                    storeSettings?.priceIncludesTax ??
+                    false;
+                  const taxGroups = (receipt.items || []).reduce(
+                    (groups, item) => {
+                      const taxRate = parseFloat(
+                        item.taxRate || item.product?.taxRate || "0",
+                      );
+                      const itemTaxFromDB = parseFloat(item.tax || "0");
+
+                      if (taxRate > 0) {
+                        if (!groups[taxRate]) groups[taxRate] = 0;
+
+                        if (itemTaxFromDB > 0) {
+                          groups[taxRate] += itemTaxFromDB;
+                        } else {
+                          const unitPrice = parseFloat(
+                            item.unitPrice || item.price || "0",
+                          );
+                          const quantity = item.quantity || 1;
+                          const itemDiscount = parseFloat(item.discount || "0");
+                          const itemSubtotal = unitPrice * quantity;
+                          const priceAfterDiscount =
+                            itemSubtotal - itemDiscount;
+
+                          const itemTax = priceIncludeTax
+                            ? priceAfterDiscount * (taxRate / (100 + taxRate))
+                            : priceAfterDiscount * (taxRate / 100);
+                          groups[taxRate] += itemTax;
+                        }
+                      }
+                      return groups;
+                    },
+                    {} as Record<number, number>,
+                  );
+
+                  const sortedTaxRates = Object.keys(taxGroups)
+                    .map(Number)
+                    .filter((taxRate) => taxRate > 0 && taxGroups[taxRate] > 0)
+                    .sort((a, b) => b - a);
+
+                  return sortedTaxRates.map((taxRate) => (
+                    <tr key={taxRate}>
+                      <td style={{ padding: "2px 0" }}>
+                        Tiền thuế ({taxRate}%):
+                      </td>
+                      <td style={{ padding: "2px 0", textAlign: "right" }}>
+                        {Math.floor(taxGroups[taxRate]).toLocaleString("vi-VN")}
+                      </td>
+                    </tr>
+                  ));
+                })()}
+
+                <tr>
+                  <td
+                    style={{
+                      padding: "4px 0",
+                      fontSize: "18px",
+                      fontWeight: "bold",
+                      borderTop: "1px dashed #000",
+                    }}
+                  >
+                    Tổng thanh toán:
+                  </td>
+                  <td
+                    style={{
+                      padding: "4px 0",
+                      fontSize: "18px",
+                      fontWeight: "bold",
+                      textAlign: "right",
+                      borderTop: "1px dashed #000",
+                    }}
+                  >
+                    {Math.floor(
+                      parseFloat(receipt.total || "0"),
+                    ).toLocaleString("vi-VN")}
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+
+            {/* QR Code - Optional - HIDDEN */}
+            <div className="text-center my-4" style={{ display: "none" }}>
+              <div
+                style={{
+                  width: "100px",
+                  height: "100px",
+                  margin: "0 auto",
+                  border: "2px solid #000",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                {/* QR Code placeholder - you can add actual QR code library here */}
+                <span style={{ fontSize: "10px" }}>QR CODE</span>
               </div>
+            </div>
+
+            {/* Footer */}
+            <div style={{ borderTop: "1px dashed #000", paddingTop: "8px" }}>
+              <p
+                className="text-center"
+                style={{
+                  fontSize: "16px",
+                  margin: "4px 0",
+                  fontWeight: "bold",
+                }}
+              >
+                Xin cảm ơn Quý khách và Hẹn gặp lại !
+              </p>
+              <div
+                style={{ borderTop: "1px dashed #000", margin: "8px 0" }}
+              ></div>
+              <p
+                className="text-center"
+                style={{
+                  fontSize: "14px",
+                  margin: "4px 0",
+                  fontWeight: "bold",
+                }}
+              >
+                Powered by EDPOS
+              </p>
             </div>
           </div>
         ) : isPreview && hasCartData && total > 0 ? (

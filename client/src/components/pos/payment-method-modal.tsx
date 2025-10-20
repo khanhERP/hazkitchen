@@ -1874,21 +1874,60 @@ export function PaymentMethodModal({
         const createdOrder = await createResponse.json();
         console.log(`✅ POS order created successfully:`, createdOrder);
 
-        // Update orderInfo with the real order ID for E-Invoice
+        // Update orderInfo with the real order ID
         orderInfo.id = createdOrder.id;
         receipt.id = createdOrder.id;
         orderForPayment.id = createdOrder.id;
         orderInfo.orderNumber = createdOrder.orderNumber;
 
-        // Reset form states
-        setShowCashPayment(false);
-        setAmountReceived("");
-        setCashAmountInput("");
-        setSelectedPaymentMethod("cash");
-        setShowEInvoice(true);
-        console.log(
-          `🔥 SHOWING E-INVOICE MODAL for created POS order ${createdOrder.id}`,
-        );
+        // CHECK BUSINESS TYPE - if laundry, show receipt modal directly
+        const businessType = storeSettings?.businessType;
+        console.log(`🔍 Cash Payment: Business type is "${businessType}"`);
+
+        if (businessType === "laundry") {
+          console.log(
+            `🧺 LAUNDRY BUSINESS - showing receipt modal directly for cash payment`,
+          );
+
+          // Prepare receipt data
+          const receiptData = {
+            ...createdOrder,
+            items: orderItems.map((item: any) => ({
+              ...item,
+              productName:
+                item.productName ||
+                getProductName?.(item.productId) ||
+                "Unknown",
+              sku: item.sku || `ITEM-${item.productId}`,
+            })),
+            exactSubtotal: receiptSubtotal,
+            exactTax: receiptTax,
+            exactTotal: receiptTotal,
+            exactDiscount: discountAmount,
+            paymentMethod: "cash",
+            isPreview: false,
+            isInvoice: true,
+          };
+
+          // Set receipt data for modal and show it
+          setReceiptDataForModal(receiptData);
+          setShowReceiptModal(true);
+
+          // Hide cash payment form immediately
+          setShowCashPayment(false);
+          setAmountReceived("");
+          setCashAmountInput("");
+
+          // DO NOT close payment modal yet - let receipt modal handle the flow
+          console.log(
+            `✅ Receipt modal opened for laundry business, keeping payment modal open in background`,
+          );
+        } else {
+          console.log(
+            `🏪 RESTAURANT BUSINESS - showing E-Invoice modal for cash payment`,
+          );
+          setShowEInvoice(true);
+        }
       } else {
         const errorText = await createResponse.text();
         console.error(`❌ Failed to create POS order:`, errorText);
@@ -2047,13 +2086,41 @@ export function PaymentMethodModal({
           setShowCashPayment(false);
           setAmountReceived("");
           setCashAmountInput("");
-
-          // Lưu phương thức thanh toán và hiển thị E-Invoice modal
           setSelectedPaymentMethod("cash");
-          setShowEInvoice(true);
+
+          // CHECK BUSINESS TYPE - if laundry, show receipt modal directly
+          const businessType = storeSettings?.businessType;
           console.log(
-            `🔥 SHOWING E-INVOICE MODAL after successful cash payment`,
+            `🔍 Cash Payment (Real Order): Business type is "${businessType}"`,
           );
+
+          if (businessType === "laundry") {
+            console.log(
+              `🧺 LAUNDRY BUSINESS - showing receipt modal directly for real order cash payment`,
+            );
+
+            // Prepare receipt data from updated order
+            const receiptData = {
+              ...updatedOrder,
+              items: orderInfo.items || receipt?.items || [],
+              exactSubtotal: exactSubtotal,
+              exactTax: exactTax,
+              exactTotal: orderTotal,
+              exactDiscount: discountAmount,
+              paymentMethod: "cash",
+              isPreview: false,
+              isInvoice: true,
+            };
+
+            // Set receipt data for modal
+            setReceiptDataForModal(receiptData);
+            setShowReceiptModal(true);
+          } else {
+            console.log(
+              `🏪 RESTAURANT BUSINESS - showing E-Invoice modal for real order`,
+            );
+            setShowEInvoice(true);
+          }
         } else {
           const errorText = await statusResponse.text();
           console.error(`❌ Failed to update order status:`, errorText);
@@ -2066,7 +2133,6 @@ export function PaymentMethodModal({
     }
   };
 
-  // CRITICAL: Update handleEInvoiceComplete to correctly set receipt data and trigger receipt modal
   const handleEInvoiceComplete = (invoiceData: any) => {
     console.log("🎯 Payment Modal E-Invoice completed:", invoiceData);
     console.log(
@@ -2233,6 +2299,38 @@ export function PaymentMethodModal({
       setWasShowingQRCode(true);
     }
   }, [showQRCode]);
+
+  // Initialize cash amount when showing cash payment
+  useEffect(() => {
+    if (showCashPayment && isOpen) {
+      // Auto-fill with order total
+      const orderTotal = Math.floor(
+        parseFloat(
+          (
+            orderInfo?.total ||
+            orderForPayment?.total ||
+            receipt?.total ||
+            total ||
+            "0"
+          ).toString(),
+        ),
+      );
+      setCashAmountInput(orderTotal.toString());
+      setAmountReceived(orderTotal.toString());
+
+      console.log("💰 Auto-filled cash amount:", {
+        orderTotal,
+        cashAmountInput: orderTotal.toString(),
+      });
+    }
+  }, [
+    showCashPayment,
+    isOpen,
+    orderInfo?.total,
+    orderForPayment?.total,
+    receipt?.total,
+    total,
+  ]);
 
   // Reset all states when modal closes
   useEffect(() => {
@@ -3016,43 +3114,37 @@ export function PaymentMethodModal({
 
                       handleCashPaymentComplete();
                     }}
-                    disabled={
-                      !cashAmountInput ||
-                      parseFloat(cashAmountInput) <
-                        (() => {
-                          // Get base values
-                          const exactSubtotal =
-                            receipt?.exactSubtotal ||
-                            orderForPayment?.exactSubtotal ||
-                            parseFloat(receipt?.subtotal || "0") ||
-                            parseFloat(orderForPayment?.subtotal || "0") ||
-                            0;
-                          const exactTax =
-                            receipt?.exactTax ??
-                            orderForPayment?.tax ??
-                            orderInfo?.exactTax ??
-                            parseFloat(receipt?.tax || "0") ??
-                            0;
-                          const discount = parseFloat(
-                            receipt?.discount ||
-                              orderForPayment?.discount ||
-                              "0",
-                          );
-                          let finalTotal = 0;
-                          if (priceIncludesTax) {
-                            // When priceIncludesTax = true: total = subtotal - discount (subtotal already includes tax)
-                            finalTotal = Math.max(0, exactSubtotal - discount);
-                          } else {
-                            // When priceIncludesTax = false: total = subtotal + tax - discount
-                            finalTotal = Math.max(
-                              0,
-                              exactSubtotal + exactTax - discount,
-                            );
-                          }
-                          return Math.floor(Number(finalTotal));
-                        })()
-                    }
-                    className="flex-1 bg-green-600 hover:bg-green-700 text-white transition-colors duration-200 disabled:bg-gray-400"
+                    disabled={(() => {
+                      // ONLY check cashAmountInput if this is CASH payment
+                      if (selectedPaymentMethod !== "cash") {
+                        return false; // Non-cash methods are never disabled
+                      }
+
+                      const receivedAmount = parseFloat(cashAmountInput || "0");
+                      const orderTotal = Math.floor(
+                        parseFloat(
+                          (
+                            orderInfo?.total ||
+                            orderForPayment?.total ||
+                            receipt?.total ||
+                            total ||
+                            "0"
+                          ).toString(),
+                        ),
+                      );
+
+                      console.log("💰 Cash button check:", {
+                        selectedPaymentMethod,
+                        cashAmountInput,
+                        receivedAmount,
+                        orderTotal,
+                        isDisabled:
+                          !cashAmountInput || receivedAmount < orderTotal,
+                      });
+
+                      return !cashAmountInput || receivedAmount < orderTotal;
+                    })()}
+                    className="flex-1 bg-green-600 hover:bg-green-700 text-white transition-colors duration-200 disabled:bg-gray-400 disabled:cursor-not-allowed"
                   >
                     {t("common.complete")}
                   </Button>
@@ -3089,7 +3181,7 @@ export function PaymentMethodModal({
               setShowEInvoice(false);
               setShowReceiptModal(true);
 
-              // Then notify parent component with payment completion to show receipt
+              // Then notify parent with payment completion to show receipt
               onSelectMethod("paymentCompleted", {
                 success: true,
                 publishLater: invoiceData.publishLater,

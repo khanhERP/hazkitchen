@@ -454,27 +454,43 @@ export default function SalesOrders() {
     isLoading: orderItemsLoading,
     error: orderItemsError,
   } = useQuery({
-    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/order-items", selectedInvoice?.id], // selectedInvoice is used here but it's actually an order
+    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/order-items", selectedInvoice?.id],
     queryFn: async () => {
-      if (!selectedInvoice?.id) return [];
+      if (!selectedInvoice?.id) {
+        console.log("❌ No selected invoice ID");
+        return [];
+      }
+
+      console.log("📦 Fetching order items for order:", selectedInvoice.id);
+
       try {
         const response = await apiRequest(
           "GET",
           `https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/order-items/${selectedInvoice.id}`,
         );
+
         if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
+          const errorText = await response.text();
+          console.error("❌ Error response:", response.status, errorText);
+          throw new Error(`HTTP ${response.status}: ${errorText}`);
         }
+
         const data = await response.json();
-        console.log("Order items loaded:", data);
+        console.log(
+          "✅ Order items loaded successfully:",
+          data?.length || 0,
+          "items",
+        );
+
         return Array.isArray(data) ? data : [];
       } catch (error) {
-        console.error("Error fetching order items:", error);
-        return [];
+        console.error("❌ Error fetching order items:", error);
+        throw error; // Re-throw to trigger error state
       }
     },
     enabled: !!selectedInvoice?.id && getItemType(selectedInvoice) === "order",
-    retry: 1,
+    retry: 2,
+    retryDelay: 1000,
     staleTime: 0,
     gcTime: 0,
   });
@@ -779,12 +795,30 @@ export default function SalesOrders() {
         return { success: true, message: "Order cancelled successfully" };
       }
     },
-    onSuccess: (data, orderId) => {
+    onSuccess: async (data, orderId) => {
       console.log("Order cancelled successfully:", orderId);
 
       setShowCancelDialog(false);
 
-      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] });
+      // Clear cache completely and force fresh fetch
+      queryClient.removeQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] });
+      queryClient.removeQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders/date-range"] });
+
+      // Force immediate refetch with fresh data
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] }),
+        queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders/date-range"] }),
+        queryClient.refetchQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] }),
+        queryClient.refetchQueries({
+          queryKey: [
+            "https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders/date-range",
+            startDate,
+            endDate,
+            currentPage,
+            itemsPerPage,
+          ],
+        }),
+      ]);
 
       // Update selected order if it was cancelled
       if (selectedInvoice && selectedInvoice.id === orderId) {
@@ -797,12 +831,21 @@ export default function SalesOrders() {
         setEditableInvoice(null);
       }
 
-      console.log("Order cancelled and status updated");
+      console.log("✅ Order cancelled and list refreshed from database");
+
+      toast({
+        title: "Đã hủy đơn hàng",
+        description: "Đơn hàng đã được hủy và danh sách đã được cập nhật",
+      });
     },
     onError: (error) => {
       console.error("Error canceling order:", error);
       setShowCancelDialog(false);
-      alert(`Lỗi hủy đơn hàng: ${error.message}`);
+      toast({
+        title: "Lỗi hủy đơn hàng",
+        description: error.message,
+        variant: "destructive",
+      });
     },
   });
 
@@ -1267,8 +1310,8 @@ export default function SalesOrders() {
     // The orderItems data is already fetched by useQuery, so we just need to use it.
   };
 
-  // Function to add a new order item row
-  const handleAddNewOrderItem = async () => {
+  // Function to add a new order item row (only in UI, not saved to database yet)
+  const handleAddNewOrderItem = () => {
     if (!selectedInvoice || !selectedInvoice.id) {
       toast({
         title: "Lỗi",
@@ -1278,41 +1321,75 @@ export default function SalesOrders() {
       return;
     }
 
-    try {
-      const newItemResponse = await apiRequest("POST", `https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/order-items`, {
-        orderId: selectedInvoice.id,
-        productId: null,
+    console.log("➕ Adding new empty row for order:", selectedInvoice.id);
+
+    // Generate a temporary negative ID for the new row (to distinguish from real database items)
+    const tempId = -Date.now();
+
+    // New item will have 0 values initially
+    // When user enters product info, all values will be recalculated in updateOrderItemField
+    const newItemDiscount = "0";
+    const newItemTax = "0";
+    const newItemPriceBeforeTax = "0";
+
+    // Create an empty row item
+    const newEmptyItem = {
+      id: tempId,
+      orderId: selectedInvoice.id,
+      productId: 0,
+      productName: "",
+      sku: "",
+      quantity: 1,
+      unitPrice: "0",
+      total: "0",
+      discount: newItemDiscount,
+      tax: newItemTax,
+      priceBeforeTax: newItemPriceBeforeTax,
+      _isNew: true, // Flag to identify new unsaved items
+    };
+
+    // Add the new empty item to editedOrderItems state
+    setEditedOrderItems((prev) => ({
+      ...prev,
+      [tempId]: {
+        productId: 0,
+        productName: "",
+        sku: "",
         quantity: 1,
         unitPrice: "0",
         total: "0",
-        discount: "0",
-        tax: "0",
-        priceBeforeTax: "0",
-      });
+        discount: newItemDiscount,
+        tax: newItemTax,
+        priceBeforeTax: newItemPriceBeforeTax,
+        _isNew: true,
+      },
+    }));
 
-      if (newItemResponse.ok) {
-        toast({
-          title: "Đã thêm dòng mới",
-          description: "Có thể nhập thông tin sản phẩm",
-        });
-        // Invalidate and refetch order items to update the UI
-        await queryClient.invalidateQueries({
-          queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/order-items", selectedInvoice.id],
-        });
-        await queryClient.refetchQueries({
-          queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/order-items", selectedInvoice.id],
-        });
-      } else {
-        throw new Error("Failed to add new order item");
+    // Add to the orderItems query data temporarily for display
+    queryClient.setQueryData(
+      ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/order-items", selectedInvoice.id],
+      (oldData: any) => {
+        const currentItems = Array.isArray(oldData) ? oldData : [];
+        return [...currentItems, newEmptyItem];
       }
-    } catch (error) {
-      console.error("Error adding new order item:", error);
-      toast({
-        title: "Lỗi",
-        description: "Không thể thêm dòng mới",
-        variant: "destructive",
-      });
-    }
+    );
+
+    toast({
+      title: "Đã thêm dòng mới",
+      description: "Vui lòng nhập thông tin sản phẩm và ấn Lưu",
+    });
+
+    // Focus on SKU field of new row after a short delay
+    setTimeout(() => {
+      const visibleItems = orderItems.filter(
+        (item: any) => !editedOrderItems[item.id]?._deleted,
+      );
+      const newRowIndex = visibleItems.length;
+      const skuInput = document.querySelector(
+        `[data-field="orderitem-sku-${newRowIndex}"]`,
+      ) as HTMLInputElement;
+      skuInput?.focus();
+    }, 100);
   };
 
   const handleSaveOrder = async () => {
@@ -1325,22 +1402,72 @@ export default function SalesOrders() {
         editedItems: editedOrderItems,
       });
 
-      // Step 1: Prepare updated items data
-      const itemsToUpdate = Object.entries(editedOrderItems).map(
-        ([itemId, changes]) => ({
-          id: parseInt(itemId),
-          ...changes,
-        }),
-      );
+      // Step 1: Separate new items from existing items
+      const itemsToCreate: any[] = [];
+      const itemsToUpdate: any[] = [];
+      const itemsToDelete: any[] = [];
 
-      // Step 2: Filter out items marked for deletion
-      const itemsToDelete = itemsToUpdate.filter((item) => item._deleted);
-      const itemsToModify = itemsToUpdate.filter((item) => !item._deleted);
+      // Use for...of loop to support continue/break statements
+      for (const [itemId, changes] of Object.entries(editedOrderItems)) {
+        const id = parseInt(itemId);
 
+        if (changes._deleted) {
+          // Only delete if it's an existing item (positive ID)
+          if (id > 0) {
+            itemsToDelete.push({ id, ...changes });
+          }
+          continue; // Skip to next item
+        }
+        
+        if (changes._isNew || id < 0) {
+          // ✨ NEW ITEM - Will be INSERTED into database
+          console.log(`➕ Processing NEW item for INSERT (ID: ${id})`);
+          
+          // Get data from cache (may be incomplete for new items)
+          const fullItemData = orderItems.find((item: any) => item.id === id);
+          
+          // Merge all available data - prioritize changes from editedOrderItems
+          const completeItemData = {
+            ...(fullItemData || {}),
+            ...changes,
+            // Ensure required fields are set
+            productId: changes.productId || fullItemData?.productId || 0,
+            productName: changes.productName || fullItemData?.productName || "",
+            sku: changes.sku || fullItemData?.sku || fullItemData?.productSku || "",
+            quantity: changes.quantity !== undefined ? changes.quantity : (fullItemData?.quantity || 1),
+            unitPrice: changes.unitPrice !== undefined ? changes.unitPrice : (fullItemData?.unitPrice || "0"),
+            total: changes.total || fullItemData?.total || "0",
+            discount: changes.discount !== undefined ? changes.discount : (fullItemData?.discount || "0"),
+            tax: changes.tax !== undefined ? changes.tax : (fullItemData?.tax || "0"),
+            priceBeforeTax: changes.priceBeforeTax || fullItemData?.priceBeforeTax || "0",
+          };
+          
+          // Validate required fields before INSERT
+          if (!completeItemData.productId || completeItemData.productId <= 0) {
+            console.warn(`⚠️ Skipping new item ${id} - missing productId`);
+            continue;
+          }
+          
+          if (!completeItemData.productName) {
+            console.warn(`⚠️ Skipping new item ${id} - missing productName`);
+            continue;
+          }
+          
+          console.log(`✅ Will INSERT new item: ${completeItemData.productName} (Product ID: ${completeItemData.productId})`);
+          itemsToCreate.push(completeItemData);
+          
+        } else {
+          // 🔄 EXISTING ITEM - Will be UPDATED in database
+          console.log(`🔄 Processing EXISTING item for UPDATE (ID: ${id})`);
+          itemsToUpdate.push({ id, ...changes });
+        }
+      }
+
+      console.log("📝 Items to create:", itemsToCreate.length);
+      console.log("📝 Items to update:", itemsToUpdate.length);
       console.log("📝 Items to delete:", itemsToDelete.length);
-      console.log("📝 Items to modify:", itemsToModify.length);
 
-      // Step 3: Delete marked items
+      // Step 2: Delete marked items
       for (const item of itemsToDelete) {
         console.log(`🗑️ Deleting order item ${item.id}`);
         const response = await apiRequest(
@@ -1352,8 +1479,92 @@ export default function SalesOrders() {
         }
       }
 
-      // Step 4: Update modified items
-      for (const item of itemsToModify) {
+      // Step 3: INSERT new items into database
+      for (const item of itemsToCreate) {
+        console.log(`📝 [INSERT] Creating new order item in database:`, {
+          productId: item.productId,
+          productName: item.productName,
+          quantity: item.quantity,
+          unitPrice: item.unitPrice
+        });
+
+        // Double-check validation before INSERT
+        if (!item.productId || item.productId <= 0) {
+          console.error(`❌ [INSERT FAILED] Missing valid productId:`, item);
+          continue;
+        }
+
+        if (!item.productName) {
+          console.error(`❌ [INSERT FAILED] Missing productName:`, item);
+          continue;
+        }
+
+        const product = products.find((p: any) => p.id === item.productId);
+        const taxRate = product?.taxRate ? parseFloat(product.taxRate) / 100 : 0;
+        const unitPrice = parseFloat(item.unitPrice || "0");
+        const quantity = parseInt(item.quantity || "1");
+
+        console.log(`📊 Item calculation data:`, {
+          productId: item.productId,
+          productName: item.productName,
+          unitPrice,
+          quantity,
+          taxRate: taxRate * 100 + "%",
+        });
+
+        // Calculate totals based on discount allocation
+        const orderDiscount = parseFloat(editableInvoice.discount || "0");
+        let itemDiscountAmount = parseFloat(item.discount || "0");
+
+        let itemSubtotal = unitPrice * quantity;
+        let itemTax = 0;
+        let priceBeforeTax = 0;
+
+        const priceIncludeTax = editableInvoice.priceIncludeTax ?? storeSettings?.priceIncludesTax ?? false;
+
+        if (priceIncludeTax && taxRate > 0) {
+          const discountPerUnit = itemDiscountAmount / quantity;
+          const adjustedPrice = Math.max(0, unitPrice - discountPerUnit);
+          const giaGomThue = adjustedPrice * quantity;
+          priceBeforeTax = Math.round(giaGomThue / (1 + taxRate));
+          itemTax = giaGomThue - priceBeforeTax;
+        } else {
+          priceBeforeTax = Math.round(itemSubtotal - itemDiscountAmount);
+          itemTax = Math.round(priceBeforeTax * taxRate);
+        }
+
+        const totalAmount = priceBeforeTax + itemTax;
+
+        const payload = {
+          productId: item.productId,
+          productName: item.productName,
+          sku: item.sku || product?.sku || `SKU${item.productId}`,
+          quantity: quantity,
+          unitPrice: unitPrice.toFixed(2),
+          total: totalAmount.toFixed(2),
+          discount: itemDiscountAmount.toFixed(2),
+          tax: Math.round(itemTax).toFixed(2),
+          priceBeforeTax: Math.round(priceBeforeTax).toFixed(2),
+          notes: item.notes || null,
+        };
+
+        console.log(`📝 Creating order item with payload:`, payload);
+
+        const response = await apiRequest("POST", `https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/order-items/${editableInvoice.id}`, payload);
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error(`❌ Failed to create order item:`, errorText);
+          throw new Error(`Failed to create order item: ${errorText}`);
+        }
+
+        const createdItem = await response.json();
+        console.log(`✅ New order item created successfully:`, createdItem);
+      }
+
+      // Step 4: UPDATE existing items in database
+      for (const item of itemsToUpdate) {
+        console.log(`📝 [UPDATE] Updating existing order item ID ${item.id} in database`);
         const originalItem = orderItems.find((oi) => oi.id === item.id);
 
         // Build complete payload with all calculated fields
@@ -1396,10 +1607,6 @@ export default function SalesOrders() {
                 : null)),
         );
 
-        const priceIncludeTax =
-          editableInvoice.priceIncludeTax ??
-          storeSettings?.priceIncludesTax ??
-          false;
         const taxRate = product?.taxRate
           ? parseFloat(product.taxRate) / 100
           : 0;
@@ -1419,10 +1626,12 @@ export default function SalesOrders() {
         let itemTax = 0;
         let priceBeforeTax = 0;
 
+        const priceIncludeTax = editableInvoice.priceIncludeTax ?? storeSettings?.priceIncludesTax ?? false;
+
         if (priceIncludeTax && taxRate > 0) {
           const giaGomThue = itemSubtotal;
           priceBeforeTax = Math.round(giaGomThue / (1 + taxRate));
-          itemTax = giaGomThue - priceBeforeTax;
+          itemTax = itemSubtotal - priceBeforeTax;
         } else {
           priceBeforeTax = Math.round(itemSubtotal);
           itemTax = Math.round(priceBeforeTax * taxRate);
@@ -1531,15 +1740,30 @@ export default function SalesOrders() {
       // Clear and refresh all related queries
       queryClient.removeQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] });
       queryClient.removeQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/order-items"] });
+      queryClient.removeQueries({
+        queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders/date-range"],
+      });
 
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] }),
         queryClient.invalidateQueries({
           queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/order-items", editableInvoice.id],
         }),
+        queryClient.invalidateQueries({
+          queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders/date-range"],
+        }),
         queryClient.refetchQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] }),
         queryClient.refetchQueries({
           queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/order-items", editableInvoice.id],
+        }),
+        queryClient.refetchQueries({
+          queryKey: [
+            "https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders/date-range",
+            startDate,
+            endDate,
+            currentPage,
+            itemsPerPage,
+          ],
         }),
       ]);
 
@@ -1547,6 +1771,9 @@ export default function SalesOrders() {
       setIsEditing(false);
       setEditableInvoice(null);
       setEditedOrderItems({});
+
+      // Close the selected invoice to show the updated list
+      setSelectedInvoice(null);
 
       toast({
         title: "Lưu thành công",
@@ -1607,6 +1834,7 @@ export default function SalesOrders() {
       productId?: number; // Add productId field
       _deleted?: boolean; // Flag for deletion
       notes?: string; // Add notes field
+      tax?: string; // Add tax to edited item state
     };
   }>({});
 
@@ -1622,28 +1850,174 @@ export default function SalesOrders() {
           : originalItem?.quantity || 1;
       let unitPrice =
         currentItem.unitPrice !== undefined
-          ? currentItem.unitPrice
+          ? parseFloat(currentItem.unitPrice)
           : parseFloat(originalItem?.unitPrice || "0");
+      let productId =
+        currentItem.productId !== undefined
+          ? currentItem.productId
+          : originalItem?.productId || 0;
+      let sku = currentItem.sku !== undefined ? currentItem.sku : originalItem?.sku || "";
+      let productName = currentItem.productName !== undefined ? currentItem.productName : originalItem?.productName || "";
+
+      // Track if product changed (to recalculate tax with new taxRate)
+      let productChanged = false;
 
       // Update the changed field
       if (field === "quantity") {
         quantity = parseInt(value) || 1;
       } else if (field === "unitPrice") {
         unitPrice = parseFloat(value) || 0;
+      } else if (field === "productId") {
+        productId = value;
+        productChanged = true;
+        // Get product info when productId changes
+        const product = products.find((p: any) => p.id === value);
+        if (product) {
+          productName = product.name;
+          sku = product.sku;
+          unitPrice = parseFloat(product.price || "0");
+        }
+      } else if (field === "sku") {
+        sku = value;
+        // When SKU changes, find product and update all related fields
+        const product = products.find((p: any) => p.sku === value);
+        if (product) {
+          productId = product.id;
+          productName = product.name;
+          unitPrice = parseFloat(product.price || "0");
+          productChanged = true;
+        }
+      } else if (field === "productName") {
+        productName = value;
+        // When product name changes, find product and update all related fields
+        const product = products.find((p: any) => p.name === value);
+        if (product) {
+          productId = product.id;
+          sku = product.sku;
+          unitPrice = parseFloat(product.price || "0");
+          productChanged = true;
+        }
       }
 
-      // Calculate total = quantity × unitPrice
-      const calculatedTotal = Math.floor(quantity * unitPrice);
+      // Calculate item subtotal
+      const itemSubtotal = quantity * unitPrice;
 
+      // Calculate discount allocation
+      const orderDiscount = parseFloat(editableInvoice?.discount || selectedInvoice?.discount || "0");
+      let itemDiscountAmount = 0;
+
+      if (orderDiscount > 0) {
+        // Get all visible items (including new items with negative IDs)
+        const visibleItems = orderItems.filter(
+          (item: any) => !prev[item.id]?._deleted,
+        );
+
+        // Calculate total before discount for ALL items (including this updated one)
+        const totalBeforeDiscount = visibleItems.reduce((sum: number, item: any) => {
+          const editedItem = prev[item.id] || {};
+          let itPrice = parseFloat(
+            editedItem.unitPrice !== undefined ? editedItem.unitPrice : item.unitPrice || "0"
+          );
+          let itQty = parseInt(
+            editedItem.quantity !== undefined ? editedItem.quantity : item.quantity || "0"
+          );
+
+          // Use new values for the current item being updated
+          if (item.id === itemId) {
+            itPrice = unitPrice;
+            itQty = quantity;
+          }
+
+          return sum + itPrice * itQty;
+        }, 0);
+
+        // Calculate proportional discount for this item
+        if (totalBeforeDiscount > 0) {
+          // Check if this is the last item
+          const currentIndex = visibleItems.findIndex((item: any) => item.id === itemId);
+          const isLastItem = currentIndex === visibleItems.length - 1;
+
+          if (isLastItem) {
+            // Last item gets remaining discount
+            let previousDiscounts = 0;
+            for (let i = 0; i < visibleItems.length - 1; i++) {
+              const item = visibleItems[i];
+              const editedItem = prev[item.id] || {};
+              const itPrice = parseFloat(
+                editedItem.unitPrice !== undefined ? editedItem.unitPrice : item.unitPrice || "0"
+              );
+              const itQty = parseInt(
+                editedItem.quantity !== undefined ? editedItem.quantity : item.quantity || "0"
+              );
+              const itSubtotal = itPrice * itQty;
+              previousDiscounts += Math.floor((orderDiscount * itSubtotal) / totalBeforeDiscount);
+            }
+            itemDiscountAmount = Math.max(0, orderDiscount - previousDiscounts);
+          } else {
+            // Proportional allocation
+            itemDiscountAmount = Math.floor((orderDiscount * itemSubtotal) / totalBeforeDiscount);
+          }
+        }
+      }
+
+      // Calculate tax - ALWAYS get product info to ensure we have latest taxRate
+      const product = products.find((p: any) => p.id === productId);
+      const taxRate = product?.taxRate ? parseFloat(product.taxRate) / 100 : 0;
+      const priceIncludeTax = editableInvoice?.priceIncludeTax ?? selectedInvoice?.priceIncludeTax ?? storeSettings?.priceIncludesTax ?? false;
+
+      let itemTax = 0;
+      let priceBeforeTax = 0;
+
+      if (taxRate > 0) {
+        if (priceIncludeTax) {
+          // Price includes tax
+          const discountPerUnit = itemDiscountAmount / quantity;
+          const adjustedPrice = Math.max(0, unitPrice - discountPerUnit);
+          const giaGomThue = adjustedPrice * quantity;
+          priceBeforeTax = Math.round(giaGomThue / (1 + taxRate));
+          itemTax = giaGomThue - priceBeforeTax;
+        } else {
+          // Price excludes tax
+          priceBeforeTax = Math.round(itemSubtotal - itemDiscountAmount);
+          itemTax = Math.round(priceBeforeTax * taxRate);
+        }
+      } else {
+        priceBeforeTax = Math.round(itemSubtotal - itemDiscountAmount);
+      }
+
+      const calculatedTotal = priceBeforeTax + itemTax;
+
+      console.log(`🔢 Tính toán thuế cho item ${itemId} ${productChanged ? '(SẢN PHẨM MỚI)' : ''}:`, {
+        productId,
+        productName,
+        sku,
+        quantity,
+        unitPrice,
+        itemSubtotal,
+        taxRate: (taxRate * 100) + '%',
+        priceIncludeTax,
+        itemDiscountAmount,
+        priceBeforeTax,
+        itemTax: Math.round(itemTax),
+        calculatedTotal
+      });
+
+      // ALWAYS return updated calculated fields to ensure UI reflects latest values
       return {
         ...prev,
         [itemId]: {
           ...currentItem,
           [field]: value,
-          // Always update total when quantity or unitPrice changes
-          ...(field === "quantity" || field === "unitPrice"
-            ? { total: calculatedTotal.toString() }
-            : {}),
+          productId,
+          productName,
+          sku,
+          quantity,
+          unitPrice: unitPrice.toString(),
+          total: calculatedTotal.toString(),
+          discount: itemDiscountAmount.toString(),
+          tax: Math.round(itemTax).toString(),
+          priceBeforeTax: Math.round(priceBeforeTax).toString(),
+          taxRate: (taxRate * 100).toString(),
         },
       };
     });
@@ -1770,7 +2144,7 @@ export default function SalesOrders() {
       let calculatedSubtotal = 0;
       let calculatedTax = 0;
       const orderDiscount = parseFloat(
-        (editableInvoice?.discount || selectedInvoice.discount) || "0",
+        editableInvoice?.discount || selectedInvoice.discount || "0",
       );
 
       // Calculate from visible order items (excluding deleted ones)
@@ -1780,7 +2154,9 @@ export default function SalesOrders() {
 
       visibleItems.forEach((item: any) => {
         const product = products.find((p: any) => p.id === item.productId);
-        const taxRate = product?.taxRate ? parseFloat(product.taxRate) / 100 : 0;
+        const taxRate = product?.taxRate
+          ? parseFloat(product.taxRate) / 100
+          : 0;
 
         // Use edited values if available, otherwise use original values
         const editedItem = editedOrderItems[item.id] || {};
@@ -2088,168 +2464,206 @@ export default function SalesOrders() {
   const totals = calculateTotals();
 
   // Function to handle payment initiation
-  const handlePayment = async () => {
-    if (!selectedInvoice) {
-      console.error("❌ No selected invoice for payment");
-      toast({
-        title: "Lỗi",
-        description: "Vui lòng chọn đơn hàng để thanh toán",
-        variant: "destructive",
-      });
-      return;
-    }
+  const handlePayment = async (order: Invoice) => {
+    console.log("💳 Payment initiated for order:", order.id);
 
-    console.log("🔍 Starting payment for order:", selectedInvoice.id);
-
+    // Update order status to paid
     try {
-      // Fetch fresh order items
-      const response = await apiRequest(
-        "GET",
-        `https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/order-items/${selectedInvoice.id}`,
+      const updateResponse = await apiRequest(
+        "PUT",
+        `https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders/${order.id}`,
+        {
+          paymentStatus: "paid",
+          status: "paid",
+          paidAt: new Date().toISOString(),
+        },
       );
-      const items = await response.json();
 
-      console.log("📦 Order items loaded:", items.length);
+      if (updateResponse.ok) {
+        console.log("✅ Order payment status updated successfully");
 
-      // Calculate exact totals using same logic as receipt modal
-      const priceIncludeTax =
-        selectedInvoice.priceIncludeTax ??
-        storeSettings?.priceIncludesTax ??
-        false;
+        // Refresh orders list
+        queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] });
+        queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/tables"] });
 
-      let exactSubtotal = 0;
-      let exactTax = 0;
-      let exactDiscount = parseFloat(selectedInvoice.discount || "0");
+        toast({
+          title: "Thanh toán thành công",
+          description: "Đơn hàng đã được cập nhật trạng thái thanh toán",
+        });
 
-      items.forEach((item: any) => {
-        const product = products.find((p: any) => p.id === item.productId);
-        const taxRate = product?.taxRate
-          ? parseFloat(product.taxRate) / 100
-          : 0;
-        const unitPrice = parseFloat(item.unitPrice || "0");
-        const quantity = parseInt(item.quantity || "0");
-        const itemSubtotal = unitPrice * quantity;
+        // For laundry business, show receipt modal after payment
+        if (storeSettings?.businessType === "laundry") {
+          console.log("🧺 Laundry business: Preparing receipt after payment");
 
-        if (priceIncludeTax && taxRate > 0) {
-          const priceBeforeTax = itemSubtotal / (1 + taxRate);
-          const itemTax = itemSubtotal - priceBeforeTax;
-          exactSubtotal += priceBeforeTax;
-          exactTax += itemTax;
-        } else {
-          exactSubtotal += itemSubtotal;
-          exactTax += itemSubtotal * taxRate;
-        }
-      });
+          // Fetch fresh order items
+          const itemsResponse = await apiRequest(
+            "GET",
+            `https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/order-items/${order.id}`,
+          );
+          const items = await itemsResponse.json();
 
-      const exactTotal = exactSubtotal + exactTax - exactDiscount;
-
-      // Create complete order data for payment
-      const paymentOrderData = {
-        ...selectedInvoice,
-        id: selectedInvoice.id, // Ensure ID is explicitly set
-        orderNumber:
-          selectedInvoice.orderNumber || selectedInvoice.displayNumber,
-        exactSubtotal: Math.floor(exactSubtotal),
-        exactTax: Math.floor(exactTax),
-        exactDiscount: Math.floor(exactDiscount),
-        exactTotal: Math.floor(exactTotal),
-        items: items.map((item: any) => {
-          const product = products.find((p: any) => p.id === item.productId);
-          return {
-            ...item,
-            productId: item.productId || item.id,
-            productName: item.productName || item.name,
-            price: item.unitPrice || item.price || "0",
-            quantity: item.quantity,
-            sku: item.productSku || item.sku || `SKU${item.productId}`,
-            taxRate: product?.taxRate ? parseFloat(product.taxRate) : 0,
-            afterTaxPrice: product?.afterTaxPrice || null,
-            unitPrice: item.unitPrice || item.price || "0",
-            total: item.total || "0",
-            discount: item.discount || "0",
+          // Prepare receipt data
+          const receiptData = {
+            id: order.id,
+            tableId: order.tableId || null,
+            orderNumber: order.orderNumber || order.displayNumber,
+            transactionId: order.orderNumber || `TXN-${order.id}`,
+            items: items.map((item: any) => ({
+              id: item.id,
+              productId: item.productId,
+              productName: item.productName,
+              price: item.unitPrice,
+              quantity: item.quantity,
+              total: item.total,
+              discount: item.discount || "0",
+              sku: item.productSku || item.sku || `ITEM${item.productId}`,
+              taxRate: parseFloat(item.taxRate || "0"),
+            })),
+            subtotal: order.subtotal,
+            tax: order.tax,
+            total: order.total,
+            paymentMethod: order.paymentMethod || "cash",
+            amountReceived: order.total,
+            change: "0",
+            cashierName: "System User",
+            createdAt: new Date().toISOString(),
+            customerName: order.customerName || "Khách hàng",
+            customerTaxCode: order.customerTaxCode || null,
+            tableNumber: order.tableId ? getTableNumber(order.tableId) : null,
           };
-        }),
-      };
 
-      console.log("✅ Payment order data prepared:", {
-        orderId: paymentOrderData.id,
-        orderNumber: paymentOrderData.orderNumber,
-        exactSubtotal: paymentOrderData.exactSubtotal,
-        exactTax: paymentOrderData.exactTax,
-        exactDiscount: paymentOrderData.exactDiscount,
-        exactTotal: paymentOrderData.exactTotal,
-        itemsCount: paymentOrderData.items.length,
-      });
-
-      setOrderForPayment(paymentOrderData);
-      setShowPaymentMethodModal(true);
+          console.log("🧾 Opening receipt modal with data:", receiptData);
+          setSelectedReceipt(receiptData);
+          setShowReceiptModal(true);
+        }
+      }
     } catch (error) {
-      console.error("❌ Error loading payment data:", error);
+      console.error("❌ Error updating payment status:", error);
       toast({
-        title: "Lỗi",
-        description: "Không thể tải thông tin thanh toán",
+        title: "Lỗi thanh toán",
+        description: "Không thể cập nhật trạng thái thanh toán",
         variant: "destructive",
       });
     }
   };
 
-  // Handler for when a payment method is selected in the modal
-  const handlePaymentMethodSelect = (paymentResult: any) => {
-    console.log("💳 Payment method result:", paymentResult);
+  // Handler for when payment is completed
+  const handlePaymentComplete = (data: any) => {
+    console.log("💳 Sales Orders: Payment completed:", data);
 
     // Close payment modal
     setShowPaymentMethodModal(false);
-    setOrderForPayment(null);
 
-    // Check if this is "publish later" case - should show receipt modal, NOT print dialog
-    if (
-      paymentResult?.publishLater === true ||
-      paymentResult?.showReceiptModal === true
-    ) {
-      console.log("📄 Sales Orders: Publish later - showing receipt modal");
-
-      // For publish later, show receipt modal instead of print dialog
-      if (paymentResult?.receipt) {
-        setSelectedReceipt(paymentResult.receipt);
-        setShowReceiptModal(true);
-      } else {
-        toast({
-          title: "Lưu hóa đơn thành công",
-          description: "Hóa đơn đã được lưu, đợi phát hành sau.",
-        });
-      }
-    } else if (paymentResult === "paymentCompleted" || paymentResult?.receipt) {
-      // Normal payment completion - show print dialog
-      const receiptData = paymentResult?.receipt || paymentResult;
-
+    if (data.success && data.receipt) {
       console.log(
-        "📄 Sales Orders: Showing receipt after payment",
-        receiptData,
+        "✅ Sales Orders: Showing receipt modal with data:",
+        data.receipt,
       );
 
-      // Validate receipt data has items
-      if (
-        receiptData?.items &&
-        Array.isArray(receiptData.items) &&
-        receiptData.items.length > 0
-      ) {
-        setPrintReceiptData(receiptData);
-        setShowPrintDialog(true);
-      } else {
-        console.error(
-          "❌ Invalid receipt data - missing items array:",
-          receiptData,
-        );
-        toast({
-          title: "Thanh toán thành công",
-          description: "Đơn hàng đã được cập nhật trạng thái thanh toán.",
-        });
-      }
-    }
+      // Set receipt data
+      setSelectedReceipt(data.receipt);
 
-    // Refresh orders
-    queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] });
+      // Show receipt modal with a small delay to ensure state is properly set
+      setTimeout(() => {
+        setShowReceiptModal(true);
+      }, 100);
+
+      // Refresh orders list after a delay to avoid interfering with receipt modal
+      setTimeout(() => {
+        queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] });
+        queryClient.invalidateQueries({
+          queryKey: [
+            "https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders/date-range",
+            startDate,
+            endDate,
+            currentPage,
+            itemsPerPage,
+          ],
+        });
+      }, 500);
+    }
   };
+
+  // Function to print receipt for a given order
+  const handlePrintReceipt = async (order: any) => {
+    try {
+      console.log("📄 Sales Orders: Preparing receipt for order:", order.id);
+
+      // Fetch order items with tax information
+      const response = await apiRequest("GET", `https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/order-items/${order.id}`);
+      const items = await response.json();
+
+      // Enrich items with product information including tax rates
+      const enrichedItems = items.map((item: any) => {
+        const product = products.find((p: any) => p.id === item.productId);
+        return {
+          id: item.id,
+          productId: item.productId,
+          productName: item.productName,
+          price: item.unitPrice,
+          quantity: item.quantity,
+          discount: item.discount || "0",
+          total: item.total,
+          tax: item.tax || "0", // Include tax for the item if available
+          sku: item.productSku || item.sku || `SKU${item.productId}`,
+          // Prioritize item.taxRate, fallback to product.taxRate, then default to 0
+          taxRate: parseFloat(item.taxRate || product?.taxRate || "0"),
+          product: product || null, // Include the full product object for potential future use
+        };
+      });
+
+      const receiptData = {
+        ...order,
+        transactionId: order.orderNumber || order.invoiceNumber,
+        items: enrichedItems,
+        cashierName: "System",
+        amountReceived: order.total,
+        change: "0",
+      };
+
+      console.log("📄 Sales Orders: Receipt data with tax info:", receiptData);
+
+      setSelectedReceipt(receiptData);
+      setShowReceiptModal(true);
+    } catch (error) {
+      console.error("❌ Error preparing receipt:", error);
+      toast({
+        title: "Lỗi",
+        description: "Không thể tải thông tin hóa đơn",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Effect to handle receipt modal close events and prevent reopening
+  useEffect(() => {
+    const handleReceiptModalClosed = (event: CustomEvent) => {
+      console.log(
+        "🔒 Sales Orders: Receipt modal closed event received",
+        event.detail,
+      );
+
+      // Only clear if event detail confirms intentional close
+      if (event.detail?.intentionalClose) {
+        setShowReceiptModal(false);
+        setSelectedReceipt(null);
+        setShowPaymentMethodModal(false);
+        console.log("✅ Sales Orders: Receipt modal states cleared");
+      }
+    };
+
+    window.addEventListener(
+      "receiptModalClosed",
+      handleReceiptModalClosed as EventListener,
+    );
+
+    return () => {
+      window.removeEventListener(
+        "receiptModalClosed",
+        handleReceiptModalClosed as EventListener,
+      );
+    };
+  }, []);
 
   return (
     <div className="min-h-screen bg-green-50 grocery-bg">
@@ -2853,7 +3267,9 @@ export default function SalesOrders() {
                                   </td>
                                   <td className="px-3 py-3 text-right">
                                     <div className="text-sm">
-                                      {formatCurrency(tax)}
+                                      {formatCurrency(
+                                        parseFloat(item.tax || "0"),
+                                      )}
                                     </div>
                                   </td>
                                   <td className="px-3 py-3 text-right">
@@ -3408,13 +3824,13 @@ export default function SalesOrders() {
                                                                 selectedInvoice.displayStatus ===
                                                                 1
                                                               }
+                                                              placeholder="Nhập số hóa đơn"
                                                             />
                                                           ) : (
-                                                            selectedInvoice.invoiceNumber ||
-                                                            selectedInvoice.orderNumber ||
-                                                            String(
-                                                              selectedInvoice.id,
-                                                            ).padStart(8, "0")
+                                                            <span className="font-medium text-blue-600">
+                                                              {selectedInvoice.invoiceNumber ||
+                                                                "-"}
+                                                            </span>
                                                           )}
                                                         </td>
                                                         <td className="py-1 pr-4 font-medium whitespace-nowrap">
@@ -3450,7 +3866,7 @@ export default function SalesOrders() {
                                                 </h4>
                                                 {orderItemsLoading ? (
                                                   <div className="text-center py-8">
-                                                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto"></div>
+                                                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600 mx-auto"></div>
                                                     <p className="mt-2 text-gray-500">
                                                       Đang tải sản phẩm...
                                                     </p>
@@ -3483,6 +3899,14 @@ export default function SalesOrders() {
                                                     >
                                                       Thử lại
                                                     </Button>
+                                                  </div>
+                                                ) : !orderItems ||
+                                                  orderItems.length === 0 ? (
+                                                  <div className="text-center py-8">
+                                                    <Package className="w-12 h-12 text-gray-300 mx-auto mb-2" />
+                                                    <p className="text-gray-500">
+                                                      Không có sản phẩm nào
+                                                    </p>
                                                   </div>
                                                 ) : (
                                                   <div className="border rounded-lg overflow-x-auto">
@@ -3699,8 +4123,7 @@ export default function SalesOrders() {
                                                                               editedOrderItems[
                                                                                 it
                                                                                   .id
-                                                                              ] ||
-                                                                              {};
+                                                                              ] || {};
                                                                             const itPrice =
                                                                               parseFloat(
                                                                                 editedIt.unitPrice !==
@@ -3748,96 +4171,44 @@ export default function SalesOrders() {
                                                                 }
                                                               }
 
-                                                              // Calculate tax and total using same logic as order-dialog
+                                                              // Calculate tax based on priceIncludeTax setting
+                                                              const taxRate =
+                                                                product?.taxRate
+                                                                  ? parseFloat(
+                                                                      product.taxRate,
+                                                                    ) / 100
+                                                                  : 0;
                                                               let itemTax = 0;
-                                                              let priceBeforeTax = 0;
                                                               let itemTotal = 0;
-                                                              let priceTax =
-                                                                Number(
-                                                                  product.price,
-                                                                ) * quantity;
 
                                                               if (
-                                                                product?.taxRate &&
-                                                                parseFloat(
-                                                                  product.taxRate,
-                                                                ) > 0
+                                                                priceIncludeTax &&
+                                                                taxRate > 0
                                                               ) {
-                                                                const taxRate =
-                                                                  parseFloat(
-                                                                    product.taxRate,
-                                                                  ) / 100;
-
-                                                                if (
-                                                                  priceIncludeTax
-                                                                ) {
-                                                                  // When price includes tax
-                                                                  const discountPerUnit =
-                                                                    itemDiscountAmount /
-                                                                    quantity;
-                                                                  const adjustedPrice =
-                                                                    Math.max(
-                                                                      0,
-                                                                      unitPrice -
-                                                                        discountPerUnit,
-                                                                    );
-                                                                  const giaGomThue =
-                                                                    adjustedPrice *
-                                                                    quantity;
-                                                                  priceBeforeTax =
-                                                                    Math.round(
-                                                                      giaGomThue /
-                                                                        (1 +
-                                                                          taxRate),
-                                                                    );
-                                                                  itemTax =
-                                                                    giaGomThue -
-                                                                    priceBeforeTax;
-                                                                } else {
-                                                                  // When price doesn't include tax
-                                                                  const discountPerUnit =
-                                                                    itemDiscountAmount /
-                                                                    quantity;
-                                                                  const adjustedPrice =
-                                                                    Math.max(
-                                                                      0,
-                                                                      unitPrice -
-                                                                        discountPerUnit,
-                                                                    );
-                                                                  priceBeforeTax =
-                                                                    Math.round(
-                                                                      adjustedPrice *
-                                                                        quantity,
-                                                                    );
-                                                                  itemTax =
-                                                                    Math.round(
-                                                                      priceBeforeTax *
-                                                                        taxRate,
-                                                                    );
-                                                                }
-                                                              } else {
-                                                                // No tax
-                                                                const discountPerUnit =
-                                                                  itemDiscountAmount /
+                                                                const itemSubtotal =
+                                                                  unitPrice *
                                                                   quantity;
-                                                                const adjustedPrice =
-                                                                  Math.max(
-                                                                    0,
-                                                                    unitPrice -
-                                                                      discountPerUnit,
-                                                                  );
-
-                                                                priceBeforeTax =
-                                                                  Math.round(
-                                                                    adjustedPrice *
-                                                                      quantity,
-                                                                  );
-                                                                itemTax = 0;
+                                                                const priceBeforeTax =
+                                                                  itemSubtotal /
+                                                                  (1 + taxRate);
+                                                                itemTax =
+                                                                  itemSubtotal -
+                                                                  priceBeforeTax;
+                                                                itemTotal =
+                                                                  itemSubtotal -
+                                                                  itemDiscountAmount;
+                                                              } else {
+                                                                const itemSubtotal =
+                                                                  unitPrice *
+                                                                  quantity;
+                                                                itemTax =
+                                                                  itemSubtotal *
+                                                                  taxRate;
+                                                                itemTotal =
+                                                                  itemSubtotal +
+                                                                  itemTax -
+                                                                  itemDiscountAmount;
                                                               }
-
-                                                              itemTotal =
-                                                                priceBeforeTax +
-                                                                itemTax;
 
                                                               return (
                                                                 <tr
@@ -3867,6 +4238,10 @@ export default function SalesOrders() {
                                                                               : item.sku ||
                                                                                 product?.sku ||
                                                                                 ""
+                                                                          }
+                                                                          disabled={
+                                                                            selectedInvoice.displayStatus ===
+                                                                            1
                                                                           }
                                                                           data-field={`orderitem-sku-${index}`}
                                                                           onChange={(
@@ -3994,6 +4369,10 @@ export default function SalesOrders() {
                                                                                   .productName
                                                                               : item.productName ||
                                                                                 ""
+                                                                          }
+                                                                          disabled={
+                                                                            selectedInvoice.displayStatus ===
+                                                                            1
                                                                           }
                                                                           data-field={`orderitem-productName-${index}`}
                                                                           onChange={(
@@ -4131,6 +4510,10 @@ export default function SalesOrders() {
                                                                             newQty,
                                                                           );
                                                                         }}
+                                                                        disabled={
+                                                                          selectedInvoice.displayStatus ===
+                                                                          1
+                                                                        }
                                                                         onBlur={(
                                                                           e,
                                                                         ) => {
@@ -4173,6 +4556,10 @@ export default function SalesOrders() {
                                                                         ).toLocaleString(
                                                                           "vi-VN",
                                                                         )}
+                                                                        disabled={
+                                                                          selectedInvoice.displayStatus ===
+                                                                          1
+                                                                        }
                                                                         data-field={`orderitem-unitPrice-${index}`}
                                                                         onChange={(
                                                                           e,
@@ -4217,8 +4604,7 @@ export default function SalesOrders() {
                                                                       // Use edited total if available, otherwise calculate from current values
                                                                       const editedItem =
                                                                         editedOrderItems[
-                                                                          item
-                                                                            .id
+                                                                          item.id
                                                                         ] || {};
                                                                       if (
                                                                         editedItem.total !==
@@ -4248,11 +4634,20 @@ export default function SalesOrders() {
                                                                     )}
                                                                   </td>
                                                                   <td className="text-right py-2 px-3 border-r text-xs w-[100px]">
-                                                                    {Math.floor(
-                                                                      itemTax,
-                                                                    ).toLocaleString(
-                                                                      "vi-VN",
-                                                                    )}
+                                                                    {(() => {
+                                                                      // ALWAYS use edited tax if available from state
+                                                                      const editedItem =
+                                                                        editedOrderItems[item.id] || {};
+                                                                      if (
+                                                                        editedItem.tax !== undefined
+                                                                      ) {
+                                                                        return Math.floor(
+                                                                          parseFloat(editedItem.tax),
+                                                                        ).toLocaleString("vi-VN");
+                                                                      }
+                                                                      // Fallback to calculated itemTax
+                                                                      return Math.floor(itemTax).toLocaleString("vi-VN");
+                                                                    })()}
                                                                   </td>
                                                                   <td className="text-right py-2 px-3 border-r font-medium text-xs w-[120px]">
                                                                     {Math.floor(
@@ -4711,8 +5106,10 @@ export default function SalesOrders() {
                                                       const canEditLaundry =
                                                         (selectedInvoice.status !==
                                                           "cancelled" ||
-                                                        selectedInvoice.status ===
-                                                          "paid") && selectedInvoice.isPaid === false;
+                                                          selectedInvoice.status ===
+                                                            "paid") &&
+                                                        selectedInvoice.isPaid ===
+                                                          false;
 
                                                       if (isLaundry) {
                                                         // Với laundry: cho phép sửa nếu chưa cancelled và chưa paid
@@ -4760,10 +5157,109 @@ export default function SalesOrders() {
                                                       selectedInvoice.status !==
                                                         "paid" && (
                                                         <Button
-                                                          size="sm"
-                                                          onClick={() =>
-                                                            handlePayment()
-                                                          }
+                                                          onClick={async () => {
+                                                            if (
+                                                              !selectedInvoice
+                                                            ) {
+                                                              toast({
+                                                                title: "Lỗi",
+                                                                description:
+                                                                  "Vui lòng chọn đơn hàng",
+                                                                variant:
+                                                                  "destructive",
+                                                              });
+                                                              return;
+                                                            }
+
+                                                            try {
+                                                              // Fetch fresh order items
+                                                              const itemsResponse =
+                                                                await apiRequest(
+                                                                  "GET",
+                                                                  `https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/order-items/${selectedInvoice.id}`,
+                                                                );
+                                                              const items =
+                                                                await itemsResponse.json();
+
+                                                              // Prepare order data for payment
+                                                              const orderForPayment =
+                                                                {
+                                                                  ...selectedInvoice,
+                                                                  orderItems:
+                                                                    items,
+                                                                  items:
+                                                                    items.map(
+                                                                      (
+                                                                        item: any,
+                                                                      ) => ({
+                                                                        id: item.id,
+                                                                        productId:
+                                                                          item.productId,
+                                                                        productName:
+                                                                          item.productName,
+                                                                        price:
+                                                                          item.unitPrice,
+                                                                        quantity:
+                                                                          item.quantity,
+                                                                        total:
+                                                                          item.total,
+                                                                        discount:
+                                                                          item.discount ||
+                                                                          "0",
+                                                                        sku:
+                                                                          item.productSku ||
+                                                                          item.sku ||
+                                                                          `SKU${item.productId}`,
+                                                                        taxRate:
+                                                                          parseFloat(
+                                                                            item.taxRate ||
+                                                                              "0",
+                                                                          ),
+                                                                      }),
+                                                                    ),
+                                                                  exactSubtotal:
+                                                                    parseFloat(
+                                                                      selectedInvoice.subtotal ||
+                                                                        "0",
+                                                                    ),
+                                                                  exactTax:
+                                                                    parseFloat(
+                                                                      selectedInvoice.tax ||
+                                                                        "0",
+                                                                    ),
+                                                                  exactDiscount:
+                                                                    parseFloat(
+                                                                      selectedInvoice.discount ||
+                                                                        "0",
+                                                                    ),
+                                                                  exactTotal:
+                                                                    parseFloat(
+                                                                      selectedInvoice.total ||
+                                                                        "0",
+                                                                    ),
+                                                                };
+
+                                                              // Open payment method modal first
+                                                              setOrderForPayment(
+                                                                orderForPayment,
+                                                              );
+                                                              setShowPaymentMethodModal(
+                                                                true,
+                                                              );
+                                                            } catch (error) {
+                                                              console.error(
+                                                                "❌ Error preparing payment:",
+                                                                error,
+                                                              );
+                                                              toast({
+                                                                title: "Lỗi",
+                                                                description:
+                                                                  "Không thể tải thông tin đơn hàng",
+                                                                variant:
+                                                                  "destructive",
+                                                              });
+                                                            }
+                                                          }}
                                                           className="bg-green-600 hover:bg-green-700 text-white"
                                                         >
                                                           <CreditCard className="w-4 h-4 mr-2" />
@@ -5144,86 +5640,14 @@ export default function SalesOrders() {
             setOrderForPayment(null);
 
             // Refresh data after closing
-            queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] });
+            // queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] });
           }}
-          onSelectMethod={async (method, data) => {
-            console.log(
-              "💳 Payment method selected in sales-orders:",
-              method,
-              data,
-            );
-
-            // Handle payment completion
-            if (method === "paymentCompleted" && data?.success) {
-              console.log("✅ Payment completed successfully:", data);
-
-              // Close payment modal
-              setShowPaymentMethodModal(false);
-              setOrderForPayment(null);
-
-              // Force refresh orders list
-              await Promise.all([
-                queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] }),
-                queryClient.invalidateQueries({
-                  queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders/date-range"],
-                }),
-                queryClient.refetchQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] }),
-                queryClient.refetchQueries({
-                  queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders/date-range"],
-                }),
-              ]);
-
-              // Show receipt if provided
-              if (data.receipt && data.shouldShowReceipt !== false) {
-                console.log("📄 Sales Orders: Showing receipt after payment");
-                setPrintReceiptData(data.receipt);
-                setShowPrintDialog(true);
-              }
-
-              toast({
-                title: "Thanh toán thành công",
-                description: "Đơn hàng đã được cập nhật trạng thái thanh toán.",
-              });
-
-              return;
-            }
-
-            // Handle other methods (fallback)
-            console.log("💳 Other payment method:", method);
-            setShowPaymentMethodModal(false);
-            setOrderForPayment(null);
-
-            // Refresh orders list
-            queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] });
-
-            toast({
-              title: "Thanh toán thành công",
-              description: "Đơn hàng đã được cập nhật trạng thái thanh toán.",
-            });
-          }}
+          onSelectMethod={handlePaymentComplete}
           total={
             orderForPayment.exactTotal ||
             parseFloat(orderForPayment.total || "0")
           }
-          cartItems={orderItems.map((item: any) => {
-            // Find product for tax info
-            const product = products.find((p: any) => p.id === item.productId);
-
-            return {
-              id: item.productId,
-              productId: item.productId,
-              name: item.productName,
-              productName: item.productName,
-              price: item.unitPrice,
-              quantity: item.quantity,
-              sku: item.productSku || `SKU${item.productId}`,
-              taxRate: product?.taxRate ? parseFloat(product.taxRate) : 0,
-              afterTaxPrice: product?.afterTaxPrice || null,
-              unitPrice: item.unitPrice,
-              total: item.total,
-              discount: item.discount || "0",
-            };
-          })}
+          cartItems={orderForPayment.items || []}
           orderForPayment={orderForPayment}
           products={products}
           getProductName={(productId) => {
@@ -5271,30 +5695,25 @@ export default function SalesOrders() {
         <ReceiptModal
           isOpen={showReceiptModal}
           onClose={() => {
+            console.log("🔒 Sales Orders: Receipt modal closed by user");
+
+            // Dispatch intentional close event
+            window.dispatchEvent(
+              new CustomEvent("receiptModalClosed", {
+                detail: {
+                  intentionalClose: true,
+                  source: "sales_orders_receipt_close",
+                },
+              }),
+            );
+
             setShowReceiptModal(false);
             setSelectedReceipt(null);
+
+            queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] });
           }}
           receipt={selectedReceipt}
           isPreview={false}
-        />
-      )}
-
-      {/* Payment Method Modal */}
-      {showPaymentMethodModal && orderForPayment && (
-        <PaymentMethodModal
-          isOpen={showPaymentMethodModal}
-          onClose={() => {
-            setShowPaymentMethodModal(false);
-            setOrderForPayment(null);
-          }}
-          onSelectMethod={handlePaymentMethodSelect}
-          total={
-            orderForPayment.exactTotal ||
-            parseFloat(orderForPayment.total || "0")
-          }
-          cartItems={orderForPayment?.items || []}
-          orderForPayment={orderForPayment}
-          products={products}
         />
       )}
     </div>

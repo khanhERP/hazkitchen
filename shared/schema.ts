@@ -314,7 +314,7 @@ export const insertProductSchema = createInsertSchema(products)
     price: z.union([z.string(), z.number()]).refine(
       (val) => {
         const numVal =
-          typeof val === "string" ? parseInt(val.replace(/[^0-9]/g, "")) : val;
+          typeof val === "string" ? parseFloat(val) : Number(val);
         return !isNaN(numVal) && numVal > 0 && numVal < 100000000;
       },
       {
@@ -350,7 +350,7 @@ export const insertProductSchema = createInsertSchema(products)
           if (typeof val === "string" && val.trim() === "") return true;
           const numVal =
             typeof val === "string"
-              ? parseInt(val.replace(/[^0-9]/g, ""))
+              ? parseFloat(val.replace(/[^0-9.-]/g, ""))
               : val;
           return !isNaN(numVal) && numVal > 0;
         },
@@ -364,7 +364,7 @@ export const insertProductSchema = createInsertSchema(products)
       .refine(
         (val) => {
           if (!val || val === null || val === undefined) return true;
-          const numVal = typeof val === "string" ? Number(val) : val;
+          const numVal = typeof val === "string" ? parseFloat(val) : val;
           return !isNaN(numVal) && numVal >= 0;
         },
         {

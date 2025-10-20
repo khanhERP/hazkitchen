@@ -873,8 +873,11 @@ export function EInvoiceModal({
       // Create receipt data for receipt modal
       console.log("formData_trường GGGGG", formData);
       const receiptData = {
+        id: orderId, // Add orderId
+        tableId: orderData?.tableId || null, // Add tableId from orderData
         transactionId:
           savedInvoice.invoice?.invoiceNumber || `TXN-${Date.now()}`,
+        orderNumber: orderData?.orderNumber || `ORD-${orderId || Date.now()}`, // Add orderNumber
         items: cartItems.map((item) => {
           const itemPrice =
             typeof item.price === "string"
@@ -938,7 +941,8 @@ export function EInvoiceModal({
         tax: calculatedTax,
         invoiceId: savedInvoice.invoice?.id,
         source: source || "pos",
-        orderId: orderId,
+        orderId: orderId, // Pass orderId
+        tableId: orderData?.tableId || null, // Pass tableId
       };
 
       // Update existing order status for publish later if orderId is provided
@@ -1603,6 +1607,9 @@ export function EInvoiceModal({
 
       // Create receipt data for printing
       const receiptData = {
+        id: orderId, // Add orderId
+        tableId: orderData?.tableId || null, // Add tableId from orderData
+        orderNumber: orderData?.orderNumber || `ORD-${orderId || Date.now()}`, // Add orderNumber
         transactionId: result.data?.invoiceNo || `TXN-${Date.now()}`,
         items: cartItems.map((item) => {
           const itemPrice =
@@ -1666,7 +1673,8 @@ export function EInvoiceModal({
         invoiceId: result.data?.id,
         invoiceNumber: result.data?.invoiceNo,
         source: source || "pos",
-        orderId: orderId,
+        orderId: orderId, // Pass orderId
+        tableId: orderData?.tableId || null, // Pass tableId
       };
 
       console.log(

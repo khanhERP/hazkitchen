@@ -26,12 +26,21 @@ export function Toaster() {
         if (description) {
           if (typeof description === 'string') {
             // Check if it's a translation key (contains dot notation like "settings.productCreatedSuccess")
-            if (description.includes('.')) {
-              // Try to translate - the t() function already handles dot notation
-              const translated = t(description as any);
-              // Only use translation if it's different from the key (meaning translation was found)
-              if (translated !== description) {
-                translatedDescription = translated;
+            if (description.includes('.') && !description.includes(' ')) {
+              // It's a translation key (no spaces, has dots)
+              try {
+                const translated = t(description as any);
+                // Only use translation if it's different from the key (meaning translation was found)
+                if (translated && translated !== description) {
+                  translatedDescription = translated;
+                } else {
+                  // Fallback: try to provide a meaningful message
+                  console.warn(`Missing translation for key: ${description}`);
+                  translatedDescription = description.split('.').pop() || description;
+                }
+              } catch (error) {
+                console.error(`Translation error for key: ${description}`, error);
+                translatedDescription = description;
               }
             }
             // Handle "Failed to create product" errors with more context
