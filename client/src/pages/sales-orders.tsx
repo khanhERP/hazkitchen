@@ -815,16 +815,51 @@ export default function SalesOrders() {
     onSuccess: async (data, orderId) => {
       console.log("Order cancelled successfully:", orderId);
 
+      // Update table status to available if this order has a table
+      if (selectedInvoice?.tableId) {
+        try {
+          // Check if there are any other active orders on this table
+          const otherActiveOrders = orders?.filter(
+            (o: any) =>
+              o.tableId === selectedInvoice.tableId &&
+              o.id !== orderId &&
+              !["paid", "cancelled", "completed"].includes(o.status),
+          );
+
+          // If no other active orders, update table status to available
+          if (!otherActiveOrders || otherActiveOrders.length === 0) {
+            console.log(
+              `📍 Updating table ${selectedInvoice.tableId} status to available`,
+            );
+            await apiRequest(
+              "PUT",
+              `https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/tables/${selectedInvoice.tableId}/status`,
+              {
+                status: "available",
+              },
+            );
+            console.log(
+              `✅ Table ${selectedInvoice.tableId} status updated to available`,
+            );
+          }
+        } catch (tableError) {
+          console.error("❌ Error updating table status:", tableError);
+          // Don't fail the whole operation if table update fails
+        }
+      }
+
       setShowCancelDialog(false);
 
       // Clear cache completely and force fresh fetch
       queryClient.removeQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] });
       queryClient.removeQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders/date-range"] });
+      queryClient.removeQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/tables"] });
 
       // Force immediate refetch with fresh data
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] }),
         queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders/date-range"] }),
+        queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/tables"] }),
         queryClient.refetchQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] }),
         queryClient.refetchQueries({
           queryKey: [
@@ -835,6 +870,7 @@ export default function SalesOrders() {
             itemsPerPage,
           ],
         }),
+        queryClient.refetchQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/tables"] }),
       ]);
 
       // Update selected order if it was cancelled
@@ -875,24 +911,24 @@ export default function SalesOrders() {
     switch (method) {
       case 1:
       case "cash":
-        return t("common.cash");;
+        return t("common.cash");
       case 2:
       case "creditCard":
       case "debitCard":
-        return t("common.creditCard");;
+        return t("common.creditCard");
       case 3:
       case "qrCode":
       case "momo":
       case "zalopay":
       case "vnpay":
       case "grabpay":
-        return t("common.qrCode");;
+        return t("common.qrCode");
       case "Đối trừ công nợ":
-        return t("common.creditNote");;;
+        return t("common.creditNote");
       case "unpaid":
-        return t("common.unpaid");;
+        return t("common.unpaid");
       default:
-        return t("common.unpaid");; // Changed default from "Tiền mặt" to "Chưa thanh toán"
+        return t("common.unpaid"); // Changed default from "Tiền mặt" to "Chưa thanh toán"
     }
   };
 
@@ -2263,11 +2299,12 @@ export default function SalesOrders() {
           ? parseFloat(product.taxRate) / 100
           : 0;
 
-        const itemSubtotal = unitPrice * quantity;
+        const itemSubtotal =
+          unitPrice * quantity - parseFloat(item.discount || "0");
 
         if (priceIncludeTax && taxRate > 0) {
           // Price includes tax: separate out the tax portion
-          const priceBeforeTax = itemSubtotal / (1 + taxRate);
+          const priceBeforeTax = Math.round(itemSubtotal / (1 + taxRate));
           const itemTax = itemSubtotal - priceBeforeTax;
           calculatedSubtotal += priceBeforeTax;
           calculatedTax += itemTax;
@@ -3814,7 +3851,9 @@ export default function SalesOrders() {
                                                                 selectedInvoice
                                                                   .displayStatus
                                                               ] ||
-                                                              t("common.serving")
+                                                              t(
+                                                                "common.serving",
+                                                              )
                                                             );
                                                           })()}
                                                         </td>
@@ -4288,7 +4327,8 @@ export default function SalesOrders() {
                                                                               editedOrderItems[
                                                                                 item
                                                                                   .id
-                                                                              ] || {};
+                                                                              ] ||
+                                                                              {};
                                                                             const itPrice =
                                                                               parseFloat(
                                                                                 editedItem.unitPrice !==
@@ -4352,10 +4392,14 @@ export default function SalesOrders() {
                                                               ) {
                                                                 const itemSubtotal =
                                                                   unitPrice *
-                                                                  quantity;
+                                                                    quantity -
+                                                                  itemDiscountAmount;
                                                                 const priceBeforeTax =
-                                                                  itemSubtotal /
-                                                                  (1 + taxRate);
+                                                                  Math.round(
+                                                                    itemSubtotal /
+                                                                      (1 +
+                                                                        taxRate),
+                                                                  );
                                                                 itemTax =
                                                                   itemSubtotal -
                                                                   priceBeforeTax;
@@ -4365,10 +4409,13 @@ export default function SalesOrders() {
                                                               } else {
                                                                 const itemSubtotal =
                                                                   unitPrice *
-                                                                  quantity;
+                                                                    quantity -
+                                                                  itemDiscountAmount;
                                                                 itemTax =
-                                                                  itemSubtotal *
-                                                                  taxRate;
+                                                                  Math.round(
+                                                                    itemSubtotal *
+                                                                      taxRate,
+                                                                  );
                                                                 itemTotal =
                                                                   itemSubtotal +
                                                                   itemTax -
