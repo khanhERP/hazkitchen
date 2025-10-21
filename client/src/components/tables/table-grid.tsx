@@ -1895,37 +1895,13 @@ export function TableGrid({ onTableSelect, selectedTableId }: TableGridProps) {
         console.log("🔄 Table Grid: Force fetching fresh data...");
 
         // Strategy A: Direct fetch with no-cache headers
+        const params = new URLSearchParams({
+          _t: Date.now().toString(),
+          _force: "true",
+        });
         const [freshTables, freshOrders] = await Promise.all([
-          fetch(
-            "https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/tables?" +
-              new URLSearchParams({
-                _t: Date.now().toString(),
-                _force: "true",
-              }),
-            {
-              cache: "no-store",
-              headers: {
-                "Cache-Control": "no-cache, no-store, must-revalidate",
-                Pragma: "no-cache",
-                Expires: "0",
-              },
-            },
-          ).then((r) => r.json()),
-          fetch(
-            "https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders?" +
-              new URLSearchParams({
-                _t: Date.now().toString(),
-                _force: "true",
-              }),
-            {
-              cache: "no-store",
-              headers: {
-                "Cache-Control": "no-cache, no-store, must-revalidate",
-                Pragma: "no-cache",
-                Expires: "0",
-              },
-            },
-          ).then((r) => r.json()),
+          fetch(`https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/tables?${params}`).then((r) => r.json()),
+          fetch(`https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders?${params}`).then((r) => r.json()),
         ]);
 
         // STEP 3: Set fresh data immediately in cache
@@ -2788,37 +2764,13 @@ export function TableGrid({ onTableSelect, selectedTableId }: TableGridProps) {
 
       // Force immediate fresh fetch with no-cache
       try {
+        const params = new URLSearchParams({
+          _t: Date.now().toString(),
+          _force: "true",
+        });
         const [freshTables, freshOrders] = await Promise.all([
-          fetch(
-            "https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/tables?" +
-              new URLSearchParams({
-                _t: Date.now().toString(),
-                _force: "true",
-              }),
-            {
-              cache: "no-store",
-              headers: {
-                "Cache-Control": "no-cache, no-store, must-revalidate",
-                Pragma: "no-cache",
-                Expires: "0",
-              },
-            },
-          ).then((r) => r.json()),
-          fetch(
-            "https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders?" +
-              new URLSearchParams({
-                _t: Date.now().toString(),
-                _force: "true",
-              }),
-            {
-              cache: "no-store",
-              headers: {
-                "Cache-Control": "no-cache, no-store, must-revalidate",
-                Pragma: "no-cache",
-                Expires: "0",
-              },
-            },
-          ).then((r) => r.json()),
+          fetch(`https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/tables?${params}`).then((r) => r.json()),
+          fetch(`https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders?${params}`).then((r) => r.json()),
         ]);
 
         // Set fresh data immediately
