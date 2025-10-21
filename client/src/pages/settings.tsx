@@ -2646,7 +2646,7 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
                                 {t("customers.totalCustomers")}
                               </p>
                               <p className="text-2xl font-bold text-green-600">
-                                {customersData ? customersData.length : 0}
+                                {customersData ? new Intl.NumberFormat("vi-VN").format(customersData.length) : 0}
                               </p>
                             </div>
                             <UserCheck className="w-8 h-8 text-green-600" />
@@ -2663,9 +2663,11 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
                               </p>
                               <p className="text-2xl font-bold text-blue-600">
                                 {customersData
-                                  ? customersData.filter(
-                                      (c) => c.status === "active",
-                                    ).length
+                                  ? new Intl.NumberFormat("vi-VN").format(
+                                      customersData.filter(
+                                        (c) => c.status === "active",
+                                      ).length
+                                    )
                                   : 0}
                               </p>
                             </div>
@@ -2706,14 +2708,19 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
                               </p>
                               <p className="text-2xl font-bold text-orange-600">
                                 {customersData && customersData.length > 0
-                                  ? Math.round(
-                                      customersData.reduce(
-                                        (total, c) =>
-                                          total +
-                                          parseFloat(c.totalSpent || "0"),
-                                        0,
-                                      ) / customersData.length,
-                                    ).toLocaleString()
+                                  ? new Intl.NumberFormat("vi-VN", {
+                                      minimumFractionDigits: 0,
+                                      maximumFractionDigits: 0,
+                                    }).format(
+                                      Math.floor(
+                                        customersData.reduce(
+                                          (total, c) =>
+                                            total +
+                                            parseFloat(c.totalSpent || "0"),
+                                          0,
+                                        ) / customersData.length,
+                                      ),
+                                    )
                                   : "0"}{" "}
                                 ₫
                               </p>
@@ -2832,18 +2839,16 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
                                           ? "bg-purple-500"
                                           : customer.membershipLevel === "GOLD"
                                             ? "bg-yellow-500"
-                                            : customer.membershipLevel ===
-                                                "SILVER"
+                                            : customer.membershipLevel === "SILVER"
                                               ? "bg-gray-300 text-black"
                                               : "bg-gray-400"
                                       } text-white`}
                                     >
                                       {customer.membershipLevel === "VIP"
-                                        ? t("customers.vip")
+                                        ? `${t("customers.vip")} (${new Intl.NumberFormat("vi-VN").format(1000000)}₫)`
                                         : customer.membershipLevel === "GOLD"
-                                          ? t("customers.gold")
-                                          : customer.membershipLevel ===
-                                              "SILVER"
+                                          ? `${t("customers.gold")} (${new Intl.NumberFormat("vi-VN").format(300000)}₫)`
+                                          : customer.membershipLevel === "SILVER"
                                             ? t("customers.silver")
                                             : customer.membershipLevel}
                                     </Badge>
@@ -2970,10 +2975,12 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
                               </p>
                               <p className="text-2xl font-bold text-purple-600">
                                 {productsData
-                                  ? productsData.reduce(
-                                      (total: number, product: any) =>
-                                        total + (product.stock || 0),
-                                      0,
+                                  ? new Intl.NumberFormat("vi-VN").format(
+                                      productsData.reduce(
+                                        (total: number, product: any) =>
+                                          total + (product.stock || 0),
+                                        0,
+                                      ),
                                     )
                                   : 0}
                               </p>
@@ -3197,7 +3204,7 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
                                             </td>
                                             <td className="px-4 py-3 text-center">
                                               <div className="text-sm">
-                                                {product.stock || 0}
+                                                {new Intl.NumberFormat("vi-VN").format(product.stock || 0)}
                                               </div>
                                             </td>
                                             <td className="px-4 py-3 text-center">
@@ -4108,6 +4115,7 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
                       <SelectValue placeholder={t("tables.floorPlaceholder")} />
                     </SelectTrigger>
                     <SelectContent>
+                      <SelectItem value="all">Tất cả</SelectItem>
                       <SelectItem value="1">{t("common.floor")} 1</SelectItem>
                       <SelectItem value="2">{t("common.floor")} 2</SelectItem>
                       <SelectItem value="3">{t("common.floor")} 3</SelectItem>

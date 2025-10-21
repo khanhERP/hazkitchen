@@ -449,6 +449,7 @@ export function PrinterConfigModal({
                         <SelectValue placeholder={t("tables.floorPlaceholder")} />
                       </SelectTrigger>
                       <SelectContent>
+                        <SelectItem value="all">Tất cả</SelectItem>
                         <SelectItem value="1">{t("common.floor")} 1</SelectItem>
                         <SelectItem value="2">{t("common.floor")} 2</SelectItem>
                         <SelectItem value="3">{t("common.floor")} 3</SelectItem>

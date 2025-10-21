@@ -2966,7 +2966,10 @@ export function TableGrid({ onTableSelect, selectedTableId }: TableGridProps) {
                               }}
                             >
                               {table.status === "occupied" && activeOrder
-                                ? t(getOrderStatusBadge(activeOrder.status).label as any)
+                                ? t(
+                                    getOrderStatusBadge(activeOrder.status)
+                                      .label as any,
+                                  )
                                 : t(statusConfig.label as any)}
                             </Badge>
                           </div>
@@ -3153,11 +3156,11 @@ export function TableGrid({ onTableSelect, selectedTableId }: TableGridProps) {
                               </span>
                             </div>
                             <div className="flex justify-between text-lg">
-                              <span className="text-gray-600">{t("common.tax")}:</span>
+                              <span className="text-gray-600">
+                                {t("common.tax")}:
+                              </span>
                               <span className="font-semibold text-orange-600">
-                                {formatCurrency(
-                                  Math.floor(displayTax),
-                                )}
+                                {formatCurrency(Math.floor(displayTax))}
                               </span>
                             </div>
                             {orderDiscount > 0 && (
@@ -3366,9 +3369,7 @@ export function TableGrid({ onTableSelect, selectedTableId }: TableGridProps) {
                                       const exactSubtotal = Number(
                                         order.subtotal || 0,
                                       );
-                                      const exactTax = Number(
-                                        order.tax || 0,
-                                      );
+                                      const exactTax = Number(order.tax || 0);
                                       const exactDiscount = Number(
                                         order.discount || 0,
                                       );
@@ -3376,8 +3377,8 @@ export function TableGrid({ onTableSelect, selectedTableId }: TableGridProps) {
                                         order.total || 0,
                                       );
 
-                                      const processedItems =
-                                        orderItemsData.map((item: any) => ({
+                                      const processedItems = orderItemsData.map(
+                                        (item: any) => ({
                                           id: item.id,
                                           productId: item.productId,
                                           productName:
@@ -3403,7 +3404,8 @@ export function TableGrid({ onTableSelect, selectedTableId }: TableGridProps) {
                                               ? parseFloat(product.taxRate)
                                               : 10;
                                           })(),
-                                        }));
+                                        }),
+                                      );
 
                                       const billData = {
                                         ...order,
@@ -4022,7 +4024,9 @@ export function TableGrid({ onTableSelect, selectedTableId }: TableGridProps) {
                     <p className="text-xs text-blue-600">
                       Đã sử dụng {mixedPaymentData.pointsToUse.toLocaleString()}
                       P (-
-                      {(mixedPaymentData.pointsToUse * 1000).toLocaleString()}{" "}
+                      {(
+                        mixedPaymentData.pointsToUse * 1000
+                      ).toLocaleString()}{" "}
                       ₫)
                     </p>
                   </div>

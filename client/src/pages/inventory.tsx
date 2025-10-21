@@ -689,7 +689,7 @@ export default function InventoryPage({ onLogout }: InventoryPageProps) {
                             </td>
                             <td className="py-4 px-2 text-center">
                               <span className="text-lg font-semibold">
-                                {product.stock}
+                                {new Intl.NumberFormat("vi-VN").format(product.stock)}
                               </span>
                             </td>
                             <td className="py-4 px-2 text-center">

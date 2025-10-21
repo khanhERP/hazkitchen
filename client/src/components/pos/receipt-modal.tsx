@@ -1434,26 +1434,6 @@ export function ReceiptModal({
                 </tr>
 
                 {(() => {
-                  const totalItemDiscount = (receipt.items || []).reduce(
-                    (sum, item) => {
-                      return sum + parseFloat(item.discount || "0");
-                    },
-                    0,
-                  );
-                  const orderDiscount = parseFloat(receipt.discount || "0");
-                  const totalDiscount =
-                    orderDiscount > 0 ? orderDiscount : totalItemDiscount;
-                  return totalDiscount > 0 ? (
-                    <tr>
-                      <td style={{ padding: "2px 0" }}>{t("common.discount")}:</td>
-                      <td style={{ padding: "2px 0", textAlign: "right" }}>
-                        {Math.floor(totalDiscount).toLocaleString("vi-VN")}
-                      </td>
-                    </tr>
-                  ) : null;
-                })()}
-
-                {(() => {
                   const priceIncludeTax =
                     receipt.priceIncludeTax ??
                     storeSettings?.priceIncludesTax ??
@@ -1506,6 +1486,26 @@ export function ReceiptModal({
                       </td>
                     </tr>
                   ));
+                })()}
+
+                {(() => {
+                  const totalItemDiscount = (receipt.items || []).reduce(
+                    (sum, item) => {
+                      return sum + parseFloat(item.discount || "0");
+                    },
+                    0,
+                  );
+                  const orderDiscount = parseFloat(receipt.discount || "0");
+                  const totalDiscount =
+                    orderDiscount > 0 ? orderDiscount : totalItemDiscount;
+                  return totalDiscount > 0 ? (
+                    <tr>
+                      <td style={{ padding: "2px 0" }}>{t("common.discount")}:</td>
+                      <td style={{ padding: "2px 0", textAlign: "right" }}>
+                        -{Math.floor(totalDiscount).toLocaleString("vi-VN")}
+                      </td>
+                    </tr>
+                  ) : null;
                 })()}
 
                 <tr>

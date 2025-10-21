@@ -488,7 +488,10 @@ export function OrderDialog({
 
         // Filter by table floor - if table has floor, only show products from same floor
         const floorMatch =
-          !table?.floor || !product.floor || product.floor === table.floor;
+          !table?.floor ||
+          !product.floor ||
+          product.floor === table.floor ||
+          product.floor === "all";
 
         const productType =
           Number(product.productType) !== 2 ||
@@ -1356,7 +1359,6 @@ export function OrderDialog({
                           const value = e.target.value.replace(/[^\d]/g, "");
                           setDiscount(parseFloat(value) || 0);
                         }}
-                        placeholder="Nhập số tiền giảm giá"
                         className="pl-3 pr-10 border-gray-300 focus:border-green-500 focus:ring-green-500"
                       />
                       <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
@@ -1371,7 +1373,7 @@ export function OrderDialog({
             {/* Search Input */}
             <div className="flex gap-2">
               <Input
-                placeholder="Tìm kiếm theo tên hoặc SKU..."
+                placeholder={t("orders.searchPlaceholder")}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="flex-1"

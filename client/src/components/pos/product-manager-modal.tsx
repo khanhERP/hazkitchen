@@ -157,13 +157,13 @@ export function ProductManagerModal({
     onSuccess: (newProduct) => {
       queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products"] });
       queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products/active"] });
-      
+
       toast({
         title: "✅ Tạo sản phẩm thành công",
         description: `Sản phẩm "${newProduct.name}" đã được thêm vào hệ thống`,
         duration: 3000,
       });
-      
+
       // Small delay to show toast before closing form
       setTimeout(() => {
         setShowAddForm(false);
@@ -226,15 +226,17 @@ export function ProductManagerModal({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(finalData),
       });
-      
+
       console.log("🔄 UPDATE MUTATION - Response status:", response.status);
-      
+
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ message: "Unknown error" }));
+        const errorData = await response
+          .json()
+          .catch(() => ({ message: "Unknown error" }));
         console.error("🔄 UPDATE MUTATION - Error:", errorData);
         throw new Error(errorData.message || "Failed to update product");
       }
-      
+
       const result = await response.json();
       console.log("🔄 UPDATE MUTATION - Success result:", result);
       return result;
@@ -242,13 +244,13 @@ export function ProductManagerModal({
     onSuccess: (updatedProduct) => {
       queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products"] });
       queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products/active"] });
-      
+
       toast({
         title: "✅ Cập nhật thành công",
         description: `Sản phẩm "${updatedProduct.name}" đã được cập nhật`,
         duration: 3000,
       });
-      
+
       // Small delay to show toast before closing form
       setTimeout(() => {
         setEditingProduct(null);
@@ -261,7 +263,8 @@ export function ProductManagerModal({
     onError: (error: Error) => {
       toast({
         title: "❌ Lỗi cập nhật",
-        description: error.message || "Không thể cập nhật sản phẩm. Vui lòng thử lại.",
+        description:
+          error.message || "Không thể cập nhật sản phẩm. Vui lòng thử lại.",
         variant: "destructive",
         duration: 4000,
       });
@@ -307,7 +310,7 @@ export function ProductManagerModal({
       taxRate: "8", // 8% tax rate as integer
       priceIncludesTax: false,
       afterTaxPrice: "",
-      floor: "1",
+      floor: "all",
       zone: "A",
       unit: "Cái",
     },
@@ -400,7 +403,12 @@ export function ProductManagerModal({
     let taxRateValue = String(data.taxRate || "0");
     let taxRateName = String(data.taxRate || "0");
 
-    console.log("🔍 Original taxRate from form:", data.taxRate, "Type:", typeof data.taxRate);
+    console.log(
+      "🔍 Original taxRate from form:",
+      data.taxRate,
+      "Type:",
+      typeof data.taxRate,
+    );
 
     if (taxRateValue === "KCT") {
       taxRateName = "KCT"; // Save exactly "KCT"
@@ -440,11 +448,11 @@ export function ProductManagerModal({
           ? String(parseInt(data.afterTaxPrice.replace(/[^0-9]/g, "")))
           : undefined,
       beforeTaxPrice: undefined, // Let server calculate this
-      floor: String(data.floor || "1"), // String as expected by schema
+      floor: String(data.floor || "all"), // String as expected by schema
       zone: String(data.zone || "A"), // Add zone field to ensure it's saved
       unit: data.unit || "Cái", // Unit field - ensure it's saved
     };
-    
+
     console.log("📦 Transformed data with unit:", {
       productName: transformedData.name,
       unit: transformedData.unit,
@@ -571,7 +579,7 @@ export function ProductManagerModal({
           const taxRate = parseFloat(product.taxRate || "0");
           return Math.round(basePrice + (basePrice * taxRate) / 100).toString();
         })(),
-      floor: product.floor || "1",
+      floor: product.floor || "all",
       zone: product.zone || "A",
       unit: product.unit || "Cái", // Load unit from product
     });
@@ -602,7 +610,7 @@ export function ProductManagerModal({
       taxRate: "8", // 8% tax rate as integer
       priceIncludesTax: false,
       afterTaxPrice: "",
-      floor: "1",
+      floor: "all",
       zone: "A",
       unit: "Cái",
     });
@@ -721,7 +729,7 @@ export function ProductManagerModal({
           taxRate: "8", // 8% tax rate as integer
           priceIncludesTax: false,
           afterTaxPrice: "",
-          floor: "1",
+          floor: "all",
           zone: "A",
           unit: "Cái",
         });
@@ -768,10 +776,10 @@ export function ProductManagerModal({
       productType: 1,
       imageUrl: "",
       trackInventory: true,
-      taxRate: "8", // 8% tax rate as integer
+      taxRate: "0", // 8% tax rate as integer
       priceIncludesTax: false,
       afterTaxPrice: "",
-      floor: "1",
+      floor: "all",
       zone: "A",
       unit: "Cái",
     });
@@ -1228,8 +1236,12 @@ export function ProductManagerModal({
                               </SelectTrigger>
                             </FormControl>
                             <SelectContent>
-                              <SelectItem value="KCT">KCT (Không chịu thuế)</SelectItem>
-                              <SelectItem value="KKKNT">KKKNT (Không kê khai nộp thuế)</SelectItem>
+                              <SelectItem value="KCT">
+                                KCT (Không chịu thuế)
+                              </SelectItem>
+                              <SelectItem value="KKKNT">
+                                KKKNT (Không kê khai nộp thuế)
+                              </SelectItem>
                               <SelectItem value="0">0%</SelectItem>
                               <SelectItem value="5">5%</SelectItem>
                               <SelectItem value="8">8%</SelectItem>
@@ -1319,6 +1331,7 @@ export function ProductManagerModal({
                               </SelectTrigger>
                             </FormControl>
                             <SelectContent>
+                              <SelectItem value="all">Tất cả</SelectItem>
                               <SelectItem value="1">
                                 {t("common.floor")} 1
                               </SelectItem>
@@ -1348,6 +1361,9 @@ export function ProductManagerModal({
                               </SelectItem>
                               <SelectItem value="10">
                                 {t("common.floor")} 10
+                              </SelectItem>
+                              <SelectItem value="10">
+                                {t("common.all")}
                               </SelectItem>
                             </SelectContent>
                           </Select>
@@ -1494,11 +1510,11 @@ export function ProductManagerModal({
                                   const file = e.target.files?.[0];
                                   if (file) {
                                     // 이미지 파일 크기 제한 (5MB)
-                                    if (file.size > 5 * 1024 * 1024) {
+                                    if (file.size > 100 * 1024) {
                                       toast({
                                         title: "오류",
                                         description:
-                                          "이미지 크기는 5MB를 초과할 수 없습니다.",
+                                          "이미지 크기는 100kb 를 초과할 수 없습니다.",
                                         variant: "destructive",
                                       });
                                       return;
@@ -1573,12 +1589,12 @@ export function ProductManagerModal({
                         console.log("Form values:", form.getValues());
                         console.log("Form errors:", form.formState.errors);
                         console.log("Is form valid?", form.formState.isValid);
-                        
+
                         // Log detailed errors
                         const errors = form.formState.errors;
                         if (Object.keys(errors).length > 0) {
                           console.log("❌ Validation errors found:");
-                          Object.keys(errors).forEach(key => {
+                          Object.keys(errors).forEach((key) => {
                             console.log(`  - ${key}:`, errors[key]?.message);
                           });
                         }
@@ -1590,7 +1606,9 @@ export function ProductManagerModal({
                         <div className="flex items-center space-x-2">
                           <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                           <span>
-                            {editingProduct ? "Đang cập nhật..." : "Đang tạo..."}
+                            {editingProduct
+                              ? "Đang cập nhật..."
+                              : "Đang tạo..."}
                           </span>
                         </div>
                       ) : (

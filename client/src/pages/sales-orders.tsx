@@ -360,9 +360,25 @@ export default function SalesOrders() {
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
-        const data = await response.json();
-        console.log("Sales Orders - All orders loaded:", {
+        let data = await response.json();
+
+        // Client-side filtering by date range to ensure correct results
+        if (startDate && endDate && Array.isArray(data)) {
+          const start = new Date(startDate);
+          start.setHours(0, 0, 0, 0);
+          const end = new Date(endDate);
+          end.setHours(23, 59, 59, 999);
+
+          data = data.filter((order: any) => {
+            const orderDate = new Date(order.createdAt);
+            return orderDate >= start && orderDate <= end;
+          });
+        }
+
+        console.log("Sales Orders - Filtered orders loaded:", {
           url: url,
+          dateRange:
+            startDate && endDate ? `${startDate} to ${endDate}` : "all",
           total: data?.length || 0,
           tableOrders:
             data?.filter((o: any) => o.salesChannel === "table").length || 0,
@@ -443,7 +459,7 @@ export default function SalesOrders() {
       return tableNameStr;
     }
 
-    return `Bàn ${tableName}`;
+    return `${t("common.table")} ${tableName}`;
   };
 
   const isLoading = ordersLoading; // Only orders loading is relevant now
@@ -1719,14 +1735,15 @@ export default function SalesOrders() {
           : 0;
         const unitPrice = parseFloat(item.unitPrice || "0");
         const quantity = parseInt(item.quantity || "0");
-        const itemSubtotal = unitPrice * quantity;
 
         if (priceIncludeTax && taxRate > 0) {
-          const priceBeforeTax = itemSubtotal / (1 + taxRate);
-          const itemTax = itemSubtotal - priceBeforeTax;
+          const itemSubtotalWithTax = unitPrice * quantity;
+          const priceBeforeTax = itemSubtotalWithTax / (1 + taxRate);
+          const itemTax = itemSubtotalWithTax - priceBeforeTax;
           exactSubtotal += priceBeforeTax;
           exactTax += itemTax;
         } else {
+          const itemSubtotal = unitPrice * quantity;
           exactSubtotal += itemSubtotal;
           exactTax += itemSubtotal * taxRate;
         }
@@ -2799,10 +2816,10 @@ export default function SalesOrders() {
                 </div>
                 <div>
                   <label className="block text-sm font-medium mb-2">
-                    Mặt hàng
+                    {t("orders.productSearch")}
                   </label>
                   <Input
-                    placeholder="Tìm theo tên hoặc mã mặt hàng"
+                    placeholder={t("orders.productSearchPlaceholder")}
                     value={customerCodeSearch}
                     onChange={(e) => setCustomerCodeSearch(e.target.value)}
                     className="w-full"
@@ -2823,47 +2840,61 @@ export default function SalesOrders() {
                 </div>
                 <div>
                   <label className="block text-sm font-medium mb-2">
-                    Hình thức bán
+                    {t("orders.orderSource")}
                   </label>
                   <select
                     value={salesChannelFilter}
                     onChange={(e) => setSalesChannelFilter(e.target.value)}
                     className="w-full h-10 px-3 rounded-md border border-gray-300 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
                   >
-                    <option value="all">Tất cả</option>
-                    <option value="table">Ăn tại chỗ</option>
-                    <option value="pos">Bán tại quầy</option>
-                    <option value="online">Bán online</option>
-                    <option value="delivery">Giao hàng</option>
+                    <option value="all">{t("orders.salesChannelAll")}</option>
+                    <option value="table">
+                      {t("orders.salesChannelTable")}
+                    </option>
+                    <option value="pos">{t("orders.salesChannelPos")}</option>
+                    <option value="online">
+                      {t("orders.salesChannelOnline")}
+                    </option>
+                    <option value="delivery">
+                      {t("orders.salesChannelDelivery")}
+                    </option>
                   </select>
                 </div>
                 <div>
                   <label className="block text-sm font-medium mb-2">
-                    Trạng thái đơn hàng
+                    {t("orders.orderStatus")}
                   </label>
                   <select
                     value={orderStatusFilter}
                     onChange={(e) => setOrderStatusFilter(e.target.value)}
                     className="w-full h-10 px-3 rounded-md border border-gray-300 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
                   >
-                    <option value="all">Tất cả</option>
-                    <option value="paid">Đã thanh toán</option>
-                    <option value="pending">Chờ xử lý</option>
-                    <option value="cancelled">Đã hủy</option>
+                    <option value="all">{t("orders.orderStatusAll")}</option>
+                    <option value="paid">{t("orders.orderStatusPaid")}</option>
+                    <option value="pending">
+                      {t("orders.orderStatusPending")}
+                    </option>
+                    <option value="cancelled">
+                      {t("orders.orderStatusCancelled")}
+                    </option>
                   </select>
                 </div>
                 <div>
                   <label className="block text-sm font-medium mb-2">
-                    Trạng thái hóa đơn điện tử
+                    {t("common.einvoiceStatusLabel")}
                   </label>
                   <select
                     value={einvoiceStatusFilter}
                     onChange={(e) => setEinvoiceStatusFilter(e.target.value)}
                     className="w-full h-10 px-3 rounded-md border border-gray-300 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
                   >
-                    <option value="all">Tất cả</option>
-                    <option value="0">Chưa phát hành</option>
-                    <option value="1">Đã phát hành</option>
+                    <option value="all">{t("orders.einvoiceStatusAll")}</option>
+                    <option value="0">
+                      {t("orders.einvoiceStatusNotPublished")}
+                    </option>
+                    <option value="1">
+                      {t("orders.einvoiceStatusPublished")}
+                    </option>
                   </select>
                 </div>
               </div>
@@ -2942,7 +2973,7 @@ export default function SalesOrders() {
                             onClick={() => handleSort("orderNumber")}
                           >
                             <div className="leading-tight flex items-center gap-1">
-                              Số đơn bán
+                              {t("orders.salesOrderNumber")}
                               {sortField === "orderNumber" && (
                                 <span className="text-blue-600">
                                   {sortOrder === "asc" ? "↑" : "↓"}
@@ -2973,7 +3004,7 @@ export default function SalesOrders() {
                             onClick={() => handleSort("createdAt")}
                           >
                             <div className="leading-tight flex items-center gap-1">
-                              Ngày tạo đơn
+                              {t("orders.orderCreatedDate")}
                               {sortField === "createdAt" && (
                                 <span className="text-blue-600">
                                   {sortOrder === "asc" ? "↑" : "↓"}
@@ -2986,7 +3017,7 @@ export default function SalesOrders() {
                             onClick={() => handleSort("updatedAt")}
                           >
                             <div className="leading-tight flex items-center gap-1">
-                              Ngày hủy đơn/hoàn thành
+                              {t("orders.cancelCompletionDate")}
                               {sortField === "updatedAt" && (
                                 <span className="text-blue-600">
                                   {sortOrder === "asc" ? "↑" : "↓"}
@@ -3413,7 +3444,10 @@ export default function SalesOrders() {
                                                     <tbody>
                                                       <tr>
                                                         <td className="py-1 pr-4 font-medium whitespace-nowrap">
-                                                          Số đơn bán:
+                                                          {t(
+                                                            "orders.salesOrderNumber",
+                                                          )}
+                                                          :
                                                         </td>
                                                         <td className="py-1 pr-6 text-blue-600 font-medium">
                                                           {isEditing &&
@@ -3439,7 +3473,7 @@ export default function SalesOrders() {
                                                           )}
                                                         </td>
                                                         <td className="py-1 pr-4 font-medium whitespace-nowrap">
-                                                          Ngày:
+                                                          {t("orders.orderDate")}:
                                                         </td>
                                                         <td className="py-1 pr-6">
                                                           {isEditing &&
@@ -3747,15 +3781,24 @@ export default function SalesOrders() {
                                                             : "-"}
                                                         </td>
                                                         <td className="py-1 pr-4 font-medium whitespace-nowrap">
-                                                          Trạng thái:
+                                                          {t(
+                                                            "orders.statusLabel",
+                                                          )}
+                                                          :
                                                         </td>
                                                         <td className="py-1">
                                                           {(() => {
                                                             const statusLabels =
                                                               {
-                                                                1: `${t("common.completed")}`,
-                                                                2: `${t("common.serving")}`,
-                                                                3: `${t("common.cancelled")}`,
+                                                                1: `${t(
+                                                                  "common.completed",
+                                                                )}`,
+                                                                2: `${t(
+                                                                  "common.serving",
+                                                                )}`,
+                                                                3: `${t(
+                                                                  "common.cancelled",
+                                                                )}`,
                                                               };
                                                             return (
                                                               statusLabels[
@@ -3769,7 +3812,10 @@ export default function SalesOrders() {
                                                       </tr>
                                                       <tr>
                                                         <td className="py-1 pr-4 font-medium whitespace-nowrap">
-                                                          Thu ngân:
+                                                          {t(
+                                                            "common.comboValues.cashier",
+                                                          )}
+                                                          :
                                                         </td>
                                                         <td className="py-1 pr-6"></td>
                                                         {storeSettings?.businessType ===
@@ -3908,22 +3954,29 @@ export default function SalesOrders() {
                                                         </td>
                                                         <td className="py-1 pr-4 font-medium whitespace-nowrap">
                                                           {t(
-                                                            "common.invoiceStatusLabel",
+                                                            "orders.invoiceStatusLabel",
                                                           )}
+                                                          :
                                                         </td>
                                                         <td className="py-1">
                                                           {(() => {
                                                             const statusLabels =
                                                               {
-                                                                0: "Chưa phát hành",
-                                                                1: "Đã phát hành",
+                                                                0: t(
+                                                                  "orders.einvoiceStatusNotPublished",
+                                                                ),
+                                                                1: t(
+                                                                  "orders.einvoiceStatusPublished",
+                                                                ),
                                                               };
                                                             return (
                                                               statusLabels[
                                                                 selectedInvoice.einvoiceStatus ||
                                                                   0
                                                               ] ||
-                                                              "Chưa phát hành"
+                                                              t(
+                                                                "orders.einvoiceStatusNotPublished",
+                                                              )
                                                             );
                                                           })()}
                                                         </td>
@@ -3996,7 +4049,7 @@ export default function SalesOrders() {
                                                             Tên hàng hóa
                                                           </th>
                                                           <th className="text-center px-3 py-2 border-r font-medium text-xs whitespace-nowrap w-[80px]">
-                                                            Đơn vị
+                                                            {t("common.unit")}
                                                           </th>
                                                           <th className="text-center px-3 py-2 border-r font-medium text-xs whitespace-nowrap w-[100px]">
                                                             Số lượng
@@ -4802,7 +4855,7 @@ export default function SalesOrders() {
                                                       <div className="flex justify-between items-center">
                                                         <span>
                                                           {t(
-                                                            "common.totalPayment",
+                                                            "orders.totalPayment",
                                                           )}
                                                           :
                                                         </span>
@@ -4832,7 +4885,7 @@ export default function SalesOrders() {
                                                       {/* Add the new line for pre-tax amount */}
                                                       <div className="flex justify-between">
                                                         <span>
-                                                          Tiền trước thuế:
+                                                          {t("orders.priceBeforeTax")}:
                                                         </span>
                                                         <span className="font-bold">
                                                           {formatCurrency(
@@ -4844,7 +4897,7 @@ export default function SalesOrders() {
                                                         </span>
                                                       </div>
                                                       <div className="flex justify-between text-red-600">
-                                                        <span>Chiết khấu:</span>
+                                                        <span>{t("common.discount")}:</span>
                                                         {isEditing &&
                                                         editableInvoice ? (
                                                           <Input
@@ -5100,8 +5153,7 @@ export default function SalesOrders() {
                                                       )}
                                                       <div className="flex justify-between items-center">
                                                         <span className="font-semibold text-gray-700">
-                                                          Phương thức thanh
-                                                          toán:
+                                                          {t("common.paymentMethod")}:
                                                         </span>
                                                         <span className="font-bold text-blue-600">
                                                           {(() => {
@@ -5387,7 +5439,7 @@ export default function SalesOrders() {
                                                           size="sm"
                                                           className="border-green-500 text-green-600 hover:bg-green-50"
                                                         >
-                                                          Phát hành hóa đơn
+                                                          {t("common.publishInvoice")}
                                                         </Button>
                                                       )}
 
@@ -5524,18 +5576,18 @@ export default function SalesOrders() {
                       </tbody>
                     </table>
                   </div>
-                  <div className="flex justify-between items-center mt-4">
-                    <div className="flex items-center space-x-2">
-                      <span className="text-sm text-gray-600">
-                        {t("common.itemsPerPage")}:
+                  <div className="flex items-center justify-between px-4 py-3 border-t bg-gray-50">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-medium text-gray-700">
+                        Số hàng mỗi trang:
                       </span>
                       <select
                         value={itemsPerPage}
                         onChange={(e) => {
-                          setItemsPerPage(parseInt(e.target.value, 10));
+                          setItemsPerPage(parseInt(e.target.value));
                           setCurrentPage(1);
                         }}
-                        className="border rounded p-1 text-sm"
+                        className="h-9 px-3 py-1 text-sm border border-gray-300 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                       >
                         <option value={10}>10</option>
                         <option value={20}>20</option>
@@ -5543,90 +5595,54 @@ export default function SalesOrders() {
                         <option value={100}>100</option>
                       </select>
                     </div>
-                    <div className="flex items-center gap-1">
-                      {(() => {
-                        const totalPagesForPagination =
-                          Math.ceil(filteredInvoices.length / itemsPerPage) ||
-                          1;
 
-                        if (totalPagesForPagination <= 7) {
-                          return Array.from(
-                            { length: totalPagesForPagination },
-                            (_, i) => i + 1,
-                          ).map((pageNum) => (
-                            <Button
-                              key={pageNum}
-                              variant={
-                                currentPage === pageNum ? "default" : "outline"
-                              }
-                              size="sm"
-                              onClick={() => setCurrentPage(pageNum)}
-                              className="w-8 h-8 p-0 text-sm"
-                            >
-                              {pageNum}
-                            </Button>
-                          ));
-                        }
-
-                        const pages = [];
-
-                        pages.push(1);
-
-                        if (currentPage > 4) {
-                          pages.push("...");
-                        }
-
-                        const start = Math.max(2, currentPage - 1);
-                        const end = Math.min(
-                          totalPagesForPagination - 1,
-                          currentPage + 1,
-                        );
-
-                        for (let i = start; i <= end; i++) {
-                          if (i !== 1 && i !== totalPagesForPagination) {
-                            pages.push(i);
+                    <div className="flex items-center gap-4">
+                      <span className="text-sm font-medium text-gray-700">
+                        Trang {currentPage} / {Math.ceil(filteredInvoices.length / itemsPerPage)}
+                      </span>
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={() => setCurrentPage(1)}
+                          disabled={currentPage === 1}
+                          className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 disabled:pointer-events-none disabled:opacity-50 border border-gray-300 bg-white hover:bg-gray-100 h-8 w-8"
+                          title="Trang đầu"
+                        >
+                          «
+                        </button>
+                        <button
+                          onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                          disabled={currentPage === 1}
+                          className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 disabled:pointer-events-none disabled:opacity-50 border border-gray-300 bg-white hover:bg-gray-100 h-8 w-8"
+                          title="Trang trước"
+                        >
+                          ‹
+                        </button>
+                        <button
+                          onClick={() =>
+                            setCurrentPage((prev) =>
+                              Math.min(
+                                prev + 1,
+                                Math.ceil(filteredInvoices.length / itemsPerPage),
+                              ),
+                            )
                           }
-                        }
-
-                        if (currentPage < totalPagesForPagination - 3) {
-                          pages.push("...");
-                        }
-
-                        if (totalPagesForPagination > 1) {
-                          pages.push(totalPagesForPagination);
-                        }
-
-                        return pages.map((pageNumber, index) => {
-                          if (pageNumber === "...") {
-                            return (
-                              <span
-                                key={`ellipsis-${index}`}
-                                className="px-2 text-gray-500 text-sm"
-                              >
-                                ...
-                              </span>
-                            );
+                          disabled={currentPage === Math.ceil(filteredInvoices.length / itemsPerPage)}
+                          className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 disabled:pointer-events-none disabled:opacity-50 border border-gray-300 bg-white hover:bg-gray-100 h-8 w-8"
+                          title="Trang sau"
+                        >
+                          ›
+                        </button>
+                        <button
+                          onClick={() =>
+                            setCurrentPage(Math.ceil(filteredInvoices.length / itemsPerPage))
                           }
-
-                          return (
-                            <Button
-                              key={pageNumber}
-                              variant={
-                                currentPage === pageNumber
-                                  ? "default"
-                                  : "outline"
-                              }
-                              size="sm"
-                              onClick={() =>
-                                setCurrentPage(pageNumber as number)
-                              }
-                              className="w-8 h-8 p-0 text-sm"
-                            >
-                              {pageNumber}
-                            </Button>
-                          );
-                        });
-                      })()}
+                          disabled={currentPage === Math.ceil(filteredInvoices.length / itemsPerPage)}
+                          className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 disabled:pointer-events-none disabled:opacity-50 border border-gray-300 bg-white hover:bg-gray-100 h-8 w-8"
+                          title="Trang cuối"
+                        >
+                          »
+                        </button>
+                      </div>
                     </div>
                   </div>
 
@@ -5637,7 +5653,7 @@ export default function SalesOrders() {
                           {t("common.subtotalAmount")}:
                         </span>
                         <div className="font-bold text-blue-600">
-                          {formatCurrency(displayTotals.subtotal)}
+                          {formatCurrency(Math.floor(totals.subtotal))}
                         </div>
                       </div>
                       <div>
@@ -5645,7 +5661,7 @@ export default function SalesOrders() {
                           {t("common.discount")}:
                         </span>
                         <div className="font-bold text-red-600">
-                          -{formatCurrency(displayTotals.discount || 0)}
+                          -{formatCurrency(Math.floor(totals.discount || 0))}
                         </div>
                       </div>
                       <div>
@@ -5653,7 +5669,7 @@ export default function SalesOrders() {
                           {t("common.totalTax")}:
                         </span>
                         <div className="font-bold text-orange-600">
-                          {formatCurrency(displayTotals.tax)}
+                          {formatCurrency(Math.floor(totals.tax))}
                         </div>
                       </div>
                       <div>
@@ -5661,7 +5677,7 @@ export default function SalesOrders() {
                           {t("common.grandTotal")}:
                         </span>
                         <div className="font-bold text-green-600">
-                          {formatCurrency(displayTotals.total)}
+                          {formatCurrency(Math.floor(totals.total))}
                         </div>
                       </div>
                     </div>
@@ -5761,9 +5777,9 @@ export default function SalesOrders() {
             exactDiscount: orderForPayment.exactDiscount,
             exactTotal: orderForPayment.exactTotal,
             subtotal: orderForPayment.subtotal,
-            tax: order.tax, // Corrected to use order.tax from the original order object
-            discount: order.discount, // Corrected to use order.discount from the original order object
-            total: order.total, // Corrected to use order.total from the original order object
+            tax: orderForPayment?.tax, // Corrected to use order.tax from the original order object
+            discount: orderForPayment?.discount, // Corrected to use order.discount from the original order object
+            total: orderForPayment?.total, // Corrected to use order.total from the original order object
           }}
         />
       )}

@@ -91,6 +91,7 @@ export const commonTranslations: { [key: string]: CommonTranslations } = {
     noNotes: "메모 없음",
     editOrder: "주문 편집",
     publishEInvoice: "전자송장 발행",
+    publishInvoice: "송장 발행",
     printInvoice: "송장 인쇄",
     OrderDate: "주문 날짜",
     Customer: "고객",
@@ -777,6 +778,7 @@ export const commonTranslations: { [key: string]: CommonTranslations } = {
     noNotes: "No Notes",
     editOrder: "Edit Order",
     publishEInvoice: "Publish E-Invoice",
+    publishInvoice: "Publish Invoice",
     printInvoice: "Print Invoice",
 
     orderList: "Order List",
@@ -1313,6 +1315,7 @@ export const commonTranslations: { [key: string]: CommonTranslations } = {
     cancelOrder: "Hủy đơn",
     editOrder: "Sửa đơn",
     publishEInvoice: "Phát hành HĐ điện tử",
+    publishInvoice: "Phát hành hóa đơn",
     printInvoice: "In hóa đơn",
     close: "Đóng",
     noNotes: "Không có ghi chú",
@@ -1575,6 +1578,7 @@ export const commonTranslations: { [key: string]: CommonTranslations } = {
     // E-invoice status
     einvoiceStatusLabel: "Trạng thái hóa đơn điện tử:",
     invoiceStatusLabel: "Trạng thái HĐ:",
+    einvoiceStatusLabel: "Trạng thái hóa đơn điện tử:",
     einvoiceStatus: {
       notPublished: "Chưa phát hành",
       published: "Đã phát hành",
