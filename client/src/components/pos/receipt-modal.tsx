@@ -1434,15 +1434,58 @@ export function ReceiptModal({
                 </tr>
 
                 {(() => {
+                  const totalItemDiscount = (receipt.items || []).reduce(
+                    (sum, item) => {
+                      return sum + parseFloat(item.discount || "0");
+                    },
+                    0,
+                  );
+                  const orderDiscount = parseFloat(receipt.discount || "0");
+                  const totalDiscount =
+                    orderDiscount > 0 ? orderDiscount : totalItemDiscount;
+                  return totalDiscount > 0 ? (
+                    <tr>
+                      <td style={{ padding: "2px 0" }}>{t("common.discount")}:</td>
+                      <td style={{ padding: "2px 0", textAlign: "right" }}>
+                        -{Math.floor(totalDiscount).toLocaleString("vi-VN")}
+                      </td>
+                    </tr>
+                  ) : null;
+                })()}
+
+                {(() => {
                   const priceIncludeTax =
                     receipt.priceIncludeTax ??
                     storeSettings?.priceIncludesTax ??
                     false;
+                  
+                  // Fetch products data to get tax rates if not in receipt items
+                  const { data: products } = useQuery({
+                    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products"],
+                    queryFn: async () => {
+                      const response = await apiRequest("GET", "https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products");
+                      return response.json();
+                    },
+                    enabled: isOpen,
+                  });
+
                   const taxGroups = (receipt.items || []).reduce(
                     (groups, item) => {
-                      const taxRate = parseFloat(
+                      // Try to get tax rate from item first
+                      let taxRate = parseFloat(
                         item.taxRate || item.product?.taxRate || "0",
                       );
+                      
+                      // If no tax rate found, look it up from products by productId
+                      if (taxRate === 0 && products && Array.isArray(products)) {
+                        const productId = item.productId || item.id;
+                        const product = products.find((p: any) => p.id === productId);
+                        if (product && product.taxRate) {
+                          taxRate = parseFloat(product.taxRate);
+                          console.log(`📊 Receipt: Fetched tax rate ${taxRate}% for product ${productId} from products table`);
+                        }
+                      }
+
                       const itemTaxFromDB = parseFloat(item.tax || "0");
 
                       if (taxRate > 0) {
@@ -1486,26 +1529,6 @@ export function ReceiptModal({
                       </td>
                     </tr>
                   ));
-                })()}
-
-                {(() => {
-                  const totalItemDiscount = (receipt.items || []).reduce(
-                    (sum, item) => {
-                      return sum + parseFloat(item.discount || "0");
-                    },
-                    0,
-                  );
-                  const orderDiscount = parseFloat(receipt.discount || "0");
-                  const totalDiscount =
-                    orderDiscount > 0 ? orderDiscount : totalItemDiscount;
-                  return totalDiscount > 0 ? (
-                    <tr>
-                      <td style={{ padding: "2px 0" }}>{t("common.discount")}:</td>
-                      <td style={{ padding: "2px 0", textAlign: "right" }}>
-                        -{Math.floor(totalDiscount).toLocaleString("vi-VN")}
-                      </td>
-                    </tr>
-                  ) : null;
                 })()}
 
                 <tr>

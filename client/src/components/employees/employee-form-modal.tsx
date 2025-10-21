@@ -57,7 +57,11 @@ export function EmployeeFormModal({
   const translatedEmployeeSchema = z.object({
     employeeId: z.string().min(1, t("employees.employeeIdRequired")),
     name: z.string().min(1, t("employees.nameRequired")),
-    email: z.string().email(t("employees.emailInvalid")).optional().or(z.literal("")),
+    email: z
+      .string()
+      .email(t("employees.emailInvalid"))
+      .optional()
+      .or(z.literal("")),
     phone: z.string().nullable(),
     role: z.enum(["admin", "manager", "cashier", "kitchen", "server"]),
     isActive: z.boolean(),
@@ -194,7 +198,11 @@ export function EmployeeFormModal({
       let errorMessage = t("employees.updateEmployeeError");
 
       // Parse error similar to createMutation
-      if (error && typeof error === 'object' && error.code === "DUPLICATE_EMAIL") {
+      if (
+        error &&
+        typeof error === "object" &&
+        error.code === "DUPLICATE_EMAIL"
+      ) {
         errorMessage = t("employees.emailAlreadyExists");
         form.setError("email", {
           type: "manual",

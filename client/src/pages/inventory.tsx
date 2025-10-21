@@ -489,7 +489,7 @@ export default function InventoryPage({ onLogout }: InventoryPageProps) {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold text-green-600">
-                  {totalValue.toLocaleString()} ₫
+                  {totalValue.toLocaleString("en-US")} ₫
                 </div>
               </CardContent>
             </Card>
@@ -689,7 +689,7 @@ export default function InventoryPage({ onLogout }: InventoryPageProps) {
                             </td>
                             <td className="py-4 px-2 text-center">
                               <span className="text-lg font-semibold">
-                                {new Intl.NumberFormat("vi-VN").format(product.stock)}
+                                {product.stock.toLocaleString("en-US")}
                               </span>
                             </td>
                             <td className="py-4 px-2 text-center">
@@ -707,12 +707,12 @@ export default function InventoryPage({ onLogout }: InventoryPageProps) {
                             </td>
                             <td className="py-4 px-2 text-right text-gray-900">
                               <div className="break-words">
-                                {parseFloat(product.price).toLocaleString()} ₫
+                                {parseFloat(product.price).toLocaleString("en-US")} ₫
                               </div>
                             </td>
                             <td className="py-4 px-2 text-right font-medium text-gray-900">
                               <div className="break-words">
-                                {stockValue.toLocaleString()} ₫
+                                {stockValue.toLocaleString("en-US")} ₫
                               </div>
                             </td>
                             <td className="py-4 px-2 text-center">
@@ -874,8 +874,14 @@ export default function InventoryPage({ onLogout }: InventoryPageProps) {
                           <FormLabel>{t("inventory.priceLabel")}</FormLabel>
                           <FormControl>
                             <Input
+                              type="text"
+                              inputMode="numeric"
                               placeholder={t("inventory.pricePlaceholder")}
-                              {...field}
+                              value={field.value && parseFloat(field.value) > 0 ? parseFloat(field.value).toLocaleString("en-US") : ""}
+                              onChange={(e) => {
+                                const value = e.target.value.replace(/,/g, "");
+                                field.onChange(value);
+                              }}
                             />
                           </FormControl>
                           <FormMessage />
@@ -1011,17 +1017,18 @@ export default function InventoryPage({ onLogout }: InventoryPageProps) {
                       </FormLabel>
                       <FormControl>
                         <Input
-                          type="number"
-                          min="0"
+                          type="text"
+                          inputMode="numeric"
                           placeholder={
                             selectedProduct?.id === 0
                               ? t("inventory.initialStockPlaceholder")
                               : t("inventory.quantityInput")
                           }
-                          {...field}
-                          onChange={(e) =>
-                            field.onChange(parseInt(e.target.value) || 0)
-                          }
+                          value={field.value > 0 ? field.value.toLocaleString("en-US") : ""}
+                          onChange={(e) => {
+                            const value = e.target.value.replace(/,/g, "");
+                            field.onChange(parseInt(value) || 0);
+                          }}
                         />
                       </FormControl>
                       <FormMessage />

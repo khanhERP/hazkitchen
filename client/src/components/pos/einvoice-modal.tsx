@@ -211,7 +211,10 @@ export function EInvoiceModal({
     queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/invoice-templates/active"],
     queryFn: async () => {
       try {
-        const response = await apiRequest("GET", "https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/invoice-templates/active");
+        const response = await apiRequest(
+          "GET",
+          "https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/invoice-templates/active",
+        );
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
@@ -283,8 +286,9 @@ export function EInvoiceModal({
       console.log("🔥 Available invoice templates:", invoiceTemplates);
 
       // Set default template from available templates
-      const defaultTemplate = invoiceTemplates.find((t: any) => t.isDefault) || invoiceTemplates[0];
-      
+      const defaultTemplate =
+        invoiceTemplates.find((t: any) => t.isDefault) || invoiceTemplates[0];
+
       setFormData({
         invoiceProvider: "EasyInvoice", // Default provider
         invoiceTemplate: defaultTemplate?.name || "1C25TYY", // Use actual template name
@@ -1788,15 +1792,68 @@ export function EInvoiceModal({
     setIsProcessingPublish(false); // Reset specific publish button state
     setIsProcessingPublishLater(false); // Reset specific publish later button state
     setLastActionTime(0); // Reset debounce timer
-    
-    // Dispatch event for other components
-    window.dispatchEvent(
-      new CustomEvent("einvoiceModalClosed", {
-        detail: { refreshData: true, timestamp: new Date().toISOString() },
-      }),
-    );
-    
+
+    // Close E-Invoice modal first
     onClose();
+
+    // Send comprehensive signals to close all popups/modals
+    try {
+      // Dispatch multiple events to ensure all components close
+      window.dispatchEvent(
+        new CustomEvent("closeAllPopups", {
+          detail: { 
+            source: "einvoice_cancel_button",
+            closeAll: true,
+            timestamp: new Date().toISOString() 
+          },
+        }),
+      );
+
+      window.dispatchEvent(
+        new CustomEvent("einvoiceModalClosed", {
+          detail: { 
+            refreshData: true, 
+            closeAll: true,
+            timestamp: new Date().toISOString() 
+          },
+        }),
+      );
+
+      // Send WebSocket signal to close customer display and refresh
+      const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+      const wsUrl = `https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/ws`;
+      const ws = new WebSocket(wsUrl);
+
+      ws.onopen = () => {
+        console.log("📡 E-Invoice: Sending close all popups signal via WebSocket");
+        
+        // Send multiple signals to ensure comprehensive cleanup
+        ws.send(
+          JSON.stringify({
+            type: "close_all_popups",
+            source: "einvoice_cancel",
+            timestamp: new Date().toISOString(),
+          }),
+        );
+
+        ws.send(
+          JSON.stringify({
+            type: "restore_cart_display",
+            reason: "einvoice_cancel",
+            timestamp: new Date().toISOString(),
+          }),
+        );
+
+        setTimeout(() => ws.close(), 100);
+      };
+
+      ws.onerror = (error) => {
+        console.error("❌ E-Invoice: WebSocket error when closing popups:", error);
+      };
+
+    } catch (error) {
+      console.error("❌ Error closing all popups from E-Invoice:", error);
+    }
   };
 
   return (
@@ -2075,7 +2132,7 @@ export function EInvoiceModal({
                 </>
               )}
             </Button>
-            <Button
+            {/* <Button
               type="button"
               variant="outline"
               onClick={(e) => {
@@ -2091,7 +2148,7 @@ export function EInvoiceModal({
             >
               <span className="mr-2">❌</span>
               {t("einvoice.cancel")}
-            </Button>
+            </Button> */}
           </div>
         </div>
       </DialogContent>

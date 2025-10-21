@@ -70,8 +70,8 @@ export function ProductManagerModal({
       .min(1, "Price is required")
       .refine((val) => {
         const num = parseFloat(val.replace(/\./g, ""));
-        return !isNaN(num) && num > 0 && num < 100000000; // Max 99,999,999 (8 digits)
-      }, "Price must be a valid positive number and less than 100,000,000"),
+        return !isNaN(num) && num > 0 && num < 10000000000; // Max 9,999,999,999 (10 digits)
+      }, "Price must be a valid positive number and less than 10,000,000,000"),
     sku: z.string().optional(),
     name: z.string().min(1, t("tables.productNameRequired")),
     productType: z.number().min(1, t("tables.productTypeRequired")),
@@ -86,8 +86,8 @@ export function ProductManagerModal({
         if (!val || val === undefined) return true; // Optional field
         const numVal =
           typeof val === "string" ? parseFloat(val.replace(/\./g, "")) : val;
-        return !isNaN(numVal) && numVal > 0 && numVal < 100000000;
-      }, "After tax price must be a valid positive number and less than 100,000,000"),
+        return !isNaN(numVal) && numVal > 0 && numVal < 10000000000;
+      }, "After tax price must be a valid positive number and less than 10,000,000,000"),
     floor: z.string().optional(),
     zone: z.string().optional(),
   });
@@ -127,24 +127,11 @@ export function ProductManagerModal({
 
   const createProductMutation = useMutation({
     mutationFn: async (data: z.infer<typeof productFormSchema>) => {
-      let finalData = { ...data };
-
-      // 파일 업로드가 선택되고 파일이 있는 경우 Base64로 변환
-      if (imageInputMethod === "file" && selectedImageFile) {
-        try {
-          const base64Image = await convertFileToBase64(selectedImageFile);
-          finalData.imageUrl = base64Image;
-        } catch (error) {
-          console.error("파일 변환 오류:", error);
-          throw new Error("이미지 파일 처리 중 오류가 발생했습니다.");
-        }
-      }
-
-      console.log("Sending product data:", finalData);
+      console.log("Sending product data:", data);
       const response = await fetch("https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(finalData),
+        body: JSON.stringify(data),
       });
 
       if (!response.ok) {
@@ -200,31 +187,19 @@ export function ProductManagerModal({
       id: number;
       data: Partial<z.infer<typeof productFormSchema>>;
     }) => {
-      let finalData = { ...data };
-
       console.log("🔄 UPDATE MUTATION - Sending data to server:", {
         productId: id,
-        taxRate: finalData.taxRate,
-        taxRateName: finalData.taxRateName,
-        price: finalData.price,
-        name: finalData.name,
+        taxRate: data.taxRate,
+        taxRateName: data.taxRateName,
+        price: data.price,
+        name: data.name,
+        imageUrl: data.imageUrl ? `Base64 (${data.imageUrl.substring(0, 50)}...)` : "null",
       });
-
-      // 파일 업로드가 선택되고 파일이 있는 경우 Base64로 변환
-      if (imageInputMethod === "file" && selectedImageFile) {
-        try {
-          const base64Image = await convertFileToBase64(selectedImageFile);
-          finalData.imageUrl = base64Image;
-        } catch (error) {
-          console.error("파일 변환 오류:", error);
-          throw new Error("이미지 파일 처리 중 오류가 발생했습니다.");
-        }
-      }
 
       const response = await fetch(`https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products/${id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(finalData),
+        body: JSON.stringify(data),
       });
 
       console.log("🔄 UPDATE MUTATION - Response status:", response.status);
@@ -247,7 +222,7 @@ export function ProductManagerModal({
 
       toast({
         title: "✅ Cập nhật thành công",
-        description: `Sản phẩm "${updatedProduct.name}" đã được cập nhật`,
+        description: `S ��n phẩm "${updatedProduct.name}" đã được cập nhật`,
         duration: 3000,
       });
 
@@ -352,11 +327,13 @@ export function ProductManagerModal({
     form.setValue("sku", sku);
   };
 
-  const onSubmit = (data: z.infer<typeof productFormSchema>) => {
+  const onSubmit = async (data: z.infer<typeof productFormSchema>) => {
     console.log("=== PRODUCT FORM SUBMISSION DEBUG ===");
     console.log("Is Editing?", !!editingProduct);
     console.log("Editing Product ID:", editingProduct?.id);
     console.log("Raw form data:", data);
+    console.log("Image input method:", imageInputMethod);
+    console.log("Selected image file:", selectedImageFile);
     console.log("Data types:", {
       name: typeof data.name,
       price: typeof data.price,
@@ -377,6 +354,40 @@ export function ProductManagerModal({
       return;
     }
 
+    // Convert file to Base64 if file upload method is selected
+    if (imageInputMethod === "file" && selectedImageFile) {
+      try {
+        console.log("Converting file to Base64...", selectedImageFile.name);
+        const base64Image = await convertFileToBase64(selectedImageFile);
+        
+        // Check estimated Base64 size (will be ~33% larger than original)
+        const estimatedSize = base64Image.length;
+        const maxBase64Size = 5 * 1024 * 1024; // 5MB for Base64 string
+        
+        if (estimatedSize > maxBase64Size) {
+          console.error(`Base64 too large: ${(estimatedSize / 1024 / 1024).toFixed(2)}MB`);
+          toast({
+            title: "Lỗi",
+            description: `Ảnh sau khi xử lý quá lớn (${(estimatedSize / 1024 / 1024).toFixed(2)}MB). Vui lòng chọn ảnh nhỏ hơn hoặc nén ảnh trước khi tải lên.`,
+            variant: "destructive",
+            duration: 5000,
+          });
+          return;
+        }
+        
+        data.imageUrl = base64Image;
+        console.log("File converted successfully, Base64 size:", (estimatedSize / 1024 / 1024).toFixed(2), "MB");
+      } catch (error) {
+        console.error("File conversion error:", error);
+        toast({
+          title: "Lỗi",
+          description: "Không thể xử lý file ảnh. Vui lòng thử lại hoặc chọn ảnh khác.",
+          variant: "destructive",
+        });
+        return;
+      }
+    }
+
     // Clean and validate price
     const cleanPrice = data.price.replace(/[^0-9]/g, ""); // Remove all non-numeric characters
     const priceNum = parseInt(cleanPrice);
@@ -390,10 +401,10 @@ export function ProductManagerModal({
       return;
     }
 
-    if (priceNum >= 100000000) {
+    if (priceNum >= 10000000000) {
       toast({
         title: "Error",
-        description: "Price cannot exceed 99,999,999 VND",
+        description: "Price cannot exceed 9,999,999,999 VND",
         variant: "destructive",
       });
       return;
@@ -924,7 +935,10 @@ export function ProductManagerModal({
                           <td className="py-3 px-4 font-medium">
                             {Math.round(
                               parseFloat(product.price),
-                            ).toLocaleString("vi-VN")}{" "}
+                            ).toLocaleString("en-US", {
+                              minimumFractionDigits: 0,
+                              maximumFractionDigits: 0,
+                            })}{" "}
                             ₫
                           </td>
                           <td className="py-3 px-4 pos-text-secondary">
@@ -1147,12 +1161,6 @@ export function ProductManagerModal({
                                 const sanitized = value.replace(/[^0-9]/g, "");
 
                                 // Check if the number would exceed the limit
-                                const num = parseInt(sanitized || "0");
-                                if (num >= 100000000) {
-                                  // Don't allow input that would exceed the limit
-                                  return;
-                                }
-
                                 // Store the raw numeric value as string
                                 field.onChange(sanitized);
 
@@ -1509,18 +1517,32 @@ export function ProductManagerModal({
                                 onChange={(e) => {
                                   const file = e.target.files?.[0];
                                   if (file) {
-                                    // 이미지 파일 크기 제한 (5MB)
-                                    if (file.size > 100 * 1024) {
+                                    // Validate file type first
+                                    if (!file.type.startsWith('image/')) {
                                       toast({
-                                        title: "오류",
-                                        description:
-                                          "이미지 크기는 100kb 를 초과할 수 없습니다.",
+                                        title: "Lỗi",
+                                        description: "Vui lòng chọn file ảnh (JPG, PNG, GIF, etc.)",
                                         variant: "destructive",
                                       });
+                                      e.target.value = ""; // Reset input
                                       return;
                                     }
+
+                                    // Validate file size (3MB limit for original file, will be ~4MB as Base64)
+                                    const MAX_FILE_SIZE = 3 * 1024 * 1024; // 3MB
+                                    if (file.size > MAX_FILE_SIZE) {
+                                      toast({
+                                        title: "Lỗi",
+                                        description: `Kích thước ảnh không được vượt quá 3MB. Ảnh hiện tại: ${(file.size / 1024 / 1024).toFixed(2)}MB`,
+                                        variant: "destructive",
+                                        duration: 4000,
+                                      });
+                                      e.target.value = ""; // Reset input
+                                      return;
+                                    }
+
                                     setSelectedImageFile(file);
-                                    // imageUrl 필드를 비워서 URL과 중복되지 않도록 함
+                                    // Clear imageUrl field to avoid duplication
                                     form.setValue("imageUrl", "");
                                   }
                                 }}

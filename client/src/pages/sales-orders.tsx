@@ -869,30 +869,30 @@ export default function SalesOrders() {
   const getPaymentMethodName = (method: number | string | null) => {
     // Handle null/undefined cases explicitly
     if (method === null || method === undefined) {
-      return "Chưa thanh toán";
+      return t("common.unpaid");
     }
 
     switch (method) {
       case 1:
       case "cash":
-        return "Tiền mặt";
+        return t("common.cash");;
       case 2:
       case "creditCard":
       case "debitCard":
-        return "Chuyển khoản";
+        return t("common.creditCard");;
       case 3:
       case "qrCode":
       case "momo":
       case "zalopay":
       case "vnpay":
       case "grabpay":
-        return "QR Code InfoCAMS";
+        return t("common.qrCode");;
       case "Đối trừ công nợ":
-        return "Đối trừ công nợ";
+        return t("common.creditNote");;;
       case "unpaid":
-        return "Chưa thanh toán";
+        return t("common.unpaid");;
       default:
-        return "Chưa thanh toán"; // Changed default from "Tiền mặt" to "Chưa thanh toán"
+        return t("common.unpaid");; // Changed default from "Tiền mặt" to "Chưa thanh toán"
     }
   };
 
@@ -1040,8 +1040,11 @@ export default function SalesOrders() {
         customerTaxCode: order.customerTaxCode || "",
         symbol: order.symbol || order.templateNumber || "",
         invoiceNumber:
-          order.orderNumber || `ORD-${String(order.id).padStart(8, "0")}`,
-        tradeNumber: order.orderNumber || "",
+          order.invoiceNumber || // Use invoiceNumber if available
+          order.tradeNumber || // Fallback to tradeNumber
+          order.orderNumber || // Fallback to orderNumber
+          `ORD-${String(order.id).padStart(8, "0")}`, // Default if none exist
+        tradeNumber: order.tradeNumber || order.orderNumber || "",
         invoiceDate: order.createdAt,
         einvoiceStatus: order.einvoiceStatus || 0,
         // Ensure all fields from Invoice interface are present, even if null/empty
@@ -3473,7 +3476,10 @@ export default function SalesOrders() {
                                                           )}
                                                         </td>
                                                         <td className="py-1 pr-4 font-medium whitespace-nowrap">
-                                                          {t("orders.orderDate")}:
+                                                          {t(
+                                                            "orders.orderDate",
+                                                          )}
+                                                          :
                                                         </td>
                                                         <td className="py-1 pr-6">
                                                           {isEditing &&
@@ -3506,7 +3512,8 @@ export default function SalesOrders() {
                                                           )}
                                                         </td>
                                                         <td className="py-1 pr-4 font-medium whitespace-nowrap">
-                                                          Khách hàng:
+                                                          {t("common.customer")}
+                                                          :
                                                         </td>
                                                         <td className="py-1 pr-6 text-blue-600 font-medium">
                                                           {isEditing &&
@@ -3737,7 +3744,7 @@ export default function SalesOrders() {
                                                           )}
                                                         </td>
                                                         <td className="py-1 pr-4 font-medium whitespace-nowrap">
-                                                          Điện thoại:
+                                                          {t("common.phone")}:
                                                         </td>
                                                         <td className="py-1 pr-6">
                                                           {isEditing &&
@@ -3759,7 +3766,9 @@ export default function SalesOrders() {
                                                                 selectedInvoice.displayStatus ===
                                                                 1
                                                               }
-                                                              placeholder="Số điện thoại"
+                                                              placeholder={t(
+                                                                "common.phone",
+                                                              )}
                                                             />
                                                           ) : (
                                                             <span className="text-sm">
@@ -3769,7 +3778,7 @@ export default function SalesOrders() {
                                                           )}
                                                         </td>
                                                         <td className="py-1 pr-4 font-medium whitespace-nowrap">
-                                                          Bàn:
+                                                          {t("common.table")}:
                                                         </td>
                                                         <td className="py-1 pr-6">
                                                           {selectedInvoice.salesChannel ===
@@ -3790,22 +3799,22 @@ export default function SalesOrders() {
                                                           {(() => {
                                                             const statusLabels =
                                                               {
-                                                                1: `${t(
+                                                                1: t(
                                                                   "common.completed",
-                                                                )}`,
-                                                                2: `${t(
+                                                                ),
+                                                                2: t(
                                                                   "common.serving",
-                                                                )}`,
-                                                                3: `${t(
+                                                                ),
+                                                                3: t(
                                                                   "common.cancelled",
-                                                                )}`,
+                                                                ),
                                                               };
                                                             return (
                                                               statusLabels[
                                                                 selectedInvoice
                                                                   .displayStatus
                                                               ] ||
-                                                              "Đang phục vụ"
+                                                              t("common.serving")
                                                             );
                                                           })()}
                                                         </td>
@@ -3862,7 +3871,10 @@ export default function SalesOrders() {
                                                           </>
                                                         )}
                                                         <td className="py-1 pr-4 font-medium whitespace-nowrap">
-                                                          Hình thức bán:
+                                                          {t(
+                                                            "common.salesType",
+                                                          )}
+                                                          :
                                                         </td>
                                                         <td className="py-1 pr-6">
                                                           {(() => {
@@ -3872,27 +3884,40 @@ export default function SalesOrders() {
                                                               salesChannel ===
                                                               "table"
                                                             )
-                                                              return "Ăn tại chỗ";
+                                                              return t(
+                                                                "common.dineIn",
+                                                              );
                                                             if (
                                                               salesChannel ===
                                                               "pos"
                                                             )
-                                                              return "Bán tại quầy";
+                                                              return t(
+                                                                "common.pos",
+                                                              );
                                                             if (
                                                               salesChannel ===
                                                               "online"
                                                             )
-                                                              return "Bán online";
+                                                              return t(
+                                                                "common.online",
+                                                              );
                                                             if (
                                                               salesChannel ===
                                                               "delivery"
                                                             )
-                                                              return "Giao hàng";
-                                                            return "Ăn tại chỗ";
+                                                              return t(
+                                                                "common.delivery",
+                                                              );
+                                                            return t(
+                                                              "common.pos",
+                                                            );
                                                           })()}
                                                         </td>
                                                         <td className="py-1 pr-4 font-medium whitespace-nowrap">
-                                                          Ký hiệu hóa đơn:
+                                                          {t(
+                                                            "common.invoiceSymbol",
+                                                          )}
+                                                          :
                                                         </td>
                                                         <td className="py-1 pr-6">
                                                           {isEditing &&
@@ -3921,7 +3946,10 @@ export default function SalesOrders() {
                                                           )}
                                                         </td>
                                                         <td className="py-1 pr-4 font-medium whitespace-nowrap">
-                                                          Số hóa đơn:
+                                                          {t(
+                                                            "common.invoiceNumber",
+                                                          )}
+                                                          :
                                                         </td>
                                                         <td className="py-1 pr-6">
                                                           {isEditing &&
@@ -4040,34 +4068,44 @@ export default function SalesOrders() {
                                                       <thead>
                                                         <tr className="bg-gray-50 border-b">
                                                           <th className="text-center px-3 py-2 border-r font-medium text-xs whitespace-nowrap w-[50px]">
-                                                            STT
+                                                            {t("common.no")}
                                                           </th>
                                                           <th className="text-left px-3 py-2 border-r font-medium text-xs whitespace-nowrap w-[120px]">
-                                                            Mã hàng
+                                                            {t("common.sku")}
                                                           </th>
                                                           <th className="text-left px-3 py-2 border-r font-medium text-xs whitespace-nowrap w-[150px]">
-                                                            Tên hàng hóa
+                                                            {t(
+                                                              "common.productName",
+                                                            )}
                                                           </th>
                                                           <th className="text-center px-3 py-2 border-r font-medium text-xs whitespace-nowrap w-[80px]">
                                                             {t("common.unit")}
                                                           </th>
                                                           <th className="text-center px-3 py-2 border-r font-medium text-xs whitespace-nowrap w-[100px]">
-                                                            Số lượng
+                                                            {t(
+                                                              "common.quantity",
+                                                            )}
                                                           </th>
                                                           <th className="text-right px-3 py-2 border-r font-medium text-xs whitespace-nowrap w-[120px]">
-                                                            Đơn giá
+                                                            {t(
+                                                              "common.unitPrice",
+                                                            )}
                                                           </th>
                                                           <th className="text-right px-3 py-2 border-r font-medium text-xs whitespace-nowrap w-[120px]">
-                                                            Thành tiền
+                                                            {t(
+                                                              "common.totalAmountSubtotal",
+                                                            )}
                                                           </th>
                                                           <th className="text-right px-3 py-2 border-r font-medium text-xs whitespace-nowrap w-[100px]">
-                                                            Chiết khấu
+                                                            {t(
+                                                              "common.discount",
+                                                            )}
                                                           </th>
                                                           <th className="text-right px-3 py-2 border-r font-medium text-xs whitespace-nowrap w-[100px]">
-                                                            Tiền thuế
+                                                            {t("common.tax")}
                                                           </th>
                                                           <th className="text-right px-3 py-2 border-r font-medium text-xs whitespace-nowrap w-[120px]">
-                                                            Tổng cộng
+                                                            {t("common.total")}
                                                           </th>
                                                           <th className="text-center px-3 py-2 font-medium text-xs whitespace-nowrap w-[80px]">
                                                             {isEditing &&
@@ -4885,7 +4923,10 @@ export default function SalesOrders() {
                                                       {/* Add the new line for pre-tax amount */}
                                                       <div className="flex justify-between">
                                                         <span>
-                                                          {t("orders.priceBeforeTax")}:
+                                                          {t(
+                                                            "orders.priceBeforeTax",
+                                                          )}
+                                                          :
                                                         </span>
                                                         <span className="font-bold">
                                                           {formatCurrency(
@@ -4897,7 +4938,10 @@ export default function SalesOrders() {
                                                         </span>
                                                       </div>
                                                       <div className="flex justify-between text-red-600">
-                                                        <span>{t("common.discount")}:</span>
+                                                        <span>
+                                                          {t("common.discount")}
+                                                          :
+                                                        </span>
                                                         {isEditing &&
                                                         editableInvoice ? (
                                                           <Input
@@ -5153,7 +5197,10 @@ export default function SalesOrders() {
                                                       )}
                                                       <div className="flex justify-between items-center">
                                                         <span className="font-semibold text-gray-700">
-                                                          {t("common.paymentMethod")}:
+                                                          {t(
+                                                            "common.paymentMethodLabel",
+                                                          )}
+                                                          :
                                                         </span>
                                                         <span className="font-bold text-blue-600">
                                                           {(() => {
@@ -5439,7 +5486,9 @@ export default function SalesOrders() {
                                                           size="sm"
                                                           className="border-green-500 text-green-600 hover:bg-green-50"
                                                         >
-                                                          {t("common.publishInvoice")}
+                                                          {t(
+                                                            "common.publishInvoice",
+                                                          )}
                                                         </Button>
                                                       )}
 
@@ -5598,7 +5647,8 @@ export default function SalesOrders() {
 
                     <div className="flex items-center gap-4">
                       <span className="text-sm font-medium text-gray-700">
-                        Trang {currentPage} / {Math.ceil(filteredInvoices.length / itemsPerPage)}
+                        Trang {currentPage} /{" "}
+                        {Math.ceil(filteredInvoices.length / itemsPerPage)}
                       </span>
                       <div className="flex items-center gap-1">
                         <button
@@ -5610,7 +5660,9 @@ export default function SalesOrders() {
                           «
                         </button>
                         <button
-                          onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                          onClick={() =>
+                            setCurrentPage((prev) => Math.max(prev - 1, 1))
+                          }
                           disabled={currentPage === 1}
                           className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 disabled:pointer-events-none disabled:opacity-50 border border-gray-300 bg-white hover:bg-gray-100 h-8 w-8"
                           title="Trang trước"
@@ -5622,11 +5674,16 @@ export default function SalesOrders() {
                             setCurrentPage((prev) =>
                               Math.min(
                                 prev + 1,
-                                Math.ceil(filteredInvoices.length / itemsPerPage),
+                                Math.ceil(
+                                  filteredInvoices.length / itemsPerPage,
+                                ),
                               ),
                             )
                           }
-                          disabled={currentPage === Math.ceil(filteredInvoices.length / itemsPerPage)}
+                          disabled={
+                            currentPage ===
+                            Math.ceil(filteredInvoices.length / itemsPerPage)
+                          }
                           className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 disabled:pointer-events-none disabled:opacity-50 border border-gray-300 bg-white hover:bg-gray-100 h-8 w-8"
                           title="Trang sau"
                         >
@@ -5634,9 +5691,14 @@ export default function SalesOrders() {
                         </button>
                         <button
                           onClick={() =>
-                            setCurrentPage(Math.ceil(filteredInvoices.length / itemsPerPage))
+                            setCurrentPage(
+                              Math.ceil(filteredInvoices.length / itemsPerPage),
+                            )
                           }
-                          disabled={currentPage === Math.ceil(filteredInvoices.length / itemsPerPage)}
+                          disabled={
+                            currentPage ===
+                            Math.ceil(filteredInvoices.length / itemsPerPage)
+                          }
                           className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 disabled:pointer-events-none disabled:opacity-50 border border-gray-300 bg-white hover:bg-gray-100 h-8 w-8"
                           title="Trang cuối"
                         >

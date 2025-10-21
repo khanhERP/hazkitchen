@@ -313,12 +313,20 @@ export const insertProductSchema = createInsertSchema(products)
   .extend({
     price: z.union([z.string(), z.number()]).refine(
       (val) => {
-        const numVal =
-          typeof val === "string" ? parseFloat(val) : Number(val);
-        return !isNaN(numVal) && numVal > 0 && numVal < 100000000;
+        if (!val || val === null || val === undefined) return true;
+        const numVal = typeof val === "string" ? parseFloat(val) : val;
+        if (isNaN(numVal) || numVal <= 0) {
+          throw new Error("Price must be a positive number");
+        }
+        if (numVal >= 100000000000) {
+          throw new Error(
+            "Price must be a positive number less than 100,000,000,000",
+          );
+        }
+        return true;
       },
       {
-        message: "Price must be a positive number less than 100,000,000",
+        message: "Price must be a valid positive number",
       },
     ),
     stock: z.number().min(0, "Stock cannot be negative"),
@@ -332,7 +340,11 @@ export const insertProductSchema = createInsertSchema(products)
       // Accept integer percentage values: 0, 5, 8, 10
       const numVal = typeof val === "string" ? parseFloat(val) : val;
 
-      if (isNaN(numVal) || numVal < 0 || numVal > 100) {
+      if (isNaN(numVal)) {
+        throw new Error("Tax rate must be a valid number");
+      }
+
+      if (numVal < 0 || numVal > 100) {
         throw new Error("Tax rate must be between 0 and 100");
       }
 
