@@ -20,6 +20,7 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import type { Table, Product, Category } from "@shared/schema";
 import { useTranslation } from "@/lib/i18n";
+import { ReceiptModal } from "../pos/receipt-modal";
 
 interface OrderDialogProps {
   open: boolean;
@@ -62,6 +63,10 @@ export function OrderDialog({
   const { toast } = useToast();
   const { t } = useTranslation();
   const queryClient = useQueryClient();
+
+  // State for receipt preview
+  const [previewReceipt, setPreviewReceipt] = useState<any>(null);
+  const [showReceiptPreview, setShowReceiptPreview] = useState(false);
 
   const { data: products, isLoading: productsLoading } = useQuery({
     queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products"],
@@ -1245,6 +1250,9 @@ export function OrderDialog({
     if (mode !== "edit") {
       setExistingItems([]);
     }
+    // Reset receipt preview state
+    setShowReceiptPreview(false);
+    setPreviewReceipt(null);
     onOpenChange(false);
   };
 
@@ -2046,10 +2054,12 @@ export function OrderDialog({
                                 ) : null;
                               })()}
                               {(() => {
-                                const originalPrice = Number(item.product.price);
+                                const originalPrice = Number(
+                                  item.product.price,
+                                );
                                 const quantity = item.quantity;
                                 const itemTotal = originalPrice * quantity;
-          
+
                                 // Calculate total before discount for all items
                                 const totalBeforeDiscount =
                                   existingItems.reduce((sum, item) => {
@@ -2065,13 +2075,14 @@ export function OrderDialog({
                                       Number(item.product.price) * item.quantity
                                     );
                                   }, 0);
-          
+
                                 let itemDiscountAmount = 0;
-          
+
                                 if (totalBeforeDiscount > 0) {
                                   // Calculate proportional discount
                                   itemDiscountAmount = Math.round(
-                                    (discount * itemTotal) / totalBeforeDiscount,
+                                    (discount * itemTotal) /
+                                      totalBeforeDiscount,
                                   );
                                 }
                                 let finalTotal = itemTotal - itemDiscountAmount;
@@ -2237,25 +2248,153 @@ export function OrderDialog({
                 </div>
               </div>
 
-              {/* Action button */}
-              <Button
-                onClick={handlePlaceOrder}
-                disabled={createOrderMutation.isPending}
-                className="bg-green-600 hover:bg-green-700 text-white px-8 py-2 flex-shrink-0"
-                size="lg"
-              >
-                {createOrderMutation.isPending
-                  ? mode === "edit"
-                    ? t("orders.updating")
-                    : t("tables.placing")
-                  : mode === "edit"
-                    ? t("orders.updateOrder")
-                    : t("tables.placeOrder")}
-              </Button>
+              {/* Action buttons */}
+              <div className="flex items-center gap-2">
+                <Button variant="outline" onClick={handleClose}>
+                  {t("pos.cancel")}
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    console.log("🖨️ Order Dialog: In tạm tính clicked", {
+                      existingItemsCount: existingItems.length,
+                      cartItemsCount: cart.length,
+                      customerName,
+                      discount,
+                    });
+
+                    // Prepare preview receipt data
+                    const previewItems = [
+                      ...existingItems.map((item) => ({
+                        id: item.id,
+                        productId: item.productId,
+                        productName: item.productName,
+                        quantity: item.quantity,
+                        price: item.unitPrice,
+                        unitPrice: item.unitPrice,
+                        total: item.total,
+                        discount: item.discount || "0",
+                        tax: item.tax || "0",
+                        sku: item.productSku || `SP${item.productId}`,
+                        taxRate: (() => {
+                          const product = products?.find(
+                            (p: Product) => p.id === item.productId,
+                          );
+                          return product?.taxRate
+                            ? parseFloat(product.taxRate)
+                            : 0;
+                        })(),
+                      })),
+                      ...cart.map((item) => ({
+                        id: item.product.id,
+                        productId: item.product.id,
+                        productName: item.product.name,
+                        quantity: item.quantity,
+                        price: item.product.price,
+                        unitPrice: item.product.price,
+                        total: (
+                          parseFloat(item.product.price) * item.quantity
+                        ).toString(),
+                        discount: "0",
+                        tax: "0",
+                        sku: item.product.sku || `SP${item.product.id}`,
+                        taxRate: item.product.taxRate
+                          ? parseFloat(item.product.taxRate)
+                          : 0,
+                      })),
+                    ];
+
+                    const subtotalAmount = Math.floor(calculateSubtotal());
+                    const taxAmount = Math.floor(calculateTax());
+                    const totalAmount = Math.floor(calculateTotal());
+
+                    const previewReceipt = {
+                      id: existingOrder?.id || 0,
+                      orderId: existingOrder?.id || 0,
+                      orderNumber:
+                        existingOrder?.orderNumber ||
+                        `ORD-PREVIEW-${Date.now()}`,
+                      tableId: table?.id,
+                      tableNumber: table?.tableNumber,
+                      customerName: customerName || "Khách hàng",
+                      customerPhone: existingOrder?.customerPhone || "",
+                      customerCount: customerCount,
+                      items: previewItems,
+                      subtotal: subtotalAmount.toString(),
+                      tax: taxAmount.toString(),
+                      discount: discount.toString(),
+                      total: totalAmount.toString(),
+                      exactSubtotal: subtotalAmount,
+                      exactTax: taxAmount,
+                      exactDiscount: Math.floor(discount),
+                      exactTotal: totalAmount,
+                      transactionId:
+                        existingOrder?.orderNumber || `PREVIEW-${Date.now()}`,
+                      createdAt: new Date().toISOString(),
+                      cashierName: "Table Service",
+                      paymentMethod: "preview",
+                      isPreview: true,
+                      priceIncludeTax: storeSettings?.priceIncludesTax || false,
+                    };
+
+                    console.log(
+                      "📄 Order Dialog: Preview receipt data prepared:",
+                      previewReceipt,
+                    );
+
+                    setPreviewReceipt(previewReceipt);
+                    setShowReceiptPreview(true);
+                  }}
+                  disabled={
+                    !table ||
+                    (mode !== "edit" && cart.length === 0) ||
+                    (mode === "edit" &&
+                      existingItems.length === 0 &&
+                      cart.length === 0)
+                  }
+                >
+                  {t("tables.printBill")}
+                </Button>
+                <Button
+                  onClick={handlePlaceOrder}
+                  disabled={
+                    !table ||
+                    (mode !== "edit" && cart.length === 0) ||
+                    createOrderMutation.isPending
+                  }
+                  className="bg-green-600 hover:bg-green-700 text-white px-8 py-2 flex-shrink-0"
+                  size="lg"
+                >
+                  {createOrderMutation.isPending
+                    ? mode === "edit"
+                      ? t("orders.updating")
+                      : t("tables.placing")
+                    : mode === "edit"
+                      ? t("orders.updateOrder")
+                      : t("orders.placeOrder")}
+                </Button>
+              </div>
             </div>
           </DialogFooter>
         )}
       </DialogContent>
+
+      {/* Receipt Preview Modal */}
+      {showReceiptPreview && previewReceipt && (
+        <ReceiptModal
+          isOpen={showReceiptPreview}
+          onClose={() => {
+            console.log("🔒 Order Dialog: Closing receipt preview modal");
+            setShowReceiptPreview(false);
+            setPreviewReceipt(null);
+          }}
+          receipt={previewReceipt}
+          cartItems={previewReceipt.items || []}
+          total={previewReceipt.exactTotal || 0}
+          isPreview={false}
+          isTitle={false}
+        />
+      )}
     </Dialog>
   );
 }

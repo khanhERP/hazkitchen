@@ -105,6 +105,7 @@ interface Order {
   einvoiceStatus: number;
   notes?: string;
   orderedAt: string;
+  createdAt: string;
   salesChannel?: string;
   invoiceNumber?: string;
   invoiceDate?: string;
@@ -993,7 +994,7 @@ export default function SalesOrders() {
     ? orders.map((order: Order) => ({
         ...order,
         type: "order" as const,
-        date: order.orderedAt,
+        date: order.createdAt,
         displayNumber:
           order.orderNumber || `ORD-${String(order.id).padStart(13, "0")}`,
         // Map order status to invoiceStatus convention
@@ -1025,7 +1026,7 @@ export default function SalesOrders() {
         invoiceNumber:
           order.orderNumber || `ORD-${String(order.id).padStart(8, "0")}`,
         tradeNumber: order.orderNumber || "",
-        invoiceDate: order.orderedAt,
+        invoiceDate: order.createdAt,
         einvoiceStatus: order.einvoiceStatus || 0,
         // Ensure all fields from Invoice interface are present, even if null/empty
         templateNumber: order.templateNumber || "",
@@ -1035,7 +1036,7 @@ export default function SalesOrders() {
         total: order.total || "0",
         paymentMethod: order.paymentMethod || "cash",
         notes: order.notes || "",
-        createdAt: order.orderedAt || order.createdAt, // Use orderedAt as primary, fallback to createdAt
+        createdAt: order.createdAt, // Use orderedAt as primary, fallback to createdAt
         updatedAt: order.updatedAt, // Keep updatedAt for cancellation/completion time
         discount: order.discount || "0", // Map discount field
         priceIncludeTax: order.priceIncludeTax || false, // Map priceIncludeTax field
@@ -1161,8 +1162,8 @@ export default function SalesOrders() {
                 bValue = b.employeeId || 0;
                 break;
               case "employeeName":
-                aValue = "Phạm Vân Duy";
-                bValue = "Phạm Vân Duy";
+                aValue = "";
+                bValue = "";
                 break;
               case "symbol":
                 aValue = a.symbol || a.templateNumber || "";
@@ -1196,12 +1197,8 @@ export default function SalesOrders() {
           }
 
           // Default sort by date (newest first)
-          const dateA = new Date(
-            a.orderedAt || a.createdAt || a.date || a.invoiceDate,
-          );
-          const dateB = new Date(
-            b.orderedAt || b.createdAt || b.date || b.invoiceDate,
-          );
+          const dateA = new Date(a.createdAt);
+          const dateB = new Date(b.createdAt);
 
           if (isNaN(dateA.getTime()) && isNaN(dateB.getTime())) return 0;
           if (isNaN(dateA.getTime())) return 1;
@@ -1371,7 +1368,7 @@ export default function SalesOrders() {
       (oldData: any) => {
         const currentItems = Array.isArray(oldData) ? oldData : [];
         return [...currentItems, newEmptyItem];
-      }
+      },
     );
 
     toast({
@@ -1418,14 +1415,14 @@ export default function SalesOrders() {
           }
           continue; // Skip to next item
         }
-        
+
         if (changes._isNew || id < 0) {
           // ✨ NEW ITEM - Will be INSERTED into database
           console.log(`➕ Processing NEW item for INSERT (ID: ${id})`);
-          
+
           // Get data from cache (may be incomplete for new items)
           const fullItemData = orderItems.find((item: any) => item.id === id);
-          
+
           // Merge all available data - prioritize changes from editedOrderItems
           const completeItemData = {
             ...(fullItemData || {}),
@@ -1433,29 +1430,47 @@ export default function SalesOrders() {
             // Ensure required fields are set
             productId: changes.productId || fullItemData?.productId || 0,
             productName: changes.productName || fullItemData?.productName || "",
-            sku: changes.sku || fullItemData?.sku || fullItemData?.productSku || "",
-            quantity: changes.quantity !== undefined ? changes.quantity : (fullItemData?.quantity || 1),
-            unitPrice: changes.unitPrice !== undefined ? changes.unitPrice : (fullItemData?.unitPrice || "0"),
+            sku:
+              changes.sku ||
+              fullItemData?.sku ||
+              fullItemData?.productSku ||
+              "",
+            quantity:
+              changes.quantity !== undefined
+                ? changes.quantity
+                : fullItemData?.quantity || 1,
+            unitPrice:
+              changes.unitPrice !== undefined
+                ? changes.unitPrice
+                : fullItemData?.unitPrice || "0",
             total: changes.total || fullItemData?.total || "0",
-            discount: changes.discount !== undefined ? changes.discount : (fullItemData?.discount || "0"),
-            tax: changes.tax !== undefined ? changes.tax : (fullItemData?.tax || "0"),
-            priceBeforeTax: changes.priceBeforeTax || fullItemData?.priceBeforeTax || "0",
+            discount:
+              changes.discount !== undefined
+                ? changes.discount
+                : fullItemData?.discount || "0",
+            tax:
+              changes.tax !== undefined
+                ? changes.tax
+                : fullItemData?.tax || "0",
+            priceBeforeTax:
+              changes.priceBeforeTax || fullItemData?.priceBeforeTax || "0",
           };
-          
+
           // Validate required fields before INSERT
           if (!completeItemData.productId || completeItemData.productId <= 0) {
             console.warn(`⚠️ Skipping new item ${id} - missing productId`);
             continue;
           }
-          
+
           if (!completeItemData.productName) {
             console.warn(`⚠️ Skipping new item ${id} - missing productName`);
             continue;
           }
-          
-          console.log(`✅ Will INSERT new item: ${completeItemData.productName} (Product ID: ${completeItemData.productId})`);
+
+          console.log(
+            `✅ Will INSERT new item: ${completeItemData.productName} (Product ID: ${completeItemData.productId})`,
+          );
           itemsToCreate.push(completeItemData);
-          
         } else {
           // 🔄 EXISTING ITEM - Will be UPDATED in database
           console.log(`🔄 Processing EXISTING item for UPDATE (ID: ${id})`);
@@ -1485,7 +1500,7 @@ export default function SalesOrders() {
           productId: item.productId,
           productName: item.productName,
           quantity: item.quantity,
-          unitPrice: item.unitPrice
+          unitPrice: item.unitPrice,
         });
 
         // Double-check validation before INSERT
@@ -1500,7 +1515,9 @@ export default function SalesOrders() {
         }
 
         const product = products.find((p: any) => p.id === item.productId);
-        const taxRate = product?.taxRate ? parseFloat(product.taxRate) / 100 : 0;
+        const taxRate = product?.taxRate
+          ? parseFloat(product.taxRate) / 100
+          : 0;
         const unitPrice = parseFloat(item.unitPrice || "0");
         const quantity = parseInt(item.quantity || "1");
 
@@ -1520,7 +1537,10 @@ export default function SalesOrders() {
         let itemTax = 0;
         let priceBeforeTax = 0;
 
-        const priceIncludeTax = editableInvoice.priceIncludeTax ?? storeSettings?.priceIncludesTax ?? false;
+        const priceIncludeTax =
+          editableInvoice.priceIncludeTax ??
+          storeSettings?.priceIncludesTax ??
+          false;
 
         if (priceIncludeTax && taxRate > 0) {
           const discountPerUnit = itemDiscountAmount / quantity;
@@ -1550,7 +1570,11 @@ export default function SalesOrders() {
 
         console.log(`📝 Creating order item with payload:`, payload);
 
-        const response = await apiRequest("POST", `https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/order-items/${editableInvoice.id}`, payload);
+        const response = await apiRequest(
+          "POST",
+          `https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/order-items/${editableInvoice.id}`,
+          payload,
+        );
 
         if (!response.ok) {
           const errorText = await response.text();
@@ -1564,7 +1588,9 @@ export default function SalesOrders() {
 
       // Step 4: UPDATE existing items in database
       for (const item of itemsToUpdate) {
-        console.log(`📝 [UPDATE] Updating existing order item ID ${item.id} in database`);
+        console.log(
+          `📝 [UPDATE] Updating existing order item ID ${item.id} in database`,
+        );
         const originalItem = orderItems.find((oi) => oi.id === item.id);
 
         // Build complete payload with all calculated fields
@@ -1626,7 +1652,10 @@ export default function SalesOrders() {
         let itemTax = 0;
         let priceBeforeTax = 0;
 
-        const priceIncludeTax = editableInvoice.priceIncludeTax ?? storeSettings?.priceIncludesTax ?? false;
+        const priceIncludeTax =
+          editableInvoice.priceIncludeTax ??
+          storeSettings?.priceIncludesTax ??
+          false;
 
         if (priceIncludeTax && taxRate > 0) {
           const giaGomThue = itemSubtotal;
@@ -1856,8 +1885,14 @@ export default function SalesOrders() {
         currentItem.productId !== undefined
           ? currentItem.productId
           : originalItem?.productId || 0;
-      let sku = currentItem.sku !== undefined ? currentItem.sku : originalItem?.sku || "";
-      let productName = currentItem.productName !== undefined ? currentItem.productName : originalItem?.productName || "";
+      let sku =
+        currentItem.sku !== undefined
+          ? currentItem.sku
+          : originalItem?.sku || "";
+      let productName =
+        currentItem.productName !== undefined
+          ? currentItem.productName
+          : originalItem?.productName || "";
 
       // Track if product changed (to recalculate tax with new taxRate)
       let productChanged = false;
@@ -1903,7 +1938,9 @@ export default function SalesOrders() {
       const itemSubtotal = quantity * unitPrice;
 
       // Calculate discount allocation
-      const orderDiscount = parseFloat(editableInvoice?.discount || selectedInvoice?.discount || "0");
+      const orderDiscount = parseFloat(
+        editableInvoice?.discount || selectedInvoice?.discount || "0",
+      );
       let itemDiscountAmount = 0;
 
       if (orderDiscount > 0) {
@@ -1913,28 +1950,37 @@ export default function SalesOrders() {
         );
 
         // Calculate total before discount for ALL items (including this updated one)
-        const totalBeforeDiscount = visibleItems.reduce((sum: number, item: any) => {
-          const editedItem = prev[item.id] || {};
-          let itPrice = parseFloat(
-            editedItem.unitPrice !== undefined ? editedItem.unitPrice : item.unitPrice || "0"
-          );
-          let itQty = parseInt(
-            editedItem.quantity !== undefined ? editedItem.quantity : item.quantity || "0"
-          );
+        const totalBeforeDiscount = visibleItems.reduce(
+          (sum: number, item: any) => {
+            const editedItem = prev[item.id] || {};
+            let itPrice = parseFloat(
+              editedItem.unitPrice !== undefined
+                ? editedItem.unitPrice
+                : item.unitPrice || "0",
+            );
+            let itQty = parseInt(
+              editedItem.quantity !== undefined
+                ? editedItem.quantity
+                : item.quantity || "0",
+            );
 
-          // Use new values for the current item being updated
-          if (item.id === itemId) {
-            itPrice = unitPrice;
-            itQty = quantity;
-          }
+            // Use new values for the current item being updated
+            if (item.id === itemId) {
+              itPrice = unitPrice;
+              itQty = quantity;
+            }
 
-          return sum + itPrice * itQty;
-        }, 0);
+            return sum + itPrice * itQty;
+          },
+          0,
+        );
 
         // Calculate proportional discount for this item
         if (totalBeforeDiscount > 0) {
           // Check if this is the last item
-          const currentIndex = visibleItems.findIndex((item: any) => item.id === itemId);
+          const currentIndex = visibleItems.findIndex(
+            (item: any) => item.id === itemId,
+          );
           const isLastItem = currentIndex === visibleItems.length - 1;
 
           if (isLastItem) {
@@ -1944,18 +1990,26 @@ export default function SalesOrders() {
               const item = visibleItems[i];
               const editedItem = prev[item.id] || {};
               const itPrice = parseFloat(
-                editedItem.unitPrice !== undefined ? editedItem.unitPrice : item.unitPrice || "0"
+                editedItem.unitPrice !== undefined
+                  ? editedItem.unitPrice
+                  : item.unitPrice || "0",
               );
               const itQty = parseInt(
-                editedItem.quantity !== undefined ? editedItem.quantity : item.quantity || "0"
+                editedItem.quantity !== undefined
+                  ? editedItem.quantity
+                  : item.quantity || "0",
               );
               const itSubtotal = itPrice * itQty;
-              previousDiscounts += Math.floor((orderDiscount * itSubtotal) / totalBeforeDiscount);
+              previousDiscounts += Math.floor(
+                (orderDiscount * itSubtotal) / totalBeforeDiscount,
+              );
             }
             itemDiscountAmount = Math.max(0, orderDiscount - previousDiscounts);
           } else {
             // Proportional allocation
-            itemDiscountAmount = Math.floor((orderDiscount * itemSubtotal) / totalBeforeDiscount);
+            itemDiscountAmount = Math.floor(
+              (orderDiscount * itemSubtotal) / totalBeforeDiscount,
+            );
           }
         }
       }
@@ -1963,7 +2017,11 @@ export default function SalesOrders() {
       // Calculate tax - ALWAYS get product info to ensure we have latest taxRate
       const product = products.find((p: any) => p.id === productId);
       const taxRate = product?.taxRate ? parseFloat(product.taxRate) / 100 : 0;
-      const priceIncludeTax = editableInvoice?.priceIncludeTax ?? selectedInvoice?.priceIncludeTax ?? storeSettings?.priceIncludesTax ?? false;
+      const priceIncludeTax =
+        editableInvoice?.priceIncludeTax ??
+        selectedInvoice?.priceIncludeTax ??
+        storeSettings?.priceIncludesTax ??
+        false;
 
       let itemTax = 0;
       let priceBeforeTax = 0;
@@ -1987,20 +2045,23 @@ export default function SalesOrders() {
 
       const calculatedTotal = priceBeforeTax + itemTax;
 
-      console.log(`🔢 Tính toán thuế cho item ${itemId} ${productChanged ? '(SẢN PHẨM MỚI)' : ''}:`, {
-        productId,
-        productName,
-        sku,
-        quantity,
-        unitPrice,
-        itemSubtotal,
-        taxRate: (taxRate * 100) + '%',
-        priceIncludeTax,
-        itemDiscountAmount,
-        priceBeforeTax,
-        itemTax: Math.round(itemTax),
-        calculatedTotal
-      });
+      console.log(
+        `🔢 Tính toán thuế cho item ${itemId} ${productChanged ? "(SẢN PHẨM MỚI)" : ""}:`,
+        {
+          productId,
+          productName,
+          sku,
+          quantity,
+          unitPrice,
+          itemSubtotal,
+          taxRate: taxRate * 100 + "%",
+          priceIncludeTax,
+          itemDiscountAmount,
+          priceBeforeTax,
+          itemTax: Math.round(itemTax),
+          calculatedTotal,
+        },
+      );
 
       // ALWAYS return updated calculated fields to ensure UI reflects latest values
       return {
@@ -2135,31 +2196,32 @@ export default function SalesOrders() {
   const displayTotals = (() => {
     if (!selectedInvoice) return { subtotal: 0, tax: 0, discount: 0, total: 0 };
 
-    // If editing, calculate from items
-    if (isEditing && Object.keys(editedOrderItems).length > 0) {
+    // Always recalculate if we have order items (either editing or viewing)
+    if (orderItems && orderItems.length > 0) {
       const priceIncludeTax =
-        selectedInvoice.priceIncludeTax ??
+        (isEditing
+          ? editableInvoice?.priceIncludeTax
+          : selectedInvoice.priceIncludeTax) ??
         storeSettings?.priceIncludesTax ??
         false;
-      let calculatedSubtotal = 0;
-      let calculatedTax = 0;
+
       const orderDiscount = parseFloat(
-        editableInvoice?.discount || selectedInvoice.discount || "0",
+        (isEditing ? editableInvoice?.discount : selectedInvoice.discount) ||
+          "0",
       );
 
-      // Calculate from visible order items (excluding deleted ones)
+      // Get visible items (exclude deleted when editing)
       const visibleItems = orderItems.filter(
         (item: any) => !editedOrderItems[item.id]?._deleted,
       );
 
-      visibleItems.forEach((item: any) => {
-        const product = products.find((p: any) => p.id === item.productId);
-        const taxRate = product?.taxRate
-          ? parseFloat(product.taxRate) / 100
-          : 0;
+      let calculatedSubtotal = 0;
+      let calculatedTax = 0;
 
-        // Use edited values if available, otherwise use original values
-        const editedItem = editedOrderItems[item.id] || {};
+      visibleItems.forEach((item: any) => {
+        // Get edited values if in edit mode, otherwise use original
+        const editedItem = isEditing ? editedOrderItems[item.id] || {} : {};
+
         const unitPrice = parseFloat(
           editedItem.unitPrice !== undefined
             ? editedItem.unitPrice
@@ -2171,19 +2233,32 @@ export default function SalesOrders() {
             : item.quantity || "0",
         );
 
+        // Find product for tax rate
+        const productId =
+          editedItem.productId !== undefined
+            ? editedItem.productId
+            : item.productId;
+        const product = products.find((p: any) => p.id === productId);
+        const taxRate = product?.taxRate
+          ? parseFloat(product.taxRate) / 100
+          : 0;
+
         const itemSubtotal = unitPrice * quantity;
 
         if (priceIncludeTax && taxRate > 0) {
+          // Price includes tax: separate out the tax portion
           const priceBeforeTax = itemSubtotal / (1 + taxRate);
           const itemTax = itemSubtotal - priceBeforeTax;
           calculatedSubtotal += priceBeforeTax;
           calculatedTax += itemTax;
         } else {
+          // Price excludes tax: add tax on top
           calculatedSubtotal += itemSubtotal;
           calculatedTax += itemSubtotal * taxRate;
         }
       });
 
+      // Total = subtotal + tax - discount
       const totalPayment = Math.max(
         0,
         calculatedSubtotal + calculatedTax - orderDiscount,
@@ -2197,7 +2272,7 @@ export default function SalesOrders() {
       };
     }
 
-    // If not editing, use exact database values from selected invoice
+    // Fallback: use database values if items not loaded yet
     return {
       subtotal: parseFloat(selectedInvoice.subtotal || "0"),
       tax: parseFloat(selectedInvoice.tax || "0"),
@@ -2292,7 +2367,7 @@ export default function SalesOrders() {
         item.invoiceNumber ||
         item.orderNumber ||
         `ORD-${String(item.id).padStart(8, "0")}`;
-      const orderDate = formatDate(item.date);
+      const orderDate = formatDate(item.createdAt);
       const table =
         item.type === "order" && item.tableId
           ? getTableNumber(item.tableId)
@@ -2305,7 +2380,7 @@ export default function SalesOrders() {
       const total = parseFloat(item.total || "0");
       const paid = total;
       const employeeCode = item.employeeId || "NV0001";
-      const employeeName = "Phạm Vân Duy";
+      const employeeName = "";
       const symbol = item.symbol || "";
       const invoiceNumber =
         item.invoiceNumber || String(item.id).padStart(8, "0");
@@ -2526,7 +2601,7 @@ export default function SalesOrders() {
             amountReceived: order.total,
             change: "0",
             cashierName: "System User",
-            createdAt: new Date().toISOString(),
+            createdAt: order?.createdAt ?? new Date().toISOString(),
             customerName: order.customerName || "Khách hàng",
             customerTaxCode: order.customerTaxCode || null,
             tableNumber: order.tableId ? getTableNumber(order.tableId) : null,
@@ -3111,7 +3186,7 @@ export default function SalesOrders() {
                             const total = parseFloat(item.total || "0");
                             const paid = total;
                             const employeeCode = item.employeeId || "NV0001";
-                            const employeeName = "Phạm Vân Duy";
+                            const employeeName = "";
                             const symbol = item.symbol || "";
                             const invoiceNumber =
                               item.invoiceNumber ||
@@ -3696,9 +3771,7 @@ export default function SalesOrders() {
                                                         <td className="py-1 pr-4 font-medium whitespace-nowrap">
                                                           Thu ngân:
                                                         </td>
-                                                        <td className="py-1 pr-6">
-                                                          Phạm Vân Duy
-                                                        </td>
+                                                        <td className="py-1 pr-6"></td>
                                                         {storeSettings?.businessType ===
                                                           "laundry" && (
                                                           <>
@@ -4061,26 +4134,27 @@ export default function SalesOrders() {
                                                                   visibleItems.reduce(
                                                                     (
                                                                       sum: number,
-                                                                      it,
+                                                                      item,
                                                                     ) => {
-                                                                      const editedIt =
+                                                                      const editedItem =
                                                                         editedOrderItems[
-                                                                          it.id
+                                                                          item
+                                                                            .id
                                                                         ] || {};
                                                                       const itPrice =
                                                                         parseFloat(
-                                                                          editedIt.unitPrice !==
+                                                                          editedItem.unitPrice !==
                                                                             undefined
-                                                                            ? editedIt.unitPrice
-                                                                            : it.unitPrice ||
+                                                                            ? editedItem.unitPrice
+                                                                            : item.unitPrice ||
                                                                                 "0",
                                                                         );
                                                                       const itQty =
                                                                         parseInt(
-                                                                          editedIt.quantity !==
+                                                                          editedItem.quantity !==
                                                                             undefined
-                                                                            ? editedIt.quantity
-                                                                            : it.quantity ||
+                                                                            ? editedItem.quantity
+                                                                            : item.quantity ||
                                                                                 "0",
                                                                         );
                                                                       return (
@@ -4107,7 +4181,7 @@ export default function SalesOrders() {
                                                                   if (
                                                                     isLastItem
                                                                   ) {
-                                                                    // Last item gets remaining discount
+                                                                    // Last item: total discount - sum of all previous discounts
                                                                     const previousDiscounts =
                                                                       visibleItems
                                                                         .slice(
@@ -4117,27 +4191,27 @@ export default function SalesOrders() {
                                                                         .reduce(
                                                                           (
                                                                             sum,
-                                                                            it,
+                                                                            item,
                                                                           ) => {
-                                                                            const editedIt =
+                                                                            const editedItem =
                                                                               editedOrderItems[
-                                                                                it
+                                                                                item
                                                                                   .id
                                                                               ] || {};
                                                                             const itPrice =
                                                                               parseFloat(
-                                                                                editedIt.unitPrice !==
+                                                                                editedItem.unitPrice !==
                                                                                   undefined
-                                                                                  ? editedIt.unitPrice
-                                                                                  : it.unitPrice ||
+                                                                                  ? editedItem.unitPrice
+                                                                                  : item.unitPrice ||
                                                                                       "0",
                                                                               );
                                                                             const itQty =
                                                                               parseInt(
-                                                                                editedIt.quantity !==
+                                                                                editedItem.quantity !==
                                                                                   undefined
-                                                                                  ? editedIt.quantity
-                                                                                  : it.quantity ||
+                                                                                  ? editedItem.quantity
+                                                                                  : item.quantity ||
                                                                                       "0",
                                                                               );
                                                                             const itSubtotal =
@@ -4604,7 +4678,8 @@ export default function SalesOrders() {
                                                                       // Use edited total if available, otherwise calculate from current values
                                                                       const editedItem =
                                                                         editedOrderItems[
-                                                                          item.id
+                                                                          item
+                                                                            .id
                                                                         ] || {};
                                                                       if (
                                                                         editedItem.total !==
@@ -4637,16 +4712,28 @@ export default function SalesOrders() {
                                                                     {(() => {
                                                                       // ALWAYS use edited tax if available from state
                                                                       const editedItem =
-                                                                        editedOrderItems[item.id] || {};
+                                                                        editedOrderItems[
+                                                                          item
+                                                                            .id
+                                                                        ] || {};
                                                                       if (
-                                                                        editedItem.tax !== undefined
+                                                                        editedItem.tax !==
+                                                                        undefined
                                                                       ) {
                                                                         return Math.floor(
-                                                                          parseFloat(editedItem.tax),
-                                                                        ).toLocaleString("vi-VN");
+                                                                          parseFloat(
+                                                                            editedItem.tax,
+                                                                          ),
+                                                                        ).toLocaleString(
+                                                                          "vi-VN",
+                                                                        );
                                                                       }
                                                                       // Fallback to calculated itemTax
-                                                                      return Math.floor(itemTax).toLocaleString("vi-VN");
+                                                                      return Math.floor(
+                                                                        itemTax,
+                                                                      ).toLocaleString(
+                                                                        "vi-VN",
+                                                                      );
                                                                     })()}
                                                                   </td>
                                                                   <td className="text-right py-2 px-3 border-r font-medium text-xs w-[120px]">
@@ -4738,6 +4825,20 @@ export default function SalesOrders() {
                                                           {formatCurrency(
                                                             Math.floor(
                                                               displayTotals.subtotal,
+                                                            ),
+                                                          )}
+                                                        </span>
+                                                      </div>
+                                                      {/* Add the new line for pre-tax amount */}
+                                                      <div className="flex justify-between">
+                                                        <span>
+                                                          Tiền trước thuế:
+                                                        </span>
+                                                        <span className="font-bold">
+                                                          {formatCurrency(
+                                                            Math.floor(
+                                                              displayTotals.subtotal -
+                                                                displayTotals.discount,
                                                             ),
                                                           )}
                                                         </span>
@@ -5660,9 +5761,9 @@ export default function SalesOrders() {
             exactDiscount: orderForPayment.exactDiscount,
             exactTotal: orderForPayment.exactTotal,
             subtotal: orderForPayment.subtotal,
-            tax: orderForPayment.tax,
-            discount: orderForPayment.discount,
-            total: orderForPayment.total,
+            tax: order.tax, // Corrected to use order.tax from the original order object
+            discount: order.discount, // Corrected to use order.discount from the original order object
+            total: order.total, // Corrected to use order.total from the original order object
           }}
         />
       )}

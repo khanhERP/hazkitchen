@@ -896,6 +896,16 @@ export default function PurchaseViewPage({ onLogout }: PurchaseViewPageProps) {
         return;
       }
 
+      if (!formData.purchaseType || formData.purchaseType === '') {
+        toast({
+          variant: "destructive",
+          title: "Lỗi validation",
+          description: "Vui lòng chọn loại mua hàng",
+        });
+        setIsSaving(false);
+        return;
+      }
+
       // Validate payment method if isPaid = true
       if (formData.isPaid) {
         if (!editPaymentMethods || editPaymentMethods.length === 0 || !editPaymentMethods[0].method) {

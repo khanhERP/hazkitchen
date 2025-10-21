@@ -5,6 +5,7 @@ export const commonTranslations: { [key: string]: CommonTranslations } = {
     loading: "로딩 중...",
     save: "저장",
     icon: "아이콘",
+    serving: "서빙 중",
     paymentMethodLabel: "결제 방법",
     completed: "완료됨",
     cancel: "취소",

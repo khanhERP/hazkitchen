@@ -3,7 +3,7 @@ import { useMutation } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient } from "@/lib/queryClient";
 import type { CartItem, Receipt } from "@shared/schema";
-import { v4 as uuidv4 } from 'uuid';
+import { v4 as uuidv4 } from "uuid";
 import { useTranslation } from "@/lib/i18n";
 
 interface Order {
@@ -18,16 +18,19 @@ export function usePOS() {
   const { toast } = useToast();
   const { t } = useTranslation();
 
-  const cart = orders.find(order => order.id === activeOrderId)?.cart || [];
+  const cart = orders.find((order) => order.id === activeOrderId)?.cart || [];
 
   const checkoutMutation = useMutation({
     mutationFn: async ({ paymentData }: { paymentData: any }) => {
       const orderNumber = `ORD-${Date.now()}`;
-      const subtotal = cart.reduce((sum, item) => sum + parseFloat(item.total), 0);
+      const subtotal = cart.reduce(
+        (sum, item) => sum + parseFloat(item.total),
+        0,
+      );
 
       // Calculate tax from products with afterTaxPrice
       let tax = 0;
-      cart.forEach(item => {
+      cart.forEach((item) => {
         if (item.afterTaxPrice) {
           const afterTaxPrice = parseFloat(item.afterTaxPrice);
           const price = parseFloat(item.price);
@@ -42,16 +45,22 @@ export function usePOS() {
         orderNumber,
         tableId: null, // POS orders don't have tables
         employeeId: null,
-        status: paymentData.paymentMethod === 'einvoice' ? 'served' : 'paid', // E-invoice orders start as served
+        status: paymentData.paymentMethod === "einvoice" ? "served" : "paid", // E-invoice orders start as served
         customerName: "Khách hàng",
         customerCount: 1,
         subtotal: subtotal.toFixed(2),
         tax: tax.toFixed(2),
-        discount: paymentData.discount ? parseFloat(paymentData.discount.toString()).toFixed(2) : '0.00',
+        discount: paymentData.discount
+          ? parseFloat(paymentData.discount.toString()).toFixed(2)
+          : "0.00",
         total: total.toFixed(2),
-        paymentMethod: paymentData.paymentMethod === 'einvoice' ? paymentData.originalPaymentMethod || 'cash' : paymentData.paymentMethod,
-        paymentStatus: paymentData.paymentMethod === 'einvoice' ? 'pending' : 'paid',
-        salesChannel: 'pos', // Mark as POS order - ALWAYS pos for POS transactions
+        paymentMethod:
+          paymentData.paymentMethod === "einvoice"
+            ? paymentData.originalPaymentMethod || "cash"
+            : paymentData.paymentMethod,
+        paymentStatus:
+          paymentData.paymentMethod === "einvoice" ? "pending" : "paid",
+        salesChannel: "pos", // Mark as POS order - ALWAYS pos for POS transactions
         einvoiceStatus: paymentData.einvoiceStatus || 0,
         templateNumber: paymentData.templateNumber || null,
         symbol: paymentData.symbol || null,
@@ -59,10 +68,10 @@ export function usePOS() {
         notes: t("common.comboValues.posPaymentNote")
           .replace("{amount}", paymentData.amountReceived || total.toString())
           .replace("{change}", paymentData.change || "0"),
-        paidAt: paymentData.paymentMethod !== 'einvoice' ? new Date() : null,
+        paidAt: paymentData.paymentMethod !== "einvoice" ? new Date() : null,
       };
 
-      const items = cart.map(item => ({
+      const items = cart.map((item) => ({
         productId: item.id,
         productName: item.name,
         quantity: item.quantity,
@@ -113,16 +122,16 @@ export function usePOS() {
       queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] });
 
       // Dispatch events for real-time updates
-      if (typeof window !== 'undefined') {
+      if (typeof window !== "undefined") {
         const events = [
-          new CustomEvent('newOrderCreated', {
-            detail: { orderId: order.id, salesChannel: 'pos' }
+          new CustomEvent("newOrderCreated", {
+            detail: { orderId: order.id, salesChannel: "pos" },
           }),
-          new CustomEvent('refreshOrders', {
-            detail: { immediate: true }
-          })
+          new CustomEvent("refreshOrders", {
+            detail: { immediate: true },
+          }),
         ];
-        events.forEach(event => window.dispatchEvent(event));
+        events.forEach((event) => window.dispatchEvent(event));
       }
 
       toast({
@@ -140,13 +149,12 @@ export function usePOS() {
   });
 
   const updateActiveOrderCart = (newCart: CartItem[]) => {
-    setOrders(prevOrders =>
-      prevOrders.map(order =>
-        order.id === activeOrderId ? { ...order, cart: newCart } : order
-      )
+    setOrders((prevOrders) =>
+      prevOrders.map((order) =>
+        order.id === activeOrderId ? { ...order, cart: newCart } : order,
+      ),
     );
   };
-
 
   const createNewOrder = () => {
     const newOrderId = uuidv4();
@@ -168,7 +176,7 @@ export function usePOS() {
       return;
     }
 
-    const filteredOrders = orders.filter(order => order.id !== orderId);
+    const filteredOrders = orders.filter((order) => order.id !== orderId);
     setOrders(filteredOrders);
 
     // If removing active order, switch to first remaining order
@@ -178,8 +186,8 @@ export function usePOS() {
   };
 
   const addToCart = async (productId: number) => {
-    if (typeof productId !== 'number') {
-      console.error('Invalid productId:', productId);
+    if (typeof productId !== "number") {
+      console.error("Invalid productId:", productId);
       return;
     }
 
@@ -189,7 +197,7 @@ export function usePOS() {
       // Fetch product details
       const response = await fetch(`https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products/${productId}`);
       if (!response.ok) {
-        throw new Error('Failed to fetch product');
+        throw new Error("Failed to fetch product");
       }
 
       const product = await response.json();
@@ -207,16 +215,18 @@ export function usePOS() {
       }
 
       // Find current cart for active order
-      const currentCart = activeOrderId && orders.find(o => o.id === activeOrderId)?.cart || cart;
-      const existingItem = currentCart.find(item => item.id === productId);
+      const currentCart =
+        (activeOrderId && orders.find((o) => o.id === activeOrderId)?.cart) ||
+        cart;
+      const existingItem = currentCart.find((item) => item.id === productId);
 
       if (existingItem) {
         // Update quantity
         updateQuantity(productId, existingItem.quantity + 1);
-        toast({
-          title: "Đã cập nhật",
-          description: `Đã tăng số lượng ${product.name}`,
-        });
+        // toast({
+        //   title: "Đã cập nhật",
+        //   description: `Đã tăng số lượng ${product.name}`,
+        // });
       } else {
         // Add new item
         const cartItem = {
@@ -227,18 +237,20 @@ export function usePOS() {
           total: product.price.toString(),
           stock: product.stock,
           taxRate: product.taxRate?.toString() || "0",
-          afterTaxPrice: product.afterTaxPrice
+          afterTaxPrice: product.afterTaxPrice,
         };
 
         console.log("Creating cart item:", cartItem);
 
         if (activeOrderId) {
           // Add to specific order
-          setOrders(prev => prev.map(order =>
-            order.id === activeOrderId
-              ? { ...order, cart: [...order.cart, cartItem] }
-              : order
-          ));
+          setOrders((prev) =>
+            prev.map((order) =>
+              order.id === activeOrderId
+                ? { ...order, cart: [...order.cart, cartItem] }
+                : order,
+            ),
+          );
         } else {
           // Add to main cart
           // This part might be problematic if `cart` is not a state variable that can be set.
@@ -256,12 +268,12 @@ export function usePOS() {
         }
 
         // Show success toast once
-        toast({
-          description: `${product.name}${t("pos.hasBeenAddedToOrder")}`,
-        });
+        // toast({
+        //   description: `${product.name}${t("pos.hasBeenAddedToOrder")}`,
+        // });
       }
     } catch (error) {
-      console.error('Failed to add product to cart:', error);
+      console.error("Failed to add product to cart:", error);
       toast({
         title: "Lỗi",
         description: "Không thể thêm sản phẩm vào giỏ hàng",
@@ -271,8 +283,9 @@ export function usePOS() {
   };
 
   const removeFromCart = (productId: number) => {
-    const currentCart = orders.find(order => order.id === activeOrderId)?.cart || [];
-    const newCart = currentCart.filter(item => item.id !== productId);
+    const currentCart =
+      orders.find((order) => order.id === activeOrderId)?.cart || [];
+    const newCart = currentCart.filter((item) => item.id !== productId);
     updateActiveOrderCart(newCart);
   };
 
@@ -282,15 +295,16 @@ export function usePOS() {
       return;
     }
 
-    const currentCart = orders.find(order => order.id === activeOrderId)?.cart || [];
-    const newCart = currentCart.map(item =>
+    const currentCart =
+      orders.find((order) => order.id === activeOrderId)?.cart || [];
+    const newCart = currentCart.map((item) =>
       item.id === productId
         ? {
             ...item,
             quantity: newQuantity,
-            total: (parseFloat(item.price) * newQuantity).toFixed(2)
+            total: (parseFloat(item.price) * newQuantity).toFixed(2),
           }
-        : item
+        : item,
     );
     updateActiveOrderCart(newCart);
   };
@@ -312,13 +326,13 @@ export function usePOS() {
 
   // Expose clearCart globally for other components to use
   useEffect(() => {
-    if (typeof window !== 'undefined') {
+    if (typeof window !== "undefined") {
       (window as any).clearActiveOrder = clearCart;
       (window as any).posGlobalClearCart = clearCart;
     }
 
     return () => {
-      if (typeof window !== 'undefined') {
+      if (typeof window !== "undefined") {
         delete (window as any).clearActiveOrder;
         delete (window as any).posGlobalClearCart;
       }
@@ -367,11 +381,11 @@ export function usePOS() {
 
   // Expose shopping cart ref for cross-component communication
   useEffect(() => {
-    if (typeof window !== 'undefined') {
+    if (typeof window !== "undefined") {
       (window as any).posRemoveOrder = removeOrder;
     }
     return () => {
-      if (typeof window !== 'undefined') {
+      if (typeof window !== "undefined") {
         delete (window as any).posRemoveOrder;
       }
     };
@@ -390,6 +404,6 @@ export function usePOS() {
     removeOrder,
     lastReceipt,
     isProcessingCheckout: checkoutMutation.isPending,
-    processCheckout
+    processCheckout,
   };
 }

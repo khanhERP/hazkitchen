@@ -695,7 +695,7 @@ export function TableGrid({ onTableSelect, selectedTableId }: TableGridProps) {
             }
           } else {
             console.log(
-              `te� Table ${completedOrder.tableId} still has ${otherActiveOrders.length} active orders, keeping occupied status`,
+              `te Table ${completedOrder.tableId} still has ${otherActiveOrders.length} active orders, keeping occupied status`,
             );
           }
         } catch (error) {
@@ -3014,8 +3014,8 @@ export function TableGrid({ onTableSelect, selectedTableId }: TableGridProps) {
                               }}
                             >
                               {table.status === "occupied" && activeOrder
-                                ? getOrderStatusBadge(activeOrder.status).label
-                                : statusConfig.label}
+                                ? t(getOrderStatusBadge(activeOrder.status).label as any)
+                                : t(statusConfig.label as any)}
                             </Badge>
                           </div>
 
@@ -3120,14 +3120,14 @@ export function TableGrid({ onTableSelect, selectedTableId }: TableGridProps) {
         <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
-              Danh sách đơn hàng - {selectedTable?.tableNumber}
+              {t("tables.orderList")} - {selectedTable?.tableNumber}
             </DialogTitle>
             <DialogDescription>
               {selectedTable &&
               activeOrders.filter((o) => o.tableId === selectedTable.id)
                 .length > 0
-                ? `${activeOrders.filter((o) => o.tableId === selectedTable.id).length} đơn hàng đang hoạt động`
-                : "Không có đơn hàng nào"}
+                ? `${activeOrders.filter((o) => o.tableId === selectedTable.id).length}${t("tables.ordersActive")}`
+                : t("tables.noActiveOrders")}
             </DialogDescription>
           </DialogHeader>
 
@@ -3200,10 +3200,12 @@ export function TableGrid({ onTableSelect, selectedTableId }: TableGridProps) {
                                 {displaySubtotal.toLocaleString("vi-VN")} ₫
                               </span>
                             </div>
-                            <div className="flex justify-between text-sm">
-                              <span className="text-gray-600">Thuế:</span>
-                              <span className="font-medium">
-                                {displayTax.toLocaleString("vi-VN")} ₫
+                            <div className="flex justify-between text-lg">
+                              <span className="text-gray-600">{t("common.tax")}:</span>
+                              <span className="font-semibold text-orange-600">
+                                {formatCurrency(
+                                  Math.floor(displayTax),
+                                )}
                               </span>
                             </div>
                             {orderDiscount > 0 && (
@@ -3232,8 +3234,8 @@ export function TableGrid({ onTableSelect, selectedTableId }: TableGridProps) {
                           {/* Action Buttons */}
                           {order.status !== "paid" && (
                             <div className="space-y-2 pt-2">
-                              {/* Order-specific action buttons - Redesigned */}
-                              <div className="grid grid-cols-3 gap-2">
+                              {/* Order-specific action buttons - All buttons displayed */}
+                              <div className="grid grid-cols-2 gap-2">
                                 {/* 1. Gọi thêm - Màu xanh dương */}
                                 <Button
                                   size="sm"
@@ -3248,7 +3250,7 @@ export function TableGrid({ onTableSelect, selectedTableId }: TableGridProps) {
                                   className="text-xs bg-blue-50 border-blue-300 text-blue-700 hover:bg-blue-100 hover:border-blue-400"
                                 >
                                   <Plus className="w-3 h-3 mr-1" />
-                                  Gọi thêm
+                                  {t("tables.addItems")}
                                 </Button>
 
                                 {/* 2. Thanh toán - Màu xanh lá */}
@@ -3369,172 +3371,170 @@ export function TableGrid({ onTableSelect, selectedTableId }: TableGridProps) {
                                   className="text-xs bg-green-600 hover:bg-green-700 text-white"
                                 >
                                   <CreditCard className="w-3 h-3 mr-1" />
-                                  Thanh toán
+                                  {t("orders.payment")}
                                 </Button>
 
-                                {/* 3. More dropdown button - Màu xám */}
-                                <DropdownMenu>
-                                  <DropdownMenuTrigger asChild>
-                                    <Button
-                                      size="sm"
-                                      variant="outline"
-                                      className="text-xs bg-gray-50 border-gray-300 text-gray-700 hover:bg-gray-100 hover:border-gray-400 flex items-center justify-center"
-                                    >
-                                      <span className="text-lg leading-none">
-                                        •••
-                                      </span>
-                                    </Button>
-                                  </DropdownMenuTrigger>
-                                  <DropdownMenuContent
-                                    align="end"
-                                    className="w-48"
-                                  >
-                                    <DropdownMenuItem
-                                      onClick={() => {
-                                        console.log(
-                                          "🔪 Opening split order modal for order:",
-                                          order.id,
-                                        );
-                                        setSelectedOrder(order);
-                                        setSplitOrderOpen(true);
-                                      }}
-                                    >
-                                      <Plus className="w-4 h-4 mr-2" />
-                                      Tách đơn
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem
-                                      onClick={async () => {
-                                        console.log(
-                                          "📄 Print bill for order:",
-                                          order.id,
-                                        );
+                                {/* 3. Tách đơn */}
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => {
+                                    console.log(
+                                      "🔪 Opening split order modal for order:",
+                                      order.id,
+                                    );
+                                    setSelectedOrder(order);
+                                    setSplitOrderOpen(true);
+                                  }}
+                                  className="text-xs bg-purple-50 border-purple-300 text-purple-700 hover:bg-purple-100 hover:border-purple-400"
+                                >
+                                  <Plus className="w-3 h-3 mr-1" />
+                                  {t("tables.splitOrder")}
+                                </Button>
 
-                                        try {
-                                          // Fetch order items for this specific order
-                                          const response = await apiRequest(
-                                            "GET",
-                                            `https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/order-items/${order.id}`,
-                                          );
-                                          const orderItemsData =
-                                            await response.json();
+                                {/* 4. In tạm tính */}
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={async () => {
+                                    console.log(
+                                      "📄 Print bill for order:",
+                                      order.id,
+                                    );
 
-                                          const exactSubtotal = Number(
-                                            order.subtotal || 0,
-                                          );
-                                          const exactTax = Number(
-                                            order.tax || 0,
-                                          );
-                                          const exactDiscount = Number(
-                                            order.discount || 0,
-                                          );
-                                          const exactTotal = Number(
-                                            order.total || 0,
-                                          );
+                                    try {
+                                      // Fetch order items for this specific order
+                                      const response = await apiRequest(
+                                        "GET",
+                                        `https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/order-items/${order.id}`,
+                                      );
+                                      const orderItemsData =
+                                        await response.json();
 
-                                          const processedItems =
-                                            orderItemsData.map((item: any) => ({
-                                              id: item.id,
-                                              productId: item.productId,
-                                              productName:
-                                                item.productName ||
-                                                getProductName(item.productId),
-                                              price: item.unitPrice,
-                                              quantity: item.quantity,
-                                              total: item.total,
-                                              discount: item.discount || "0",
-                                              sku:
-                                                item.productSku ||
-                                                `SP${item.productId}`,
-                                              taxRate: (() => {
-                                                const product = Array.isArray(
-                                                  products,
+                                      const exactSubtotal = Number(
+                                        order.subtotal || 0,
+                                      );
+                                      const exactTax = Number(
+                                        order.tax || 0,
+                                      );
+                                      const exactDiscount = Number(
+                                        order.discount || 0,
+                                      );
+                                      const exactTotal = Number(
+                                        order.total || 0,
+                                      );
+
+                                      const processedItems =
+                                        orderItemsData.map((item: any) => ({
+                                          id: item.id,
+                                          productId: item.productId,
+                                          productName:
+                                            item.productName ||
+                                            getProductName(item.productId),
+                                          price: item.unitPrice,
+                                          quantity: item.quantity,
+                                          total: item.total,
+                                          discount: item.discount || "0",
+                                          sku:
+                                            item.productSku ||
+                                            `SP${item.productId}`,
+                                          taxRate: (() => {
+                                            const product = Array.isArray(
+                                              products,
+                                            )
+                                              ? products.find(
+                                                  (p: any) =>
+                                                    p.id === item.productId,
                                                 )
-                                                  ? products.find(
-                                                      (p: any) =>
-                                                        p.id === item.productId,
-                                                    )
-                                                  : null;
-                                                return product?.taxRate
-                                                  ? parseFloat(product.taxRate)
-                                                  : 10;
-                                              })(),
-                                            }));
+                                              : null;
+                                            return product?.taxRate
+                                              ? parseFloat(product.taxRate)
+                                              : 10;
+                                          })(),
+                                        }));
 
-                                          const billData = {
-                                            ...order,
-                                            transactionId:
-                                              order.orderNumber ||
-                                              `BILL-${order.id}`,
-                                            items: processedItems,
-                                            subtotal: exactSubtotal.toString(),
-                                            tax: exactTax.toString(),
-                                            discount: exactDiscount.toString(),
-                                            total: exactTotal.toString(),
-                                            exactSubtotal: exactSubtotal,
-                                            exactTax: exactTax,
-                                            exactDiscount: exactDiscount,
-                                            exactTotal: exactTotal,
-                                            paymentMethod: "unpaid",
-                                            amountReceived: "0",
-                                            change: "0",
-                                            cashierName: "Table Service",
-                                            createdAt:
-                                              order.orderedAt ||
-                                              new Date().toISOString(),
-                                            customerName: order.customerName,
-                                            tableNumber:
-                                              getTableInfo(order.tableId)
-                                                ?.tableNumber || "N/A",
-                                          };
+                                      const billData = {
+                                        ...order,
+                                        transactionId:
+                                          order.orderNumber ||
+                                          `BILL-${order.id}`,
+                                        items: processedItems,
+                                        subtotal: exactSubtotal.toString(),
+                                        tax: exactTax.toString(),
+                                        discount: exactDiscount.toString(),
+                                        total: exactTotal.toString(),
+                                        exactSubtotal: exactSubtotal,
+                                        exactTax: exactTax,
+                                        exactDiscount: exactDiscount,
+                                        exactTotal: exactTotal,
+                                        paymentMethod: "unpaid",
+                                        amountReceived: "0",
+                                        change: "0",
+                                        cashierName: "Table Service",
+                                        createdAt:
+                                          order.orderedAt ||
+                                          new Date().toISOString(),
+                                        customerName: order.customerName,
+                                        tableNumber:
+                                          getTableInfo(order.tableId)
+                                            ?.tableNumber || "N/A",
+                                      };
 
-                                          setSelectedReceipt(billData);
-                                          setOrderDetailsOpen(false);
-                                          setIsTitle(false);
-                                          setShowReceiptModal(true);
-                                        } catch (error) {
-                                          console.error(
-                                            "❌ Error preparing bill:",
-                                            error,
-                                          );
-                                          toast({
-                                            title: "Lỗi",
-                                            description:
-                                              "Không thể tạo hóa đơn. Vui lòng thử lại.",
-                                            variant: "destructive",
-                                          });
-                                        }
-                                      }}
-                                    >
-                                      <Printer className="w-4 h-4 mr-2" />
-                                      In hóa đơn
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem
-                                      onClick={() => {
-                                        setSelectedOrder(order);
-                                        setPointsPaymentOpen(true);
-                                      }}
-                                    >
-                                      <Users className="w-4 h-4 mr-2" />
-                                      TT điểm
-                                    </DropdownMenuItem>
-                                    <DropdownMenuSeparator />
-                                    <DropdownMenuItem
-                                      onClick={() => {
-                                        if (
-                                          window.confirm(
-                                            `${t("common.areyouremoteorder")}`,
-                                          )
-                                        ) {
-                                          deleteOrderMutation.mutate(order.id);
-                                        }
-                                      }}
-                                      className="text-red-600 focus:text-red-600"
-                                    >
-                                      <X className="w-4 h-4 mr-2" />
-                                      {t("orders.cancelOrder")}
-                                    </DropdownMenuItem>
-                                  </DropdownMenuContent>
-                                </DropdownMenu>
+                                      setSelectedReceipt(billData);
+                                      setOrderDetailsOpen(false);
+                                      setIsTitle(false);
+                                      setShowReceiptModal(true);
+                                    } catch (error) {
+                                      console.error(
+                                        "❌ Error preparing bill:",
+                                        error,
+                                      );
+                                      toast({
+                                        title: "Lỗi",
+                                        description:
+                                          "Không thể tạo hóa đơn. Vui lòng thử lại.",
+                                        variant: "destructive",
+                                      });
+                                    }
+                                  }}
+                                  className="text-xs bg-orange-50 border-orange-300 text-orange-700 hover:bg-orange-100 hover:border-orange-400"
+                                >
+                                  <Printer className="w-3 h-3 mr-1" />
+                                  {t("tables.printBill")}
+                                </Button>
+
+                                {/* 5. TT điểm */}
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => {
+                                    setSelectedOrder(order);
+                                    setPointsPaymentOpen(true);
+                                  }}
+                                  className="text-xs bg-yellow-50 border-yellow-300 text-yellow-700 hover:bg-yellow-100 hover:border-yellow-400"
+                                >
+                                  <Users className="w-3 h-3 mr-1" />
+                                  {t("tables.payWithPoints")}
+                                </Button>
+
+                                {/* 6. Hủy đơn */}
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => {
+                                    if (
+                                      window.confirm(
+                                        `${t("common.areyouremoteorder")}`,
+                                      )
+                                    ) {
+                                      deleteOrderMutation.mutate(order.id);
+                                    }
+                                  }}
+                                  className="text-xs bg-red-50 border-red-300 text-red-700 hover:bg-red-100 hover:border-red-400"
+                                >
+                                  <X className="w-3 h-3 mr-1" />
+                                  {t("orders.cancelOrder")}
+                                </Button>
                               </div>
                             </div>
                           )}
@@ -3549,7 +3549,7 @@ export function TableGrid({ onTableSelect, selectedTableId }: TableGridProps) {
                 (order) => order.tableId === selectedTable.id,
               ).length === 0 && (
                 <div className="text-center py-8 text-gray-500">
-                  Bàn này chưa có đơn hàng nào
+                  {t("tables.noActiveOrders")}
                 </div>
               )}
             </div>
@@ -4070,9 +4070,7 @@ export function TableGrid({ onTableSelect, selectedTableId }: TableGridProps) {
                     <p className="text-xs text-blue-600">
                       Đã sử dụng {mixedPaymentData.pointsToUse.toLocaleString()}
                       P (-
-                      {(
-                        mixedPaymentData.pointsToUse * 1000
-                      ).toLocaleString()}{" "}
+                      {(mixedPaymentData.pointsToUse * 1000).toLocaleString()}{" "}
                       ₫)
                     </p>
                   </div>

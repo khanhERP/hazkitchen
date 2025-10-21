@@ -174,6 +174,7 @@ export interface POSTranslations {
   customerRequired: string;
   orderPlacedSuccess: string;
   orderPlacedSuccessDesc: string;
+  customerPhonePlaceholder: string;
 }
 
 export const posTranslations: { [key: string]: POSTranslations } = {
@@ -272,8 +273,11 @@ export const posTranslations: { [key: string]: POSTranslations } = {
     hasBeenAddedToOrder: "이(가) 주문에 추가되었습니다",
     addedToOrderToast: "이(가) 주문에 추가되었습니다",
     receiptPreview: "영수증 미리보기",
-    cancel: "취소",
-    confirmAndSelectPayment: "확인 및 결제 선택",
+    confirmAndSelectPayment: "확인 및 결제 방법 선택",
+    customerPhonePlaceholder: "고객 전화번호",
+    thankYouMessage: "감사합니다. 또 방문해 주세요!",
+    receipt: "영수증",
+    purchaseHistory: "구매 내역",
     thankYouBusiness: "이용해 주셔서 감사합니다!",
     keepReceiptRecords: "영수증을 기록용으로 보관해 주세요",
     bulkImport: "일괄 가져오기",
@@ -452,8 +456,9 @@ export const posTranslations: { [key: string]: POSTranslations } = {
     hasBeenAddedToOrder: " has been added to order",
     addedToOrderToast: " has been added to order",
     receiptPreview: "Receipt Preview",
-    cancel: "Cancel",
-    confirmAndSelectPayment: "Confirm & Select Payment",
+    confirmAndSelectPayment: "Confirm and Select Payment",
+    customerPhonePlaceholder: "Customer phone number",
+    thankYouMessage: "Thank you and see you again!",
     thankYouBusiness: "Thank you for your business!",
     keepReceiptRecords: "Please keep this receipt for your records",
     bulkImport: "Bulk Import",
@@ -633,9 +638,10 @@ export const posTranslations: { [key: string]: POSTranslations } = {
     addedToCartShort: "Đã thêm vào giỏ",
     hasBeenAddedToOrder: " đã được thêm vào đơn hàng",
     addedToOrderToast: " đã được thêm vào đơn hàng",
-    receiptPreview: "Phiếu tạm tính",
-    cancel: "Hủy",
-    confirmAndSelectPayment: "Xác nhận & Chọn thanh toán",
+    receiptPreview: "Xem trước hóa đơn",
+    confirmAndSelectPayment: "Xác nhận và chọn phương thức thanh toán",
+    customerPhonePlaceholder: "Số điện thoại khách hàng",
+    thankYouMessage: "Xin cảm ơn Quý khách và Hẹn gặp lại !",
     thankYouBusiness: "Cảm ơn bạn đã mua hàng!",
     keepReceiptRecords: "Vui lòng giữ hóa đơn để làm bằng chứng",
     bulkImport: "Nhập hàng loạt",

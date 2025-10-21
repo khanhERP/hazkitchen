@@ -1123,6 +1123,16 @@ export default function PurchaseFormPage({
         return;
       }
 
+      if (!formValues.purchaseType || formValues.purchaseType === '') {
+        toast({
+          title: "Lỗi",
+          description: "Vui lòng chọn loại mua hàng",
+          variant: "destructive",
+        });
+        setIsSubmitting(false);
+        return;
+      }
+
       if (!formValues.purchaseDate) {
         toast({
           title: "Lỗi",

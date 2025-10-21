@@ -6459,9 +6459,9 @@ export function SalesChartReport() {
                     <SelectItem value="product">
                       {t("reports.productAnalysis")}
                     </SelectItem>
-                    <SelectItem value="employee">
+                    {/* <SelectItem value="employee">
                       {t("reports.employeeAnalysis")}
-                    </SelectItem>
+                    </SelectItem> */}
                     <SelectItem value="customer">
                       {t("reports.customerAnalysis")}
                     </SelectItem>

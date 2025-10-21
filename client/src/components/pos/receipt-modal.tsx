@@ -1218,13 +1218,13 @@ export function ReceiptModal({
               }}
             >
               <p className="font-bold mb-0">
-                Tên cửa hàng: {storeSettings?.storeName || "Cửa hàng ABC"}
+                {t("settings.storeName")}: {storeSettings?.storeName || "Cửa hàng ABC"}
               </p>
               <p className="mb-0 font-bold">
-                Địa chỉ: {storeSettings?.address || ""}
+                {t("common.address")}: {storeSettings?.address || ""}
               </p>
               <p className="mb-0 font-bold">
-                SĐT: {storeSettings?.phone || "xxxxxxxxxx"}
+                {t("settings.phone")}: {storeSettings?.phone || "xxxxxxxxxx"}
               </p>
             </div>
 
@@ -1255,19 +1255,19 @@ export function ReceiptModal({
             >
               <tbody>
                 <tr>
-                  <td style={{ padding: "2px 0" }}>Số hóa đơn:</td>
+                  <td style={{ padding: "2px 0" }}>{t("common.invoiceNumber")}:</td>
                   <td style={{ padding: "2px 0", textAlign: "right" }}>
                     {receipt?.orderNumber || `ORD-${receipt?.id}`}
                   </td>
                 </tr>
                 <tr>
-                  <td style={{ padding: "2px 0" }}>Bàn:</td>
+                  <td style={{ padding: "2px 0" }}>{t("common.table")}:</td>
                   <td style={{ padding: "2px 0", textAlign: "right" }}>
                     {tableInfo?.tableNumber || receipt?.tableNumber || "-"}
                   </td>
                 </tr>
                 <tr>
-                  <td style={{ padding: "2px 0" }}>Thời gian:</td>
+                  <td style={{ padding: "2px 0" }}>{t("common.time")}:</td>
                   <td style={{ padding: "2px 0", textAlign: "right" }}>
                     {new Date().toLocaleString("vi-VN", {
                       day: "2-digit",
@@ -1279,9 +1279,9 @@ export function ReceiptModal({
                   </td>
                 </tr>
                 <tr>
-                  <td style={{ padding: "2px 0" }}>Thu ngân:</td>
+                  <td style={{ padding: "2px 0" }}>{t("common.cashier")}:</td>
                   <td style={{ padding: "2px 0", textAlign: "right" }}>
-                    {receipt.cashierName || "Thu ngân"}
+                    {receipt.cashierName || t("common.cashier")}
                   </td>
                 </tr>
                 {storeSettings?.businessType === "laundry" && receipt?.customerPhone && (
@@ -1319,27 +1319,37 @@ export function ReceiptModal({
                       borderBottom: "1px dashed #000",
                     }}
                   >
-                    Tên hàng
+                    {t("common.itemName")}
                   </th>
                   <th
                     style={{
                       textAlign: "center",
                       padding: "4px 2px",
                       borderBottom: "1px dashed #000",
-                      width: "60px",
+                      width: "40px",
                     }}
                   >
-                    SL
+                    {t("common.quantity")}
                   </th>
                   <th
                     style={{
                       textAlign: "right",
                       padding: "4px 2px",
                       borderBottom: "1px dashed #000",
-                      width: "100px",
+                      width: "70px",
                     }}
                   >
-                    Thành tiền
+                    {t("common.unitPrice")}
+                  </th>
+                  <th
+                    style={{
+                      textAlign: "right",
+                      padding: "4px 2px",
+                      borderBottom: "1px dashed #000",
+                      width: "80px",
+                    }}
+                  >
+                    {t("common.totalAmount")}
                   </th>
                 </tr>
               </thead>
@@ -1372,6 +1382,15 @@ export function ReceiptModal({
                           verticalAlign: "top",
                         }}
                       >
+                        {Math.floor(unitPrice).toLocaleString("vi-VN")}
+                      </td>
+                      <td
+                        style={{
+                          padding: "4px 2px",
+                          textAlign: "right",
+                          verticalAlign: "top",
+                        }}
+                      >
                         {Math.floor(itemSubtotal).toLocaleString("vi-VN")}
                       </td>
                     </tr>
@@ -1396,7 +1415,7 @@ export function ReceiptModal({
             >
               <tbody>
                 <tr>
-                  <td style={{ padding: "2px 0" }}>Tổng tiền:</td>
+                  <td style={{ padding: "2px 0" }}>{t("common.totalAmount")}:</td>
                   <td style={{ padding: "2px 0", textAlign: "right" }}>
                     {(() => {
                       const itemsSubtotal = (receipt.items || []).reduce(
@@ -1426,7 +1445,7 @@ export function ReceiptModal({
                     orderDiscount > 0 ? orderDiscount : totalItemDiscount;
                   return totalDiscount > 0 ? (
                     <tr>
-                      <td style={{ padding: "2px 0" }}>Giảm giá:</td>
+                      <td style={{ padding: "2px 0" }}>{t("common.discount")}:</td>
                       <td style={{ padding: "2px 0", textAlign: "right" }}>
                         {Math.floor(totalDiscount).toLocaleString("vi-VN")}
                       </td>
@@ -1480,7 +1499,7 @@ export function ReceiptModal({
                   return sortedTaxRates.map((taxRate) => (
                     <tr key={taxRate}>
                       <td style={{ padding: "2px 0" }}>
-                        Tiền thuế ({taxRate}%):
+                        {t("common.tax")} ({taxRate}%):
                       </td>
                       <td style={{ padding: "2px 0", textAlign: "right" }}>
                         {Math.floor(taxGroups[taxRate]).toLocaleString("vi-VN")}
@@ -1498,7 +1517,7 @@ export function ReceiptModal({
                       borderTop: "1px dashed #000",
                     }}
                   >
-                    Tổng thanh toán:
+                    {t("common.totalPayment")}:
                   </td>
                   <td
                     style={{
@@ -1545,7 +1564,7 @@ export function ReceiptModal({
                   fontWeight: "bold",
                 }}
               >
-                Xin cảm ơn Quý khách và Hẹn gặp lại !
+                {t("pos.thankYouMessage")}
               </p>
               <div
                 style={{ borderTop: "1px dashed #000", margin: "8px 0" }}

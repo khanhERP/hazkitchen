@@ -12,6 +12,7 @@ interface CustomerDisplayProps {
   storeInfo?: {
     name: string;
     address?: string;
+    phone?: string; // Added phone property
   };
   qrPayment?: {
     qrCodeUrl: string;
@@ -116,14 +117,17 @@ export function CustomerDisplay({
   const correctTax = calculateCorrectTax();
 
   // Calculate final total with discount
-  const finalTotal = Math.max(0, correctSubtotal + correctTax - (discount || 0));
+  const finalTotal = Math.max(
+    0,
+    correctSubtotal + correctTax - (discount || 0),
+  );
 
   console.log("Customer Display: Calculation breakdown", {
     correctSubtotal,
     correctTax,
     discount: discount || 0,
     beforeDiscount: correctSubtotal + correctTax,
-    finalTotal
+    finalTotal,
   });
 
   useEffect(() => {
@@ -200,11 +204,11 @@ export function CustomerDisplay({
             <img src={logoPath} alt="Logo" className="h-12 w-12" />
             <div>
               <h1 className="text-2xl font-bold text-gray-800">
-                {storeInfo?.name || "IDMC Store"}
+                {storeInfo?.name || ""}
               </h1>
-              <p className="text-sm text-gray-600">
-                {storeInfo?.address || "Chào mừng quý khách"}
-              </p>
+              {storeInfo?.address && (
+                <p className="text-sm text-gray-600">{storeInfo.address}</p>
+              )}
             </div>
           </div>
           <div className="text-right">
@@ -230,9 +234,7 @@ export function CustomerDisplay({
                   <h2 className="text-2xl font-bold text-gray-800 mb-2">
                     Thanh toán QR Code
                   </h2>
-                  <p className="text-gray-600">
-                    Quét mã QR để thanh toán
-                  </p>
+                  <p className="text-gray-600">Quét mã QR để thanh toán</p>
                 </div>
 
                 {/* QR Code */}
@@ -241,7 +243,7 @@ export function CustomerDisplay({
                     src={qrPayment.qrCodeUrl}
                     alt="QR Payment Code"
                     className="w-full h-auto max-w-xs mx-auto"
-                    style={{ imageRendering: 'pixelated' }}
+                    style={{ imageRendering: "pixelated" }}
                   />
                 </div>
 
@@ -290,22 +292,33 @@ export function CustomerDisplay({
                 <div className="flex-1 overflow-y-auto p-4">
                   <div className="space-y-3">
                     {cartItems.map((item, index) => (
-                      <div key={`${item.id}-${index}`} className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                      <div
+                        key={`${item.id}-${index}`}
+                        className="bg-gray-50 rounded-lg p-4 border border-gray-200"
+                      >
                         <div className="flex items-start justify-between">
                           <div className="flex-1 min-w-0 pr-4">
                             <h4 className="font-semibold text-gray-900 text-lg mb-2 leading-tight">
-                              {item.name || item.productName || `Sản phẩm ${item.id}`}
+                              {item.name ||
+                                item.productName ||
+                                `Sản phẩm ${item.id}`}
                             </h4>
 
                             <div className="space-y-1">
                               <p className="text-sm text-gray-600">
-                                {Math.round(parseFloat(item.price || "0")).toLocaleString("vi-VN")} ₫ × {item.quantity || 1}
+                                {Math.round(
+                                  parseFloat(item.price || "0"),
+                                ).toLocaleString("vi-VN")}{" "}
+                                ₫ × {item.quantity || 1}
                               </p>
 
                               {item.taxRate && parseFloat(item.taxRate) > 0 && (
                                 <p className="text-sm text-orange-600">
-                                  Thuế ({item.taxRate}%): {(() => {
-                                    const basePrice = parseFloat(item.price || "0");
+                                  Thuế ({item.taxRate}%):{" "}
+                                  {(() => {
+                                    const basePrice = parseFloat(
+                                      item.price || "0",
+                                    );
                                     const quantity = item.quantity || 1;
                                     const subtotal = basePrice * quantity;
 
@@ -317,54 +330,88 @@ export function CustomerDisplay({
                                       const currentIndex = cartItems.findIndex(
                                         (cartItem) => cartItem.id === item.id,
                                       );
-                                      const isLastItem = currentIndex === cartItems.length - 1;
+                                      const isLastItem =
+                                        currentIndex === cartItems.length - 1;
 
                                       if (isLastItem) {
                                         // Last item: total discount - sum of all previous discounts
                                         let previousDiscounts = 0;
-                                        const totalBeforeDiscount = cartItems.reduce((sum, itm) => {
-                                          return sum + parseFloat(itm.price) * itm.quantity;
-                                        }, 0);
+                                        const totalBeforeDiscount =
+                                          cartItems.reduce((sum, itm) => {
+                                            return (
+                                              sum +
+                                              parseFloat(itm.price) *
+                                                itm.quantity
+                                            );
+                                          }, 0);
 
-                                        for (let i = 0; i < cartItems.length - 1; i++) {
+                                        for (
+                                          let i = 0;
+                                          i < cartItems.length - 1;
+                                          i++
+                                        ) {
                                           const prevItemSubtotal =
-                                            parseFloat(cartItems[i].price) * cartItems[i].quantity;
+                                            parseFloat(cartItems[i].price) *
+                                            cartItems[i].quantity;
                                           const prevItemDiscount =
                                             totalBeforeDiscount > 0
                                               ? Math.floor(
-                                                  (orderDiscount * prevItemSubtotal) / totalBeforeDiscount,
+                                                  (orderDiscount *
+                                                    prevItemSubtotal) /
+                                                    totalBeforeDiscount,
                                                 )
                                               : 0;
                                           previousDiscounts += prevItemDiscount;
                                         }
 
-                                        itemDiscountAmount = orderDiscount - previousDiscounts;
+                                        itemDiscountAmount =
+                                          orderDiscount - previousDiscounts;
                                       } else {
                                         // Regular calculation for non-last items
-                                        const totalBeforeDiscount = cartItems.reduce((sum, itm) => {
-                                          return sum + parseFloat(itm.price) * itm.quantity;
-                                        }, 0);
+                                        const totalBeforeDiscount =
+                                          cartItems.reduce((sum, itm) => {
+                                            return (
+                                              sum +
+                                              parseFloat(itm.price) *
+                                                itm.quantity
+                                            );
+                                          }, 0);
                                         itemDiscountAmount =
                                           totalBeforeDiscount > 0
-                                            ? Math.floor((orderDiscount * subtotal) / totalBeforeDiscount)
+                                            ? Math.floor(
+                                                (orderDiscount * subtotal) /
+                                                  totalBeforeDiscount,
+                                              )
                                             : 0;
                                       }
                                     }
 
                                     // Tax = (price * quantity - discount) * taxRate
-                                    const taxableAmount = Math.max(0, subtotal - itemDiscountAmount);
-                                    const taxRate = parseFloat(item.taxRate) / 100;
-                                    const calculatedTax = Math.floor(taxableAmount * taxRate);
-                                    return calculatedTax.toLocaleString("vi-VN");
-                                  })()} ₫
+                                    const taxableAmount = Math.max(
+                                      0,
+                                      subtotal - itemDiscountAmount,
+                                    );
+                                    const taxRate =
+                                      parseFloat(item.taxRate) / 100;
+                                    const calculatedTax = Math.floor(
+                                      taxableAmount * taxRate,
+                                    );
+                                    return calculatedTax.toLocaleString(
+                                      "vi-VN",
+                                    );
+                                  })()}{" "}
+                                  ₫
                                 </p>
                               )}
 
                               {/* Show item discount if applicable - SAME logic as shopping-cart */}
                               {discount && discount > 0 && (
                                 <p className="text-sm text-red-600">
-                                  Giảm giá: -{(() => {
-                                    const basePrice = parseFloat(item.price || "0");
+                                  Giảm giá: -
+                                  {(() => {
+                                    const basePrice = parseFloat(
+                                      item.price || "0",
+                                    );
                                     const quantity = item.quantity || 1;
                                     const subtotal = basePrice * quantity;
 
@@ -376,58 +423,89 @@ export function CustomerDisplay({
                                       const currentIndex = cartItems.findIndex(
                                         (cartItem) => cartItem.id === item.id,
                                       );
-                                      const isLastItem = currentIndex === cartItems.length - 1;
+                                      const isLastItem =
+                                        currentIndex === cartItems.length - 1;
 
                                       if (isLastItem) {
                                         // Last item: total discount - sum of all previous discounts
                                         let previousDiscounts = 0;
-                                        const totalBeforeDiscount = cartItems.reduce((sum, itm) => {
-                                          return sum + parseFloat(itm.price) * itm.quantity;
-                                        }, 0);
+                                        const totalBeforeDiscount =
+                                          cartItems.reduce((sum, itm) => {
+                                            return (
+                                              sum +
+                                              parseFloat(itm.price) *
+                                                itm.quantity
+                                            );
+                                          }, 0);
 
-                                        for (let i = 0; i < cartItems.length - 1; i++) {
+                                        for (
+                                          let i = 0;
+                                          i < cartItems.length - 1;
+                                          i++
+                                        ) {
                                           const prevItemSubtotal =
-                                            parseFloat(cartItems[i].price) * cartItems[i].quantity;
+                                            parseFloat(cartItems[i].price) *
+                                            cartItems[i].quantity;
                                           const prevItemDiscount =
                                             totalBeforeDiscount > 0
                                               ? Math.floor(
-                                                  (orderDiscount * prevItemSubtotal) / totalBeforeDiscount,
+                                                  (orderDiscount *
+                                                    prevItemSubtotal) /
+                                                    totalBeforeDiscount,
                                                 )
                                               : 0;
                                           previousDiscounts += prevItemDiscount;
                                         }
 
-                                        itemDiscountAmount = orderDiscount - previousDiscounts;
+                                        itemDiscountAmount =
+                                          orderDiscount - previousDiscounts;
                                       } else {
                                         // Regular calculation for non-last items
-                                        const totalBeforeDiscount = cartItems.reduce((sum, itm) => {
-                                          return sum + parseFloat(itm.price) * itm.quantity;
-                                        }, 0);
+                                        const totalBeforeDiscount =
+                                          cartItems.reduce((sum, itm) => {
+                                            return (
+                                              sum +
+                                              parseFloat(itm.price) *
+                                                itm.quantity
+                                            );
+                                          }, 0);
                                         itemDiscountAmount =
                                           totalBeforeDiscount > 0
-                                            ? Math.floor((orderDiscount * subtotal) / totalBeforeDiscount)
+                                            ? Math.floor(
+                                                (orderDiscount * subtotal) /
+                                                  totalBeforeDiscount,
+                                              )
                                             : 0;
                                       }
                                     }
 
-                                    return Math.floor(itemDiscountAmount).toLocaleString("vi-VN");
-                                  })()} ₫
+                                    return Math.floor(
+                                      itemDiscountAmount,
+                                    ).toLocaleString("vi-VN");
+                                  })()}{" "}
+                                  ₫
                                 </p>
                               )}
                             </div>
                           </div>
 
                           <div className="text-right">
-                              <div className="flex flex-col items-end space-y-1">
-                                <span className="text-sm text-gray-500">SL: {item.quantity || 1}</span>
-                                <div className="text-xl font-bold text-blue-600">
-                                  {parseFloat(item.total || "0").toLocaleString("vi-VN", {
+                            <div className="flex flex-col items-end space-y-1">
+                              <span className="text-sm text-gray-500">
+                                SL: {item.quantity || 1}
+                              </span>
+                              <div className="text-xl font-bold text-blue-600">
+                                {parseFloat(item.total || "0").toLocaleString(
+                                  "vi-VN",
+                                  {
                                     minimumFractionDigits: 2,
                                     maximumFractionDigits: 2,
-                                  })} ₫
-                                </div>
+                                  },
+                                )}{" "}
+                                ₫
                               </div>
                             </div>
+                          </div>
                         </div>
                       </div>
                     ))}
@@ -447,8 +525,12 @@ export function CustomerDisplay({
                   {/* Order Number */}
                   {orderNumber && (
                     <div className="bg-gray-50 rounded-lg p-3 text-center">
-                      <div className="text-sm text-gray-600 mb-1">Số đơn hàng</div>
-                      <div className="font-bold text-gray-800">{orderNumber}</div>
+                      <div className="text-sm text-gray-600 mb-1">
+                        Số đơn hàng
+                      </div>
+                      <div className="font-bold text-gray-800">
+                        {orderNumber}
+                      </div>
                     </div>
                   )}
 
@@ -460,7 +542,8 @@ export function CustomerDisplay({
                         {calculateCorrectSubtotal().toLocaleString("vi-VN", {
                           minimumFractionDigits: 2,
                           maximumFractionDigits: 2,
-                        })} ₫
+                        })}{" "}
+                        ₫
                       </span>
                     </div>
 
@@ -470,7 +553,8 @@ export function CustomerDisplay({
                         {calculateCorrectTax().toLocaleString("vi-VN", {
                           minimumFractionDigits: 2,
                           maximumFractionDigits: 2,
-                        })} ₫
+                        })}{" "}
+                        ₫
                       </span>
                     </div>
 
@@ -487,10 +571,16 @@ export function CustomerDisplay({
                       <div className="flex justify-between text-2xl font-bold">
                         <span className="text-gray-800">Tổng cộng:</span>
                         <span className="text-green-600">
-                          {Math.max(0, calculateCorrectSubtotal() + calculateCorrectTax() - (discount || 0)).toLocaleString("vi-VN", {
+                          {Math.max(
+                            0,
+                            calculateCorrectSubtotal() +
+                              calculateCorrectTax() -
+                              (discount || 0),
+                          ).toLocaleString("vi-VN", {
                             minimumFractionDigits: 2,
                             maximumFractionDigits: 2,
-                          })} ₫
+                          })}{" "}
+                          ₫
                         </span>
                       </div>
                     </div>
@@ -502,7 +592,10 @@ export function CustomerDisplay({
                       Tổng số món
                     </div>
                     <div className="text-3xl font-bold text-green-800">
-                      {cartItems.reduce((sum, item) => sum + (item.quantity || 0), 0)}
+                      {cartItems.reduce(
+                        (sum, item) => sum + (item.quantity || 0),
+                        0,
+                      )}
                     </div>
                     <div className="text-sm text-green-600 mt-1">
                       {cartItems.length} loại sản phẩm
@@ -518,9 +611,18 @@ export function CustomerDisplay({
       {/* Footer */}
       <div className="bg-white border-t border-gray-200 p-4">
         <div className="max-w-6xl mx-auto text-center">
-          <p className="text-sm text-gray-500">
-            Cảm ơn bạn đã mua sắm tại {storeInfo?.name || "IDMC Store"}
-          </p>
+          {/* Store name and address display */}
+          <div className="text-center mb-2">
+            <div className="text-2xl font-bold text-green-600 mb-1">
+              {storeInfo?.name || "EDPOS Store"}
+            </div>
+            {storeInfo?.address && (
+              <div className="text-sm text-gray-600">{storeInfo.address}</div>
+            )}
+            {storeInfo?.phone && (
+              <div className="text-sm text-gray-500">☎ {storeInfo.phone}</div>
+            )}
+          </div>
           {/* Hidden refresh button - double click to refresh */}
           <button
             onClick={() => window.location.reload()}

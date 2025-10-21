@@ -755,7 +755,7 @@ export function ShoppingCart({
     setPreviewReceipt(null);
     setOrderForPayment(null);
     // DON'T clear selected customer on cancel - keep it for retry
-    // setSelectedCustomer(null); 
+    // setSelectedCustomer(null);
     // setCustomerSearchTerm("");
     // Don't clear customer for the current order on cancel
   };
@@ -786,7 +786,7 @@ export function ShoppingCart({
       setSelectedCustomer(null); // Clear selected customer on successful payment
       setCustomerSearchTerm(""); // Clear search term
       setOrderCustomers({}); // Clear all order customers
-      
+
       // Clear discount for all orders
       setOrderDiscounts({});
       setDiscountAmount("0");
@@ -1274,7 +1274,7 @@ export function ShoppingCart({
     setSelectedCustomer(null); // Clear selected customer
     setCustomerSearchTerm(""); // Clear search term
     setOrderCustomers({}); // Clear all order customers
-    
+
     // Clear all discounts
     setOrderDiscounts({});
     setDiscountAmount("0");
@@ -1462,187 +1462,165 @@ export function ShoppingCart({
 
   return (
     <aside className="w-96 bg-white shadow-material border-l pos-border flex flex-col">
-      {/* Customer Search Input - Always visible for all business types */}
-      <div className="p-4 border-b pos-border bg-gradient-to-r from-blue-50 to-indigo-50 mt-3">
-        <div className="flex items-center gap-2 mb-3">
-          <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center">
-            <svg
-              className="w-6 h-6 text-white"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-              />
-            </svg>
+      {/* Customer Search Input - Only visible for laundry business type */}
+      {storeSettings?.businessType === "laundry" && (
+        <div className="p-4 border-b pos-border bg-gradient-to-r from-blue-50 to-indigo-50 mt-3">
+          <div className="flex items-center gap-2 mb-3">
+            <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center">
+              <svg
+                className="w-6 h-6 text-white"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                />
+              </svg>
+            </div>
+            <div className="flex-1">
+              <h3 className="text-base font-semibold text-gray-900">
+                Thông tin khách hàng
+              </h3>
+              <p className="text-xs text-gray-500">
+                Tìm kiếm hoặc tạo mới khách hàng
+              </p>
+            </div>
           </div>
-          <div className="flex-1">
-            <h3 className="text-base font-semibold text-gray-900">
-              Thông tin khách hàng
-            </h3>
-            <p className="text-xs text-gray-500">
-              Tìm kiếm hoặc tạo mới khách hàng
-            </p>
-          </div>
-        </div>
-        <div className="relative">
           <div className="relative">
-            <svg
-              className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+            <div className="relative">
+              <svg
+                className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                />
+              </svg>
+              <Input
+                type="text"
+                value={customerSearchTerm}
+                onChange={(e) => {
+                  setCustomerSearchTerm(e.target.value);
+                  // Clear selected customer when user types
+                  if (selectedCustomer) {
+                    setSelectedCustomer(null);
+                  }
+                }}
+                placeholder="Nhập số điện thoại hoặc tên khách hàng..."
+                className="w-full pl-10 pr-4 py-2 border-2 border-gray-200 focus:border-blue-500 rounded-lg transition-colors"
               />
-            </svg>
-            <Input
-              type="text"
-              value={customerSearchTerm}
-              onChange={(e) => {
-                setCustomerSearchTerm(e.target.value);
-                // Clear selected customer when user types
-                if (selectedCustomer) {
-                  setSelectedCustomer(null);
-                }
-              }}
-              placeholder="Nhập số điện thoại hoặc tên khách hàng..."
-              className="w-full pl-10 pr-4 py-2 border-2 border-gray-200 focus:border-blue-500 rounded-lg transition-colors"
-            />
-          </div>
+            </div>
 
-          {/* Dropdown suggestions */}
-          {customerSearchTerm.length > 0 && !selectedCustomer && (
-            <div className="absolute top-full left-0 right-0 bg-white border-2 border-blue-200 rounded-lg shadow-2xl z-50 mt-2 max-h-72 overflow-hidden">
-              <div className="px-4 py-2 bg-gradient-to-r from-blue-500 to-indigo-500">
-                <p className="text-xs font-medium text-white">
-                  {isSearching ? (
-                    <>⏳ Đang tìm kiếm...</>
-                  ) : (
-                    <>
-                      🔍 Tìm thấy {filteredSuggestedCustomers.length} khách hàng
-                    </>
-                  )}
-                </p>
-              </div>
-              {filteredSuggestedCustomers.length > 0 && (
-                <div className="max-h-60 overflow-y-auto">
-                  {filteredSuggestedCustomers.map((customer, index) => (
-                    <div
-                      key={customer.id}
-                      className={`p-3 cursor-pointer hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 transition-all duration-200 ${
-                        index !== filteredSuggestedCustomers.length - 1
-                          ? "border-b border-gray-100"
-                          : ""
-                      }`}
-                      onClick={() => handleCustomerSelect(customer)}
-                    >
-                      <div className="flex justify-between items-start gap-3">
-                        <div className="flex-1 min-w-0">
-                          <p className="font-semibold text-sm text-gray-900 truncate">
-                            {customer.name}
-                          </p>
-                          <div className="flex items-center gap-2 mt-1">
-                            <span className="text-xs text-gray-600">
-                              📞 {customer.phone}
-                            </span>
-                            {customer.customerTaxCode && (
-                              <span className="text-xs text-gray-500 px-2 py-0.5 bg-gray-100 rounded">
-                                MST: {customer.customerTaxCode}
+            {/* Dropdown suggestions */}
+            {customerSearchTerm.length > 0 && !selectedCustomer && (
+              <div className="absolute top-full left-0 right-0 bg-white border-2 border-blue-200 rounded-lg shadow-2xl z-50 mt-2 max-h-72 overflow-hidden">
+                <div className="px-4 py-2 bg-gradient-to-r from-blue-500 to-indigo-500">
+                  <p className="text-xs font-medium text-white">
+                    {isSearching ? (
+                      <>⏳ Đang tìm kiếm...</>
+                    ) : (
+                      <>
+                        🔍 Tìm thấy {filteredSuggestedCustomers.length} khách
+                        hàng
+                      </>
+                    )}
+                  </p>
+                </div>
+                {filteredSuggestedCustomers.length > 0 && (
+                  <div className="max-h-60 overflow-y-auto">
+                    {filteredSuggestedCustomers.map((customer, index) => (
+                      <div
+                        key={customer.id}
+                        className={`p-3 cursor-pointer hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 transition-all duration-200 ${
+                          index !== filteredSuggestedCustomers.length - 1
+                            ? "border-b border-gray-100"
+                            : ""
+                        }`}
+                        onClick={() => handleCustomerSelect(customer)}
+                      >
+                        <div className="flex justify-between items-start gap-3">
+                          <div className="flex-1 min-w-0">
+                            <p className="font-semibold text-sm text-gray-900 truncate">
+                              {customer.name}
+                            </p>
+                            <div className="flex items-center gap-2 mt-1">
+                              <span className="text-xs text-gray-600">
+                                📞 {customer.phone}
                               </span>
-                            )}
+                              {customer.customerTaxCode && (
+                                <span className="text-xs text-gray-500 px-2 py-0.5 bg-gray-100 rounded">
+                                  MST: {customer.customerTaxCode}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-1 text-blue-600">
+                            <span className="text-xs font-medium">Chọn</span>
+                            <svg
+                              className="w-4 h-4"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M9 5l7 7-7 7"
+                              />
+                            </svg>
                           </div>
                         </div>
-                        <div className="flex items-center gap-1 text-blue-600">
-                          <span className="text-xs font-medium">Chọn</span>
-                          <svg
-                            className="w-4 h-4"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M9 5l7 7-7 7"
-                            />
-                          </svg>
-                        </div>
                       </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* No results message with quick create button */}
-          {customerSearchTerm.length > 0 &&
-            filteredSuggestedCustomers.length === 0 &&
-            !selectedCustomer && (
-              <div className="absolute top-full left-0 right-0 bg-white border border-gray-300 rounded-md shadow-xl z-50 mt-1 p-4">
-                <p className="text-sm text-gray-500 text-center mb-3">
-                  {/^\d+$/.test(customerSearchTerm)
-                    ? `Không tìm thấy khách hàng có SĐT bắt đầu bằng "${customerSearchTerm}"`
-                    : `Không tìm thấy khách hàng "${customerSearchTerm}"`}
-                </p>
-                {/^\d+$/.test(customerSearchTerm) && (
-                  <Button
-                    onClick={() => {
-                      // Pre-fill phone number and open customer form
-                      setEditingCustomer(null); // Clear editing customer to create new
-                      setShowCustomerForm(true);
-                    }}
-                    className="w-full bg-blue-600 hover:bg-blue-700 text-white"
-                    size="sm"
-                  >
-                    + Tạo khách hàng mới với SĐT {customerSearchTerm}
-                  </Button>
+                    ))}
+                  </div>
                 )}
               </div>
             )}
-        </div>
 
-        {/* Selected customer display */}
-        {selectedCustomer && (
-          <div className="mt-3 p-4 bg-gradient-to-br from-green-50 to-emerald-50 border-2 border-green-200 rounded-lg shadow-sm">
-            <div className="flex items-start gap-3">
-              <div className="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center flex-shrink-0">
-                <svg
-                  className="w-6 h-6 text-white"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M5 13l4 4L19 7"
-                  />
-                </svg>
-              </div>
-              <div className="flex-1 min-w-0">
-                <button
-                  onClick={() => {
-                    setEditingCustomer(selectedCustomer);
-                    setShowCustomerForm(true);
-                  }}
-                  className="text-sm font-bold text-green-900 hover:text-green-700 transition-colors inline-flex items-center gap-1 group"
-                  title="Xem chi tiết khách hàng"
-                >
-                  {selectedCustomer.name}
+            {/* No results message with quick create button */}
+            {customerSearchTerm.length > 0 &&
+              filteredSuggestedCustomers.length === 0 &&
+              !selectedCustomer && (
+                <div className="absolute top-full left-0 right-0 bg-white border border-gray-300 rounded-md shadow-xl z-50 mt-1 p-4">
+                  <p className="text-sm text-gray-500 text-center mb-3">
+                    {/^\d+$/.test(customerSearchTerm)
+                      ? `Không tìm thấy khách hàng có SĐT bắt đầu bằng "${customerSearchTerm}"`
+                      : `Không tìm thấy khách hàng "${customerSearchTerm}"`}
+                  </p>
+                  {/^\d+$/.test(customerSearchTerm) && (
+                    <Button
+                      onClick={() => {
+                        // Pre-fill phone number and open customer form
+                        setEditingCustomer(null); // Clear editing customer to create new
+                        setShowCustomerForm(true);
+                      }}
+                      className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+                      size="sm"
+                    >
+                      + Tạo khách hàng mới với SĐT {customerSearchTerm}
+                    </Button>
+                  )}
+                </div>
+              )}
+          </div>
+
+          {/* Selected customer display */}
+          {selectedCustomer && (
+            <div className="mt-3 p-4 bg-gradient-to-br from-green-50 to-emerald-50 border-2 border-green-200 rounded-lg shadow-sm">
+              <div className="flex items-start gap-3">
+                <div className="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center flex-shrink-0">
                   <svg
-                    className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity"
+                    className="w-6 h-6 text-white"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -1651,14 +1629,22 @@ export function ShoppingCart({
                       strokeLinecap="round"
                       strokeLinejoin="round"
                       strokeWidth={2}
-                      d="M13 7l5 5m0 0l-5 5m5-5H6"
+                      d="M5 13l4 4L19 7"
                     />
                   </svg>
-                </button>
-                <div className="flex flex-wrap items-center gap-2 mt-2">
-                  <span className="text-xs text-green-700 bg-white px-2 py-1 rounded-md flex items-center gap-1">
+                </div>
+                <div className="flex-1 min-w-0">
+                  <button
+                    onClick={() => {
+                      setEditingCustomer(selectedCustomer);
+                      setShowCustomerForm(true);
+                    }}
+                    className="text-sm font-bold text-green-900 hover:text-green-700 transition-colors inline-flex items-center gap-1 group"
+                    title="Xem chi tiết khách hàng"
+                  >
+                    {selectedCustomer.name}
                     <svg
-                      className="w-3 h-3"
+                      className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity"
                       fill="none"
                       stroke="currentColor"
                       viewBox="0 0 24 24"
@@ -1667,55 +1653,72 @@ export function ShoppingCart({
                         strokeLinecap="round"
                         strokeLinejoin="round"
                         strokeWidth={2}
-                        d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"
+                        d="M13 7l5 5m0 0l-5 5m5-5H6"
                       />
                     </svg>
-                    {selectedCustomer.phone}
-                  </span>
-                  {selectedCustomer.customerTaxCode && (
-                    <span className="text-xs text-green-600 bg-white px-2 py-1 rounded-md">
-                      MST: {selectedCustomer.customerTaxCode}
+                  </button>
+                  <div className="flex flex-wrap items-center gap-2 mt-2">
+                    <span className="text-xs text-green-700 bg-white px-2 py-1 rounded-md flex items-center gap-1">
+                      <svg
+                        className="w-3 h-3"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"
+                        />
+                      </svg>
+                      {selectedCustomer.phone}
                     </span>
-                  )}
+                    {selectedCustomer.customerTaxCode && (
+                      <span className="text-xs text-green-600 bg-white px-2 py-1 rounded-md">
+                        MST: {selectedCustomer.customerTaxCode}
+                      </span>
+                    )}
+                  </div>
                 </div>
-              </div>
-              <button
-                onClick={() => {
-                  setSelectedCustomer(null);
-                  setCustomerSearchTerm("");
-                  // Clear customer for the current order
-                  if (activeOrderId) {
-                    setOrderCustomers((prev) => {
-                      const updated = { ...prev };
-                      delete updated[activeOrderId];
-                      return updated;
-                    });
-                  }
-                }}
-                className="w-7 h-7 flex items-center justify-center bg-red-100 hover:bg-red-200 text-red-600 rounded-full transition-colors flex-shrink-0"
-                title="Xóa khách hàng"
-              >
-                <svg
-                  className="w-4 h-4"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
+                <button
+                  onClick={() => {
+                    setSelectedCustomer(null);
+                    setCustomerSearchTerm("");
+                    // Clear customer for the current order
+                    if (activeOrderId) {
+                      setOrderCustomers((prev) => {
+                        const updated = { ...prev };
+                        delete updated[activeOrderId];
+                        return updated;
+                      });
+                    }
+                  }}
+                  className="w-7 h-7 flex items-center justify-center bg-red-100 hover:bg-red-200 text-red-600 rounded-full transition-colors flex-shrink-0"
+                  title="Xóa khách hàng"
                 >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M6 18L18 6M6 6l12 12"
-                  />
-                </svg>
-              </button>
+                  <svg
+                    className="w-4 h-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M6 18L18 6M6 6l12 12"
+                    />
+                  </svg>
+                </button>
+              </div>
             </div>
-          </div>
-        )}
-      </div>
+          )}
+        </div>
+      )}
 
       {/* Purchase History Section */}
-      <div className="p-4 border-b pos-border bg-gray-50">
+      <div className="p-4 border-b pos-border bg-gray-50 pt-6">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
             <svg

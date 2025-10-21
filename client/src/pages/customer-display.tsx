@@ -1,7 +1,16 @@
-
 import { useState, useEffect } from "react";
 import { CustomerDisplay } from "@/components/pos/customer-display";
 import type { CartItem } from "@shared/schema";
+import { useQuery } from "@tanstack/react-query";
+
+// Assuming StoreSettings is defined elsewhere, e.g., in @shared/schema
+// interface StoreSettings {
+//   storeName: string;
+//   address: string;
+//   phone?: string;
+//   taxId?: string;
+//   // ... other store settings properties
+// }
 
 export default function CustomerDisplayPage() {
   const [cart, setCart] = useState<CartItem[]>([]);
@@ -68,10 +77,10 @@ export default function CustomerDisplayPage() {
             setCart(cartData.cart);
             console.log("Customer Display: Cart state updated with", cartData.cart.length, "items");
           }
-          if (cartData.storeInfo) {
-            setStoreInfo(cartData.storeInfo);
-            console.log("Customer Display: Store info updated from cart API");
-          }
+          // if (cartData.storeInfo) {
+          //   setStoreInfo(cartData.storeInfo);
+          //   console.log("Customer Display: Store info updated from cart API");
+          // }
         } else {
           console.error("Customer Display: Failed to fetch current cart:", cartResponse.status);
         }
@@ -82,6 +91,32 @@ export default function CustomerDisplayPage() {
 
     fetchInitialData();
   }, []);
+
+  // Fetch store settings using react-query with proper interface
+  const { data: storeSettings } = useQuery({
+    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/store-settings"],
+    queryFn: async () => {
+      const response = await fetch("https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/store-settings");
+      if (!response.ok) throw new Error("Failed to fetch store settings");
+      return response.json();
+    },
+  });
+
+  // Update storeInfo when storeSettings is loaded
+  useEffect(() => {
+    if (storeSettings) {
+      console.log("Customer Display: Store settings loaded:", storeSettings);
+      const newStoreInfo = {
+        name: storeSettings.storeName || "EDPOS Store",
+        address: storeSettings.address || "",
+        phone: storeSettings.phone || "",
+        taxId: storeSettings.taxId || "",
+      };
+      console.log("Customer Display: Setting store info to:", newStoreInfo);
+      setStoreInfo(newStoreInfo);
+    }
+  }, [storeSettings]);
+
 
   // WebSocket connection to receive real-time updates
   useEffect(() => {
@@ -100,15 +135,15 @@ export default function CustomerDisplayPage() {
         ws.onopen = () => {
           console.log("Customer Display: WebSocket connected");
           isConnected = true;
-          
+
           // Send identification as customer display
           try {
-            ws.send(JSON.stringify({ 
+            ws.send(JSON.stringify({
               type: 'customer_display_connected',
               timestamp: new Date().toISOString()
             }));
             console.log("Customer Display: Identification message sent");
-            
+
             // Also register as customer display client for better routing
             setTimeout(() => {
               try {
@@ -122,7 +157,7 @@ export default function CustomerDisplayPage() {
                 console.error("Customer Display: Failed to send registration:", regError);
               }
             }, 100);
-            
+
           } catch (error) {
             console.error("Customer Display: Failed to send identification:", error);
           }
@@ -131,18 +166,18 @@ export default function CustomerDisplayPage() {
         ws.onmessage = (event) => {
           try {
             const data = JSON.parse(event.data);
-            
+
             // Skip duplicate messages based on timestamp and type
             const messageId = `${data.type}-${data.timestamp}`;
             if (data.timestamp && lastMessageTimestamp === messageId) {
               console.log("Customer Display: ⏭️ Skipping duplicate message:", data.type);
               return;
             }
-            
+
             if (data.timestamp) {
               setLastMessageTimestamp(messageId);
             }
-            
+
             console.log("Customer Display: Received WebSocket message:", {
               type: data.type,
               hasCart: !!data.cart,
@@ -166,21 +201,21 @@ export default function CustomerDisplayPage() {
 
                 // Get the new cart from message
                 const newCart = Array.isArray(data.cart) ? [...data.cart] : [];
-                
+
                 // Update discount if provided
                 if (data.discount !== undefined) {
                   setDiscount(parseFloat(data.discount.toString()) || 0);
                 }
-                
+
                 // SIMPLIFIED: Direct cart update without complex validation cycles
                 setCart(prevCart => {
                   // Prevent unnecessary updates if cart is already the same
-                  if (prevCart.length === newCart.length && 
+                  if (prevCart.length === newCart.length &&
                       JSON.stringify(prevCart) === JSON.stringify(newCart)) {
                     console.log("Customer Display: ⏭️ Skipping duplicate cart update");
                     return prevCart;
                   }
-                  
+
                   console.log("Customer Display: 🔄 Cart update:", {
                     from: prevCart.length,
                     to: newCart.length,
@@ -188,18 +223,18 @@ export default function CustomerDisplayPage() {
                     deletedItemId: data.deletedItemId,
                     discount: data.discount || 0
                   });
-                  
+
                   // If this is an item deletion, ensure the deleted item is not in the new cart
                   if (data.isItemDeletion && data.deletedItemId) {
-                    const cleanCart = newCart.filter(item => 
-                      item.id !== data.deletedItemId && 
+                    const cleanCart = newCart.filter(item =>
+                      item.id !== data.deletedItemId &&
                       item.id !== data.deletedItemId.toString()
                     );
-                    
+
                     console.log(`Customer Display: 🗑️ Item ${data.deletedItemId} removed, final cart: ${cleanCart.length} items`);
                     return cleanCart;
                   }
-                  
+
                   // For non-deletion updates, just use the new cart as-is
                   return newCart;
                 });
@@ -213,7 +248,7 @@ export default function CustomerDisplayPage() {
                 break;
               case 'store_info':
                 console.log("Customer Display: Updating store info:", data.storeInfo);
-                setStoreInfo(data.storeInfo);
+                // setStoreInfo(data.storeInfo);
                 break;
               case 'qr_payment':
                 console.log("🎯 Customer Display: Received QR payment message:", {
@@ -224,29 +259,29 @@ export default function CustomerDisplayPage() {
                   qrCodeUrlLength: data.qrCodeUrl?.length || 0,
                   fullData: data
                 });
-                
+
                 // More flexible QR payment data validation
                 if (data.qrCodeUrl && data.qrCodeUrl.length > 0) {
                   console.log("✅ Customer Display: Valid QR payment data, setting state immediately");
-                  
+
                   const qrPaymentData = {
                     qrCodeUrl: data.qrCodeUrl,
                     amount: Number(data.amount) || 0,
                     paymentMethod: data.paymentMethod || "QR Code",
                     transactionUuid: data.transactionUuid || `QR-${Date.now()}`
                   };
-                  
+
                   console.log("📱 Customer Display: Setting QR payment state:", qrPaymentData);
-                  
+
                   // Force immediate state update for QR payment
                   setQrPayment(qrPaymentData);
-                  
+
                   // Clear cart AFTER setting QR payment to prevent clearing QR state
                   setTimeout(() => {
                     setCart([]);
                     console.log("🧹 Customer Display: Cart cleared after QR payment set");
                   }, 100);
-                  
+
                   console.log("🎉 Customer Display: QR payment state set successfully, QR should display now");
                 } else {
                   console.error("❌ Customer Display: Invalid QR payment data received:", {

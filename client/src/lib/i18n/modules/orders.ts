@@ -3,6 +3,7 @@ import type { OrdersTranslations } from "../types";
 export const ordersTranslations: { [key: string]: OrdersTranslations } = {
   ko: {
     orderManagement: "주문 관리",
+    placeOrder: "주문하기",
     orderList: "주문 목록",
     realTimeOrderStatus: "실시간 주문 현황을 확인하고 관리하세요",
     orderDetails: "주문 상세",
@@ -139,6 +140,7 @@ export const ordersTranslations: { [key: string]: OrdersTranslations } = {
   en: {
     orderManagement: "Order Management",
     orderList: "Order List",
+    placeOrder: "Place Order",
     orderDetails: "Order Details",
     orderNumber: "Order Number",
     orderCode: "Order Code",
@@ -278,6 +280,7 @@ export const ordersTranslations: { [key: string]: OrdersTranslations } = {
     orderManagement: "Danh sách đơn hàng bán",
     orderList: "Danh sách đơn hàng",
     orderDetails: "Chi tiết đơn hàng",
+    placeOrder: "Đặt hàng",
     orderNumber: "Số đơn hàng",
     orderCode: "Số đơn bán",
     orderDate: "Ngày đơn bán",
