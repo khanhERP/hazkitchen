@@ -180,6 +180,7 @@ export const ordersTranslations: { [key: string]: OrdersTranslations } = {
     close: "닫기",
     memo: "메모",
     notesPlaceholder: "메모 입력...",
+    confirmDeleteItem: "\"{itemName}\"을(를) 주문에서 삭제하시겠습니까?",
   },
   en: {
     orderManagement: "Order Management",
@@ -362,6 +363,7 @@ export const ordersTranslations: { [key: string]: OrdersTranslations } = {
     close: "Close",
     memo: "Memo",
     notesPlaceholder: "Enter notes...",
+    confirmDeleteItem: "Are you sure you want to remove \"{itemName}\" from the order?",
   },
   vi: {
     orderManagement: "Danh sách đơn hàng bán",
@@ -457,7 +459,7 @@ export const ordersTranslations: { [key: string]: OrdersTranslations } = {
     updateOrder: "Cập nhật đơn hàng",
     updating: "Đang cập nhật...",
     orderUpdateSuccess: "Cập nhật đơn hàng",
-    orderUpdateSuccessDesc: "Đã thêm món mới vào đơn hàng thành công",
+    orderUpdateSuccessDesc: "Đơn hàng đã được cập nhật thành công",
     updateAndRefresh: "Cập nhật & Làm mới",
     pointsPaymentDialog: {
       title: "Thanh toán bằng điểm",
@@ -545,5 +547,6 @@ export const ordersTranslations: { [key: string]: OrdersTranslations } = {
     close: "Đóng",
     memo: "Ghi chú",
     notesPlaceholder: "Nhập ghi chú...",
+    confirmDeleteItem: "Bạn có chắc chắn muốn xóa \"{itemName}\" khỏi đơn hàng?",
   },
 };

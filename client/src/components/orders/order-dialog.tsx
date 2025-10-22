@@ -8,6 +8,16 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -67,6 +77,8 @@ export function OrderDialog({
   // State for receipt preview
   const [previewReceipt, setPreviewReceipt] = useState<any>(null);
   const [showReceiptPreview, setShowReceiptPreview] = useState(false);
+  const [showDeleteItemDialog, setShowDeleteItemDialog] = useState(false);
+  const [itemToDelete, setItemToDelete] = useState<any>(null);
 
   const { data: products, isLoading: productsLoading } = useQuery({
     queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products"],
@@ -1628,231 +1640,15 @@ export function OrderDialog({
                                   size="sm"
                                   variant="destructive"
                                   onClick={() => {
-                                    if (
-                                      window.confirm(
-                                        `Bạn có chắc chắn muốn xóa "${item.productName}" khỏi đơn hàng?`,
-                                      )
-                                    ) {
-                                      // Remove item from existing items list
-                                      setExistingItems((prev) =>
-                                        prev.filter((_, i) => i !== index),
-                                      );
-
-                                      // Call API to delete the order item
-                                      apiRequest(
-                                        "DELETE",
-                                        `https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/order-items/${item.id}`,
-                                      )
-                                        .then(async () => {
-                                          console.log(
-                                            "🗑️ Order Dialog: Successfully deleted item:",
-                                            item.productName,
-                                          );
-
-                                          toast({
-                                            title: "Xóa món thành công",
-                                            description: `Đã xóa "${item.productName}" khỏi đơn hàng`,
-                                          });
-
-                                          // Recalculate order total if this is an existing order
-                                          if (existingOrder?.id) {
-                                            try {
-                                              console.log(
-                                                "🧮 Order Dialog: Starting order total recalculation for order:",
-                                                existingOrder.id,
-                                              );
-
-                                              // Fetch current order items after deletion
-                                              const response = await apiRequest(
-                                                "GET",
-                                                `https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/order-items/${existingOrder.id}`,
-                                              );
-                                              const remainingItems =
-                                                await response.json();
-
-                                              console.log(
-                                                "📦 Order Dialog: Remaining items after deletion:",
-                                                remainingItems?.length || 0,
-                                              );
-
-                                              // Calculate new total based on remaining items
-                                              let newSubtotal = 0;
-                                              let newTax = 0;
-
-                                              if (
-                                                Array.isArray(remainingItems) &&
-                                                remainingItems.length > 0
-                                              ) {
-                                                remainingItems.forEach(
-                                                  (remainingItem: any) => {
-                                                    const basePrice = Number(
-                                                      remainingItem.unitPrice ||
-                                                        0,
-                                                    );
-                                                    const quantity = Number(
-                                                      remainingItem.quantity ||
-                                                        0,
-                                                    );
-                                                    const product =
-                                                      products?.find(
-                                                        (p: any) =>
-                                                          p.id ===
-                                                          remainingItem.productId,
-                                                      );
-
-                                                    // Calculate subtotal
-                                                    newSubtotal +=
-                                                      basePrice * quantity;
-
-                                                    // Calculate tax using Math.floor((after_tax_price - price) * quantity)
-                                                    if (
-                                                      product?.afterTaxPrice &&
-                                                      product.afterTaxPrice !==
-                                                        null &&
-                                                      product.afterTaxPrice !==
-                                                        ""
-                                                    ) {
-                                                      const afterTaxPrice =
-                                                        parseFloat(
-                                                          product.afterTaxPrice,
-                                                        );
-                                                      const taxPerUnit =
-                                                        afterTaxPrice -
-                                                        basePrice;
-                                                      newTax += Math.floor(
-                                                        taxPerUnit * quantity,
-                                                      );
-                                                    }
-                                                  },
-                                                );
-                                              }
-                                              // If no items left, totals should be 0
-                                              else {
-                                                console.log(
-                                                  "📝 Order Dialog: No items left, setting totals to zero",
-                                                );
-                                                newSubtotal = 0;
-                                                newTax = 0;
-                                              }
-
-                                              const newTotal =
-                                                newSubtotal + newTax;
-
-                                              console.log(
-                                                "💰 Order Dialog: Calculated new totals:",
-                                                {
-                                                  newSubtotal,
-                                                  newTax,
-                                                  newTotal,
-                                                  itemsCount:
-                                                    remainingItems?.length || 0,
-                                                },
-                                              );
-
-                                              // Update order with new totals
-                                              apiRequest(
-                                                "PUT",
-                                                `https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders/${existingOrder.id}`,
-                                                {
-                                                  subtotal:
-                                                    newSubtotal.toString(),
-                                                  tax: newTax.toString(),
-                                                  total: newTotal.toString(),
-                                                },
-                                              ).then(() => {
-                                                console.log(
-                                                  "✅ Order Dialog: Order totals updated successfully",
-                                                );
-
-                                                // Force refresh of all related data to ensure UI updates immediately
-                                                Promise.all([
-                                                  queryClient.invalidateQueries(
-                                                    {
-                                                      queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"],
-                                                    },
-                                                  ),
-                                                  queryClient.invalidateQueries(
-                                                    {
-                                                      queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/tables"],
-                                                    },
-                                                  ),
-                                                  queryClient.invalidateQueries(
-                                                    {
-                                                      queryKey: [
-                                                        "https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/order-items",
-                                                      ],
-                                                    },
-                                                  ),
-                                                  queryClient.invalidateQueries(
-                                                    {
-                                                      queryKey: [
-                                                        "https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/order-items",
-                                                        existingOrder.id,
-                                                      ],
-                                                    },
-                                                  ),
-                                                ]).then(() => {
-                                                  // Force immediate refetch to update table grid display
-                                                  return Promise.all([
-                                                    queryClient.refetchQueries({
-                                                      queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"],
-                                                    }),
-                                                    queryClient.refetchQueries({
-                                                      queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/tables"],
-                                                    }),
-                                                  ]);
-                                                });
-                                              });
-
-                                              console.log(
-                                                "🔄 Order Dialog: All queries refreshed successfully",
-                                              );
-                                            } catch (error) {
-                                              console.error(
-                                                "❌ Order Dialog: Error recalculating order total:",
-                                                error,
-                                              );
-                                              toast({
-                                                title: "Cảnh báo",
-                                                description:
-                                                  "Món đã được xóa nhưng có lỗi khi cập nhật tổng tiền",
-                                                variant: "destructive",
-                                              });
-                                            }
-                                          }
-
-                                          // Invalidate queries to refresh data
-                                          queryClient.invalidateQueries({
-                                            queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/order-items"],
-                                          });
-                                          queryClient.invalidateQueries({
-                                            queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"],
-                                          });
-                                        })
-                                        .catch((error) => {
-                                          console.error(
-                                            "Error deleting order item:",
-                                            error,
-                                          );
-                                          // Restore the item if deletion failed
-                                          setExistingItems((prev) => [
-                                            ...prev.slice(0, index),
-                                            item,
-                                            ...prev.slice(index),
-                                          ]);
-                                          toast({
-                                            title: "Lỗi xóa món",
-                                            description:
-                                              "Không thể xóa món khỏi đơn hàng",
-                                            variant: "destructive",
-                                          });
-                                        });
-                                    }
+                                    setItemToDelete({ item, index });
+                                    setShowDeleteItemDialog(true);
                                   }}
                                   className="h-6 w-6 p-0"
                                 >
                                   <Minus className="w-3 h-3" />
                                 </Button>
+
+                                      
                               </div>
                             </div>
                           </CardContent>
@@ -2400,6 +2196,260 @@ export function OrderDialog({
           isTitle={false}
         />
       )}
+
+      {/* Delete Item Confirmation Dialog */}
+      <AlertDialog open={showDeleteItemDialog} onOpenChange={setShowDeleteItemDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t("common.confirmDelete")}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {(() => {
+                const translation = t("orders.confirmDeleteItem");
+                if (typeof translation === 'string') {
+                  return translation.replace("{itemName}", itemToDelete?.item?.productName || "");
+                }
+                return `Bạn có chắc chắn muốn xóa "${itemToDelete?.item?.productName || ""}" khỏi đơn hàng?`;
+              })()}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => {
+              setShowDeleteItemDialog(false);
+              setItemToDelete(null);
+            }}>
+              {t("common.cancel")}
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={async () => {
+                if (!itemToDelete) return;
+                
+                const { item, index } = itemToDelete;
+                
+                // Remove item from existing items list
+                setExistingItems((prev) =>
+                  prev.filter((_, i) => i !== index),
+                );
+
+                // Call API to delete the order item
+                apiRequest(
+                  "DELETE",
+                  `https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/order-items/${item.id}`,
+                )
+                  .then(async () => {
+                    console.log(
+                      "🗑️ Order Dialog: Successfully deleted item:",
+                      item.productName,
+                    );
+
+                    toast({
+                      title: "Xóa món thành công",
+                      description: `Đã xóa "${item.productName}" khỏi đơn hàng`,
+                    });
+
+                    // Recalculate order total if this is an existing order
+                    if (existingOrder?.id) {
+                      try {
+                        console.log(
+                          "🧮 Order Dialog: Starting order total recalculation for order:",
+                          existingOrder.id,
+                        );
+
+                        // Fetch current order items after deletion
+                        const response = await apiRequest(
+                          "GET",
+                          `https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/order-items/${existingOrder.id}`,
+                        );
+                        const remainingItems =
+                          await response.json();
+
+                        console.log(
+                          "📦 Order Dialog: Remaining items after deletion:",
+                          remainingItems?.length || 0,
+                        );
+
+                        // Calculate new total based on remaining items
+                        let newSubtotal = 0;
+                        let newTax = 0;
+
+                        if (
+                          Array.isArray(remainingItems) &&
+                          remainingItems.length > 0
+                        ) {
+                          remainingItems.forEach(
+                            (remainingItem: any) => {
+                              const basePrice = Number(
+                                remainingItem.unitPrice ||
+                                  0,
+                              );
+                              const quantity = Number(
+                                remainingItem.quantity ||
+                                  0,
+                              );
+                              const product =
+                                products?.find(
+                                  (p: any) =>
+                                    p.id ===
+                                    remainingItem.productId,
+                                );
+
+                              // Calculate subtotal
+                              newSubtotal +=
+                                basePrice * quantity;
+
+                              // Calculate tax using Math.floor((after_tax_price - price) * quantity)
+                              if (
+                                product?.afterTaxPrice &&
+                                product.afterTaxPrice !==
+                                  null &&
+                                product.afterTaxPrice !==
+                                  ""
+                              ) {
+                                const afterTaxPrice =
+                                  parseFloat(
+                                    product.afterTaxPrice,
+                                  );
+                                const taxPerUnit =
+                                  afterTaxPrice -
+                                  basePrice;
+                                newTax += Math.floor(
+                                  taxPerUnit * quantity,
+                                );
+                              }
+                            },
+                          );
+                        }
+                        // If no items left, totals should be 0
+                        else {
+                          console.log(
+                            "📝 Order Dialog: No items left, setting totals to zero",
+                          );
+                          newSubtotal = 0;
+                          newTax = 0;
+                        }
+
+                        const newTotal =
+                          newSubtotal + newTax;
+
+                        console.log(
+                          "💰 Order Dialog: Calculated new totals:",
+                          {
+                            newSubtotal,
+                            newTax,
+                            newTotal,
+                            itemsCount:
+                              remainingItems?.length || 0,
+                          },
+                        );
+
+                        // Update order with new totals
+                        apiRequest(
+                          "PUT",
+                          `https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders/${existingOrder.id}`,
+                          {
+                            subtotal:
+                              newSubtotal.toString(),
+                            tax: newTax.toString(),
+                            total: newTotal.toString(),
+                          },
+                        ).then(() => {
+                          console.log(
+                            "✅ Order Dialog: Order totals updated successfully",
+                          );
+
+                          // Force refresh of all related data to ensure UI updates immediately
+                          Promise.all([
+                            queryClient.invalidateQueries(
+                              {
+                                queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"],
+                              },
+                            ),
+                            queryClient.invalidateQueries(
+                              {
+                                queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/tables"],
+                              },
+                            ),
+                            queryClient.invalidateQueries(
+                              {
+                                queryKey: [
+                                  "https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/order-items",
+                                ],
+                              },
+                            ),
+                            queryClient.invalidateQueries(
+                              {
+                                queryKey: [
+                                  "https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/order-items",
+                                  existingOrder.id,
+                                ],
+                              },
+                            ),
+                          ]).then(() => {
+                            // Force immediate refetch to update table grid display
+                            return Promise.all([
+                              queryClient.refetchQueries({
+                                queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"],
+                              }),
+                              queryClient.refetchQueries({
+                                queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/tables"],
+                              }),
+                            ]);
+                          });
+                        });
+
+                        console.log(
+                          "🔄 Order Dialog: All queries refreshed successfully",
+                        );
+                      } catch (error) {
+                        console.error(
+                          "❌ Order Dialog: Error recalculating order total:",
+                          error,
+                        );
+                        toast({
+                          title: "Cảnh báo",
+                          description:
+                            "Món đã được xóa nhưng có lỗi khi cập nhật tổng tiền",
+                          variant: "destructive",
+                        });
+                      }
+                    }
+
+                    // Invalidate queries to refresh data
+                    queryClient.invalidateQueries({
+                      queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/order-items"],
+                    });
+                    queryClient.invalidateQueries({
+                      queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"],
+                    });
+                  })
+                  .catch((error) => {
+                    console.error(
+                      "Error deleting order item:",
+                      error,
+                    );
+                    // Restore the item if deletion failed
+                    setExistingItems((prev) => [
+                      ...prev.slice(0, index),
+                      item,
+                      ...prev.slice(index),
+                    ]);
+                    toast({
+                      title: "Lỗi xóa món",
+                      description:
+                        "Không thể xóa món khỏi đơn hàng",
+                      variant: "destructive",
+                    });
+                  });
+                
+                setShowDeleteItemDialog(false);
+                setItemToDelete(null);
+              }}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              {t("common.delete")}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Dialog>
   );
 }
