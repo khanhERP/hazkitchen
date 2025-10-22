@@ -1302,7 +1302,7 @@ export function OrderDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="max-w-6xl max-h-[95vh] overflow-hidden flex flex-col">
+      <DialogContent className="max-w-[1400px] max-h-[900px] overflow-hidden flex flex-col">
         <DialogHeader className="flex-shrink-0">
           <DialogTitle className="flex items-center gap-2">
             <ShoppingCart className="w-5 h-5" />
@@ -1441,7 +1441,7 @@ export function OrderDialog({
             </div>
 
             {/* Products Grid */}
-            <div className="grid grid-cols-2 gap-3 overflow-y-auto flex-1 min-h-0 max-h-[500px]">
+            <div className="grid grid-cols-3 gap-3 overflow-y-auto flex-1 min-h-0 max-h-[700px]">
               {filteredProducts.map((product: Product) => (
                 <Card
                   key={product.id}
@@ -1535,7 +1535,7 @@ export function OrderDialog({
             </div>
 
             {/* Scrollable Content Area */}
-            <div className="overflow-y-auto space-y-4 pb-4" style={{ maxHeight: 'calc(100vh - 350px)' }}>
+            <div className="overflow-y-auto space-y-4 pb-4" style={{ maxHeight: '550px' }}>
               {/* Existing Items (Edit Mode Only) */}
               {mode === "edit" && existingItems.length > 0 && (
                 <>
