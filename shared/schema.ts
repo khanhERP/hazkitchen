@@ -25,7 +25,7 @@ export const products = pgTable("products", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
   sku: text("sku").notNull().unique(),
-  price: decimal("price", { precision: 10, scale: 2 }).notNull(),
+  price: decimal("price", { precision: 18, scale: 2 }).notNull(),
   stock: integer("stock").notNull().default(0),
   categoryId: integer("category_id")
     .references(() => categories.id)
@@ -39,7 +39,7 @@ export const products = pgTable("products", {
     .default("0.00"),
   taxRateName: text("tax_rate_name"), // Stores display name like "KCT", "KKKNT", "0%", "8%"
   priceIncludesTax: boolean("price_includes_tax").notNull().default(false),
-  afterTaxPrice: decimal("after_tax_price", { precision: 10, scale: 2 }),
+  afterTaxPrice: decimal("after_tax_price", { precision: 18, scale: 2 }),
   beforeTaxPrice: decimal("before_tax_price", { precision: 18, scale: 2 }),
   floor: varchar("floor", { length: 50 }).default("1"),
   zone: varchar("zone", { length: 50 }).default("A"),

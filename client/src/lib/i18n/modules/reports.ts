@@ -574,6 +574,9 @@ export const reportsTranslations: { [key: string]: ReportsTranslations } = {
     supplierName: "Nhà cung cấp",
     totalValue: "Tổng giá trị",
     debtAmount: "Số tiền nợ",
+    serialNumber: "STT",
+    productName: "Tên sản phẩm",
+    totalMoney: "Tổng tiền",
   },
 
   ko: {
@@ -1120,6 +1123,9 @@ export const reportsTranslations: { [key: string]: ReportsTranslations } = {
     supplierName: "공급업체",
     totalValue: "총 금액",
     debtAmount: "부채 금액",
+    serialNumber: "번호",
+    productName: "제품명",
+    totalMoney: "총액",
   },
 
   en: {
@@ -1669,5 +1675,8 @@ export const reportsTranslations: { [key: string]: ReportsTranslations } = {
     supplierName: "Supplier",
     totalValue: "Total Value",
     debtAmount: "Debt Amount",
+    serialNumber: "No",
+    productName: "Product Name",
+    totalMoney: "Total Amount",
   },
 };

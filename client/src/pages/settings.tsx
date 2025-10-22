@@ -713,7 +713,7 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
       trackInventory: true,
       // Reset added fields
       productType: 1,
-      taxRate: "8",
+      taxRate: "0",
       unit: "Cái",
     });
   };
@@ -909,6 +909,23 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
   };
 
   const handleCreateProduct = async () => {
+    // Convert tax rate for storage - handle all cases consistently
+    let taxRateValue = String(productForm.taxRate || "0");
+    let taxRateName = String(productForm.taxRate || "0");
+
+    if (taxRateValue === "KCT") {
+      taxRateName = "KCT"; // Save exactly "KCT"
+      taxRateValue = "0"; // Store numeric value as 0
+    } else if (taxRateValue === "KKKNT") {
+      taxRateName = "KKKNT"; // Save exactly "KKKNT"
+      taxRateValue = "0"; // Store numeric value as 0
+    } else if (taxRateValue === "0") {
+      taxRateName = "0%"; // Save as "0%" to distinguish from KCT/KKKNT
+      taxRateValue = "0";
+    } else {
+      taxRateName = taxRateValue + "%"; // Save as "5%", "8%", "10%"
+    }
+
     try {
       let finalProductData = {
         ...productForm,
@@ -920,7 +937,8 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
         trackInventory: productForm.trackInventory,
         // Include the new fields
         productType: productForm.productType,
-        taxRate: productForm.taxRate,
+        taxRate: taxRateValue,
+        taxRateName: taxRateName,
         unit: productForm.unit,
       };
 
@@ -982,6 +1000,23 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
   const handleUpdateProduct = async () => {
     if (!editingProduct) return;
 
+    // Convert tax rate for storage - handle all cases consistently
+    let taxRateValue = String(productForm.taxRate || "0");
+    let taxRateName = String(productForm.taxRate || "0");
+
+    if (taxRateValue === "KCT") {
+      taxRateName = "KCT"; // Save exactly "KCT"
+      taxRateValue = "0"; // Store numeric value as 0
+    } else if (taxRateValue === "KKKNT") {
+      taxRateName = "KKKNT"; // Save exactly "KKKNT"
+      taxRateValue = "0"; // Store numeric value as 0
+    } else if (taxRateValue === "0") {
+      taxRateName = "0%"; // Save as "0%" to distinguish from KCT/KKKNT
+      taxRateValue = "0";
+    } else {
+      taxRateName = taxRateValue + "%"; // Save as "5%", "8%", "10%"
+    }
+
     try {
       let finalProductData = {
         ...productForm,
@@ -993,7 +1028,8 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
         trackInventory: productForm.trackInventory,
         // Include the new fields
         productType: productForm.productType,
-        taxRate: productForm.taxRate,
+        taxRate: taxRateValue,
+        taxRateName: taxRateName,
         unit: productForm.unit,
       };
 
@@ -1054,6 +1090,51 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
   };
 
   const handleEditProduct = (product: any) => {
+    let dropdownValue = "0"; // default
+
+    if (product.taxRateName) {
+      const trimmedTaxRateName = product.taxRateName.trim();
+
+      console.log("📋 Edit - Product tax info:", {
+        productId: product.id,
+        taxRateName: trimmedTaxRateName,
+        taxRate: product.taxRate,
+      });
+
+      // Exact mapping based on taxRateName - CRITICAL: Keep KCT and KKKNT separate
+      if (trimmedTaxRateName === "KCT") {
+        dropdownValue = "KCT";
+      } else if (trimmedTaxRateName === "KKKNT") {
+        dropdownValue = "KKKNT";
+      } else if (trimmedTaxRateName === "0%") {
+        dropdownValue = "0";
+      } else if (trimmedTaxRateName === "5%") {
+        dropdownValue = "5";
+      } else if (trimmedTaxRateName === "8%") {
+        dropdownValue = "8";
+      } else if (trimmedTaxRateName === "10%") {
+        dropdownValue = "10";
+      } else {
+        // Fallback: try to parse as percentage
+        const match = trimmedTaxRateName.match(/^(\d+)%$/);
+        if (match) {
+          dropdownValue = match[1];
+        }
+      }
+
+      console.log("📋 Edit - Mapped dropdown value:", dropdownValue);
+    } else if (product.taxRate !== null && product.taxRate !== undefined) {
+      // Fallback for old products without taxRateName (should rarely happen)
+      const taxRateNum = parseFloat(product.taxRate);
+      dropdownValue = taxRateNum.toString();
+
+      console.log("⚠️ Edit - No taxRateName, using taxRate fallback:", {
+        productId: product.id,
+        taxRate: product.taxRate,
+        dropdownValue: dropdownValue,
+      });
+    }
+
     setProductForm({
       name: product.name || "",
       sku: product.sku || "",
@@ -1067,7 +1148,7 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
       selectedImageFile: null,
       trackInventory: product.trackInventory !== false,
       productType: product.productType || 1,
-      taxRate: product.taxRate || "8",
+      taxRate: dropdownValue || "0",
       unit: product.unit || "Cái",
     });
     setEditingProduct(product);
@@ -2646,7 +2727,11 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
                                 {t("customers.totalCustomers")}
                               </p>
                               <p className="text-2xl font-bold text-green-600">
-                                {customersData ? new Intl.NumberFormat("vi-VN").format(customersData.length) : 0}
+                                {customersData
+                                  ? new Intl.NumberFormat("vi-VN").format(
+                                      customersData.length,
+                                    )
+                                  : 0}
                               </p>
                             </div>
                             <UserCheck className="w-8 h-8 text-green-600" />
@@ -2666,7 +2751,7 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
                                   ? new Intl.NumberFormat("vi-VN").format(
                                       customersData.filter(
                                         (c) => c.status === "active",
-                                      ).length
+                                      ).length,
                                     )
                                   : 0}
                               </p>
@@ -2811,7 +2896,9 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
                                     {customer.phone || "-"}
                                   </div>
                                   <div className="text-center">
-                                    {customer.visitCount || 0}
+                                    {new Intl.NumberFormat("vi-VN").format(
+                                      customer.visitCount || 0
+                                    )}
                                   </div>
                                   <div className="text-sm font-medium">
                                     {parseFloat(
@@ -2839,7 +2926,8 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
                                           ? "bg-purple-500"
                                           : customer.membershipLevel === "GOLD"
                                             ? "bg-yellow-500"
-                                            : customer.membershipLevel === "SILVER"
+                                            : customer.membershipLevel ===
+                                                "SILVER"
                                               ? "bg-gray-300 text-black"
                                               : "bg-gray-400"
                                       } text-white`}
@@ -2848,7 +2936,8 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
                                         ? `${t("customers.vip")} (${new Intl.NumberFormat("vi-VN").format(1000000)}₫)`
                                         : customer.membershipLevel === "GOLD"
                                           ? `${t("customers.gold")} (${new Intl.NumberFormat("vi-VN").format(300000)}₫)`
-                                          : customer.membershipLevel === "SILVER"
+                                          : customer.membershipLevel ===
+                                              "SILVER"
                                             ? t("customers.silver")
                                             : customer.membershipLevel}
                                     </Badge>
@@ -2975,13 +3064,11 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
                               </p>
                               <p className="text-2xl font-bold text-purple-600">
                                 {productsData
-                                  ? new Intl.NumberFormat("vi-VN").format(
-                                      productsData.reduce(
-                                        (total: number, product: any) =>
-                                          total + (product.stock || 0),
-                                        0,
-                                      ),
-                                    )
+                                  ? productsData.reduce(
+                                      (total: number, product: any) =>
+                                        total + (product.stock || 0),
+                                      0,
+                                    ).toLocaleString("en-US")
                                   : 0}
                               </p>
                             </div>
@@ -3204,7 +3291,7 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
                                             </td>
                                             <td className="px-4 py-3 text-center">
                                               <div className="text-sm">
-                                                {new Intl.NumberFormat("vi-VN").format(product.stock || 0)}
+                                                {(product.stock || 0).toLocaleString("en-US")}
                                               </div>
                                             </td>
                                             <td className="px-4 py-3 text-center">
@@ -3416,7 +3503,14 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
                                           selectedCategoryFilter === "all" ||
                                           category.id.toString() ===
                                             selectedCategoryFilter;
-                                        return matchesSearch && matchesCategory;
+                                        const checkRequired =
+                                          category.id !== 15 &&
+                                          category.id !== 17;
+                                        return (
+                                          matchesSearch &&
+                                          matchesCategory &&
+                                          checkRequired
+                                        );
                                       })
                                       .map((category: any, index) => {
                                         const productCount = productsData
@@ -4115,7 +4209,7 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
                       <SelectValue placeholder={t("tables.floorPlaceholder")} />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="all">Tất cả</SelectItem>
+                      <SelectItem value="all">{t("common.all")}</SelectItem>
                       <SelectItem value="1">{t("common.floor")} 1</SelectItem>
                       <SelectItem value="2">{t("common.floor")} 2</SelectItem>
                       <SelectItem value="3">{t("common.floor")} 3</SelectItem>
@@ -4198,7 +4292,7 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
                   <div className="space-y-2">
                     <Label htmlFor="taxRate">{t("tables.taxRate")}</Label>
                     <Select
-                      value={productForm.taxRate || "8"}
+                      value={productForm.taxRate || "0"}
                       onValueChange={(value) =>
                         setProductForm((prev) => ({
                           ...prev,

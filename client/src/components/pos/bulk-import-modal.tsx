@@ -162,9 +162,9 @@ export function BulkImportModal({ isOpen, onClose }: BulkImportModalProps) {
             name: row[0]?.toString().trim(),
             sku: row[1]?.toString().trim(),
             price: row[2]?.toString().trim(),
-            taxRate: row[3]?.toString().trim() || "8.00",
-            stock: parseInt(row[4]?.toString()) || 0,
-            categoryId: parseInt(row[5]?.toString()) || 0,
+            taxRate: row[3]?.toString().trim() || "0",
+            stock: Number(row[4]?.toString() || "0"),
+            categoryId: Number(row[5]?.toString() || "0"),
             imageUrl: row[6]?.toString().trim() || "",
           };
 

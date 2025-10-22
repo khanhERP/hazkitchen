@@ -17,9 +17,25 @@ export function Toaster() {
     <ToastProvider>
       {toasts.map(function ({ id, title, description, action, ...props }) {
         // Handle translation for title
-        const translatedTitle = title 
-          ? (typeof title === 'string' && title.includes('.') ? t(title as any) : title)
-          : null;
+        let translatedTitle = title;
+        if (title && typeof title === 'string') {
+          // Check if it's a translation key (contains dot notation)
+          if (title.includes('.') && !title.includes(' ')) {
+            try {
+              const translated = t(title as any);
+              // Only use translation if it's different from the key
+              if (translated && translated !== title) {
+                translatedTitle = translated;
+              }
+            } catch (error) {
+              console.error(`Translation error for title key: ${title}`, error);
+            }
+          }
+          // Replace product update title with generic "Success"
+          else if (title.includes('đã được cập nhật')) {
+            translatedTitle = t('common.success');
+          }
+        }
 
         // Handle translation for description with better error formatting
         let translatedDescription = description;
@@ -47,13 +63,17 @@ export function Toaster() {
             else if (description.includes('Failed to create product')) {
               translatedDescription = 'Không thể tạo sản phẩm. Vui lòng kiểm tra lại thông tin và thử lại.';
             }
+            // Remove product name from update success messages
+            else if (description.includes('đã được cập nhật')) {
+              translatedDescription = t('common.productUpdateSuccessDesc');
+            }
           }
         }
 
         return (
           <Toast key={id} {...props}>
             <div className="grid gap-2">
-              {translatedTitle && (
+              {translatedTitle && translatedTitle !== null && (
                 <ToastTitle className="text-sm font-semibold">
                   {translatedTitle}
                 </ToastTitle>

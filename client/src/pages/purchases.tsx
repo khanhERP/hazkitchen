@@ -372,7 +372,7 @@ export default function PurchasesPage({ onLogout }: PurchasesPageProps) {
                       {t("purchases.supplier")}
                     </label>
                     <Input
-                      placeholder="Nhập tên nhà cung cấp..."
+                      placeholder={t("purchases.supplierPlaceholder")}
                       value={supplierFilter}
                       onChange={(e) => setSupplierFilter(e.target.value)}
                       className="w-full text-sm"
@@ -388,7 +388,7 @@ export default function PurchasesPage({ onLogout }: PurchasesPageProps) {
                     <div className="relative">
                       <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                       <Input
-                        placeholder="Nhập số phiếu nhập..."
+                        placeholder={t("purchases.receiptNumberPlaceholder")}
                         value={poNumberFilter}
                         onChange={(e) => setPoNumberFilter(e.target.value)}
                         className="pl-10 w-full text-sm"

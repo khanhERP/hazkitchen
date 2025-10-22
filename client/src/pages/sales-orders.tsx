@@ -283,6 +283,9 @@ export default function SalesOrders() {
   const [sortField, setSortField] = useState<string | null>(null);
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
 
+  // State for pagination totalPages
+  const [totalPages, setTotalPages] = useState<number>(1);
+
   // Handle column sort
   const handleSort = (field: string) => {
     if (sortField === field) {
@@ -334,7 +337,7 @@ export default function SalesOrders() {
 
   // Query orders by date range - load all orders regardless of salesChannel
   const {
-    data: orders = [],
+    data: ordersData,
     isLoading: ordersLoading,
     error: ordersError,
   } = useQuery({
@@ -350,10 +353,10 @@ export default function SalesOrders() {
         let url;
         if (startDate && endDate) {
           // If both dates are provided, use date range endpoint
-          url = `https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders/date-range/${startDate}/${endDate}?page=${currentPage}&limit=${itemsPerPage}`;
+          url = `https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders/list/date-range/${startDate}/${endDate}?page=${currentPage}&limit=${itemsPerPage}`;
         } else {
           // If no dates provided, fetch all orders
-          url = `https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders?page=${currentPage}&limit=${itemsPerPage}`;
+          url = `https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders/list?page=${currentPage}&limit=${itemsPerPage}`;
         }
 
         const response = await apiRequest("GET", url);
@@ -362,14 +365,23 @@ export default function SalesOrders() {
         }
         let data = await response.json();
 
+        // Update totalPages state from API response
+        if (data && typeof data.totalPages === 'number') {
+          setTotalPages(data.totalPages);
+        } else if (data && data.total) {
+          setTotalPages(Math.ceil(data.total / itemsPerPage));
+        } else {
+          setTotalPages(1);
+        }
+
         // Client-side filtering by date range to ensure correct results
-        if (startDate && endDate && Array.isArray(data)) {
+        if (startDate && endDate && Array.isArray(data?.orders)) {
           const start = new Date(startDate);
           start.setHours(0, 0, 0, 0);
           const end = new Date(endDate);
           end.setHours(23, 59, 59, 999);
 
-          data = data.filter((order: any) => {
+          data.orders = data.orders?.filter((order: any) => {
             const orderDate = new Date(order.createdAt);
             return orderDate >= start && orderDate <= end;
           });
@@ -379,17 +391,23 @@ export default function SalesOrders() {
           url: url,
           dateRange:
             startDate && endDate ? `${startDate} to ${endDate}` : "all",
-          total: data?.length || 0,
+          total: data?.orders?.length || 0,
+          totalPages: data?.totalPages,
           tableOrders:
-            data?.filter((o: any) => o.salesChannel === "table").length || 0,
+            data?.orders?.filter((o: any) => o.salesChannel === "table")
+              .length || 0,
           posOrders:
-            data?.filter((o: any) => o.salesChannel === "pos").length || 0,
+            data?.orders?.filter((o: any) => o.salesChannel === "pos").length ||
+            0,
           onlineOrders:
-            data?.filter((o: any) => o.salesChannel === "online").length || 0,
+            data?.orders?.filter((o: any) => o.salesChannel === "online")
+              .length || 0,
           deliveryOrders:
-            data?.filter((o: any) => o.salesChannel === "delivery").length || 0,
+            data?.orders?.filter((o: any) => o.salesChannel === "delivery")
+              .length || 0,
         });
-        return Array.isArray(data) ? data : [];
+        // Return only the orders array
+        return Array.isArray(data?.orders) ? data.orders : [];
       } catch (error) {
         console.error("Error fetching orders:", error);
         return [];
@@ -403,6 +421,9 @@ export default function SalesOrders() {
     refetchOnWindowFocus: true,
     refetchInterval: false,
   });
+
+  // Alias ordersData to orders for consistency with original code
+  const orders = ordersData;
 
   // Query all products to get tax rates
   const { data: products = [] } = useQuery({
@@ -531,6 +552,7 @@ export default function SalesOrders() {
         tax: updatedOrder.tax,
         total: updatedOrder.total,
         discount: updatedOrder.discount,
+        priceIncludeTax: updatedOrder.priceIncludeTax,
       };
 
       console.log("📝 Update payload:", updatePayload);
@@ -1935,7 +1957,7 @@ export default function SalesOrders() {
           : originalItem?.quantity || 1;
       let unitPrice =
         currentItem.unitPrice !== undefined
-          ? parseFloat(currentItem.unitPrice)
+          ? currentItem.unitPrice
           : parseFloat(originalItem?.unitPrice || "0");
       let productId =
         currentItem.productId !== undefined
@@ -3848,8 +3870,7 @@ export default function SalesOrders() {
                                                               };
                                                             return (
                                                               statusLabels[
-                                                                selectedInvoice
-                                                                  .displayStatus
+                                                                selectedInvoice.displayStatus
                                                               ] ||
                                                               t(
                                                                 "common.serving",
@@ -4069,7 +4090,8 @@ export default function SalesOrders() {
                                                     <div className="text-red-500 mb-4">
                                                       <X className="w-8 h-8 mx-auto mb-2" />
                                                       <p className="font-medium">
-                                                        Lỗi tải dữ liệu sản phẩm
+                                                        Lỗi tải dữ liệu sản
+                                                        phẩm
                                                       </p>
                                                     </div>
                                                     <p className="text-gray-500 mb-4">
@@ -4268,8 +4290,7 @@ export default function SalesOrders() {
                                                                     ) => {
                                                                       const editedItem =
                                                                         editedOrderItems[
-                                                                          item
-                                                                            .id
+                                                                          item.id
                                                                         ] || {};
                                                                       const itPrice =
                                                                         parseFloat(
@@ -4327,8 +4348,7 @@ export default function SalesOrders() {
                                                                               editedOrderItems[
                                                                                 item
                                                                                   .id
-                                                                              ] ||
-                                                                              {};
+                                                                              ] || {};
                                                                             const itPrice =
                                                                               parseFloat(
                                                                                 editedItem.unitPrice !==
@@ -4816,8 +4836,7 @@ export default function SalesOrders() {
                                                                       // Use edited total if available, otherwise calculate from current values
                                                                       const editedItem =
                                                                         editedOrderItems[
-                                                                          item
-                                                                            .id
+                                                                          item.id
                                                                         ] || {};
                                                                       if (
                                                                         editedItem.total !==
@@ -4952,21 +4971,6 @@ export default function SalesOrders() {
                                                           )}
                                                         </span>
                                                       </div>
-                                                      <div className="flex justify-between items-center">
-                                                        <span>
-                                                          {t(
-                                                            "common.subtotalAmount",
-                                                          )}
-                                                          :
-                                                        </span>
-                                                        <span className="font-bold">
-                                                          {formatCurrency(
-                                                            Math.floor(
-                                                              displayTotals.subtotal,
-                                                            ),
-                                                          )}
-                                                        </span>
-                                                      </div>
                                                       {/* Add the new line for pre-tax amount */}
                                                       <div className="flex justify-between">
                                                         <span>
@@ -5053,8 +5057,7 @@ export default function SalesOrders() {
                                                                     ) => {
                                                                       const editedItem =
                                                                         editedOrderItems[
-                                                                          item
-                                                                            .id
+                                                                          item.id
                                                                         ] || {};
                                                                       const unitPrice =
                                                                         parseFloat(
@@ -5510,7 +5513,7 @@ export default function SalesOrders() {
                                                           className="bg-green-600 hover:bg-green-700 text-white"
                                                         >
                                                           <CreditCard className="w-4 h-4 mr-2" />
-                                                          Thanh toán
+                                                          {t("common.pay")}
                                                         </Button>
                                                       )}
 
@@ -5675,7 +5678,7 @@ export default function SalesOrders() {
                   <div className="flex items-center justify-between px-4 py-3 border-t bg-gray-50">
                     <div className="flex items-center gap-2">
                       <span className="text-sm font-medium text-gray-700">
-                        Số hàng mỗi trang:
+                        {t("common.itemsPerPage")}:
                       </span>
                       <select
                         value={itemsPerPage}
@@ -5693,15 +5696,14 @@ export default function SalesOrders() {
                     </div>
 
                     <div className="flex items-center gap-4">
-                      <span className="text-sm font-medium text-gray-700">
-                        Trang {currentPage} /{" "}
-                        {Math.ceil(filteredInvoices.length / itemsPerPage)}
-                      </span>
-                      <div className="flex items-center gap-1">
+                      <p className="text-sm font-medium">
+                        {t("common.page")} {currentPage} / {totalPages || 1}
+                      </p>
+                      <div className="flex items-center space-x-1">
                         <button
                           onClick={() => setCurrentPage(1)}
                           disabled={currentPage === 1}
-                          className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 disabled:pointer-events-none disabled:opacity-50 border border-gray-300 bg-white hover:bg-gray-100 h-8 w-8"
+                          className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-8 w-8"
                           title="Trang đầu"
                         >
                           «
@@ -5711,43 +5713,24 @@ export default function SalesOrders() {
                             setCurrentPage((prev) => Math.max(prev - 1, 1))
                           }
                           disabled={currentPage === 1}
-                          className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 disabled:pointer-events-none disabled:opacity-50 border border-gray-300 bg-white hover:bg-gray-100 h-8 w-8"
+                          className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-8 w-8"
                           title="Trang trước"
                         >
                           ‹
                         </button>
                         <button
                           onClick={() =>
-                            setCurrentPage((prev) =>
-                              Math.min(
-                                prev + 1,
-                                Math.ceil(
-                                  filteredInvoices.length / itemsPerPage,
-                                ),
-                              ),
-                            )
+                            setCurrentPage((prev) => Math.min(prev + 1, totalPages))
                           }
-                          disabled={
-                            currentPage ===
-                            Math.ceil(filteredInvoices.length / itemsPerPage)
-                          }
-                          className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 disabled:pointer-events-none disabled:opacity-50 border border-gray-300 bg-white hover:bg-gray-100 h-8 w-8"
-                          title="Trang sau"
+                          disabled={currentPage === totalPages}
+                          className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-8 w-8"
                         >
                           ›
                         </button>
                         <button
-                          onClick={() =>
-                            setCurrentPage(
-                              Math.ceil(filteredInvoices.length / itemsPerPage),
-                            )
-                          }
-                          disabled={
-                            currentPage ===
-                            Math.ceil(filteredInvoices.length / itemsPerPage)
-                          }
-                          className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 disabled:pointer-events-none disabled:opacity-50 border border-gray-300 bg-white hover:bg-gray-100 h-8 w-8"
-                          title="Trang cuối"
+                          onClick={() => setCurrentPage(totalPages)}
+                          disabled={currentPage === totalPages}
+                          className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-8 w-8"
                         >
                           »
                         </button>
@@ -5804,27 +5787,23 @@ export default function SalesOrders() {
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Hủy đơn hàng bán</AlertDialogTitle>
+            <AlertDialogTitle>{t("orders.bulkCancelTitle")}</AlertDialogTitle>
             <AlertDialogDescription>
-              Bạn có chắc muốn hủy {selectedOrderIds.size} đơn hàng đã chọn
-              không? Hành động này không thể hoàn tác.
+              {t("orders.bulkCancelDescription").replace("{count}", String(selectedOrderIds.size))}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Bỏ qua</AlertDialogCancel>
+            <AlertDialogCancel>{t("orders.bulkCancelCancel")}</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => {
-                if (selectedOrderIds.size > 0) {
-                  bulkCancelOrdersMutation.mutate(
-                    Array.from(selectedOrderIds).map((id) => id.split("-")[1]),
-                  ); // Extract order IDs
-                }
+                const orderIds = Array.from(selectedOrderIds).map((key) => {
+                  const [type, id] = key.split("-");
+                  return id;
+                });
+                bulkCancelOrdersMutation.mutate(orderIds);
               }}
-              className="bg-red-600 hover:bg-red-700"
             >
-              {bulkCancelOrdersMutation.isPending
-                ? "Đang hủy..."
-                : `Hủy ${selectedOrderIds.size} đơn`}
+              {t("orders.bulkCancelConfirm").replace("{count}", String(selectedOrderIds.size))}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -5832,15 +5811,18 @@ export default function SalesOrders() {
       <AlertDialog open={showCancelDialog} onOpenChange={setShowCancelDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Xác nhận hủy đơn hàng</AlertDialogTitle>
+            <AlertDialogTitle>{t("orders.confirmCancelOrderTitle")}</AlertDialogTitle>
             <AlertDialogDescription>
-              Bạn có chắc chắn muốn hủy đơn hàng{" "}
-              {selectedInvoice?.displayNumber} này không? Hành động này không
-              thể hoàn tác.
+              {t("orders.confirmCancelOrderDescription").replace(
+                "{orderNumber}",
+                selectedInvoice?.orderNumber || selectedInvoice?.displayNumber || ""
+              )}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Hủy</AlertDialogCancel>
+            <AlertDialogCancel onClick={() => setShowCancelDialog(false)}>
+              {t("orders.cancel")}
+            </AlertDialogCancel>
             <AlertDialogAction
               onClick={() => {
                 if (selectedInvoice) {
@@ -5848,9 +5830,10 @@ export default function SalesOrders() {
                   cancelOrderMutation.mutate(selectedInvoice.id);
                 }
               }}
+              disabled={cancelOrderMutation.isPending}
               className="bg-red-600 hover:bg-red-700"
             >
-              {cancelOrderMutation.isPending ? "Đang hủy..." : "Xác nhận hủy"}
+              {t("orders.confirmCancelButton")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

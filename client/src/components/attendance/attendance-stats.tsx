@@ -121,7 +121,7 @@ export function AttendanceStats() {
               </CardDescription>
             </div>
             <div className="flex items-center gap-2">
-              <Label htmlFor="month-picker">{t('attendance.selectMonth')}:</Label>
+              <Label htmlFor="month-picker">{t('attendance.selectMonthLabel')}:</Label>
               <Input
                 id="month-picker"
                 type="month"

@@ -241,12 +241,26 @@ export const purchasesTranslations = {
     itemName: "품목명",
     productCodeColumn: "상품 코드",
     itemNameColumn: "품목명",
+    tableColumnNo: "번호",
+    tableColumnProductCode: "제품 코드",
+    tableColumnItemName: "품목명",
+    tableColumnUnit: "단위",
+    tableColumnQuantity: "수량",
+    tableColumnUnitPrice: "단가",
+    tableColumnSubtotal: "소계",
+    tableColumnDiscountPercent: "할인율",
+    tableColumnDiscountAmount: "할인액",
+    tableColumnTotal: "총 금액",
+    tableColumnActions: "작업",
+    tableSummaryTotal: "합계",
 
     // Filter labels
     fromDateLabel: "시작일",
     toDateLabel: "종료일",
     productLabel: "상품",
     generalSearchLabel: "일반 검색",
+    supplierPlaceholder: "공급업체명을 입력하세요...",
+    receiptNumberPlaceholder: "입고 번호를 입력하세요...",
 
     // Form labels
     poNumber: "PO 번호",
@@ -262,6 +276,13 @@ export const purchasesTranslations = {
     deleteSuccess: "개의 구매 입고 전표가 성공적으로 삭제되었습니다",
     deleteFailed: "구매 입고 전표 삭제에 실패했습니다",
 
+    // Payment information
+    isPaid: "결제 완료",
+    isPaidDescription: "입고 전표가 결제된 경우 체크하세요",
+    paymentMethodTitle: "결제 방법",
+    paymentAmount: "결제 금액",
+    totalPayment: "총 결제",
+
     // File attachments for view page
     attachedFilesCount: "첨부 파일",
     noAttachedFiles: "첨부 파일 없음",
@@ -270,6 +291,9 @@ export const purchasesTranslations = {
     notesPlaceholder: "구매 주문 메모를 입력하세요",
     selectProducts: "상품 선택",
     searchProducts: "상품 이름 또는 SKU로 검색",
+    skuSearchPlaceholder: "코드/이름 입력 또는 클릭하여 선택",
+    productNamePlaceholder: "상품명",
+    savePurchaseReceipt: "구매 입고 저장",
   },
 
   en: {
@@ -532,12 +556,26 @@ export const purchasesTranslations = {
     itemName: "Item Name",
     productCodeColumn: "Product Code",
     itemNameColumn: "Item Name",
+    tableColumnNo: "No",
+    tableColumnProductCode: "Product Code",
+    tableColumnItemName: "Item Name",
+    tableColumnUnit: "Unit",
+    tableColumnQuantity: "Quantity",
+    tableColumnUnitPrice: "Unit Price",
+    tableColumnSubtotal: "Subtotal",
+    tableColumnDiscountPercent: "Discount %",
+    tableColumnDiscountAmount: "Discount",
+    tableColumnTotal: "Total Amount",
+    tableColumnActions: "Actions",
+    tableSummaryTotal: "TOTAL",
 
     // Filter labels
     fromDateLabel: "From Date",
     toDateLabel: "To Date",
     productLabel: "Product",
     generalSearchLabel: "General Search",
+    supplierPlaceholder: "Enter supplier name...",
+    receiptNumberPlaceholder: "Enter receipt number...",
 
     // Form labels
     poNumber: "PO Number",
@@ -553,6 +591,13 @@ export const purchasesTranslations = {
     deleteSuccess: "purchase receipts deleted successfully",
     deleteFailed: "Failed to delete purchase receipts",
 
+    // Payment information
+    isPaid: "Paid",
+    isPaidDescription: "Check if the purchase receipt has been paid",
+    paymentMethodTitle: "Payment Method",
+    paymentAmount: "Payment Amount",
+    totalPayment: "Total Payment",
+
     // File attachments for view page
     attachedFilesCount: "Attached Files",
     noAttachedFiles: "No attached files",
@@ -561,6 +606,9 @@ export const purchasesTranslations = {
     notesPlaceholder: "Enter notes for purchase order",
     selectProducts: "Select Products",
     searchProducts: "Search by product name or SKU",
+    skuSearchPlaceholder: "Enter code/name or click to select",
+    productNamePlaceholder: "Product Name",
+    savePurchaseReceipt: "Save Purchase Receipt",
   },
 
   vi: {
@@ -824,12 +872,26 @@ export const purchasesTranslations = {
     itemName: "Tên mặt hàng",
     productCodeColumn: "Mã hàng",
     itemNameColumn: "Tên mặt hàng",
+    tableColumnNo: "STT",
+    tableColumnProductCode: "Mã hàng",
+    tableColumnItemName: "Mặt hàng",
+    tableColumnUnit: "Đơn vị",
+    tableColumnQuantity: "Số lượng",
+    tableColumnUnitPrice: "Đơn giá",
+    tableColumnSubtotal: "Thành tiền",
+    tableColumnDiscountPercent: "% CK",
+    tableColumnDiscountAmount: "Chiết khấu",
+    tableColumnTotal: "Tổng tiền",
+    tableColumnActions: "Hành động",
+    tableSummaryTotal: "TỔNG CỘNG",
 
     // Filter labels
     fromDateLabel: "Từ ngày",
     toDateLabel: "Đến ngày",
     productLabel: "Sản phẩm",
     generalSearchLabel: "Tìm kiếm tổng quát",
+    supplierPlaceholder: "Nhập tên nhà cung cấp...",
+    receiptNumberPlaceholder: "Nhập số phiếu nhập...",
 
     // Form labels
     poNumber: "Số phiếu nhập",
@@ -845,6 +907,13 @@ export const purchasesTranslations = {
     deleteSuccess: "phiếu nhập hàng đã được xóa thành công",
     deleteFailed: "Không thể xóa phiếu nhập hàng",
 
+    // Payment information
+    isPaid: "Đã thanh toán",
+    isPaidDescription: "Đánh dấu nếu phiếu nhập đã được thanh toán",
+    paymentMethodTitle: "Phương thức thanh toán",
+    paymentAmount: "Số tiền",
+    totalPayment: "Tổng thanh toán",
+
     // File attachments for view page
     attachedFilesCount: "Đính kèm tệp",
     noAttachedFiles: "Không có tệp đính kèm",
@@ -853,5 +922,8 @@ export const purchasesTranslations = {
     notesPlaceholder: "Nhập ghi chú cho phiếu nhập",
     selectProducts: "Chọn sản phẩm",
     searchProducts: "Tìm kiếm theo tên hoặc SKU",
+    skuSearchPlaceholder: "Nhập mã/tên SP hoặc click để chọn",
+    productNamePlaceholder: "Tên sản phẩm",
+    savePurchaseReceipt: "Lưu phiếu nhập",
   }
 };

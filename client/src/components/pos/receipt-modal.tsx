@@ -1218,7 +1218,8 @@ export function ReceiptModal({
               }}
             >
               <p className="font-bold mb-0">
-                {t("settings.storeName")}: {storeSettings?.storeName || "Cửa hàng ABC"}
+                {t("settings.storeName")}:{" "}
+                {storeSettings?.storeName || "Cửa hàng ABC"}
               </p>
               <p className="mb-0 font-bold">
                 {t("common.address")}: {storeSettings?.address || ""}
@@ -1255,7 +1256,9 @@ export function ReceiptModal({
             >
               <tbody>
                 <tr>
-                  <td style={{ padding: "2px 0" }}>{t("common.invoiceNumber")}:</td>
+                  <td style={{ padding: "2px 0" }}>
+                    {t("common.invoiceNumber")}:
+                  </td>
                   <td style={{ padding: "2px 0", textAlign: "right" }}>
                     {receipt?.orderNumber || `ORD-${receipt?.id}`}
                   </td>
@@ -1284,14 +1287,15 @@ export function ReceiptModal({
                     {receipt.cashierName || t("common.cashier")}
                   </td>
                 </tr>
-                {storeSettings?.businessType === "laundry" && receipt?.customerPhone && (
-                  <tr>
-                    <td style={{ padding: "2px 0" }}>SĐT khách hàng:</td>
-                    <td style={{ padding: "2px 0", textAlign: "right" }}>
-                      {receipt.customerPhone}
-                    </td>
-                  </tr>
-                )}
+                {storeSettings?.businessType === "laundry" &&
+                  receipt?.customerPhone && (
+                    <tr>
+                      <td style={{ padding: "2px 0" }}>SĐT khách hàng:</td>
+                      <td style={{ padding: "2px 0", textAlign: "right" }}>
+                        {receipt.customerPhone}
+                      </td>
+                    </tr>
+                  )}
               </tbody>
             </table>
 
@@ -1415,7 +1419,9 @@ export function ReceiptModal({
             >
               <tbody>
                 <tr>
-                  <td style={{ padding: "2px 0" }}>{t("common.totalAmount")}:</td>
+                  <td style={{ padding: "2px 0" }}>
+                    {t("common.totalAmount")}:
+                  </td>
                   <td style={{ padding: "2px 0", textAlign: "right" }}>
                     {(() => {
                       const itemsSubtotal = (receipt.items || []).reduce(
@@ -1445,7 +1451,9 @@ export function ReceiptModal({
                     orderDiscount > 0 ? orderDiscount : totalItemDiscount;
                   return totalDiscount > 0 ? (
                     <tr>
-                      <td style={{ padding: "2px 0" }}>{t("common.discount")}:</td>
+                      <td style={{ padding: "2px 0" }}>
+                        {t("common.discount")}:
+                      </td>
                       <td style={{ padding: "2px 0", textAlign: "right" }}>
                         -{Math.floor(totalDiscount).toLocaleString("vi-VN")}
                       </td>
@@ -1458,7 +1466,7 @@ export function ReceiptModal({
                     receipt.priceIncludeTax ??
                     storeSettings?.priceIncludesTax ??
                     false;
-                  
+
                   // Fetch products data to get tax rates if not in receipt items
                   const { data: products } = useQuery({
                     queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products"],
@@ -1475,14 +1483,22 @@ export function ReceiptModal({
                       let taxRate = parseFloat(
                         item.taxRate || item.product?.taxRate || "0",
                       );
-                      
+
                       // If no tax rate found, look it up from products by productId
-                      if (taxRate === 0 && products && Array.isArray(products)) {
+                      if (
+                        taxRate === 0 &&
+                        products &&
+                        Array.isArray(products)
+                      ) {
                         const productId = item.productId || item.id;
-                        const product = products.find((p: any) => p.id === productId);
+                        const product = products.find(
+                          (p: any) => p.id === productId,
+                        );
                         if (product && product.taxRate) {
                           taxRate = parseFloat(product.taxRate);
-                          console.log(`📊 Receipt: Fetched tax rate ${taxRate}% for product ${productId} from products table`);
+                          console.log(
+                            `📊 Receipt: Fetched tax rate ${taxRate}% for product ${productId} from products table`,
+                          );
                         }
                       }
 
@@ -1506,7 +1522,7 @@ export function ReceiptModal({
                           const itemTax = priceIncludeTax
                             ? priceAfterDiscount * (taxRate / (100 + taxRate))
                             : priceAfterDiscount * (taxRate / 100);
-                          groups[taxRate] += itemTax;
+                          groups[taxRate] += Math.round(itemTax);
                         }
                       }
                       return groups;
@@ -1752,7 +1768,7 @@ export function ReceiptModal({
 
             <div className="border-t border-gray-300 pt-3 space-y-1">
               <div className="flex justify-between text-sm">
-                <span>{t("pos.totalAmount")}</span>
+                <span>{t("common.totalAmountSubtotal")}</span>
                 <span>
                   {(() => {
                     // Calculate subtotal as sum of unit price * quantity for all items (before discount)
@@ -1836,8 +1852,9 @@ export function ReceiptModal({
                     const itemFinalAmount = itemSubtotal - itemDiscount;
 
                     // Calculate tax for this item based on its tax rate
-                    const itemTax =
-                      (itemFinalAmount * taxRate) / (100 + taxRate);
+                    const itemTax = Math.round(
+                      (itemFinalAmount * taxRate) / (100 + taxRate),
+                    );
 
                     if (!groups[taxRate]) {
                       groups[taxRate] = 0;

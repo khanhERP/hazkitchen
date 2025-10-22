@@ -264,14 +264,23 @@ export default function PurchaseFormPage({
   });
 
 
-  // Fetch products for selection
+  // Fetch products for selection - only active products, exclude expenses
   const { data: allProducts = [] } = useQuery({
     queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products"],
     select: (data: any[]) =>
-      (data || []).map((product: any) => ({
-        ...product,
-        unitPrice: Number(product.price) || 0,
-      })),
+      (data || [])
+        .filter((product: any) => 
+          product.isActive && 
+          product.productType !== 4 // Exclude expense type products
+        )
+        .map((product: any) => ({
+          id: product.id,
+          name: product.name,
+          sku: product.sku,
+          stock: product.stock,
+          unitPrice: Number(product.price) || 0,
+        })),
+    staleTime: 5 * 60 * 1000, // Cache for 5 minutes
   });
 
   // Filter products based on search
@@ -1429,7 +1438,12 @@ export default function PurchaseFormPage({
     }).format(amount);
   };
 
-  // Show loading screen when fetching existing order
+  // Check if products are loading
+  const { isLoading: isLoadingProducts } = useQuery({
+    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products"],
+  });
+
+  // Show loading screen when fetching existing order or products
   if (Boolean(id) && isLoadingOrder) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-gray-900 dark:to-gray-800">
@@ -1438,6 +1452,22 @@ export default function PurchaseFormPage({
             <div className="text-center">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-600 mx-auto mb-4"></div>
               <p className="text-gray-600">Đang tải thông tin phiếu nhập...</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Show loading for initial product load (only on first mount)
+  if (!Boolean(id) && isLoadingProducts && allProducts.length === 0) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-gray-900 dark:to-gray-800">
+        <div className="container mx-auto px-4 py-6 max-w-6xl">
+          <div className="flex items-center justify-center min-h-[400px]">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-600 mx-auto mb-4"></div>
+              <p className="text-gray-600">Đang tải danh sách sản phẩm...</p>
             </div>
           </div>
         </div>
@@ -1866,9 +1896,9 @@ export default function PurchaseFormPage({
                                 />
                               </FormControl>
                               <div className="space-y-1 leading-none">
-                                <FormLabel>Đã thanh toán</FormLabel>
+                                <FormLabel>{t("purchases.isPaid")}</FormLabel>
                                 <p className="text-sm text-muted-foreground">
-                                  Đánh dấu nếu phiếu nhập đã được thanh toán
+                                  {t("purchases.isPaidDescription")}
                                 </p>
                               </div>
                             </FormItem>
@@ -1917,7 +1947,7 @@ export default function PurchaseFormPage({
                                 <div className="space-y-2">
                                   <div className="grid grid-cols-1 md:grid-cols-2 gap-2 p-2 bg-white rounded border text-xs">
                                     <div className="space-y-1">
-                                      <label className="text-xs font-medium">Phương thức</label>
+                                      <label className="text-xs font-medium">{t("common.paymentMethodLabel")}</label>
                                       {!viewOnly ? (
                                         <Select
                                           value={currentMethod.method || "cash"}
@@ -1952,7 +1982,7 @@ export default function PurchaseFormPage({
                                     </div>
 
                                     <div className="space-y-1">
-                                      <label className="text-xs font-medium">Số tiền</label>
+                                      <label className="text-xs font-medium">{t("purchases.paymentAmount")}</label>
                                       <div className="h-8 px-2 py-1 bg-gray-100 border border-gray-300 rounded flex items-center justify-end">
                                         <span className="font-semibold text-gray-800 text-xs">
                                           {Math.round(itemsTotal).toLocaleString("vi-VN")} ₫
@@ -1964,7 +1994,7 @@ export default function PurchaseFormPage({
                                   {/* Payment status display */}
                                   <div className="space-y-1 mt-2">
                                     <div className="flex justify-between items-center pt-2 border-t">
-                                      <span className="font-semibold text-sm">Tổng thanh toán:</span>
+                                      <span className="font-semibold text-sm">{t("purchases.totalPayment")}:</span>
                                       <span className="text-base font-bold text-gray-900">
                                         {Math.round(itemsTotal).toLocaleString("vi-VN")} ₫
                                       </span>
@@ -2082,7 +2112,7 @@ export default function PurchaseFormPage({
                                     className={`flex items-center justify-between p-3 border rounded-lg cursor-pointer transition-colors ${
                                       index === selectedProductIndex
                                         ? "bg-blue-50 border-blue-500"
-                                        : "hover:bg-gray-50 dark:hover:bg-gray-800"
+                                        : "hover:bg-gray-50"
                                     }`}
                                     onClick={() => handleProductSelect(product)}
                                     data-testid={`product-${product.id}`}
@@ -2122,38 +2152,38 @@ export default function PurchaseFormPage({
                           <TableHeader>
                             <TableRow>
                               <TableHead className="w-12 text-center p-2 font-bold">
-                                No
+                                {t("purchases.tableColumnNo")}
                               </TableHead>
                               <TableHead className="w-32 text-center p-2 font-bold">
-                                {t("purchases.productCode")}
+                                {t("purchases.tableColumnProductCode")}
                               </TableHead>
                               <TableHead className="min-w-[180px] max-w-[250px] p-2 font-bold">
-                                {t("purchases.itemName")}
+                                {t("purchases.tableColumnItemName")}
                               </TableHead>
                               <TableHead className="w-20 text-center p-2 font-bold">
-                                {t("purchases.unit")}
+                                {t("purchases.tableColumnUnit")}
                               </TableHead>
                               <TableHead className="w-24 text-center p-2 font-bold">
-                                {t("purchases.quantity")}
+                                {t("purchases.tableColumnQuantity")}
                               </TableHead>
                               <TableHead className="w-28 text-center p-2 font-bold">
-                                {t("purchases.unitPrice")}
+                                {t("purchases.tableColumnUnitPrice")}
                               </TableHead>
                               <TableHead className="w-28 text-center p-2 font-bold">
-                                {t("purchases.subtotalAmount")}
+                                {t("purchases.tableColumnSubtotal")}
                               </TableHead>
                               <TableHead className="w-20 text-center p-2 font-bold">
-                                {t("purchases.discountPercent")}
+                                {t("purchases.tableColumnDiscountPercent")}
                               </TableHead>
                               <TableHead className="w-28 text-center p-2 font-bold">
-                                {t("purchases.discountAmount")}
+                                {t("purchases.tableColumnDiscountAmount")}
                               </TableHead>
                               <TableHead className="w-32 text-center p-2 font-bold">
-                                {t("purchases.totalAmount")}
+                                {t("purchases.tableColumnTotal")}
                               </TableHead>
                               {!viewOnly && (
                                 <TableHead className="w-20 text-center p-2 font-bold">
-                                  {t("purchases.actions")}
+                                  {t("purchases.tableColumnActions")}
                                 </TableHead>
                               )}
                             </TableRow>
@@ -2341,7 +2371,7 @@ export default function PurchaseFormPage({
                                               }
                                             }
                                           }}
-                                          placeholder="Nhập mã/tên SP hoặc click để chọn"
+                                          placeholder={t("purchases.skuSearchPlaceholder")}
                                           className="w-28 text-center text-sm h-8 border-gray-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 cursor-pointer"
                                           disabled={viewOnly}
                                           data-testid={`input-sku-${index}`}
@@ -2409,7 +2439,7 @@ export default function PurchaseFormPage({
                                           }
                                         }}
                                         className="w-full text-sm h-8 bg-gray-100"
-                                        placeholder="Tên sản phẩm"
+                                        placeholder={t("purchases.productNamePlaceholder")}
                                         readOnly
                                         disabled={viewOnly}
                                       />
@@ -2740,7 +2770,7 @@ export default function PurchaseFormPage({
 
                                     {/* Tên sản phẩm - Placeholder for "TỔNG CỘNG" */}
                                     <TableCell className="p-2 font-bold text-blue-800">
-                                      TỔNG CỘNG
+                                      {t("purchases.tableSummaryTotal")}
                                     </TableCell>
 
                                     {/* Đơn vị tính */}
@@ -2836,7 +2866,7 @@ export default function PurchaseFormPage({
                     ) : (
                       <>
                         <Save className="h-4 w-4 mr-2" />
-                        {isEditMode ? "Cập nhật phiếu nhập" : "Lưu phiếu nhập"}
+                        {isEditMode ? t("purchases.orderUpdated") : t("purchases.savePurchaseReceipt")}
                       </>
                     )}
                   </Button>

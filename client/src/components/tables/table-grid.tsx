@@ -12,6 +12,16 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -99,6 +109,8 @@ export function TableGrid({ onTableSelect, selectedTableId }: TableGridProps) {
   const [activeFloor, setActiveFloor] = useState("1");
   const [isTitle, setIsTitle] = useState(false);
   const [splitOrderOpen, setSplitOrderOpen] = useState(false); // State for split order modal
+  const [showCancelOrderDialog, setShowCancelOrderDialog] = useState(false);
+  const [orderToCancel, setOrderToCancel] = useState<Order | null>(null);
 
   // Listen for print completion event
   useEffect(() => {
@@ -3476,13 +3488,8 @@ export function TableGrid({ onTableSelect, selectedTableId }: TableGridProps) {
                                   size="sm"
                                   variant="outline"
                                   onClick={() => {
-                                    if (
-                                      window.confirm(
-                                        `${t("common.areyouremoteorder")}`,
-                                      )
-                                    ) {
-                                      deleteOrderMutation.mutate(order.id);
-                                    }
+                                    setOrderToCancel(order);
+                                    setShowCancelOrderDialog(true);
                                   }}
                                   className="text-xs bg-red-50 border-red-300 text-red-700 hover:bg-red-100 hover:border-red-400"
                                 >
@@ -3802,15 +3809,15 @@ export function TableGrid({ onTableSelect, selectedTableId }: TableGridProps) {
             {/* Order Summary */}
             {selectedOrder && (
               <div className="p-4 bg-gray-50 rounded-lg">
-                <h4 className="font-medium mb-2">Thông tin đơn hàng</h4>
+                <h4 className="font-medium mb-2">{t("tables.orderInfo")}</h4>
                 <div className="flex justify-between text-sm">
-                  <span>Mã đơn:</span>
+                  <span>{t("tables.orderCode")}:</span>
                   <span className="font-medium">
                     {selectedOrder.orderNumber}
                   </span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span>{t("pos.totalAmount")}</span>
+                  <span>{t("tables.orderAmount")}:</span>
                   <span className="font-medium">
                     {(() => {
                       return Math.floor(
@@ -3824,7 +3831,7 @@ export function TableGrid({ onTableSelect, selectedTableId }: TableGridProps) {
                   Number(selectedOrder.discount) > 0 && (
                     <div className="flex justify-between text-sm">
                       <span className="text-red-600">
-                        {t("reports.discount")}:
+                        {t("tables.orderDiscount")}:
                       </span>
                       <span className="font-medium text-red-600">
                         -
@@ -3836,7 +3843,7 @@ export function TableGrid({ onTableSelect, selectedTableId }: TableGridProps) {
                     </div>
                   )}
                 <div className="flex justify-between text-sm font-bold border-t pt-2 mt-2">
-                  <span>{t("reports.totalMoney")}:</span>
+                  <span>{t("tables.orderTotal")}:</span>
                   <span className="font-bold text-green-600">
                     {Math.floor(
                       Number(selectedOrder.total || 0),
@@ -4283,6 +4290,42 @@ export function TableGrid({ onTableSelect, selectedTableId }: TableGridProps) {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Cancel Order Confirmation Dialog */}
+      <AlertDialog
+        open={showCancelOrderDialog}
+        onOpenChange={setShowCancelOrderDialog}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t("orders.cancelOrder")}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t("common.areyouremoteorder")}
+              {orderToCancel && ` (${orderToCancel.orderNumber})`}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => {
+              setShowCancelOrderDialog(false);
+              setOrderToCancel(null);
+            }}>
+              {t("common.cancel")}
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (orderToCancel) {
+                  deleteOrderMutation.mutate(orderToCancel.id);
+                }
+                setShowCancelOrderDialog(false);
+                setOrderToCancel(null);
+              }}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              {t("orders.cancelOrder")}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Edit Order Dialog */}
       <OrderDialog

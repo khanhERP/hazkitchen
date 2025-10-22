@@ -286,12 +286,11 @@ export function EInvoiceModal({
       console.log("🔥 Available invoice templates:", invoiceTemplates);
 
       // Set default template from available templates
-      const defaultTemplate =
-        invoiceTemplates.find((t: any) => t.isDefault) || invoiceTemplates[0];
+      const defaultTemplate = invoiceTemplates.find((t: any) => t.isDefault);
 
       setFormData({
         invoiceProvider: "EasyInvoice", // Default provider
-        invoiceTemplate: defaultTemplate?.name || "1C25TYY", // Use actual template name
+        invoiceTemplate: defaultTemplate?.name || "", // Use actual template name
         selectedTemplateId: defaultTemplate?.id?.toString() || "",
         taxCode: "0123456789", // Default tax code
         customerName: "Khách hàng lẻ", // Default customer name
@@ -1801,20 +1800,20 @@ export function EInvoiceModal({
       // Dispatch multiple events to ensure all components close
       window.dispatchEvent(
         new CustomEvent("closeAllPopups", {
-          detail: { 
+          detail: {
             source: "einvoice_cancel_button",
             closeAll: true,
-            timestamp: new Date().toISOString() 
+            timestamp: new Date().toISOString(),
           },
         }),
       );
 
       window.dispatchEvent(
         new CustomEvent("einvoiceModalClosed", {
-          detail: { 
-            refreshData: true, 
+          detail: {
+            refreshData: true,
             closeAll: true,
-            timestamp: new Date().toISOString() 
+            timestamp: new Date().toISOString(),
           },
         }),
       );
@@ -1825,8 +1824,10 @@ export function EInvoiceModal({
       const ws = new WebSocket(wsUrl);
 
       ws.onopen = () => {
-        console.log("📡 E-Invoice: Sending close all popups signal via WebSocket");
-        
+        console.log(
+          "📡 E-Invoice: Sending close all popups signal via WebSocket",
+        );
+
         // Send multiple signals to ensure comprehensive cleanup
         ws.send(
           JSON.stringify({
@@ -1848,9 +1849,11 @@ export function EInvoiceModal({
       };
 
       ws.onerror = (error) => {
-        console.error("❌ E-Invoice: WebSocket error when closing popups:", error);
+        console.error(
+          "❌ E-Invoice: WebSocket error when closing popups:",
+          error,
+        );
       };
-
     } catch (error) {
       console.error("❌ Error closing all popups from E-Invoice:", error);
     }

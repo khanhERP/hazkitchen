@@ -1859,7 +1859,7 @@ export function ShoppingCart({
                     </p>
                     {item.taxRate && parseFloat(item.taxRate) > 0 && (
                       <p className="text-xs text-orange-600">
-                        Thuế ({item.taxRate}%):{" "}
+                        {t("common.taxWithRate").replace("{rate}", item.taxRate)}:{" "}
                         {(() => {
                           const unitPrice = parseFloat(item.price);
                           const quantity = item.quantity;

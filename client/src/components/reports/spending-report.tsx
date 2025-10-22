@@ -576,9 +576,9 @@ export function SpendingReport() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="w-20">STT</TableHead>
-                <TableHead>Tên sản phẩm</TableHead>
-                <TableHead className="text-right">Tổng tiền</TableHead>
+                <TableHead className="w-20">{t("reports.serialNumber")}</TableHead>
+                <TableHead>{t("reports.productName")}</TableHead>
+                <TableHead className="text-right">{t("reports.totalMoney")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -597,7 +597,7 @@ export function SpendingReport() {
               ) : (
                 <TableRow>
                   <TableCell colSpan={3} className="text-center text-gray-500">
-                    Không có dữ liệu
+                    {t("reports.noDataAvailable")}
                   </TableCell>
                 </TableRow>
               )}

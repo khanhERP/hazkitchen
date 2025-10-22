@@ -193,7 +193,9 @@ export function ProductManagerModal({
         taxRateName: data.taxRateName,
         price: data.price,
         name: data.name,
-        imageUrl: data.imageUrl ? `Base64 (${data.imageUrl.substring(0, 50)}...)` : "null",
+        imageUrl: data.imageUrl
+          ? `Base64 (${data.imageUrl.substring(0, 50)}...)`
+          : "null",
       });
 
       const response = await fetch(`https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products/${id}`, {
@@ -221,8 +223,8 @@ export function ProductManagerModal({
       queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products/active"] });
 
       toast({
-        title: "✅ Cập nhật thành công",
-        description: `S ��n phẩm "${updatedProduct.name}" đã được cập nhật`,
+        title: `${t("tables.updatedProduct")}`,
+        description: `Sản phẩm "${updatedProduct.name}" đã được cập nhật`,
         duration: 3000,
       });
 
@@ -282,7 +284,7 @@ export function ProductManagerModal({
       productType: 1,
       imageUrl: "",
       trackInventory: true,
-      taxRate: "8", // 8% tax rate as integer
+      taxRate: "0", // 8% tax rate as integer
       priceIncludesTax: false,
       afterTaxPrice: "",
       floor: "all",
@@ -359,13 +361,15 @@ export function ProductManagerModal({
       try {
         console.log("Converting file to Base64...", selectedImageFile.name);
         const base64Image = await convertFileToBase64(selectedImageFile);
-        
+
         // Check estimated Base64 size (will be ~33% larger than original)
         const estimatedSize = base64Image.length;
         const maxBase64Size = 5 * 1024 * 1024; // 5MB for Base64 string
-        
+
         if (estimatedSize > maxBase64Size) {
-          console.error(`Base64 too large: ${(estimatedSize / 1024 / 1024).toFixed(2)}MB`);
+          console.error(
+            `Base64 too large: ${(estimatedSize / 1024 / 1024).toFixed(2)}MB`,
+          );
           toast({
             title: "Lỗi",
             description: `Ảnh sau khi xử lý quá lớn (${(estimatedSize / 1024 / 1024).toFixed(2)}MB). Vui lòng chọn ảnh nhỏ hơn hoặc nén ảnh trước khi tải lên.`,
@@ -374,14 +378,19 @@ export function ProductManagerModal({
           });
           return;
         }
-        
+
         data.imageUrl = base64Image;
-        console.log("File converted successfully, Base64 size:", (estimatedSize / 1024 / 1024).toFixed(2), "MB");
+        console.log(
+          "File converted successfully, Base64 size:",
+          (estimatedSize / 1024 / 1024).toFixed(2),
+          "MB",
+        );
       } catch (error) {
         console.error("File conversion error:", error);
         toast({
           title: "Lỗi",
-          description: "Không thể xử lý file ảnh. Vui lòng thử lại hoặc chọn ảnh khác.",
+          description:
+            "Không thể xử lý file ảnh. Vui lòng thử lại hoặc chọn ảnh khác.",
           variant: "destructive",
         });
         return;
@@ -521,7 +530,7 @@ export function ProductManagerModal({
 
     // IMPORTANT: taxRateName is the source of truth for dropdown selection
     // because KCT, KKKNT, and 0% all have taxRate = 0 in database
-    let dropdownValue = "8"; // default
+    let dropdownValue = "0"; // default
 
     if (product.taxRateName) {
       const trimmedTaxRateName = product.taxRateName.trim();
@@ -618,7 +627,7 @@ export function ProductManagerModal({
       productType: 1,
       imageUrl: "",
       trackInventory: true,
-      taxRate: "8", // 8% tax rate as integer
+      taxRate: "0", // 8% tax rate as integer
       priceIncludesTax: false,
       afterTaxPrice: "",
       floor: "all",
@@ -737,7 +746,7 @@ export function ProductManagerModal({
           productType: 1,
           imageUrl: "",
           trackInventory: true,
-          taxRate: "8", // 8% tax rate as integer
+          taxRate: "0", // 8% tax rate as integer
           priceIncludesTax: false,
           afterTaxPrice: "",
           floor: "all",
@@ -836,7 +845,7 @@ export function ProductManagerModal({
 
                 <div className="flex items-center space-x-2">
                   <Input
-                    placeholder="Tìm kiếm theo tên hoặc mã SKU..."
+                    placeholder={t("common.searchProductPlaceholder")}
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     className="max-w-md"
@@ -956,7 +965,7 @@ export function ProductManagerModal({
                                       : "bg-gray-400 text-white"
                               }`}
                             >
-                              {product.stock}
+                              {product.stock.toLocaleString("en-US")}
                             </span>
                           </td>
                           <td className="py-3 px-4">
@@ -1029,7 +1038,7 @@ export function ProductManagerModal({
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>
-                            {t("tables.sku")} (Tự động tạo nếu để trống)
+                            {t("tables.skuAutoGenerate")}
                           </FormLabel>
                           <div className="flex gap-2">
                             <FormControl>
@@ -1236,7 +1245,7 @@ export function ProductManagerModal({
                                 );
                               }
                             }}
-                            value={field.value?.toString() || "8"}
+                            value={field.value?.toString() || "0"}
                           >
                             <FormControl>
                               <SelectTrigger>
@@ -1266,7 +1275,7 @@ export function ProductManagerModal({
                       name="unit"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Đơn vị tính</FormLabel>
+                          <FormLabel>{t("tables.unitLabel")}</FormLabel>
                           <Select
                             onValueChange={field.onChange}
                             value={field.value || "Cái"}
@@ -1518,10 +1527,11 @@ export function ProductManagerModal({
                                   const file = e.target.files?.[0];
                                   if (file) {
                                     // Validate file type first
-                                    if (!file.type.startsWith('image/')) {
+                                    if (!file.type.startsWith("image/")) {
                                       toast({
                                         title: "Lỗi",
-                                        description: "Vui lòng chọn file ảnh (JPG, PNG, GIF, etc.)",
+                                        description:
+                                          "Vui lòng chọn file ảnh (JPG, PNG, GIF, etc.)",
                                         variant: "destructive",
                                       });
                                       e.target.value = ""; // Reset input

@@ -535,7 +535,7 @@ export function SplitOrderModal({
       <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-2xl font-bold">
-            Tách order - Order {order?.orderNumber || `ORD-${order?.id}`} - Bàn{" "}
+            {t("tables.splitOrderTitle")} - Order {order?.orderNumber || `ORD-${order?.id}`} - {t("tables.tableNumberLabel")}{" "}
             {getTableNumber()}
           </DialogTitle>
         </DialogHeader>
@@ -544,26 +544,26 @@ export function SplitOrderModal({
           {/* Left: Current Order Items */}
           <div className="border rounded-lg p-4">
             <h3 className="font-bold mb-4 text-lg">
-              Order {order?.orderNumber || `ORD-${order?.id}`} - Bàn{" "}
+              Order {order?.orderNumber || `ORD-${order?.id}`} - {t("tables.tableNumberLabel")}{" "}
               {getTableNumber()}
               <span className="ml-2 text-sm text-gray-500">
-                ({getCustomerCount()} người)
+                ({getCustomerCount()} {t("tables.people")})
               </span>
             </h3>
 
             <div className="space-y-2">
               <div className="grid grid-cols-12 gap-2 font-bold text-sm bg-gray-100 p-2 rounded">
-                <div className="col-span-3">Tên món</div>
-                <div className="col-span-1 text-center">SL</div>
+                <div className="col-span-4">{t("tables.dishName")}</div>
+                <div className="col-span-1 text-center">{t("tables.quantity")}</div>
                 <div className="col-span-2 text-right">
-                  {t("pos.totalAmount").replace(":", "")}
+                  {t("tables.amount")}
                 </div>
                 <div className="col-span-2 text-right">
-                  {t("reports.discount")}
+                  {t("tables.discount")}
                 </div>
-                <div className="col-span-2 text-right">{t("reports.tax")}</div>
+                <div className="col-span-1 text-right">{t("tables.tax")}</div>
                 <div className="col-span-2 text-right">
-                  {t("reports.totalMoney")}
+                  {t("tables.totalMoney")}
                 </div>
               </div>
               {currentOrderItems
@@ -619,7 +619,7 @@ export function SplitOrderModal({
                       key={item.id}
                       className="grid grid-cols-12 gap-2 items-center text-sm border-b pb-2"
                     >
-                      <div className="col-span-3">{item.productName}</div>
+                      <div className="col-span-4">{item.productName}</div>
                       <div className="col-span-1 text-center font-semibold text-blue-600">
                         {remainingQty}
                       </div>
@@ -631,7 +631,7 @@ export function SplitOrderModal({
                           ? `-${formatCurrency(itemDiscountForRemaining)} ₫`
                           : "0 ₫"}
                       </div>
-                      <div className="col-span-2 text-right text-green-600">
+                      <div className="col-span-1 text-right text-green-600">
                         {formatCurrency(itemTax)}
                       </div>
                       <div className="col-span-2 text-right font-semibold">
@@ -643,7 +643,7 @@ export function SplitOrderModal({
               {currentOrderItems.filter((item) => item.remainingQuantity > 0)
                 .length === 0 && (
                 <div className="text-center text-gray-400 py-4 text-sm">
-                  Tất cả món đã được tách
+                  {t("tables.allItemsSplit")}
                 </div>
               )}
 
@@ -661,7 +661,7 @@ export function SplitOrderModal({
                 return hasItemsToMove && totalQuantity > 1 ? (
                   <div className="mt-4 p-3 bg-blue-50 rounded border border-blue-200">
                     <div className="text-sm font-semibold text-blue-700 mb-2">
-                      Chọn đơn đích bên phải, sau đó click nút để chuyển món:
+                      {t("tables.splitOrderInstruction")}:
                     </div>
                     <div className="space-y-2">
                       {currentOrderItems
@@ -681,7 +681,7 @@ export function SplitOrderModal({
                               disabled={item.remainingQuantity === 0}
                               className="h-7 px-3"
                             >
-                              Chuyển 1 →
+                              {t("tables.transferOne")}
                             </Button>
                           </div>
                         ))}
@@ -696,9 +696,9 @@ export function SplitOrderModal({
           <div className="space-y-4">
             <div className="flex justify-between items-center">
               <h3 className="font-bold text-lg">
-                Tách mới món thành {newOrders.length} order
+                {t("tables.splitOrderTitle")} {newOrders.length}{t("tables.splitIntoOrders")}
                 <span className="ml-3 text-sm text-gray-600">
-                  (Click vào đơn để chọn đích, sau đó bấm → để đẩy món)
+                  ({t("tables.clickToSelectDestination")})
                 </span>
               </h3>
               {(() => {
@@ -710,7 +710,7 @@ export function SplitOrderModal({
                 return totalQuantity > 1 ? (
                   <Button onClick={addNewOrder} size="sm" className="gap-2">
                     <Plus className="w-4 h-4" />
-                    Thêm order
+                    {t("tables.addOrder")}
                   </Button>
                 ) : null;
               })()}
@@ -738,7 +738,7 @@ export function SplitOrderModal({
                       {newOrder.name}
                       {selectedOrderIndex === orderIdx && (
                         <span className="ml-2 text-xs bg-blue-600 text-white px-2 py-0.5 rounded">
-                          Đang chọn
+                          {t("tables.currentlySelected")}
                         </span>
                       )}
                     </h4>
@@ -765,13 +765,13 @@ export function SplitOrderModal({
 
                   <div className="space-y-1">
                     <div className="grid grid-cols-12 gap-2 text-xs font-semibold bg-blue-100 p-1 rounded">
-                      <div className="col-span-5">Tên món</div>
-                      <div className="col-span-3 text-right">Tổng tiền</div>
-                      <div className="col-span-4 text-center">SL Tách</div>
+                      <div className="col-span-5">{t("tables.dishName")}</div>
+                      <div className="col-span-3 text-right">{t("tables.totalPrice")}</div>
+                      <div className="col-span-4 text-center">{t("tables.splitQuantity")}</div>
                     </div>
                     {newOrder.items.length === 0 ? (
                       <div className="text-center text-gray-400 py-4 text-sm">
-                        Chưa có món nào
+                        {t("tables.noItems")}
                       </div>
                     ) : (
                       <>
@@ -977,14 +977,14 @@ export function SplitOrderModal({
 
         <div className="flex justify-end gap-2 mt-4 pt-4 border-t">
           <Button variant="outline" onClick={onClose}>
-            Hủy bỏ
+            {t("tables.cancelAction")}
           </Button>
           <Button
             onClick={handleSplit}
             disabled={!newOrders.some((o) => o.items.length > 0)}
             className="bg-blue-600 hover:bg-blue-700"
           >
-            Đồng ý
+            {t("tables.confirmAction")}
           </Button>
         </div>
       </DialogContent>

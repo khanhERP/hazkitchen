@@ -790,7 +790,7 @@ export function OrderDialog({
           const priceBeforeTax = Math.round(totalAfterDiscount / (1 + taxRate));
 
           // Tax = total after discount - pre-tax amount
-          itemTax = Math.round(totalAfterDiscount - priceBeforeTax);
+          itemTax = totalAfterDiscount - priceBeforeTax;
         } else {
           // When price doesn't include tax:
           const discountPerUnit = itemDiscountAmount / quantity;
@@ -1308,9 +1308,9 @@ export function OrderDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 flex-1 min-h-0 overflow-hidden">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 flex-1 min-h-0">
           {/* Menu Selection */}
-          <div className="lg:col-span-2 space-y-4 flex flex-col min-h-0">
+          <div className="lg:col-span-2 space-y-4 flex flex-col">
             {/* Customer Info */}
             <Card className="flex-shrink-0">
               <CardContent className="p-4">
@@ -1508,8 +1508,8 @@ export function OrderDialog({
           </div>
 
           {/* Cart */}
-          <div className="flex flex-col min-h-0 h-full">
-            <div className="flex items-center justify-between mb-4 flex-shrink-0">
+          <div className="flex flex-col">
+            <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold">
                 {mode === "edit"
                   ? t("orders.itemsAndNewItems")
@@ -1523,7 +1523,7 @@ export function OrderDialog({
             </div>
 
             {/* Scrollable Content Area */}
-            <div className="flex-1 overflow-y-auto space-y-4 min-h-0">
+            <div className="overflow-y-auto space-y-4 pb-4" style={{ maxHeight: 'calc(100vh - 350px)' }}>
               {/* Existing Items (Edit Mode Only) */}
               {mode === "edit" && existingItems.length > 0 && (
                 <>
@@ -1598,7 +1598,7 @@ export function OrderDialog({
                               <div className="flex items-center gap-2 flex-shrink-0">
                                 <div className="text-right bg-gray-50 px-3 py-2 rounded-lg">
                                   <div className="text-xs text-gray-500 mb-0.5">
-                                    Thành tiền
+                                    {t("orders.itemTotal")}
                                   </div>
                                   <span className="text-sm font-bold text-blue-600">
                                     {(() => {
@@ -1876,7 +1876,7 @@ export function OrderDialog({
                 </div>
               ) : (
                 <div
-                  className={`${mode === "edit" ? "max-h-[300px]" : "max-h-[520px]"} overflow-y-auto space-y-3`}
+                  className={`${mode === "edit" ? "max-h-[400px]" : "max-h-[600px]"} overflow-y-auto space-y-3`}
                 >
                   {cart.map((item) => (
                     <Card key={item.product.id}>
@@ -2102,7 +2102,9 @@ export function OrderDialog({
                           {/* Individual item discount display */}
                           {discount > 0 &&
                             (() => {
-                              const originalPrice = Number(item.product.price);
+                              const originalPrice = Number(
+                                item.product.price,
+                              );
                               const quantity = item.quantity;
                               const itemTotal = originalPrice * quantity;
 
@@ -2127,7 +2129,8 @@ export function OrderDialog({
                               if (totalBeforeDiscount > 0) {
                                 // Calculate proportional discount
                                 itemDiscountAmount = Math.round(
-                                  (discount * itemTotal) / totalBeforeDiscount,
+                                  (discount * itemTotal) /
+                                    totalBeforeDiscount,
                                 );
                               }
 
