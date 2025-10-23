@@ -67,11 +67,14 @@ export function ProductManagerModal({
     categoryId: z.number().min(1, t("tables.categoryRequired")),
     price: z
       .string()
-      .min(1, "Price is required")
       .refine((val) => {
-        const num = parseFloat(val.replace(/\./g, ""));
-        return !isNaN(num) && num > 0 && num < 10000000000; // Max 9,999,999,999 (10 digits)
-      }, "Price must be a valid positive number and less than 10,000,000,000"),
+        // Allow empty string (will be converted to 0)
+        if (!val || val.trim() === "") return true;
+        const cleaned = val.replace(/[^0-9]/g, "");
+        // Allow 0 and above
+        const num = cleaned === "" ? 0 : parseInt(cleaned, 10);
+        return !isNaN(num) && num >= 0 && num < 10000000000;
+      }, "Price must be a valid number (0 or greater) and less than 10,000,000,000"),
     sku: z.string().optional(),
     name: z.string().min(1, t("tables.productNameRequired")),
     productType: z.number().min(1, t("tables.productTypeRequired")),
@@ -86,8 +89,8 @@ export function ProductManagerModal({
         if (!val || val === undefined) return true; // Optional field
         const numVal =
           typeof val === "string" ? parseFloat(val.replace(/\./g, "")) : val;
-        return !isNaN(numVal) && numVal > 0 && numVal < 10000000000;
-      }, "After tax price must be a valid positive number and less than 10,000,000,000"),
+        return !isNaN(numVal) && numVal >= 0 && numVal < 10000000000;
+      }, "After tax price must be a valid number (0 or greater) and less than 10,000,000,000"),
     floor: z.string().optional(),
     zone: z.string().optional(),
   });
@@ -397,18 +400,23 @@ export function ProductManagerModal({
       }
     }
 
-    // Clean and validate price
+    // Clean and validate price - allow 0
     const cleanPrice = data.price.replace(/[^0-9]/g, ""); // Remove all non-numeric characters
-    const priceNum = parseInt(cleanPrice);
+    
+    // Parse price - empty string becomes 0
+    const priceNum = cleanPrice === "" ? 0 : parseInt(cleanPrice, 10);
 
-    if (!cleanPrice || isNaN(priceNum) || priceNum <= 0) {
+    // Price can be 0 or greater (explicitly allow 0)
+    if (isNaN(priceNum) || priceNum < 0) {
       toast({
         title: "Error",
-        description: "Please enter a valid price",
+        description: "Please enter a valid price (0 or greater)",
         variant: "destructive",
       });
       return;
     }
+    
+    console.log("✅ Price validation passed:", { original: data.price, cleaned: cleanPrice, parsed: priceNum });
 
     if (priceNum >= 10000000000) {
       toast({
@@ -464,9 +472,9 @@ export function ProductManagerModal({
       taxRateName: taxRateName, // CRITICAL: Save the display name (KCT, KKKNT, 0%, 5%, 8%, 10%)
       priceIncludesTax: Boolean(data.priceIncludesTax),
       afterTaxPrice:
-        data.afterTaxPrice && data.afterTaxPrice.trim() !== ""
-          ? String(parseInt(data.afterTaxPrice.replace(/[^0-9]/g, "")))
-          : undefined,
+        data.afterTaxPrice && data.afterTaxPrice.toString().trim() !== ""
+          ? String(parseInt(data.afterTaxPrice.toString().replace(/[^0-9]/g, ""), 10) || 0)
+          : "0",
       beforeTaxPrice: undefined, // Let server calculate this
       floor: String(data.floor || "all"), // String as expected by schema
       zone: String(data.zone || "A"), // Add zone field to ensure it's saved
@@ -1156,51 +1164,48 @@ export function ProductManagerModal({
                                 "common.comboValues.pricePlaceholder",
                               )}
                               value={
-                                field.value
+                                field.value !== undefined && field.value !== null && field.value !== ""
                                   ? parseInt(
                                       field.value
                                         .toString()
                                         .replace(/[^0-9]/g, "") || "0",
                                     ).toLocaleString("vi-VN")
-                                  : ""
+                                  : "0"
                               }
                               onChange={(e) => {
                                 const value = e.target.value;
                                 // Only allow numbers
                                 const sanitized = value.replace(/[^0-9]/g, "");
 
-                                // Check if the number would exceed the limit
-                                // Store the raw numeric value as string
-                                field.onChange(sanitized);
+                                // Store the raw numeric value as string (allow empty = 0)
+                                field.onChange(sanitized || "0");
 
                                 // Calculate after tax price from base price
-                                if (sanitized && !isNaN(parseInt(sanitized))) {
-                                  const basePrice = parseInt(sanitized);
-                                  const taxRateValue =
-                                    form.getValues("taxRate") || "0";
+                                const basePrice = sanitized ? parseInt(sanitized) : 0;
+                                const taxRateValue =
+                                  form.getValues("taxRate") || "0";
 
-                                  // Convert KCT/KKKNT to 0 for calculation
-                                  let taxRateNum = 0;
-                                  if (
-                                    taxRateValue === "KCT" ||
-                                    taxRateValue === "KKKNT"
-                                  ) {
-                                    taxRateNum = 0;
-                                  } else {
-                                    taxRateNum = parseFloat(taxRateValue);
-                                  }
-
-                                  // Calculate after tax price: afterTaxPrice = basePrice + (basePrice * taxRate/100)
-                                  const afterTaxPrice = Math.round(
-                                    basePrice + (basePrice * taxRateNum) / 100,
-                                  );
-
-                                  // Update the after tax price field
-                                  form.setValue(
-                                    "afterTaxPrice",
-                                    afterTaxPrice.toString(),
-                                  );
+                                // Convert KCT/KKKNT to 0 for calculation
+                                let taxRateNum = 0;
+                                if (
+                                  taxRateValue === "KCT" ||
+                                  taxRateValue === "KKKNT"
+                                ) {
+                                  taxRateNum = 0;
+                                } else {
+                                  taxRateNum = parseFloat(taxRateValue);
                                 }
+
+                                // Calculate after tax price: afterTaxPrice = basePrice + (basePrice * taxRate/100)
+                                const afterTaxPrice = Math.round(
+                                  basePrice + (basePrice * taxRateNum) / 100,
+                                );
+
+                                // Update the after tax price field
+                                form.setValue(
+                                  "afterTaxPrice",
+                                  afterTaxPrice.toString(),
+                                );
                               }}
                             />
                           </FormControl>
@@ -1378,9 +1383,6 @@ export function ProductManagerModal({
                               </SelectItem>
                               <SelectItem value="10">
                                 {t("common.floor")} 10
-                              </SelectItem>
-                              <SelectItem value="10">
-                                {t("common.all")}
                               </SelectItem>
                             </SelectContent>
                           </Select>

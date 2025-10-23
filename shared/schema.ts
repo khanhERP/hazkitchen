@@ -315,18 +315,17 @@ export const insertProductSchema = createInsertSchema(products)
       (val) => {
         if (!val || val === null || val === undefined) return true;
         const numVal = typeof val === "string" ? parseFloat(val) : val;
-        if (isNaN(numVal) || numVal <= 0) {
-          throw new Error("Price must be a positive number");
+        // Allow 0 and above - explicitly allow 0
+        if (isNaN(numVal) || numVal < 0) {
+          return false;
         }
         if (numVal >= 100000000000) {
-          throw new Error(
-            "Price must be a positive number less than 100,000,000,000",
-          );
+          return false;
         }
         return true;
       },
       {
-        message: "Price must be a valid positive number",
+        message: "Price must be a valid number (0 or greater) and less than 100,000,000,000",
       },
     ),
     stock: z.number().min(0, "Stock cannot be negative"),
@@ -364,10 +363,10 @@ export const insertProductSchema = createInsertSchema(products)
             typeof val === "string"
               ? parseFloat(val.replace(/[^0-9.-]/g, ""))
               : val;
-          return !isNaN(numVal) && numVal > 0;
+          return !isNaN(numVal) && numVal >= 0;
         },
         {
-          message: "After tax price must be a positive number",
+          message: "After tax price must be a valid number (0 or greater)",
         },
       ),
     beforeTaxPrice: z

@@ -1647,8 +1647,6 @@ export function OrderDialog({
                                 >
                                   <Minus className="w-3 h-3" />
                                 </Button>
-
-                                      
                               </div>
                             </div>
                           </CardContent>
@@ -1896,9 +1894,7 @@ export function OrderDialog({
                           {/* Individual item discount display */}
                           {discount > 0 &&
                             (() => {
-                              const originalPrice = Number(
-                                item.product.price,
-                              );
+                              const originalPrice = Number(item.product.price);
                               const quantity = item.quantity;
                               const itemTotal = originalPrice * quantity;
 
@@ -1923,8 +1919,7 @@ export function OrderDialog({
                               if (totalBeforeDiscount > 0) {
                                 // Calculate proportional discount
                                 itemDiscountAmount = Math.round(
-                                  (discount * itemTotal) /
-                                    totalBeforeDiscount,
+                                  (discount * itemTotal) / totalBeforeDiscount,
                                 );
                               }
 
@@ -2196,43 +2191,46 @@ export function OrderDialog({
       )}
 
       {/* Delete Item Confirmation Dialog */}
-      <AlertDialog open={showDeleteItemDialog} onOpenChange={setShowDeleteItemDialog}>
+      <AlertDialog
+        open={showDeleteItemDialog}
+        onOpenChange={setShowDeleteItemDialog}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>{t("common.confirmDelete")}</AlertDialogTitle>
             <AlertDialogDescription>
               {(() => {
                 const translation = t("orders.confirmDeleteItem");
-                if (typeof translation === 'string') {
-                  return translation.replace("{itemName}", itemToDelete?.item?.productName || "");
+                if (typeof translation === "string") {
+                  return translation.replace(
+                    "{itemName}",
+                    itemToDelete?.item?.productName || "",
+                  );
                 }
                 return `Bạn có chắc chắn muốn xóa "${itemToDelete?.item?.productName || ""}" khỏi đơn hàng?`;
               })()}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => {
-              setShowDeleteItemDialog(false);
-              setItemToDelete(null);
-            }}>
+            <AlertDialogCancel
+              onClick={() => {
+                setShowDeleteItemDialog(false);
+                setItemToDelete(null);
+              }}
+            >
               {t("common.cancel")}
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={async () => {
                 if (!itemToDelete) return;
-                
+
                 const { item, index } = itemToDelete;
-                
+
                 // Remove item from existing items list
-                setExistingItems((prev) =>
-                  prev.filter((_, i) => i !== index),
-                );
+                setExistingItems((prev) => prev.filter((_, i) => i !== index));
 
                 // Call API to delete the order item
-                apiRequest(
-                  "DELETE",
-                  `https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/order-items/${item.id}`,
-                )
+                apiRequest("DELETE", `https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/order-items/${item.id}`)
                   .then(async () => {
                     console.log(
                       "🗑️ Order Dialog: Successfully deleted item:",
@@ -2257,8 +2255,7 @@ export function OrderDialog({
                           "GET",
                           `https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/order-items/${existingOrder.id}`,
                         );
-                        const remainingItems =
-                          await response.json();
+                        const remainingItems = await response.json();
 
                         console.log(
                           "📦 Order Dialog: Remaining items after deletion:",
@@ -2273,48 +2270,33 @@ export function OrderDialog({
                           Array.isArray(remainingItems) &&
                           remainingItems.length > 0
                         ) {
-                          remainingItems.forEach(
-                            (remainingItem: any) => {
-                              const basePrice = Number(
-                                remainingItem.unitPrice ||
-                                  0,
-                              );
-                              const quantity = Number(
-                                remainingItem.quantity ||
-                                  0,
-                              );
-                              const product =
-                                products?.find(
-                                  (p: any) =>
-                                    p.id ===
-                                    remainingItem.productId,
-                                );
+                          remainingItems.forEach((remainingItem: any) => {
+                            const basePrice = Number(
+                              remainingItem.unitPrice || 0,
+                            );
+                            const quantity = Number(
+                              remainingItem.quantity || 0,
+                            );
+                            const product = products?.find(
+                              (p: any) => p.id === remainingItem.productId,
+                            );
 
-                              // Calculate subtotal
-                              newSubtotal +=
-                                basePrice * quantity;
+                            // Calculate subtotal
+                            newSubtotal += basePrice * quantity;
 
-                              // Calculate tax using Math.floor((after_tax_price - price) * quantity)
-                              if (
-                                product?.afterTaxPrice &&
-                                product.afterTaxPrice !==
-                                  null &&
-                                product.afterTaxPrice !==
-                                  ""
-                              ) {
-                                const afterTaxPrice =
-                                  parseFloat(
-                                    product.afterTaxPrice,
-                                  );
-                                const taxPerUnit =
-                                  afterTaxPrice -
-                                  basePrice;
-                                newTax += Math.floor(
-                                  taxPerUnit * quantity,
-                                );
-                              }
-                            },
-                          );
+                            // Calculate tax using Math.floor((after_tax_price - price) * quantity)
+                            if (
+                              product?.afterTaxPrice &&
+                              product.afterTaxPrice !== null &&
+                              product.afterTaxPrice !== ""
+                            ) {
+                              const afterTaxPrice = parseFloat(
+                                product.afterTaxPrice,
+                              );
+                              const taxPerUnit = afterTaxPrice - basePrice;
+                              newTax += Math.floor(taxPerUnit * quantity);
+                            }
+                          });
                         }
                         // If no items left, totals should be 0
                         else {
@@ -2325,62 +2307,39 @@ export function OrderDialog({
                           newTax = 0;
                         }
 
-                        const newTotal =
-                          newSubtotal + newTax;
+                        const newTotal = newSubtotal + newTax;
 
-                        console.log(
-                          "💰 Order Dialog: Calculated new totals:",
-                          {
-                            newSubtotal,
-                            newTax,
-                            newTotal,
-                            itemsCount:
-                              remainingItems?.length || 0,
-                          },
-                        );
+                        console.log("💰 Order Dialog: Calculated new totals:", {
+                          newSubtotal,
+                          newTax,
+                          newTotal,
+                          itemsCount: remainingItems?.length || 0,
+                        });
 
                         // Update order with new totals
-                        apiRequest(
-                          "PUT",
-                          `https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders/${existingOrder.id}`,
-                          {
-                            subtotal:
-                              newSubtotal.toString(),
-                            tax: newTax.toString(),
-                            total: newTotal.toString(),
-                          },
-                        ).then(() => {
+                        apiRequest("PUT", `https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders/${existingOrder.id}`, {
+                          subtotal: newSubtotal.toString(),
+                          tax: newTax.toString(),
+                          total: newTotal.toString(),
+                        }).then(() => {
                           console.log(
                             "✅ Order Dialog: Order totals updated successfully",
                           );
 
                           // Force refresh of all related data to ensure UI updates immediately
                           Promise.all([
-                            queryClient.invalidateQueries(
-                              {
-                                queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"],
-                              },
-                            ),
-                            queryClient.invalidateQueries(
-                              {
-                                queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/tables"],
-                              },
-                            ),
-                            queryClient.invalidateQueries(
-                              {
-                                queryKey: [
-                                  "https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/order-items",
-                                ],
-                              },
-                            ),
-                            queryClient.invalidateQueries(
-                              {
-                                queryKey: [
-                                  "https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/order-items",
-                                  existingOrder.id,
-                                ],
-                              },
-                            ),
+                            queryClient.invalidateQueries({
+                              queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"],
+                            }),
+                            queryClient.invalidateQueries({
+                              queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/tables"],
+                            }),
+                            queryClient.invalidateQueries({
+                              queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/order-items"],
+                            }),
+                            queryClient.invalidateQueries({
+                              queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/order-items", existingOrder.id],
+                            }),
                           ]).then(() => {
                             // Force immediate refetch to update table grid display
                             return Promise.all([
@@ -2420,10 +2379,7 @@ export function OrderDialog({
                     });
                   })
                   .catch((error) => {
-                    console.error(
-                      "Error deleting order item:",
-                      error,
-                    );
+                    console.error("Error deleting order item:", error);
                     // Restore the item if deletion failed
                     setExistingItems((prev) => [
                       ...prev.slice(0, index),
@@ -2432,12 +2388,11 @@ export function OrderDialog({
                     ]);
                     toast({
                       title: "Lỗi xóa món",
-                      description:
-                        "Không thể xóa món khỏi đơn hàng",
+                      description: "Không thể xóa món khỏi đơn hàng",
                       variant: "destructive",
                     });
                   });
-                
+
                 setShowDeleteItemDialog(false);
                 setItemToDelete(null);
               }}
