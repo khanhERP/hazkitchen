@@ -534,21 +534,24 @@ export function OrderDialog({
     : [];
 
   const addToCart = (product: Product) => {
-    // Check if product is out of stock
-    if (product.stock <= 0) {
-      toast({
-        title: t("common.error"),
-        description: `${product.name} đã hết hàng`,
-        variant: "destructive",
-      });
-      return;
+    // Only check stock for products that track inventory
+    if (product.trackInventory !== false) {
+      // Check if product is out of stock
+      if (product.stock <= 0) {
+        toast({
+          title: t("common.error"),
+          description: `${product.name} đã hết hàng`,
+          variant: "destructive",
+        });
+        return;
+      }
     }
 
     setCart((prev) => {
       const existing = prev.find((item) => item.product.id === product.id);
       if (existing) {
-        // Check if adding one more would exceed stock
-        if (existing.quantity >= product.stock) {
+        // Only check stock limit for products that track inventory
+        if (product.trackInventory !== false && existing.quantity >= product.stock) {
           toast({
             title: t("common.warning"),
             description: `Chỉ còn ${product.stock} ${product.name} trong kho`,
@@ -1446,7 +1449,7 @@ export function OrderDialog({
                 <Card
                   key={product.id}
                   className={`transition-shadow ${
-                    Number(product.stock) > 0
+                    product.trackInventory === false || Number(product.stock) > 0
                       ? "cursor-pointer hover:shadow-md"
                       : "cursor-not-allowed opacity-60"
                   }`}
@@ -1454,7 +1457,7 @@ export function OrderDialog({
                   <CardContent
                     className="p-3"
                     onClick={() =>
-                      Number(product.stock) > 0 && addToCart(product)
+                      (product.trackInventory === false || Number(product.stock) > 0) && addToCart(product)
                     }
                   >
                     <div className="space-y-2">
@@ -1466,7 +1469,7 @@ export function OrderDialog({
                         <div className="flex flex-col">
                           <span
                             className={`font-bold ${
-                              Number(product.stock) > 0
+                              product.trackInventory === false || Number(product.stock) > 0
                                 ? "text-blue-600"
                                 : "text-gray-400"
                             }`}
@@ -1495,19 +1498,25 @@ export function OrderDialog({
                             </span>
                           )}
                         </div>
-                        <Badge
-                          variant={
-                            Number(product.stock) > 0
-                              ? "default"
-                              : "destructive"
-                          }
-                        >
-                          {Number(product.stock) > 0
-                            ? `${t("tables.stockCount")} ${product.stock}`
-                            : "Hết hàng"}
-                        </Badge>
+                        {product.trackInventory !== false ? (
+                          <Badge
+                            variant={
+                              Number(product.stock) > 0
+                                ? "default"
+                                : "destructive"
+                            }
+                          >
+                            {Number(product.stock) > 0
+                              ? `${t("tables.stockCount")} ${product.stock}`
+                              : "Hết hàng"}
+                          </Badge>
+                        ) : (
+                          <Badge variant="outline" className="text-green-600 border-green-600">
+                            Sẵn sàng
+                          </Badge>
+                        )}
                       </div>
-                      {Number(product.stock) === 0 && (
+                      {product.trackInventory !== false && Number(product.stock) === 0 && (
                         <div className="text-xs text-red-500 font-medium">
                           Sản phẩm hiện đang hết hàng
                         </div>

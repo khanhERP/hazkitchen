@@ -66,15 +66,19 @@ export function ProductManagerModal({
   const productFormSchema = insertProductSchema.extend({
     categoryId: z.number().min(1, t("tables.categoryRequired")),
     price: z
-      .string()
+      .union([z.string(), z.number()])
+      .transform((val) => {
+        // Convert to string first
+        const strVal = String(val || "0");
+        // Remove all formatting
+        const cleaned = strVal.replace(/[^0-9]/g, "");
+        // Return cleaned number string
+        return cleaned || "0";
+      })
       .refine((val) => {
-        // Allow empty string (will be converted to 0)
-        if (!val || val.trim() === "") return true;
-        const cleaned = val.replace(/[^0-9]/g, "");
-        // Allow 0 and above
-        const num = cleaned === "" ? 0 : parseInt(cleaned, 10);
+        const num = parseInt(val, 10);
         return !isNaN(num) && num >= 0 && num < 10000000000;
-      }, "Price must be a valid number (0 or greater) and less than 10,000,000,000"),
+      }, t("tables.priceValidation") || "Price must be a valid number (0 or greater) and less than 10,000,000,000"),
     sku: z.string().optional(),
     name: z.string().min(1, t("tables.productNameRequired")),
     productType: z.number().min(1, t("tables.productTypeRequired")),
@@ -85,11 +89,15 @@ export function ProductManagerModal({
     afterTaxPrice: z
       .union([z.string(), z.number(), z.undefined()])
       .optional()
+      .transform((val) => {
+        if (!val || val === undefined) return "0";
+        const strVal = String(val);
+        const cleaned = strVal.replace(/[^0-9]/g, "");
+        return cleaned || "0";
+      })
       .refine((val) => {
-        if (!val || val === undefined) return true; // Optional field
-        const numVal =
-          typeof val === "string" ? parseFloat(val.replace(/\./g, "")) : val;
-        return !isNaN(numVal) && numVal >= 0 && numVal < 10000000000;
+        const num = parseInt(val, 10);
+        return !isNaN(num) && num >= 0 && num < 10000000000;
       }, "After tax price must be a valid number (0 or greater) and less than 10,000,000,000"),
     floor: z.string().optional(),
     zone: z.string().optional(),
@@ -281,7 +289,7 @@ export function ProductManagerModal({
     defaultValues: {
       name: "",
       sku: "",
-      price: "",
+      price: "0",
       stock: 0,
       categoryId: 0,
       productType: 1,
@@ -289,7 +297,7 @@ export function ProductManagerModal({
       trackInventory: true,
       taxRate: "0", // 8% tax rate as integer
       priceIncludesTax: false,
-      afterTaxPrice: "",
+      afterTaxPrice: "0",
       floor: "all",
       zone: "A",
       unit: "Cái",
@@ -400,32 +408,10 @@ export function ProductManagerModal({
       }
     }
 
-    // Clean and validate price - allow 0
-    const cleanPrice = data.price.replace(/[^0-9]/g, ""); // Remove all non-numeric characters
+    // Price is already validated and cleaned by schema
+    const priceNum = parseInt(data.price, 10);
     
-    // Parse price - empty string becomes 0
-    const priceNum = cleanPrice === "" ? 0 : parseInt(cleanPrice, 10);
-
-    // Price can be 0 or greater (explicitly allow 0)
-    if (isNaN(priceNum) || priceNum < 0) {
-      toast({
-        title: "Error",
-        description: "Please enter a valid price (0 or greater)",
-        variant: "destructive",
-      });
-      return;
-    }
-    
-    console.log("✅ Price validation passed:", { original: data.price, cleaned: cleanPrice, parsed: priceNum });
-
-    if (priceNum >= 10000000000) {
-      toast({
-        title: "Error",
-        description: "Price cannot exceed 9,999,999,999 VND",
-        variant: "destructive",
-      });
-      return;
-    }
+    console.log("✅ Price validation passed:", { original: data.price, parsed: priceNum });
 
     // Convert tax rate for storage - handle all cases consistently
     let taxRateValue = String(data.taxRate || "0");
@@ -629,7 +615,7 @@ export function ProductManagerModal({
     form.reset({
       name: "",
       sku: "",
-      price: "",
+      price: "0",
       stock: 0,
       categoryId: categories.length > 0 ? categories[0].id : 0,
       productType: 1,
@@ -637,7 +623,7 @@ export function ProductManagerModal({
       trackInventory: true,
       taxRate: "0", // 8% tax rate as integer
       priceIncludesTax: false,
-      afterTaxPrice: "",
+      afterTaxPrice: "0",
       floor: "all",
       zone: "A",
       unit: "Cái",
@@ -748,7 +734,7 @@ export function ProductManagerModal({
         form.reset({
           name: "",
           sku: "",
-          price: "",
+          price: "0",
           stock: 0,
           categoryId: 0,
           productType: 1,
@@ -756,7 +742,7 @@ export function ProductManagerModal({
           trackInventory: true,
           taxRate: "0", // 8% tax rate as integer
           priceIncludesTax: false,
-          afterTaxPrice: "",
+          afterTaxPrice: "0",
           floor: "all",
           zone: "A",
           unit: "Cái",
@@ -798,7 +784,7 @@ export function ProductManagerModal({
     form.reset({
       name: "",
       sku: "",
-      price: "",
+      price: "0",
       stock: 0,
       categoryId: 0,
       productType: 1,
@@ -806,7 +792,7 @@ export function ProductManagerModal({
       trackInventory: true,
       taxRate: "0", // 8% tax rate as integer
       priceIncludesTax: false,
-      afterTaxPrice: "",
+      afterTaxPrice: "0",
       floor: "all",
       zone: "A",
       unit: "Cái",
@@ -1287,20 +1273,20 @@ export function ProductManagerModal({
                           >
                             <FormControl>
                               <SelectTrigger>
-                                <SelectValue placeholder="Chọn đơn vị" />
+                                <SelectValue placeholder={t("tables.unitPlaceholder")} />
                               </SelectTrigger>
                             </FormControl>
                             <SelectContent>
-                              <SelectItem value="Cái">Cái</SelectItem>
-                              <SelectItem value="Ly">Ly</SelectItem>
-                              <SelectItem value="Chai">Chai</SelectItem>
-                              <SelectItem value="Lon">Lon</SelectItem>
-                              <SelectItem value="Phần">Phần</SelectItem>
-                              <SelectItem value="Đĩa">Đĩa</SelectItem>
-                              <SelectItem value="Tô">Tô</SelectItem>
-                              <SelectItem value="Kg">Kg</SelectItem>
-                              <SelectItem value="Gói">Gói</SelectItem>
-                              <SelectItem value="Hộp">Hộp</SelectItem>
+                              <SelectItem value="Cái">{t("common.units.piece")}</SelectItem>
+                              <SelectItem value="Ly">{t("common.units.cup")}</SelectItem>
+                              <SelectItem value="Chai">{t("common.units.bottle")}</SelectItem>
+                              <SelectItem value="Lon">{t("common.units.can")}</SelectItem>
+                              <SelectItem value="Phần">{t("common.units.portion")}</SelectItem>
+                              <SelectItem value="Đĩa">{t("common.units.plate")}</SelectItem>
+                              <SelectItem value="Tô">{t("common.units.bowl")}</SelectItem>
+                              <SelectItem value="Kg">{t("common.units.kg")}</SelectItem>
+                              <SelectItem value="Gói">{t("common.units.package")}</SelectItem>
+                              <SelectItem value="Hộp">{t("common.units.box")}</SelectItem>
                             </SelectContent>
                           </Select>
                           <FormMessage />
