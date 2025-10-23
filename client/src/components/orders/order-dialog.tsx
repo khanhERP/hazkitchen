@@ -1441,7 +1441,7 @@ export function OrderDialog({
             </div>
 
             {/* Products Grid */}
-            <div className="grid grid-cols-3 gap-3 overflow-y-auto flex-1 min-h-0 max-h-[700px]">
+            <div className="grid grid-cols-3 gap-3 overflow-y-scroll flex-1 min-h-0 max-h-[700px] pb-8">
               {filteredProducts.map((product: Product) => (
                 <Card
                   key={product.id}
@@ -1520,8 +1520,8 @@ export function OrderDialog({
           </div>
 
           {/* Cart */}
-          <div className="flex flex-col">
-            <div className="flex items-center justify-between mb-4">
+          <div className="flex flex-col min-h-0">
+            <div className="flex items-center justify-between mb-4 flex-shrink-0">
               <h3 className="text-lg font-semibold">
                 {mode === "edit"
                   ? t("orders.itemsAndNewItems")
@@ -1535,15 +1535,15 @@ export function OrderDialog({
             </div>
 
             {/* Scrollable Content Area */}
-            <div className="overflow-y-auto space-y-4 pb-4" style={{ maxHeight: '550px' }}>
+            <div className="flex-1 overflow-y-auto space-y-4 pb-6 min-h-0">
               {/* Existing Items (Edit Mode Only) */}
               {mode === "edit" && existingItems.length > 0 && (
                 <>
                   <div className="space-y-2">
-                    <h4 className="text-sm font-medium text-gray-600">
+                    <h4 className="text-sm font-medium text-gray-600 flex-shrink-0">
                       {t("orders.previouslyOrdered")}
                     </h4>
-                    <div className="max-h-32 overflow-y-auto space-y-2">
+                    <div className="space-y-2">
                       {existingItems.map((item, index) => (
                         <Card key={`existing-${index}`} className="bg-gray-50">
                           <CardContent className="p-3">
@@ -1671,9 +1671,7 @@ export function OrderDialog({
                   <p>{t("tables.noItemsSelected")}</p>
                 </div>
               ) : (
-                <div
-                  className={`${mode === "edit" ? "max-h-[400px]" : "max-h-[600px]"} overflow-y-auto space-y-3`}
-                >
+                <div className="space-y-3">
                   {cart.map((item) => (
                     <Card key={item.product.id}>
                       <CardContent className="p-3">
