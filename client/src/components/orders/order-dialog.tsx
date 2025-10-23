@@ -1441,7 +1441,7 @@ export function OrderDialog({
             </div>
 
             {/* Products Grid */}
-            <div className="grid grid-cols-3 gap-3 overflow-y-scroll flex-1 min-h-0 max-h-[700px] pb-8">
+            <div className="grid grid-cols-3 gap-3 overflow-y-scroll flex-1 min-h-0 max-h-[500px] pb-8">
               {filteredProducts.map((product: Product) => (
                 <Card
                   key={product.id}
