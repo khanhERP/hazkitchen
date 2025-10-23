@@ -42,6 +42,7 @@ export function ReceiptModal({
   const [showPaymentMethodModal, setShowPaymentMethodModal] = useState(false);
   const [hasAutoOpened, setHasAutoOpened] = useState(false);
   const [printers, setPrinters] = useState([]);
+  const [domainName, setDomainName] = useState("");
   const { t } = useTranslation();
   const { toast } = useToast();
 
@@ -123,6 +124,9 @@ export function ReceiptModal({
 
   // Log receipt modal state for debugging - ALWAYS CALL THIS HOOK
   useEffect(() => {
+    const domainConnect = window.location.hostname;
+    setDomainName(domainConnect);
+
     if (isOpen) {
       console.log("=== RECEIPT MODAL RENDERED ===");
       console.log(
@@ -799,7 +803,7 @@ export function ReceiptModal({
             width: 100%;
             max-width: 576px;
             margin: 0 auto;
-            padding: 16px;
+            padding: ${domainName == "0318671828.edpos.vn" ? "52px" : "16px"};
             box-sizing: border-box;
             background: #ffffff;
           }
