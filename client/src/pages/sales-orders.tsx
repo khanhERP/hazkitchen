@@ -36,6 +36,13 @@ import { PrintDialog } from "@/components/pos/print-dialog";
 import { ReceiptModal } from "@/components/pos/receipt-modal";
 import { PaymentMethodModal } from "@/components/pos/payment-method-modal"; // Import PaymentMethodModal
 import { toast } from "@/hooks/use-toast";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface Invoice {
   id: number;
@@ -335,95 +342,80 @@ export default function SalesOrders() {
     gcTime: 0,
   });
 
-  // Query orders by date range - load all orders regardless of salesChannel
+  // Query orders using /api/orders/list with storeCode filter
   const {
-    data: ordersData,
+    data: ordersResponse,
     isLoading: ordersLoading,
     error: ordersError,
   } = useQuery({
     queryKey: [
-      "https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders/date-range",
+      "https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders/list",
       startDate,
       endDate,
+      customerSearch,
+      orderNumberSearch,
+      customerCodeSearch,
+      salesChannelFilter,
+      orderStatusFilter,
+      einvoiceStatusFilter,
       currentPage,
       itemsPerPage,
     ],
     queryFn: async () => {
       try {
-        let url;
-        if (startDate && endDate) {
-          // If both dates are provided, use date range endpoint
-          url = `https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders/list/date-range/${startDate}/${endDate}?page=${currentPage}&limit=${itemsPerPage}`;
-        } else {
-          // If no dates provided, fetch all orders
-          url = `https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders/list?page=${currentPage}&limit=${itemsPerPage}`;
+        const params = new URLSearchParams();
+
+        if (startDate) params.append("startDate", startDate);
+        if (endDate) params.append("endDate", endDate);
+        if (customerSearch) params.append("customerName", customerSearch);
+        if (orderNumberSearch) params.append("orderNumber", orderNumberSearch);
+        if (customerCodeSearch)
+          params.append("customerCode", customerCodeSearch);
+        if (salesChannelFilter && salesChannelFilter !== "all") {
+          params.append("salesChannel", salesChannelFilter);
+        }
+        if (orderStatusFilter && orderStatusFilter !== "all") {
+          params.append("status", orderStatusFilter);
+        }
+        if (einvoiceStatusFilter && einvoiceStatusFilter !== "all") {
+          params.append("einvoiceStatus", einvoiceStatusFilter);
+        }
+        params.append("page", currentPage.toString());
+        if (itemsPerPage) {
+          params.append("limit", itemsPerPage.toString());
         }
 
+        const url = `https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders/list?${params.toString()}`;
         const response = await apiRequest("GET", url);
+
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
-        let data = await response.json();
 
-        // Update totalPages state from API response
-        if (data && typeof data.totalPages === 'number') {
-          setTotalPages(data.totalPages);
-        } else if (data && data.total) {
-          setTotalPages(Math.ceil(data.total / itemsPerPage));
-        } else {
-          setTotalPages(1);
-        }
-
-        // Client-side filtering by date range to ensure correct results
-        if (startDate && endDate && Array.isArray(data?.orders)) {
-          const start = new Date(startDate);
-          start.setHours(0, 0, 0, 0);
-          const end = new Date(endDate);
-          end.setHours(23, 59, 59, 999);
-
-          data.orders = data.orders?.filter((order: any) => {
-            const orderDate = new Date(order.createdAt);
-            return orderDate >= start && orderDate <= end;
-          });
-        }
-
-        console.log("Sales Orders - Filtered orders loaded:", {
+        const data = await response.json();
+        console.log("Sales Orders - Orders loaded with storeCode filter:", {
           url: url,
-          dateRange:
-            startDate && endDate ? `${startDate} to ${endDate}` : "all",
           total: data?.orders?.length || 0,
-          totalPages: data?.totalPages,
-          tableOrders:
-            data?.orders?.filter((o: any) => o.salesChannel === "table")
-              .length || 0,
-          posOrders:
-            data?.orders?.filter((o: any) => o.salesChannel === "pos").length ||
-            0,
-          onlineOrders:
-            data?.orders?.filter((o: any) => o.salesChannel === "online")
-              .length || 0,
-          deliveryOrders:
-            data?.orders?.filter((o: any) => o.salesChannel === "delivery")
-              .length || 0,
+          hasStoreCodeFilter: true,
         });
-        // Return only the orders array
-        return Array.isArray(data?.orders) ? data.orders : [];
+
+        return data;
       } catch (error) {
         console.error("Error fetching orders:", error);
-        return [];
+        return { orders: [], pagination: {} };
       }
     },
     retry: 1,
     retryDelay: 500,
-    staleTime: 0, // No cache - always fresh
-    gcTime: 0, // Don't keep in memory
+    staleTime: 0,
+    gcTime: 0,
     refetchOnMount: true,
     refetchOnWindowFocus: true,
-    refetchInterval: false,
+    refetchInterval: 2000, // Poll every 2 seconds for real-time updates
+    refetchIntervalInBackground: true, // Continue polling in background
   });
 
-  // Alias ordersData to orders for consistency with original code
-  const orders = ordersData;
+  const orders = ordersResponse?.orders || [];
 
   // Query all products to get tax rates
   const { data: products = [] } = useQuery({
@@ -966,7 +958,7 @@ export default function SalesOrders() {
     const statusLabels = {
       draft: "Nháp",
       published: "Đã xuất",
-      cancelled: "Đã hủy",
+      cancelled: "Đã he��y",
       pending: "Chờ xử lý",
       paid: "Đã thanh toán",
     };
@@ -3870,7 +3862,8 @@ export default function SalesOrders() {
                                                               };
                                                             return (
                                                               statusLabels[
-                                                                selectedInvoice.displayStatus
+                                                                selectedInvoice
+                                                                  .displayStatus
                                                               ] ||
                                                               t(
                                                                 "common.serving",
@@ -4090,8 +4083,7 @@ export default function SalesOrders() {
                                                     <div className="text-red-500 mb-4">
                                                       <X className="w-8 h-8 mx-auto mb-2" />
                                                       <p className="font-medium">
-                                                        Lỗi tải dữ liệu sản
-                                                        phẩm
+                                                        Lỗi tải dữ liệu sản phẩm
                                                       </p>
                                                     </div>
                                                     <p className="text-gray-500 mb-4">
@@ -4290,7 +4282,8 @@ export default function SalesOrders() {
                                                                     ) => {
                                                                       const editedItem =
                                                                         editedOrderItems[
-                                                                          item.id
+                                                                          item
+                                                                            .id
                                                                         ] || {};
                                                                       const itPrice =
                                                                         parseFloat(
@@ -4348,7 +4341,8 @@ export default function SalesOrders() {
                                                                               editedOrderItems[
                                                                                 item
                                                                                   .id
-                                                                              ] || {};
+                                                                              ] ||
+                                                                              {};
                                                                             const itPrice =
                                                                               parseFloat(
                                                                                 editedItem.unitPrice !==
@@ -4836,7 +4830,8 @@ export default function SalesOrders() {
                                                                       // Use edited total if available, otherwise calculate from current values
                                                                       const editedItem =
                                                                         editedOrderItems[
-                                                                          item.id
+                                                                          item
+                                                                            .id
                                                                         ] || {};
                                                                       if (
                                                                         editedItem.total !==
@@ -5057,7 +5052,8 @@ export default function SalesOrders() {
                                                                     ) => {
                                                                       const editedItem =
                                                                         editedOrderItems[
-                                                                          item.id
+                                                                          item
+                                                                            .id
                                                                         ] || {};
                                                                       const unitPrice =
                                                                         parseFloat(
@@ -5675,68 +5671,113 @@ export default function SalesOrders() {
                       </tbody>
                     </table>
                   </div>
-                  <div className="flex items-center justify-between px-4 py-3 border-t bg-gray-50">
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-medium text-gray-700">
-                        {t("common.itemsPerPage")}:
-                      </span>
-                      <select
-                        value={itemsPerPage}
-                        onChange={(e) => {
-                          setItemsPerPage(parseInt(e.target.value));
-                          setCurrentPage(1);
-                        }}
-                        className="h-9 px-3 py-1 text-sm border border-gray-300 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      >
-                        <option value={10}>10</option>
-                        <option value={20}>20</option>
-                        <option value={50}>50</option>
-                        <option value={100}>100</option>
-                      </select>
-                    </div>
+                  {/* Pagination Controls */}
+                  {ordersResponse?.pagination &&
+                    ordersResponse.pagination.totalCount > 0 && (
+                      <div className="flex items-center justify-between space-x-6 py-4">
+                        <div className="flex items-center space-x-2">
+                          <p className="text-sm font-medium">
+                            {t("common.show")}
+                          </p>
+                          <Select
+                            value={itemsPerPage.toString()}
+                            onValueChange={(value) => {
+                              setItemsPerPage(Number(value));
+                              setCurrentPage(1);
+                            }}
+                          >
+                            <SelectTrigger className="h-8 w-[70px]">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent side="top">
+                              <SelectItem value="10">10</SelectItem>
+                              <SelectItem value="20">20</SelectItem>
+                              <SelectItem value="30">30</SelectItem>
+                              <SelectItem value="50">50</SelectItem>
+                              <SelectItem value="100">100</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <p className="text-sm font-medium">
+                            {t("common.rows")}
+                          </p>
+                        </div>
 
-                    <div className="flex items-center gap-4">
-                      <p className="text-sm font-medium">
-                        {t("common.page")} {currentPage} / {totalPages || 1}
-                      </p>
-                      <div className="flex items-center space-x-1">
-                        <button
-                          onClick={() => setCurrentPage(1)}
-                          disabled={currentPage === 1}
-                          className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-8 w-8"
-                          title="Trang đầu"
-                        >
-                          «
-                        </button>
-                        <button
-                          onClick={() =>
-                            setCurrentPage((prev) => Math.max(prev - 1, 1))
-                          }
-                          disabled={currentPage === 1}
-                          className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-8 w-8"
-                          title="Trang trước"
-                        >
-                          ‹
-                        </button>
-                        <button
-                          onClick={() =>
-                            setCurrentPage((prev) => Math.min(prev + 1, totalPages))
-                          }
-                          disabled={currentPage === totalPages}
-                          className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-8 w-8"
-                        >
-                          ›
-                        </button>
-                        <button
-                          onClick={() => setCurrentPage(totalPages)}
-                          disabled={currentPage === totalPages}
-                          className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-8 w-8"
-                        >
-                          »
-                        </button>
+                        <div className="flex items-center space-x-2">
+                          <p className="text-sm text-muted-foreground">
+                            {t("common.showing")}{" "}
+                            {(currentPage - 1) * itemsPerPage + 1} -{" "}
+                            {Math.min(
+                              currentPage * itemsPerPage,
+                              ordersResponse.pagination.totalCount,
+                            )}{" "}
+                            {t("common.of")}{" "}
+                            {ordersResponse.pagination.totalCount}
+                          </p>
+                          <div className="flex items-center space-x-1">
+                            <Button
+                              variant="outline"
+                              size="icon"
+                              onClick={() => setCurrentPage(1)}
+                              disabled={!ordersResponse.pagination.hasPrev}
+                              className="h-8 w-8"
+                            >
+                              «
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="icon"
+                              onClick={() =>
+                                setCurrentPage((prev) => Math.max(prev - 1, 1))
+                              }
+                              disabled={!ordersResponse.pagination.hasPrev}
+                              className="h-8 w-8"
+                            >
+                              ‹
+                            </Button>
+                            <div className="flex items-center gap-1 px-2">
+                              <span className="text-sm font-medium">
+                                {currentPage}
+                              </span>
+                              <span className="text-sm text-muted-foreground">
+                                /
+                              </span>
+                              <span className="text-sm text-muted-foreground">
+                                {ordersResponse.pagination.totalPages}
+                              </span>
+                            </div>
+                            <Button
+                              variant="outline"
+                              size="icon"
+                              onClick={() =>
+                                setCurrentPage((prev) =>
+                                  Math.min(
+                                    prev + 1,
+                                    ordersResponse.pagination.totalPages,
+                                  ),
+                                )
+                              }
+                              disabled={!ordersResponse.pagination.hasNext}
+                              className="h-8 w-8"
+                            >
+                              ›
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="icon"
+                              onClick={() =>
+                                setCurrentPage(
+                                  ordersResponse.pagination.totalPages,
+                                )
+                              }
+                              disabled={!ordersResponse.pagination.hasNext}
+                              className="h-8 w-8"
+                            >
+                              »
+                            </Button>
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                  </div>
+                    )}
 
                   <div className="mt-4 border-t bg-blue-50 p-3 rounded text-center">
                     <div className="grid grid-cols-4 gap-4 text-sm">
@@ -5789,11 +5830,16 @@ export default function SalesOrders() {
           <AlertDialogHeader>
             <AlertDialogTitle>{t("orders.bulkCancelTitle")}</AlertDialogTitle>
             <AlertDialogDescription>
-              {t("orders.bulkCancelDescription").replace("{count}", String(selectedOrderIds.size))}
+              {t("orders.bulkCancelDescription").replace(
+                "{count}",
+                String(selectedOrderIds.size),
+              )}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>{t("orders.bulkCancelCancel")}</AlertDialogCancel>
+            <AlertDialogCancel>
+              {t("orders.bulkCancelCancel")}
+            </AlertDialogCancel>
             <AlertDialogAction
               onClick={() => {
                 const orderIds = Array.from(selectedOrderIds).map((key) => {
@@ -5803,7 +5849,10 @@ export default function SalesOrders() {
                 bulkCancelOrdersMutation.mutate(orderIds);
               }}
             >
-              {t("orders.bulkCancelConfirm").replace("{count}", String(selectedOrderIds.size))}
+              {t("orders.bulkCancelConfirm").replace(
+                "{count}",
+                String(selectedOrderIds.size),
+              )}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -5811,11 +5860,15 @@ export default function SalesOrders() {
       <AlertDialog open={showCancelDialog} onOpenChange={setShowCancelDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>{t("orders.confirmCancelOrderTitle")}</AlertDialogTitle>
+            <AlertDialogTitle>
+              {t("orders.confirmCancelOrderTitle")}
+            </AlertDialogTitle>
             <AlertDialogDescription>
               {t("orders.confirmCancelOrderDescription").replace(
                 "{orderNumber}",
-                selectedInvoice?.orderNumber || selectedInvoice?.displayNumber || ""
+                selectedInvoice?.orderNumber ||
+                  selectedInvoice?.displayNumber ||
+                  "",
               )}
             </AlertDialogDescription>
           </AlertDialogHeader>
