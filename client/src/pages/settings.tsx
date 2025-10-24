@@ -256,7 +256,7 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
     zone: "A",
     imageInputMethod: "url" as "url" | "file",
     selectedImageFile: null as File | null,
-    trackInventory: true, // Default to true
+    trackInventory: false, // Default to false (không theo dõi tồn kho)
     // Added fields for product type, tax rate, and unit
     productType: 1, // Default to Goods Type
     taxRate: "8", // Default to 8%
@@ -710,7 +710,7 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
       zone: "A",
       imageInputMethod: "url",
       selectedImageFile: null,
-      trackInventory: true,
+      trackInventory: false,
       // Reset added fields
       productType: 1,
       taxRate: "0",
@@ -4319,7 +4319,7 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="unit">Đơn vị tính</Label>
+                    <Label htmlFor="unit">{t("settings.unitLabel")}</Label>
                     <Select
                       value={productForm.unit || "Cái"}
                       onValueChange={(value) =>

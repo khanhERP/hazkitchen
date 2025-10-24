@@ -289,6 +289,7 @@ export interface SettingsTranslations {
   priceIncludesTax: string;
   priceIncludesTaxDesc: string;
   loginIdLabel: string;
+  unitLabel: string;
 }
 
 // Tables translations interface

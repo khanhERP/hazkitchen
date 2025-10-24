@@ -1305,15 +1305,15 @@ export function OrderDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="max-w-[1400px] max-h-[900px] overflow-hidden flex flex-col">
-        <DialogHeader className="flex-shrink-0">
-          <DialogTitle className="flex items-center gap-2">
-            <ShoppingCart className="w-5 h-5" />
+      <DialogContent className="max-w-[95vw] w-[1200px] max-h-[75vh] p-0 overflow-hidden flex flex-col">
+        <DialogHeader className="flex-shrink-0 px-6 pt-6">
+          <DialogTitle className="flex items-center gap-2 text-lg">
+            <ShoppingCart className="w-4 h-4" />
             {mode === "edit"
               ? `${t("orders.editOrderTitle")} ${table.tableNumber}`
               : `Bàn ${table.tableNumber}`}
           </DialogTitle>
-          <DialogDescription>
+          <DialogDescription className="text-sm">
             {mode === "edit"
               ? t("orders.editOrderDesc").replace(
                   "{orderNumber}",
@@ -1323,13 +1323,13 @@ export function OrderDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 flex-1 min-h-0">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 flex-1 min-h-0 px-6">
           {/* Menu Selection */}
           <div className="lg:col-span-2 space-y-4 flex flex-col">
             {/* Customer Info */}
             <Card className="flex-shrink-0">
-              <CardContent className="p-4">
-                <div className="grid grid-cols-3 gap-4">
+              <CardContent className="p-3">
+                <div className="grid grid-cols-3 gap-3">
                   <div>
                     <Label htmlFor="customerName">
                       {t("tables.customerName")} ({t("tables.optional")})
@@ -1444,7 +1444,7 @@ export function OrderDialog({
             </div>
 
             {/* Products Grid */}
-            <div className="grid grid-cols-3 gap-3 overflow-y-scroll flex-1 min-h-0 max-h-[500px] pb-8">
+            <div className="grid grid-cols-3 gap-2 overflow-y-scroll flex-1 min-h-0 max-h-[400px] pb-6">
               {filteredProducts.map((product: Product) => (
                 <Card
                   key={product.id}
@@ -1455,20 +1455,20 @@ export function OrderDialog({
                   }`}
                 >
                   <CardContent
-                    className="p-3"
+                    className="p-2"
                     onClick={() =>
                       (product.trackInventory === false || Number(product.stock) > 0) && addToCart(product)
                     }
                   >
-                    <div className="space-y-2">
-                      <h4 className="font-medium text-sm">{product.name}</h4>
-                      <p className="text-xs text-gray-600 line-clamp-2">
+                    <div className="space-y-1">
+                      <h4 className="font-medium text-xs line-clamp-1">{product.name}</h4>
+                      <p className="text-[10px] text-gray-600 line-clamp-1">
                         {product.sku}
                       </p>
                       <div className="flex justify-between items-center">
                         <div className="flex flex-col">
                           <span
-                            className={`font-bold ${
+                            className={`font-bold text-xs ${
                               product.trackInventory === false || Number(product.stock) > 0
                                 ? "text-blue-600"
                                 : "text-gray-400"
@@ -1493,7 +1493,7 @@ export function OrderDialog({
                             ₫
                           </span>
                           {product.taxRate && (
-                            <span className="text-xs text-gray-500">
+                            <span className="text-[10px] text-gray-500">
                               {t("reports.tax")}: {product.taxRate}%
                             </span>
                           )}
@@ -1505,19 +1505,20 @@ export function OrderDialog({
                                 ? "default"
                                 : "destructive"
                             }
+                            className="text-[10px] px-1.5 py-0"
                           >
                             {Number(product.stock) > 0
                               ? `${t("tables.stockCount")} ${product.stock}`
                               : "Hết hàng"}
                           </Badge>
                         ) : (
-                          <Badge variant="outline" className="text-green-600 border-green-600">
+                          <Badge variant="outline" className="text-green-600 border-green-600 text-[10px] px-1.5 py-0">
                             Sẵn sàng
                           </Badge>
                         )}
                       </div>
                       {product.trackInventory !== false && Number(product.stock) === 0 && (
-                        <div className="text-xs text-red-500 font-medium">
+                        <div className="text-[10px] text-red-500 font-medium">
                           Sản phẩm hiện đang hết hàng
                         </div>
                       )}
@@ -1964,7 +1965,7 @@ export function OrderDialog({
         {(cart.length > 0 ||
           (mode === "edit" && existingItems.length > 0) ||
           mode === "edit") && (
-          <DialogFooter className="pt-4 pb-2 flex-shrink-0 border-t bg-white">
+          <DialogFooter className="pt-4 pb-4 px-6 mt-auto flex-shrink-0 border-t bg-white">
             <div className="flex items-center justify-between w-full">
               {/* Summary items in horizontal layout */}
               <div className="flex items-center gap-4 text-sm flex-wrap">

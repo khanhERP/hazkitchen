@@ -294,7 +294,7 @@ export function ProductManagerModal({
       categoryId: 0,
       productType: 1,
       imageUrl: "",
-      trackInventory: true,
+      trackInventory: false,
       taxRate: "0", // 8% tax rate as integer
       priceIncludesTax: false,
       afterTaxPrice: "0",
@@ -620,7 +620,7 @@ export function ProductManagerModal({
       categoryId: categories.length > 0 ? categories[0].id : 0,
       productType: 1,
       imageUrl: "",
-      trackInventory: true,
+      trackInventory: false,
       taxRate: "0", // 8% tax rate as integer
       priceIncludesTax: false,
       afterTaxPrice: "0",
@@ -739,7 +739,7 @@ export function ProductManagerModal({
           categoryId: 0,
           productType: 1,
           imageUrl: "",
-          trackInventory: true,
+          trackInventory: false,
           taxRate: "0", // 8% tax rate as integer
           priceIncludesTax: false,
           afterTaxPrice: "0",
@@ -789,7 +789,7 @@ export function ProductManagerModal({
       categoryId: 0,
       productType: 1,
       imageUrl: "",
-      trackInventory: true,
+      trackInventory: false,
       taxRate: "0", // 8% tax rate as integer
       priceIncludesTax: false,
       afterTaxPrice: "0",

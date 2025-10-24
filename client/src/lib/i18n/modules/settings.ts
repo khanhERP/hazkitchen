@@ -378,6 +378,10 @@ export const settingsTranslations: { [key: string]: SettingsTranslations } = {
     printerManagementDesc: "POS 시스템에 연결된 프린터 관리",
     printerSetupDesc: "송장, 영수증 및 보고서용 프린터 설정 및 관리",
     configurePrinter: "프린터 구성",
+    unitLabel: "단위",
+    taxPercentage: "세금 (%)",
+    backToSales: "판매로 돌아가기",
+    printerConfiguration: "프린터 설정",
   },
   en: {
     title: "Settings",
@@ -767,6 +771,10 @@ export const settingsTranslations: { [key: string]: SettingsTranslations } = {
     printerSetupDesc:
       "Set up and manage printers for invoices, receipts, and reports",
     configurePrinter: "Configure Printer",
+    unitLabel: "Unit",
+    taxPercentage: "Tax (%)",
+    backToSales: "Back to Sales",
+    printerConfiguration: "Printer Configuration",
     categoryIcons: {
       mainDish: "Main Dishes",
       beverages: "Beverages",
@@ -1163,5 +1171,9 @@ export const settingsTranslations: { [key: string]: SettingsTranslations } = {
     printerSetupDesc:
       "Thiết lập và quản lý máy in cho hóa đơn, biên lai và báo cáo",
     configurePrinter: "Cấu hình máy in",
+    unitLabel: "Đơn vị tính",
+    taxPercentage: "Thuế (%)",
+    backToSales: "Quay lại Bán hàng",
+    printerConfiguration: "Cấu hình máy in",
   },
 };
