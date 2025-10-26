@@ -111,6 +111,9 @@ export function TableGrid({ onTableSelect, selectedTableId }: TableGridProps) {
   const [splitOrderOpen, setSplitOrderOpen] = useState(false); // State for split order modal
   const [showCancelOrderDialog, setShowCancelOrderDialog] = useState(false);
   const [orderToCancel, setOrderToCancel] = useState<Order | null>(null);
+  const [showTransferTableDialog, setShowTransferTableDialog] = useState(false);
+  const [orderToTransfer, setOrderToTransfer] = useState<Order | null>(null);
+  const [targetTableId, setTargetTableId] = useState<number | null>(null);
 
   // Listen for print completion event
   useEffect(() => {
@@ -1378,13 +1381,139 @@ export function TableGrid({ onTableSelect, selectedTableId }: TableGridProps) {
       }); // Invalidate items for the deleted order
       toast({
         title: "Xóa đơn hàng thành công",
-        description: "Đơn hàng đã được hủy và bàn đã được cập nhật",
+        description: "Đơn hàng đã được hủy và trạng thái bàn đã được cập nhật",
       });
     },
     onError: () => {
       toast({
         title: "Lỗi",
         description: "Không thể xóa đơn hàng",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const transferTableMutation = useMutation({
+    mutationFn: async ({ orderId, newTableId }: { orderId: number; newTableId: number }) => {
+      const order = orders?.find((o: any) => o.id === orderId);
+      if (!order) throw new Error("Order not found");
+
+      const oldTableId = order.tableId;
+
+      console.log(`🔄 Starting table transfer:`, {
+        orderId,
+        oldTableId,
+        newTableId,
+        orderNumber: order.orderNumber,
+      });
+
+      // Step 1: Update order's table ID - this will transfer all order items automatically
+      const orderUpdateResponse = await apiRequest("PUT", `https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders/${orderId}`, {
+        tableId: newTableId,
+      });
+
+      const updatedOrder = await orderUpdateResponse.json();
+      console.log(`✅ Order ${orderId} transferred to table ${newTableId}:`, updatedOrder);
+
+      // Step 2: Update new table status to occupied
+      try {
+        await apiRequest("PUT", `https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/tables/${newTableId}/status`, {
+          status: "occupied",
+        });
+        console.log(`✅ New table ${newTableId} set to occupied`);
+      } catch (tableError) {
+        console.error(`❌ Error updating new table ${newTableId}:`, tableError);
+      }
+
+      // Step 3: Update old table status if no more active orders
+      if (oldTableId) {
+        try {
+          // Fetch fresh orders data to check remaining orders on old table
+          const freshOrdersResponse = await apiRequest("GET", `https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders`);
+          const freshOrders = await freshOrdersResponse.json();
+
+          const otherActiveOrders = freshOrders?.filter(
+            (o: any) =>
+              o.tableId === oldTableId &&
+              o.id !== orderId &&
+              !["paid", "cancelled"].includes(o.status),
+          );
+
+          console.log(`🔍 Checking old table ${oldTableId}:`, {
+            otherActiveOrdersCount: otherActiveOrders?.length || 0,
+          });
+
+          if (!otherActiveOrders || otherActiveOrders.length === 0) {
+            await apiRequest("PUT", `https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/tables/${oldTableId}/status`, {
+              status: "available",
+            });
+            console.log(`✅ Old table ${oldTableId} set to available`);
+          } else {
+            console.log(`⏳ Old table ${oldTableId} still has ${otherActiveOrders.length} active orders`);
+          }
+        } catch (oldTableError) {
+          console.error(`❌ Error updating old table ${oldTableId}:`, oldTableError);
+        }
+      }
+
+      return updatedOrder;
+    },
+    onSuccess: async (data) => {
+      console.log("🎉 Table transfer successful, refreshing data...");
+
+      // Clear cache and force fresh data
+      queryClient.clear();
+      queryClient.removeQueries();
+
+      // Force immediate fresh fetch
+      try {
+        const params = new URLSearchParams({
+          _t: Date.now().toString(),
+          _force: "true",
+        });
+        const [freshTables, freshOrders] = await Promise.all([
+          fetch(`https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/tables?${params}`).then((r) => r.json()),
+          fetch(`https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders?${params}`).then((r) => r.json()),
+        ]);
+
+        // Set fresh data immediately
+        queryClient.setQueryData(["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/tables"], freshTables);
+        queryClient.setQueryData(["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"], freshOrders);
+
+        console.log("✅ Fresh data loaded after table transfer");
+
+        // Force re-render with invalidation
+        setTimeout(() => {
+          queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/tables"] });
+          queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] });
+        }, 50);
+      } catch (fetchError) {
+        console.error("❌ Error fetching fresh data:", fetchError);
+        // Fallback to normal refresh
+        await Promise.all([refetchTables(), refetchOrders()]);
+      }
+
+      toast({
+        title: "Chuyển bàn thành công",
+        description: "Đơn hàng đã được chuyển sang bàn mới và trạng thái bàn đã được cập nhật",
+      });
+
+      // Close dialogs and clear states
+      setShowTransferTableDialog(false);
+      setOrderToTransfer(null);
+      setTargetTableId(null);
+      setOrderDetailsOpen(false);
+      setSelectedOrder(null);
+      setSelectedTable(null);
+
+      // Clear customer display
+      broadcastCartUpdate(null);
+    },
+    onError: (error) => {
+      console.error("❌ Table transfer error:", error);
+      toast({
+        title: "Lỗi",
+        description: "Không thể chuyển bàn. Vui lòng thử lại.",
         variant: "destructive",
       });
     },
@@ -3202,7 +3331,7 @@ export function TableGrid({ onTableSelect, selectedTableId }: TableGridProps) {
                           {order.status !== "paid" && (
                             <div className="space-y-2 pt-2">
                               {/* Order-specific action buttons - All buttons displayed */}
-                              <div className="grid grid-cols-2 gap-2">
+                              <div className="grid grid-cols-3 gap-2">
                                 {/* 1. Gọi thêm - Màu xanh dương */}
                                 <Button
                                   size="sm"
@@ -3483,7 +3612,23 @@ export function TableGrid({ onTableSelect, selectedTableId }: TableGridProps) {
                                   {t("tables.payWithPoints")}
                                 </Button>
 
-                                {/* 6. Hủy đơn */}
+                                {/* 6. Chuyển bàn */}
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => {
+                                    setOrderToTransfer(order);
+                                    setShowTransferTableDialog(true);
+                                  }}
+                                  className="text-xs bg-indigo-50 border-indigo-300 text-indigo-700 hover:bg-indigo-100 hover:border-indigo-400"
+                                >
+                                  <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+                                  </svg>
+                                  Chuyển bàn
+                                </Button>
+
+                                {/* 7. Hủy đơn */}
                                 <Button
                                   size="sm"
                                   variant="outline"
@@ -3788,9 +3933,9 @@ export function TableGrid({ onTableSelect, selectedTableId }: TableGridProps) {
             setShowReceiptModal(false);
             setSelectedReceipt(null);
           }}
+          onConfirm={handleReceiptConfirm}
           receipt={selectedReceipt}
           isPreview={!!orderForPayment} // Show as preview if there's an order waiting for payment
-          onConfirm={orderForPayment ? handleReceiptConfirm : undefined}
           isTitle={isTitle}
         />
       )}
@@ -4288,6 +4433,109 @@ export function TableGrid({ onTableSelect, selectedTableId }: TableGridProps) {
               </div>
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Transfer Table Dialog */}
+      <Dialog open={showTransferTableDialog} onOpenChange={setShowTransferTableDialog}>
+        <DialogContent className="max-w-4xl max-h-[90vh]">
+          <DialogHeader>
+            <DialogTitle>Chuyển bàn</DialogTitle>
+            <DialogDescription>
+              Chọn bàn mới để chuyển đơn hàng {orderToTransfer?.orderNumber}
+            </DialogDescription>
+          </DialogHeader>
+
+          <Tabs defaultValue={sortedFloors[0]} className="w-full">
+            {/* Floor Tabs */}
+            <div className="w-full overflow-x-auto mb-4">
+              <TabsList className="h-auto min-h-[50px] items-center justify-center gap-1 bg-white border border-gray-200 rounded-lg p-2 shadow-sm flex">
+                {sortedFloors.map((floor) => (
+                  <TabsTrigger
+                    key={floor}
+                    value={floor}
+                    className="flex items-center gap-2 text-sm px-4 py-3 whitespace-nowrap data-[state=active]:bg-blue-500 data-[state=active]:text-white data-[state=active]:shadow-md hover:bg-blue-50 transition-all duration-200 rounded-md font-medium border border-transparent data-[state=active]:border-blue-600"
+                  >
+                    <span className="font-semibold">
+                      {t("common.floor")} {floor}
+                    </span>
+                  </TabsTrigger>
+                ))}
+              </TabsList>
+            </div>
+
+            {/* Floor Content */}
+            {sortedFloors.map((floor) => (
+              <TabsContent key={floor} value={floor} className="mt-0">
+                <div className="grid grid-cols-3 gap-4 max-h-96 overflow-y-auto p-4">
+                  {Array.isArray(tables) && tablesByFloor[floor]
+                    .filter((table: Table) => 
+                      table.id !== orderToTransfer?.tableId && 
+                      table.status === "available"
+                    )
+                    .map((table: Table) => (
+                      <Card
+                        key={table.id}
+                        className={`cursor-pointer transition-all ${
+                          targetTableId === table.id
+                            ? "ring-2 ring-blue-500 bg-blue-50"
+                            : "hover:bg-gray-50"
+                        }`}
+                        onClick={() => setTargetTableId(table.id)}
+                      >
+                        <CardContent className="p-4 text-center">
+                          <div className="font-bold text-lg mb-2">
+                            {table.tableNumber}
+                          </div>
+                          <div className="text-sm text-gray-600">
+                            <Users className="w-3 h-3 inline mr-1" />
+                            {table.capacity} {t("orders.people")}
+                          </div>
+                          <Badge variant="default" className="mt-2 text-xs bg-green-500">
+                            {t("tables.available")}
+                          </Badge>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  {tablesByFloor[floor].filter((table: Table) => 
+                    table.id !== orderToTransfer?.tableId && 
+                    table.status === "available"
+                  ).length === 0 && (
+                    <div className="col-span-3 text-center py-8 text-gray-500">
+                      Không có bàn trống trên tầng này
+                    </div>
+                  )}
+                </div>
+              </TabsContent>
+            ))}
+          </Tabs>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowTransferTableDialog(false);
+                setOrderToTransfer(null);
+                setTargetTableId(null);
+              }}
+            >
+              {t("common.cancel")}
+            </Button>
+            <Button
+              onClick={() => {
+                if (orderToTransfer && targetTableId) {
+                  transferTableMutation.mutate({
+                    orderId: orderToTransfer.id,
+                    newTableId: targetTableId,
+                  });
+                }
+              }}
+              disabled={!targetTableId || transferTableMutation.isPending}
+              className="bg-blue-600 hover:bg-blue-700"
+            >
+              {transferTableMutation.isPending ? "Đang chuyển..." : "Xác nhận chuyển"}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 
