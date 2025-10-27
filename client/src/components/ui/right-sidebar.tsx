@@ -130,7 +130,7 @@ export function RightSidebar() {
   return (
     <div
       className={cn(
-        "fixed left-0 top-16 bottom-0 bg-white border-r border-green-200 shadow-lg transition-all duration-300 z-40",
+        "fixed left-0 top-16 bottom-0 bg-white border-r border-green-200 shadow-lg transition-all duration-300 z-40 flex flex-col",
         isExpanded ? "w-64" : "w-16",
       )}
     >
@@ -162,7 +162,7 @@ export function RightSidebar() {
       </div>
 
       {/* Menu Items */}
-      <nav className="py-4 group">
+      <nav className="py-4 group overflow-y-auto flex-1">
         {menuItems.map((item, index) => {
           const Icon = item.icon;
           const isActive = location === item.href;
@@ -200,7 +200,7 @@ export function RightSidebar() {
                     </span>
                   )}
                   {isNavCollapsed && !showText && (
-                    <span className="ml-3 font-semibold text-base opacity-0 group-hover:opacity-100 transition-all duration-200 whitespace-nowrap">
+                    <span className="absolute left-16 font-semibold text-base opacity-0 group-hover:opacity-100 transition-all duration-200 whitespace-nowrap bg-gradient-to-r from-green-100 to-green-50 px-3 py-2 rounded-r-lg shadow-lg z-10">
                       {item.label}
                     </span>
                   )}
@@ -222,7 +222,7 @@ export function RightSidebar() {
         <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-green-200 bg-green-50">
           <div className="text-sm text-gray-500 text-center">
             <div className="font-medium">EDPOS System</div>
-            <div className="text-xs opacity-75">v1.0.0</div>
+            <div className="text-xs opacity-75">27/10/2025</div>
           </div>
         </div>
       )}

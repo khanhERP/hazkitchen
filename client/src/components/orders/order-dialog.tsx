@@ -551,7 +551,10 @@ export function OrderDialog({
       const existing = prev.find((item) => item.product.id === product.id);
       if (existing) {
         // Only check stock limit for products that track inventory
-        if (product.trackInventory !== false && existing.quantity >= product.stock) {
+        if (
+          product.trackInventory !== false &&
+          existing.quantity >= product.stock
+        ) {
           toast({
             title: t("common.warning"),
             description: `Chỉ còn ${product.stock} ${product.name} trong kho`,
@@ -1305,154 +1308,277 @@ export function OrderDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="max-w-[1400px] max-h-[900px] overflow-hidden flex flex-col">
-        <DialogHeader className="flex-shrink-0">
-          <DialogTitle className="flex items-center gap-2">
-            <ShoppingCart className="w-5 h-5" />
-            {mode === "edit"
-              ? `${t("orders.editOrderTitle")} ${table.tableNumber}`
-              : `Bàn ${table.tableNumber}`}
-          </DialogTitle>
-          <DialogDescription>
-            {mode === "edit"
-              ? t("orders.editOrderDesc").replace(
-                  "{orderNumber}",
-                  existingOrder?.orderNumber || "",
-                )
-              : `${t("tables.tableCapacity")}: ${table.capacity}${t("orders.people")} | ${t("tables.selectMenuToOrder")}`}
-          </DialogDescription>
+      <DialogContent className="max-w-[98vw] w-[1600px] max-h-[98vh] p-0 overflow-auto flex flex-col bg-gradient-to-br from-gray-50 to-white">
+        <DialogHeader className="flex-shrink-0 px-4 pt-3 pb-2 bg-white border-b border-gray-200 sticky top-0 z-10">
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex-1">
+              <DialogTitle className="flex items-center gap-2 text-3xl font-bold text-gray-800">
+                <div className="p-2 bg-green-100 rounded-lg">
+                  <ShoppingCart className="w-7 h-7 text-green-600" />
+                </div>
+                {mode === "edit"
+                  ? `${t("orders.editOrderTitle")} ${table.tableNumber}`
+                  : `Bàn ${table.tableNumber}`}
+              </DialogTitle>
+              <DialogDescription className="text-lg text-gray-600 mt-1">
+                {mode === "edit"
+                  ? t("orders.editOrderDesc").replace(
+                      "{orderNumber}",
+                      existingOrder?.orderNumber || "",
+                    )
+                  : `${t("tables.tableCapacity")}: ${table.capacity} ${t("orders.people")} | ${t("tables.selectMenuToOrder")}`}
+              </DialogDescription>
+            </div>
+
+            {/* Action Buttons - Moved to top-right */}
+            {(cart.length > 0 || (mode === "edit" && existingItems.length > 0) || mode === "edit") && (
+              <div className="flex flex-row gap-2 flex-shrink-0">
+                <Button 
+                  variant="outline" 
+                  onClick={handleClose}
+                  className="h-11 text-base border-2 border-gray-300 hover:bg-gray-100 font-semibold px-6"
+                >
+                  {t("pos.cancel")}
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    console.log("🖨️ Order Dialog: In tạm tính clicked", {
+                      existingItemsCount: existingItems.length,
+                      cartItemsCount: cart.length,
+                      customerName,
+                      discount,
+                    });
+
+                    const previewItems = [
+                      ...existingItems.map((item) => ({
+                        id: item.id,
+                        productId: item.productId,
+                        productName: item.productName,
+                        quantity: item.quantity,
+                        price: item.unitPrice,
+                        unitPrice: item.unitPrice,
+                        total: item.total,
+                        discount: item.discount || "0",
+                        tax: item.tax || "0",
+                        sku: item.productSku || `SP${item.productId}`,
+                        taxRate: (() => {
+                          const product = products?.find(
+                            (p: Product) => p.id === item.productId,
+                          );
+                          return product?.taxRate
+                            ? parseFloat(product.taxRate)
+                            : 0;
+                        })(),
+                      })),
+                      ...cart.map((item) => ({
+                        id: item.product.id,
+                        productId: item.product.id,
+                        productName: item.product.name,
+                        quantity: item.quantity,
+                        price: item.product.price,
+                        unitPrice: item.product.price,
+                        total: (
+                          parseFloat(item.product.price) * item.quantity
+                        ).toString(),
+                        discount: "0",
+                        tax: "0",
+                        sku: item.product.sku || `SP${item.product.id}`,
+                        taxRate: item.product.taxRate
+                          ? parseFloat(item.product.taxRate)
+                          : 0,
+                      })),
+                    ];
+
+                    const subtotalAmount = Math.floor(calculateSubtotal());
+                    const taxAmount = Math.floor(calculateTax());
+                    const totalAmount = Math.floor(calculateTotal());
+
+                    const previewReceipt = {
+                      id: existingOrder?.id || 0,
+                      orderId: existingOrder?.id || 0,
+                      orderNumber:
+                        existingOrder?.orderNumber ||
+                        `ORD-PREVIEW-${Date.now()}`,
+                      tableId: table?.id,
+                      tableNumber: table?.tableNumber,
+                      customerName: customerName || "Khách hàng",
+                      customerPhone: existingOrder?.customerPhone || "",
+                      customerCount: customerCount,
+                      items: previewItems,
+                      subtotal: subtotalAmount.toString(),
+                      tax: taxAmount.toString(),
+                      discount: discount.toString(),
+                      total: totalAmount.toString(),
+                      exactSubtotal: subtotalAmount,
+                      exactTax: taxAmount,
+                      exactDiscount: Math.floor(discount),
+                      exactTotal: totalAmount,
+                      transactionId:
+                        existingOrder?.orderNumber || `PREVIEW-${Date.now()}`,
+                      createdAt: new Date().toISOString(),
+                      cashierName: "Table Service",
+                      paymentMethod: "preview",
+                      isPreview: true,
+                      priceIncludeTax: storeSettings?.priceIncludesTax || false,
+                    };
+
+                    setPreviewReceipt(previewReceipt);
+                    setShowReceiptPreview(true);
+                  }}
+                  disabled={
+                    !table ||
+                    (mode !== "edit" && cart.length === 0) ||
+                    (mode === "edit" &&
+                      existingItems.length === 0 &&
+                      cart.length === 0)
+                  }
+                  className="h-11 text-base border-2 border-blue-400 text-blue-600 hover:bg-blue-50 font-semibold px-6"
+                >
+                  📄 {t("tables.printBill")}
+                </Button>
+                <Button
+                  onClick={handlePlaceOrder}
+                  disabled={!table || (mode !== "edit" && cart.length === 0) || createOrderMutation.isPending}
+                  className="bg-gradient-to-r from-green-600 to-green-500 hover:from-green-700 hover:to-green-600 text-white h-11 shadow-lg hover:shadow-xl transition-all font-bold text-base px-8"
+                >
+                  {createOrderMutation.isPending
+                    ? mode === "edit"
+                      ? t("orders.updating")
+                      : t("tables.placing")
+                    : mode === "edit"
+                      ? t("orders.updateOrder")
+                      : t("orders.placeOrder")}
+                </Button>
+              </div>
+            )}
+          </div>
+          
+          {/* Summary Section - Moved to top */}
+          {(cart.length > 0 || (mode === "edit" && existingItems.length > 0) || mode === "edit") && (
+            <div className="bg-gradient-to-r from-green-50 to-blue-50 rounded-lg p-3 mt-2 border-2 border-green-200">
+              <div className="flex items-center justify-between gap-4 text-sm">
+                <div className="flex items-center gap-2">
+                  <span className="text-gray-600 font-medium">{t("orders.subtotal")}</span>
+                  <span className="font-semibold">
+                    {Math.floor(calculateSubtotal()).toLocaleString()} ₫
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-gray-600 font-medium">{t("reports.tax")}</span>
+                  <span className="font-semibold">
+                    {Math.floor(calculateTax()).toLocaleString()} ₫
+                  </span>
+                </div>
+                <div className="flex items-center gap-2 pl-4 border-l border-gray-300">
+                  <span className="text-gray-800 font-bold text-base">
+                    {t("orders.totalAmount")}
+                  </span>
+                  <span className="font-bold text-xl text-green-600">
+                    {Math.floor(calculateTotal()).toLocaleString()} ₫
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
         </DialogHeader>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 flex-1 min-h-0">
-          {/* Menu Selection */}
-          <div className="lg:col-span-2 space-y-4 flex flex-col">
-            {/* Customer Info */}
-            <Card className="flex-shrink-0">
-              <CardContent className="p-4">
-                <div className="grid grid-cols-3 gap-4">
-                  <div>
-                    <Label htmlFor="customerName">
-                      {t("tables.customerName")} ({t("tables.optional")})
-                    </Label>
-                    <Input
-                      id="customerName"
-                      value={customerName}
-                      onChange={(e) => setCustomerName(e.target.value)}
-                      placeholder={t("tables.customerNamePlaceholder")}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="customerCount">
-                      {t("tables.customerCount")}
-                    </Label>
-                    <Input
-                      id="customerCount"
-                      type="number"
-                      min={1}
-                      max={table.capacity}
-                      value={customerCount}
-                      onChange={(e) =>
-                        setCustomerCount(parseInt(e.target.value) || 1)
-                      }
-                    />
-                  </div>
-                  <div>
-                    <Label
-                      htmlFor="discount"
-                      className="text-sm font-medium text-gray-700"
-                    >
-                      {t("reports.discount")} (₫)
-                    </Label>
-                    <div className="relative mt-1">
-                      <Input
-                        id="discount"
-                        type="text"
-                        value={
-                          discount > 0 ? discount.toLocaleString("vi-VN") : ""
-                        }
-                        onChange={(e) => {
-                          const value = e.target.value.replace(/[^\d]/g, "");
-                          setDiscount(parseFloat(value) || 0);
-                        }}
-                        className="pl-3 pr-10 border-gray-300 focus:border-green-500 focus:ring-green-500"
-                      />
-                      <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                        <span className="text-gray-400 text-sm">₫</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+        <div className="grid grid-cols-1 lg:grid-cols-[68%_32%] gap-2 flex-1 px-2 py-1.5 pb-[200px]">
+          {/* Left Panel - Product Selection */}
+          <div className="flex flex-col space-y-1.5 bg-white rounded-lg border border-gray-200 p-2">
+            <div className="flex-shrink-0">
+              <h3 className="text-xs font-bold text-gray-800 mb-1.5 flex items-center gap-1.5">
+                <ShoppingCart className="w-3.5 h-3.5 text-green-600" />
+                {t("tables.selectMenuToOrder")}
+              </h3>
 
-            {/* Search Input */}
-            <div className="flex gap-2">
+              {/* Customer Info */}
+              <div className="grid grid-cols-2 gap-2 mb-2 p-2 bg-gray-50 rounded">
+                <div className="flex items-center gap-2">
+                  <Label htmlFor="customerCount" className="text-base font-medium text-gray-600 whitespace-nowrap">
+                    {t("tables.customerCount")}
+                  </Label>
+                  <Input
+                    id="customerCount"
+                    type="number"
+                    min={1}
+                    max={table.capacity}
+                    value={customerCount}
+                    onChange={(e) => setCustomerCount(parseInt(e.target.value) || 1)}
+                    className="h-11 text-lg border-gray-300 focus:border-green-500 focus:ring-1 focus:ring-green-500 px-3"
+                  />
+                </div>
+                <div className="flex items-center gap-2">
+                  <Label htmlFor="discount" className="text-base font-medium text-gray-600 whitespace-nowrap">
+                    {t("reports.discount")} (₫)
+                  </Label>
+                  <Input
+                    id="discount"
+                    type="text"
+                    value={discount > 0 ? discount.toLocaleString("vi-VN") : ""}
+                    onChange={(e) => {
+                      const value = e.target.value.replace(/[^\d]/g, "");
+                      setDiscount(parseFloat(value) || 0);
+                    }}
+                    className="h-11 text-lg border-gray-300 focus:border-green-500 focus:ring-1 focus:ring-green-500 px-3"
+                    placeholder="0"
+                  />
+                </div>
+              </div>
+
+              {/* Search */}
               <Input
                 placeholder={t("orders.searchPlaceholder")}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="flex-1"
+                className="h-11 mb-2 text-lg border-gray-300 focus:border-green-500 focus:ring-1 focus:ring-green-500 px-3"
               />
-            </div>
 
-            {/* Category Filter */}
-            <div className="flex gap-2 overflow-x-auto pb-2 flex-shrink-0">
-              <Button
-                variant={selectedCategory === null ? "default" : "outline"}
-                size="sm"
-                onClick={() => setSelectedCategory(null)}
-              >
-                {t("tables.allCategories")}
-              </Button>
-              {Array.isArray(categories) &&
-                categories
-                  .filter((category: Category) => {
-                    // Filter out expense categories
-                    const categoryName = category.name.toLowerCase();
-                    const isExpenseCategory =
-                      category.id == 15 || category.id == 17;
-
-                    // Only show categories that have non-expense products
-                    const categoryProducts =
-                      products?.filter(
-                        (p: Product) => p.categoryId === category.id,
-                      ) || [];
-                    const hasValidProducts = categoryProducts.some(
-                      (p: Product) => {
-                        const productType =
-                          Number(p.productType) !== 2 ||
-                          Number(p.productType) !== 4;
+              {/* Category Pills */}
+              <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
+                <Button
+                  variant={selectedCategory === null ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setSelectedCategory(null)}
+                  className={`whitespace-nowrap text-base h-11 px-4 ${selectedCategory === null ? "bg-green-600 hover:bg-green-700" : "hover:bg-gray-100"}`}
+                >
+                  {t("tables.allCategories")}
+                </Button>
+                {Array.isArray(categories) &&
+                  categories
+                    .filter((category: Category) => {
+                      const isExpenseCategory = category.id == 15 || category.id == 17;
+                      const categoryProducts = products?.filter((p: Product) => p.categoryId === category.id) || [];
+                      const hasValidProducts = categoryProducts.some((p: Product) => {
+                        const productType = Number(p.productType) !== 2 || Number(p.productType) !== 4;
                         return productType;
-                      },
-                    );
-
-                    return !isExpenseCategory && hasValidProducts;
-                  })
-                  .map((category: Category) => (
-                    <Button
-                      key={category.id}
-                      variant={
-                        selectedCategory === category.id ? "default" : "outline"
-                      }
-                      size="sm"
-                      onClick={() => setSelectedCategory(category.id)}
-                      className="whitespace-nowrap"
-                    >
-                      {category.name}
-                    </Button>
-                  ))}
+                      });
+                      return !isExpenseCategory && hasValidProducts;
+                    })
+                    .map((category: Category) => (
+                      <Button
+                        key={category.id}
+                        variant={selectedCategory === category.id ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => setSelectedCategory(category.id)}
+                        className={`whitespace-nowrap text-base h-11 px-4 ${selectedCategory === category.id ? "bg-green-600 hover:bg-green-700" : "hover:bg-gray-100"}`}
+                      >
+                        {category.name}
+                      </Button>
+                    ))}
+              </div>
             </div>
 
-            {/* Products Grid */}
-            <div className="grid grid-cols-3 gap-3 overflow-y-scroll flex-1 min-h-0 max-h-[500px] pb-8">
+            {/* Products Grid - 5 columns */}
+            <div className="grid grid-cols-5 gap-2 overflow-y-auto flex-1 pb-1 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
               {filteredProducts.map((product: Product) => (
                 <Card
                   key={product.id}
-                  className={`transition-shadow ${
+                  className={`transition-all ${
                     product.trackInventory === false || Number(product.stock) > 0
-                      ? "cursor-pointer hover:shadow-md"
-                      : "cursor-not-allowed opacity-60"
-                  }`}
+                      ? "cursor-pointer hover:shadow-md hover:border-green-500"
+                      : "cursor-not-allowed opacity-50"
+                  } border`}
                 >
                   <CardContent
                     className="p-3"
@@ -1460,67 +1586,36 @@ export function OrderDialog({
                       (product.trackInventory === false || Number(product.stock) > 0) && addToCart(product)
                     }
                   >
-                    <div className="space-y-2">
-                      <h4 className="font-medium text-sm">{product.name}</h4>
-                      <p className="text-xs text-gray-600 line-clamp-2">
-                        {product.sku}
-                      </p>
-                      <div className="flex justify-between items-center">
-                        <div className="flex flex-col">
-                          <span
-                            className={`font-bold ${
-                              product.trackInventory === false || Number(product.stock) > 0
-                                ? "text-blue-600"
-                                : "text-gray-400"
-                            }`}
-                          >
-                            {(() => {
-                              // Check store setting for price display
-                              const priceIncludesTax =
-                                storeSettings?.priceIncludesTax || false;
-                              const basePrice = Number(product.price);
-                              const taxRate = Number(product.taxRate || 0);
-
-                              // if (priceIncludesTax && taxRate > 0) {
-                              //   // If price includes tax, display price * (1 + tax/100)
-                              //   const priceWithTax = basePrice * (1 + taxRate / 100);
-                              //   return Math.round(priceWithTax).toLocaleString();
-                              // } else {
-                              //   // If price doesn't include tax, display base price
-                              // }
-                              return Math.round(basePrice).toLocaleString();
-                            })()}{" "}
-                            ₫
-                          </span>
-                          {product.taxRate && (
-                            <span className="text-xs text-gray-500">
-                              {t("reports.tax")}: {product.taxRate}%
-                            </span>
-                          )}
-                        </div>
+                    <div className="space-y-1">
+                      <h4 className="font-semibold text-sm line-clamp-2 min-h-[2.5rem] text-gray-800 leading-tight">
+                        {product.name}
+                      </h4>
+                      <div className="flex flex-col gap-1">
+                        <span className={`font-bold text-base ${
+                          product.trackInventory === false || Number(product.stock) > 0
+                            ? "text-green-600"
+                            : "text-gray-400"
+                        }`}>
+                          {Math.round(Number(product.price)).toLocaleString()} ₫
+                        </span>
                         {product.trackInventory !== false ? (
                           <Badge
-                            variant={
-                              Number(product.stock) > 0
-                                ? "default"
-                                : "destructive"
-                            }
+                            variant={Number(product.stock) > 0 ? "default" : "destructive"}
+                            className="text-xs px-1.5 py-0.5 w-fit"
                           >
                             {Number(product.stock) > 0
-                              ? `${t("tables.stockCount")} ${product.stock}`
+                              ? `Còn ${product.stock}`
                               : "Hết hàng"}
                           </Badge>
                         ) : (
-                          <Badge variant="outline" className="text-green-600 border-green-600">
-                            Sẵn sàng
+                          <Badge
+                            variant="outline"
+                            className="text-green-600 border-green-600 text-xs px-1.5 py-0.5 w-fit"
+                          >
+                            ✓ Sẵn sàng
                           </Badge>
                         )}
                       </div>
-                      {product.trackInventory !== false && Number(product.stock) === 0 && (
-                        <div className="text-xs text-red-500 font-medium">
-                          Sản phẩm hiện đang hết hàng
-                        </div>
-                      )}
                     </div>
                   </CardContent>
                 </Card>
@@ -1528,31 +1623,30 @@ export function OrderDialog({
             </div>
           </div>
 
-          {/* Cart */}
-          <div className="flex flex-col min-h-0">
-            <div className="flex items-center justify-between mb-4 flex-shrink-0">
-              <h3 className="text-lg font-semibold">
-                {mode === "edit"
-                  ? t("orders.itemsAndNewItems")
-                  : t("tables.orderHistory")}
+          {/* Right Panel - Order Summary */}
+          <div className="flex flex-col min-h-0 bg-gradient-to-br from-green-50 to-white rounded-lg border-2 border-green-200 shadow-md">
+            <div className="flex items-center justify-between p-3 border-b-2 border-green-200 flex-shrink-0 bg-green-600">
+              <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                <ShoppingCart className="w-5 h-5" />
+                {mode === "edit" ? t("orders.itemsAndNewItems") : t("tables.orderHistory")}
               </h3>
-              <Badge variant="secondary">
+              <Badge variant="secondary" className="px-2.5 py-1 text-sm font-bold bg-white text-green-700 shadow-sm">
                 {mode === "edit"
                   ? `${existingItems.length + cart.length} ${t("common.items")}`
-                  : `${cart.length}${t("tables.itemsSelected")}`}
+                  : `${cart.length} ${t("tables.itemsSelected")}`}
               </Badge>
             </div>
 
             {/* Scrollable Content Area */}
-            <div className="flex-1 overflow-y-auto space-y-4 pb-6 min-h-0">
+            <div className="flex-1 overflow-y-auto space-y-1.5 p-2 min-h-0 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
               {/* Existing Items (Edit Mode Only) */}
               {mode === "edit" && existingItems.length > 0 && (
                 <>
                   <div className="space-y-2">
-                    <h4 className="text-sm font-medium text-gray-600 flex-shrink-0">
+                    <h4 className="text-base font-medium text-gray-600 flex-shrink-0">
                       {t("orders.previouslyOrdered")}
                     </h4>
-                    <div className="space-y-2">
+                    <div className="space-y-1.5">
                       {existingItems.map((item, index) => (
                         <Card key={`existing-${index}`} className="bg-gray-50">
                           <CardContent className="p-3">
@@ -1663,9 +1757,9 @@ export function OrderDialog({
                       ))}
                     </div>
                   </div>
-                  {cart.length > 0 && <Separator />}
+                  {cart.length > 0 && <Separator className="my-2" />}
                   {cart.length > 0 && (
-                    <h4 className="text-sm font-medium text-gray-550">
+                    <h4 className="text-base font-medium text-gray-550">
                       {t("orders.newItemsToAdd")}
                     </h4>
                   )}
@@ -1673,12 +1767,12 @@ export function OrderDialog({
               )}
 
               {cart.length === 0 ? (
-                <div className="text-center py-8 text-gray-500">
-                  <ShoppingCart className="w-12 h-12 mx-auto mb-4 text-gray-300" />
-                  <p>{t("tables.noItemsSelected")}</p>
+                <div className="text-center py-8 text-gray-500 max-w-xs mx-auto">
+                  <ShoppingCart className="w-12 h-12 mx-auto mb-3 text-gray-300" />
+                  <p className="text-base">{t("tables.noItemsSelected")}</p>
                 </div>
               ) : (
-                <div className="space-y-3">
+                <div className="space-y-2">
                   {cart.map((item) => (
                     <Card key={item.product.id}>
                       <CardContent className="p-3">
@@ -1957,27 +2051,19 @@ export function OrderDialog({
                 </div>
               )}
             </div>
-          </div>
-        </div>
 
-        {/* DialogFooter with Summary and Order Button */}
-        {(cart.length > 0 ||
-          (mode === "edit" && existingItems.length > 0) ||
-          mode === "edit") && (
-          <DialogFooter className="pt-4 pb-2 flex-shrink-0 border-t bg-white">
-            <div className="flex items-center justify-between w-full">
-              {/* Summary items in horizontal layout */}
-              <div className="flex items-center gap-4 text-sm flex-wrap">
-                {mode === "edit" && existingItems.length > 0 && (
-                  <>
-                    <div className="flex items-center gap-2">
+            {/* Summary Section - Fixed at bottom of right panel */}
+            {(cart.length > 0 || (mode === "edit" && existingItems.length > 0) || mode === "edit") && (
+              <div className="flex-shrink-0 border-t-2 border-green-200 bg-white p-3">
+                <div className="space-y-1.5 text-base">
+                  {mode === "edit" && existingItems.length > 0 && (
+                    <div className="flex items-center justify-between">
                       <span className="text-gray-600">
                         {t("orders.previousItems")}
                       </span>
                       <span className="font-medium">
                         {Math.floor(
                           existingItems.reduce((total, item) => {
-                            // Use unitPrice * quantity for existing items (pre-tax amount)
                             const itemSubtotal =
                               Number(item.unitPrice || 0) *
                               Number(item.quantity || 0);
@@ -1987,14 +2073,9 @@ export function OrderDialog({
                         ₫
                       </span>
                     </div>
-                    {cart.length > 0 && (
-                      <div className="w-px h-4 bg-gray-300"></div>
-                    )}
-                  </>
-                )}
-                {cart.length > 0 && mode === "edit" && (
-                  <>
-                    <div className="flex items-center gap-2">
+                  )}
+                  {cart.length > 0 && mode === "edit" && (
+                    <div className="flex items-center justify-between">
                       <span className="text-gray-600">
                         {t("orders.newItems")}
                       </span>
@@ -2010,177 +2091,44 @@ export function OrderDialog({
                         ₫
                       </span>
                     </div>
-                    <div className="w-px h-4 bg-gray-300"></div>
-                  </>
-                )}
-                <div className="flex items-center gap-2">
-                  <span className="text-gray-600">{t("orders.subtotal")}</span>
-                  <span className="font-medium">
-                    {Math.floor(calculateSubtotal()).toLocaleString()} ₫
-                  </span>
-                </div>
-                <div className="w-px h-4 bg-gray-300"></div>
-                <div className="flex items-center gap-2">
-                  <span className="text-gray-600">{t("reports.tax")}</span>
-                  <span className="font-medium">
-                    {Math.floor(calculateTax()).toLocaleString()} ₫
-                  </span>
-                </div>
-                {discount > 0 && (
-                  <>
-                    <div className="w-px h-4 bg-gray-300"></div>
-                    <div className="flex items-center gap-2">
+                  )}
+                  <div className="flex items-center justify-between">
+                    <span className="text-gray-600">{t("orders.subtotal")}</span>
+                    <span className="font-medium">
+                      {Math.floor(calculateSubtotal()).toLocaleString()} ₫
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-gray-600">{t("reports.tax")}</span>
+                    <span className="font-medium">
+                      {Math.floor(calculateTax()).toLocaleString()} ₫
+                    </span>
+                  </div>
+                  {discount > 0 && (
+                    <div className="flex items-center justify-between">
                       <span className="text-gray-600">
                         {t("reports.discount")}:
                       </span>
                       <span className="font-medium text-red-600">
-                        {" "}
                         -{Math.floor(discount).toLocaleString()} ₫
                       </span>
                     </div>
-                  </>
-                )}
-                <div className="w-px h-4 bg-gray-300"></div>
-                <div className="flex items-center gap-2">
-                  <span className="text-gray-600 font-bold">
-                    {t("orders.totalAmount")}
-                  </span>
-                  <span className="font-bold text-lg text-blue-600">
-                    {Math.floor(calculateTotal()).toLocaleString()} ₫
-                  </span>
+                  )}
+                  <div className="flex items-center justify-between pt-2 border-t border-gray-200">
+                    <span className="text-gray-800 font-bold text-base">
+                      {t("orders.totalAmount")}
+                    </span>
+                    <span className="font-bold text-xl text-green-600">
+                      {Math.floor(calculateTotal()).toLocaleString()} ₫
+                    </span>
+                  </div>
                 </div>
               </div>
+            )}
+          </div>
+        </div>
 
-              {/* Action buttons */}
-              <div className="flex items-center gap-2">
-                <Button variant="outline" onClick={handleClose}>
-                  {t("pos.cancel")}
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    console.log("🖨️ Order Dialog: In tạm tính clicked", {
-                      existingItemsCount: existingItems.length,
-                      cartItemsCount: cart.length,
-                      customerName,
-                      discount,
-                    });
-
-                    // Prepare preview receipt data
-                    const previewItems = [
-                      ...existingItems.map((item) => ({
-                        id: item.id,
-                        productId: item.productId,
-                        productName: item.productName,
-                        quantity: item.quantity,
-                        price: item.unitPrice,
-                        unitPrice: item.unitPrice,
-                        total: item.total,
-                        discount: item.discount || "0",
-                        tax: item.tax || "0",
-                        sku: item.productSku || `SP${item.productId}`,
-                        taxRate: (() => {
-                          const product = products?.find(
-                            (p: Product) => p.id === item.productId,
-                          );
-                          return product?.taxRate
-                            ? parseFloat(product.taxRate)
-                            : 0;
-                        })(),
-                      })),
-                      ...cart.map((item) => ({
-                        id: item.product.id,
-                        productId: item.product.id,
-                        productName: item.product.name,
-                        quantity: item.quantity,
-                        price: item.product.price,
-                        unitPrice: item.product.price,
-                        total: (
-                          parseFloat(item.product.price) * item.quantity
-                        ).toString(),
-                        discount: "0",
-                        tax: "0",
-                        sku: item.product.sku || `SP${item.product.id}`,
-                        taxRate: item.product.taxRate
-                          ? parseFloat(item.product.taxRate)
-                          : 0,
-                      })),
-                    ];
-
-                    const subtotalAmount = Math.floor(calculateSubtotal());
-                    const taxAmount = Math.floor(calculateTax());
-                    const totalAmount = Math.floor(calculateTotal());
-
-                    const previewReceipt = {
-                      id: existingOrder?.id || 0,
-                      orderId: existingOrder?.id || 0,
-                      orderNumber:
-                        existingOrder?.orderNumber ||
-                        `ORD-PREVIEW-${Date.now()}`,
-                      tableId: table?.id,
-                      tableNumber: table?.tableNumber,
-                      customerName: customerName || "Khách hàng",
-                      customerPhone: existingOrder?.customerPhone || "",
-                      customerCount: customerCount,
-                      items: previewItems,
-                      subtotal: subtotalAmount.toString(),
-                      tax: taxAmount.toString(),
-                      discount: discount.toString(),
-                      total: totalAmount.toString(),
-                      exactSubtotal: subtotalAmount,
-                      exactTax: taxAmount,
-                      exactDiscount: Math.floor(discount),
-                      exactTotal: totalAmount,
-                      transactionId:
-                        existingOrder?.orderNumber || `PREVIEW-${Date.now()}`,
-                      createdAt: new Date().toISOString(),
-                      cashierName: "Table Service",
-                      paymentMethod: "preview",
-                      isPreview: true,
-                      priceIncludeTax: storeSettings?.priceIncludesTax || false,
-                    };
-
-                    console.log(
-                      "📄 Order Dialog: Preview receipt data prepared:",
-                      previewReceipt,
-                    );
-
-                    setPreviewReceipt(previewReceipt);
-                    setShowReceiptPreview(true);
-                  }}
-                  disabled={
-                    !table ||
-                    (mode !== "edit" && cart.length === 0) ||
-                    (mode === "edit" &&
-                      existingItems.length === 0 &&
-                      cart.length === 0)
-                  }
-                >
-                  {t("tables.printBill")}
-                </Button>
-                <Button
-                  onClick={handlePlaceOrder}
-                  disabled={
-                    !table ||
-                    (mode !== "edit" && cart.length === 0) ||
-                    createOrderMutation.isPending
-                  }
-                  className="bg-green-600 hover:bg-green-700 text-white px-8 py-2 flex-shrink-0"
-                  size="lg"
-                >
-                  {createOrderMutation.isPending
-                    ? mode === "edit"
-                      ? t("orders.updating")
-                      : t("tables.placing")
-                    : mode === "edit"
-                      ? t("orders.updateOrder")
-                      : t("orders.placeOrder")}
-                </Button>
-              </div>
-            </div>
-          </DialogFooter>
-        )}
-      </DialogContent>
+        </DialogContent>
 
       {/* Receipt Preview Modal */}
       {showReceiptPreview && previewReceipt && (
