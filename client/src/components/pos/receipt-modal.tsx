@@ -809,9 +809,15 @@ export function ReceiptModal({
           }
 
           @media print {
+            * {
+              transform: none !important;
+              zoom: 1 !important;
+            }
             body {
               width: 576px;
               max-width: 576px;
+              -webkit-print-color-adjust: exact;
+              image-rendering: crisp-edges;
             }
             .receipt-container {
               width: 576px;
