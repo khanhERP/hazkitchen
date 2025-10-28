@@ -2332,7 +2332,9 @@ export default function SalesOrders() {
       // Total = subtotal + tax - discount
       const totalPayment = Math.max(
         0,
-        calculatedSubtotal + calculatedTax - orderDiscount,
+        priceIncludeTax
+          ? calculatedSubtotal + calculatedTax
+          : calculatedSubtotal + calculatedTax - orderDiscount,
       );
 
       return {
