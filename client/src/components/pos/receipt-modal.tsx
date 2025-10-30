@@ -720,7 +720,7 @@ export function ReceiptModal({
           }
 
           body {
-            font-family: 'Noto Sans KR', 'Arial Unicode MS', sans-serif;
+            font-family: ${domainName != "0318671828.edpos.vn" ? `'Noto Sans KR', 'Arial Unicode MS', sans-serif` : `"Malgun Gothic", "Arial", "Tahoma", sans-serif !important`};
             font-size: 16px;
             line-height: 1.4;
             width: 100%;
