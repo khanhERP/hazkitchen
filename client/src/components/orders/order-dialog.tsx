@@ -1454,6 +1454,7 @@ export function OrderDialog({
                 </>
               )}
             </div>
+          </div>
           
           {/* Summary Section - Moved to top */}
           {(cart.length > 0 || (mode === "edit" && existingItems.length > 0) || mode === "edit") && (
