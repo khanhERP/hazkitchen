@@ -958,7 +958,7 @@ export default function SalesOrders() {
     const statusLabels = {
       draft: "Nháp",
       published: "Đã xuất",
-      cancelled: "Đã he��y",
+      cancelled: "Đã hey",
       pending: "Chờ xử lý",
       paid: "Đã thanh toán",
     };
@@ -2813,6 +2813,66 @@ export default function SalesOrders() {
     };
   }, []);
 
+  // Handler for E-Invoice completion
+  const handleEInvoiceComplete = async (result: any) => {
+    console.log("📧 E-Invoice completed:", result);
+    if (result.success && selectedInvoice) {
+      try {
+        const invoiceNo = result.data?.invoiceNo || result.invoiceNumber || null;
+        const symbol = result.data?.symbol || result.symbol || "AA/25E";
+        const templateNumber =
+          result.data?.templateNumber || result.templateNumber || "1C25TYY";
+
+        const updateData = {
+          einvoiceStatus: 1, // Đã phát hành
+          invoiceStatus: 1, // Hoàn thành
+          status: "published",
+          invoiceNumber: invoiceNo,
+          symbol: symbol,
+          templateNumber: templateNumber,
+          tradeNumber:
+            invoiceNo || selectedInvoice.orderNumber || `TXN-${Date.now()}`,
+          notes: `E-Invoice published - Invoice No: ${invoiceNo || "N/A"}`,
+        };
+
+        console.log(`Updating order with data:`, updateData);
+
+        const updateResponse = await apiRequest(
+          "PUT",
+          `https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders/${selectedInvoice.id}`,
+          updateData,
+        );
+
+        if (!updateResponse.ok) {
+          const errorText = await updateResponse.text();
+          throw new Error(`Failed to update order after publish: ${errorText}`);
+        }
+
+        console.log("✅ Order updated successfully after publish.");
+
+        // Trigger refresh after successful update
+        queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] });
+        queryClient.invalidateQueries({
+          queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/order-items", selectedInvoice.id],
+        });
+
+        setShowEInvoiceModal(false);
+        setSelectedInvoice(null);
+
+        alert(
+          `Hóa đơn đã phát hành thành công!\nSố hóa đơn: ${invoiceNo || "N/A"}\n\nĐơn hàng đã được cập nhật.`,
+        );
+      } catch (error) {
+        console.error("❌ Error updating order after publish:", error);
+        alert(
+          `Hóa đơn đã phát hành nhưng không thể cập nhật trạng thái đơn hàng: ${(error as Error).message}`,
+        );
+      }
+    } else {
+      alert(`Lỗi phát hành hóa đơn: ${result.message || "Không xác định"}`);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-green-50 grocery-bg">
       {/* Header */}
@@ -4343,8 +4403,7 @@ export default function SalesOrders() {
                                                                               editedOrderItems[
                                                                                 item
                                                                                   .id
-                                                                              ] ||
-                                                                              {};
+                                                                              ] || {};
                                                                             const itPrice =
                                                                               parseFloat(
                                                                                 editedItem.unitPrice !==
@@ -5935,22 +5994,32 @@ export default function SalesOrders() {
       {showEInvoiceModal && selectedInvoice && (
         <EInvoiceModal
           isOpen={showEInvoiceModal}
-          onClose={() => setShowEInvoiceModal(false)}
-          order={{
-            id: selectedInvoice.id,
-            orderNumber:
-              selectedInvoice.orderNumber || selectedInvoice.displayNumber,
-            customerName: selectedInvoice.customerName || "",
-            customerTaxCode: selectedInvoice.customerTaxCode || "",
-            customerAddress: selectedInvoice.customerAddress || "",
-            customerPhone: selectedInvoice.customerPhone || "",
-            customerEmail: selectedInvoice.customerEmail || "",
-            subtotal: selectedInvoice.subtotal,
-            tax: selectedInvoice.tax,
-            total: selectedInvoice.total,
-            paymentMethod: selectedInvoice.paymentMethod || 1,
+          onClose={() => {
+            console.log(
+              "📕 Sales Orders: Closing E-Invoice modal from sales-orders",
+            );
+            setShowEInvoiceModal(false);
+            setSelectedInvoice(null);
           }}
-          items={orderItems || []}
+          onConfirm={handleEInvoiceComplete}
+          total={parseFloat(selectedInvoice.total || "0")}
+          cartItems={
+            selectedInvoice.items?.map((item: any) => ({
+              id: item.productId,
+              productId: item.productId,
+              name: item.productName,
+              price: parseFloat(item.unitPrice || "0"),
+              quantity: item.quantity,
+              discount: item.discount || "0",
+              taxRate: item.taxRate || "0",
+              sku: item.productSku || `ITEM${String(item.productId).padStart(3, "0")}`,
+            })) || []
+          }
+          source="table"
+          orderId={selectedInvoice.id}
+          selectedPaymentMethod={
+            selectedInvoice.paymentMethod || "cash"
+          }
         />
       )}
 
