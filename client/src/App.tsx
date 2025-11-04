@@ -38,11 +38,11 @@ function Router({ onLogout }: { onLogout: () => void }) {
 
     // Fetch store settings to determine business type
     const { data: storeSettings } = useQuery<StoreSettings>({
-      queryKey: ["/api/store-settings"],
-    });"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
+      queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/store-settings"],
+    });
 
     useEffect(() => {
-      if (storeSettings) {"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
+      if (storeSettings) {
         const businessType = storeSettings.businessType;
 
         // Route based on business type
