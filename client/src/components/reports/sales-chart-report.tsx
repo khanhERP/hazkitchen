@@ -313,12 +313,12 @@ export function SalesChartReport() {
   const { data: productAnalysisData, isLoading: productAnalysisLoading } =
     useQuery({
       queryKey: [
-        "/api/product-analysis",
+        "https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/product-analysis",
         startDate,
         endDate,
-        startTi"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
+        startTime,
         endTime,
-        selectedCategory,"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
+        selectedCategory,
         productType,
         selectedFloor, // Include floor filter in query key
         productSearch,
@@ -329,7 +329,7 @@ export function SalesChartReport() {
           const startDateTimeLocal = `${startDate} ${startTime}:00`;
           const endDateTimeLocal = `${endDate} ${endTime}:59`;
 
-        "https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/apist params = new URLSearchParams({
+          const params = new URLSearchParams({
             categoryId: selectedCategory || "all",
             productType: productType || "all",
             productSearch: productSearch || "",
@@ -387,7 +387,7 @@ export function SalesChartReport() {
     });
 
   const { data: transactions } = useQuery({
-    queryKey: ["/api/transactions"],
+    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/transactions"],
     staleTime: 5 * 60 * 1000,
   });
 
@@ -403,7 +403,7 @@ export function SalesChartReport() {
   };
 
   const formatDate = (dateStr: string) => {
-    return new "https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/apidateStr).toLocaleDateString("vi-VN", {
+    return new Date(dateStr).toLocaleDateString("vi-VN", {
       day: "2-digit",
       month: "2-digit",
       year: "numeric",

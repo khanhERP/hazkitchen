@@ -71,9 +71,9 @@ export function ReceiptModal({
 
   // Query store settings
   const { data: storeSettings } = useQuery({
-    queryKey: ["/api/store-settings"],
+    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/store-settings"],
     queryFn: async () => {
-      const response = await apiRequest("GET", "/api/store-settings");
+      const response = await apiRequest("GET", "https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/store-settings");
       console.log("🏢 Store settings fetched:", response.json());
       return response.json();
     },
@@ -82,7 +82,7 @@ export function ReceiptModal({
 
   // Query to get table info based on orderId
   const { data: tableInfo } = useQuery({
-    queryKey: ["/api/tables/by-order", receipt?.id],
+    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/tables/by-order", receipt?.id],
     queryFn: async () => {
       if (!receipt?.id) return null;
 
@@ -117,9 +117,9 @@ export function ReceiptModal({
 
   // Get table number from query result
   const displayTableNumber = useMemo(() => {
-    if (receipt"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/apileNumber) return receipt.tableNumber;
+    if (receipt?.tableNumber) return receipt.tableNumber;
     if (tableInfo?.tableNumber) return tableInfo.tableNumber;
-    return "-";"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
+    return "-";
   }, [receipt?.tableNumber, tableInfo?.tableNumber]);
 
   // Log receipt modal state for debugging - ALWAYS CALL THIS HOOK
@@ -128,7 +128,7 @@ export function ReceiptModal({
     setDomainName(domainConnect);
 
     if (isOpen) {
-      console.l"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api== RECEIPT MODAL RENDERED ===");
+      console.log("=== RECEIPT MODAL RENDERED ===");
       console.log(
         "Receipt Modal Mode:",
         isPreview ? "PREVIEW (Step 1)" : "FINAL RECEIPT (Step 5)",
@@ -172,7 +172,7 @@ export function ReceiptModal({
   useEffect(() => {
     async function fetchPrinterConfigs() {
       try {
-        const printerResponse = await fetch("/api/printer-configs");
+        const printerResponse = await fetch("https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/printer-configs");
         if (!printerResponse.ok) {
           console.error("Failed to fetch printer configs");
           return;
@@ -222,7 +222,7 @@ export function ReceiptModal({
             `🖨️ Filtered to ${kitchenPrinters.length} kitchen printers for floor ${tableFloor}`,
           );
         }
-"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
+
         // Combine kitchen printers with one employee printer
         activePrinterConfigs = [...kitchenPrinters, ...employeePrinter];
 
@@ -417,7 +417,7 @@ export function ReceiptModal({
       let activePrinterConfigs = [];
       try {
         console.log("🖨️ Fetching active printer configurations...");
-        const printerResponse = await fetch("/api/printer-configs");
+        const printerResponse = await fetch("https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/printer-configs");
         if (printerResponse.ok) {
           const allConfigs = await printerResponse.json();
           activePrinterConfigs = allConfigs.filter(
@@ -456,7 +456,7 @@ export function ReceiptModal({
         console.log("🖨️ Trying configured POS printers for all platforms...");
 
         try {
-          const printResponse = await fetch("/api/pos/print-receipt", {
+          const printResponse = await fetch("https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/pos/print-receipt", {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
@@ -467,7 +467,7 @@ export function ReceiptModal({
               preferredConfig:
                 activePrinterConfigs.find((c) => c.isEmployee) ||
                 activePrinterConfigs[0],
-            }),"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
+            }),
           });
 
           if (printResponse.ok) {
@@ -506,7 +506,7 @@ export function ReceiptModal({
         }
       }
 
-      // Step 4: Platform-specific fallback "https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/apids
+      // Step 4: Platform-specific fallback methods
       if (isMobile) {
         await handleMobilePrinting(
           printContent,
@@ -1479,9 +1479,9 @@ export function ReceiptModal({
 
                   // Fetch products data to get tax rates if not in receipt items
                   const { data: products } = useQuery({
-                    queryKey: ["/api/products"],
+                    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products"],
                     queryFn: async () => {
-                      const response = await apiRequest("GET", "/api/products");
+                      const response = await apiRequest("GET", "https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products");
                       return response.json();
                     },
                     enabled: isOpen,

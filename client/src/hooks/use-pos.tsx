@@ -44,7 +44,7 @@ export function usePOS() {
       const orderData = {
         orderNumber,
         tableId: null, // POS orders don't have tables
-        employeeId: null,"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
+        employeeId: null,
         status: paymentData.paymentMethod === "einvoice" ? "served" : "paid", // E-invoice orders start as served
         customerName: "Khách hàng",
         customerCount: 1,
@@ -80,7 +80,7 @@ export function usePOS() {
         notes: null,
       }));
 
-      const response = await fetch("/api/orders", {
+      const response = await fetch("https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ order: orderData, items }),
@@ -94,7 +94,7 @@ export function usePOS() {
       return response.json();
     },
     onSuccess: (order) => {
-      // Convert order to receipt f"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api for compatibility
+      // Convert order to receipt format for compatibility
       const receipt = {
         id: order.id,
         transactionId: order.orderNumber,
@@ -118,8 +118,8 @@ export function usePOS() {
 
       setLastReceipt(receipt);
       updateActiveOrderCart([]);
-      queryClient.invalidateQueries({ queryKey: ["/api/products"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/orders"] });
+      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products"] });
+      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] });
 
       // Dispatch events for real-time updates
       if (typeof window !== "undefined") {
@@ -132,8 +132,8 @@ export function usePOS() {
           }),
         ];
         events.forEach((event) => window.dispatchEvent(event));
-      }"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
-"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
+      }
+
       toast({
         title: "Đơn hàng hoàn tất",
         description: `Đơn hàng ${order.orderNumber} đã được xử lý thành công`,

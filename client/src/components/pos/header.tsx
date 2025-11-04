@@ -182,7 +182,7 @@ export function POSHeader({ onLogout }: POSHeaderProps) {
   const handleLogout = () => {
     // Xóa trạng thái đăng nhập khỏi sessionStorage
     sessionStorage.removeItem("pinAuthenticated");
-    // Gọi callbac"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/apiogout nếu có
+    // Gọi callback onLogout nếu có
     if (onLogout) {
       onLogout();
     }

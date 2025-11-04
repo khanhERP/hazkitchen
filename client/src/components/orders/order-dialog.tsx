@@ -64,36 +64,36 @@ export function OrderDialog({
   mode = "create",
 }: OrderDialogProps) {
   const [cart, setCart] = useState<CartItem[]>([]);
-  const [custom"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/apie, setCustomerName] = useState("");
+  const [customerName, setCustomerName] = useState("");
   const [customerCount, setCustomerCount] = useState(1);
   const [discount, setDiscount] = useState(0);
   const [selectedCategory, setSelectedCategory] = useState<number | null>(null);
-  const [existi"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/apims, setExistingItems] = useState<any[]>([]);
+  const [existingItems, setExistingItems] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState(""); // State for search input
   const { toast } = useToast();
   const { t } = useTranslation();
-  const queryCl"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api= useQueryClient();
+  const queryClient = useQueryClient();
 
   // State for receipt preview
   const [previewReceipt, setPreviewReceipt] = useState<any>(null);
-  const [showRe"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/apiPreview, setShowReceiptPreview] = useState(false);
+  const [showReceiptPreview, setShowReceiptPreview] = useState(false);
   const [showDeleteItemDialog, setShowDeleteItemDialog] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<any>(null);
 
   const { data: products, isLoading: productsLoading } = useQuery({
-    queryKey: ["/api/products"],
+    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products"],
   });
 
   const { data: categories, isLoading: categoriesLoading } = useQuery({
-    queryKey: ["/api/categories"],
+    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/categories"],
   });
 
   const { data: storeSettings } = useQuery({
-    queryKey: ["/api/store-settings"],
+    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/store-settings"],
   });
 
   const { data: existingOrderItems, refetch: refetchExistingItems } = useQuery({
-    queryKey: ["/api/order-items", existingOrder?.id],
+    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/order-items", existingOrder?.id],
     enabled: !!(existingOrder?.id && mode === "edit" && open),
     staleTime: 0,
     queryFn: async () => {
@@ -343,7 +343,7 @@ export function OrderDialog({
               customerName: orderData.order.customerName,
               customerCount: orderData.order.customerCount,
               subtotal: displayedSubtotal.toString(),
-              tax: displayedTax.toString(),"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
+              tax: displayedTax.toString(),
               discount: displayedDiscount.toString(),
               total: displayedTotal.toString(),
             },
@@ -360,7 +360,7 @@ export function OrderDialog({
         } else {
           console.log("📝 Creating new order...");
 
-          const response = await apiRequest("POST", "/api/orders", orderData);
+          const response = await apiRequest("POST", "https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders", orderData);
 
           if (!response.ok) {
             const errorData = await response.text();
@@ -383,12 +383,12 @@ export function OrderDialog({
         mode === "edit"
           ? "Order updated successfully (no duplicates):"
           : "Order created successfully:",
-        response,"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
+        response,
       );
 
       // IMMEDIATE: Clear cache and force fresh data fetch
       console.log("🔄 Clearing cache and forcing fresh data fetch...");
-      queryClient.clear"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
+      queryClient.clear();
       queryClient.removeQueries();
 
       // Force immediate refetch of order items if in edit mode
@@ -400,12 +400,12 @@ export function OrderDialog({
         try {
           // Clear existing cache for this specific order items
           queryClient.removeQueries({
-            queryKey: ["/api/order-items", existingOrder.id],
+            queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/order-items", existingOrder.id],
           });
 
           // Force fresh fetch of order items
           const freshOrderItems = await queryClient.fetchQuery({
-            queryKey: ["/api/order-items", existingOrder.id],
+            queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/order-items", existingOrder.id],
             queryFn: async () => {
               const response = await apiRequest(
                 "GET",
@@ -416,11 +416,11 @@ export function OrderDialog({
               return data;
             },
             staleTime: 0, // Force fresh data
-            gcTime: 0, // Don't cache"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
-          });"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
-"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
-          // Update existing items state immedia"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
-          if (freshOrderItems && Array.isArray(f"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/apirderItems)) {
+            gcTime: 0, // Don't cache
+          });
+
+          // Update existing items state immediately
+          if (freshOrderItems && Array.isArray(freshOrderItems)) {
             setExistingItems(freshOrderItems);
             console.log("✅ Existing items state updated with fresh data");
           }
@@ -433,11 +433,11 @@ export function OrderDialog({
 
       // Invalidate and refetch all related queries
       await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ["/api/orders"] }),
-        queryClient.invalidateQueries({ queryKey: ["/api/tables"] }),
-        queryClient.invalidateQueries({ queryKey: ["/api/order-items"] }),
-        queryClient.refetchQueries({ queryKey: ["/api/orders"] }),
-        queryClient.refetchQueries({ queryKey: ["/api/tables"] }),
+        queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] }),
+        queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/tables"] }),
+        queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/order-items"] }),
+        queryClient.refetchQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] }),
+        queryClient.refetchQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/tables"] }),
       ]);
 
       // Reset form state
@@ -1758,25 +1758,25 @@ export function OrderDialog({
                                       const quantity = parseInt(
                                         item.quantity || "0",
                                       );
-                                      const itemTotal = unitPrice"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/apiantity;
+                                      const itemTotal = unitPrice * quantity;
 
                                       return Math.floor(
                                         itemTotal,
                                       ).toLocaleString();
-                                    })()}{" "}"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
+                                    })()}{" "}
                                     ₫
                                   </span>
                                   <p className="text-xs text-gray-500 mt-0.5">
                                     {parseFloat(
                                       item.unitPrice || "0",
-                                    ).toLocaleString()}{"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
+                                    ).toLocaleString()}{" "}
                                     ₫ × {item.quantity}
                                   </p>
                                 </div>
                                 <Button
                                   size="sm"
                                   variant="destructive"
-                                  onClick={() => {"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
+                                  onClick={() => {
                                     setItemToDelete({ item, index });
                                     setShowDeleteItemDialog(true);
                                   }}
@@ -1785,10 +1785,10 @@ export function OrderDialog({
                                   <Minus className="w-3 h-3" />
                                 </Button>
                               </div>
-                            </div>"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
+                            </div>
                           </CardContent>
                         </Card>
-                      ))}"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
+                      ))}
                     </div>
                   </div>
                   {cart.length > 0 && <Separator className="my-2" />}
@@ -1813,10 +1813,10 @@ export function OrderDialog({
                         <div className="space-y-2">
                           <div className="flex justify-between items-start">
                             <h4 className="font-medium text-sm">
-                              {item.product.name}"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
+                              {item.product.name}
                             </h4>
                             <span className="text-sm font-bold">
-                              {(() => {"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
+                              {(() => {
                                 const priceIncludesTax =
                                   storeSettings?.priceIncludesTax || false;
                                 const basePrice = Number(item.product.price);
@@ -2320,25 +2320,25 @@ export function OrderDialog({
                           // Force refresh of all related data to ensure UI updates immediately
                           Promise.all([
                             queryClient.invalidateQueries({
-                              queryKey: ["/api/orders"],
+                              queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"],
                             }),
                             queryClient.invalidateQueries({
-                              queryKey: ["/api/tables"],
+                              queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/tables"],
                             }),
                             queryClient.invalidateQueries({
-                              queryKey: ["/api/order-items"],
+                              queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/order-items"],
                             }),
                             queryClient.invalidateQueries({
-                              queryKey: ["/api/order-items", existingOrder.id],
+                              queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/order-items", existingOrder.id],
                             }),
                           ]).then(() => {
                             // Force immediate refetch to update table grid display
                             return Promise.all([
                               queryClient.refetchQueries({
-                                queryKey: ["/api/orders"],
+                                queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"],
                               }),
                               queryClient.refetchQueries({
-                                queryKey: ["/api/tables"],
+                                queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/tables"],
                               }),
                             ]);
                           });
@@ -2363,10 +2363,10 @@ export function OrderDialog({
 
                     // Invalidate queries to refresh data
                     queryClient.invalidateQueries({
-                      queryKey: ["/api/order-items"],
+                      queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/order-items"],
                     });
                     queryClient.invalidateQueries({
-                      queryKey: ["/api/orders"],
+                      queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"],
                     });
                   })
                   .catch((error) => {

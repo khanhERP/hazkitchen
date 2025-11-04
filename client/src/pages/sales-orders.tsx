@@ -167,26 +167,26 @@ export default function SalesOrders() {
       setPrintReceiptData(null);
 
       // Refresh data
-      queryClient.invalidateQueries({ queryKey: ["/api/orders"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/tables"] });
+      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] });
+      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/tables"] });
     };
 
     const handleEInvoiceModalClosed = async (event: CustomEvent) => {
       console.log("📧 Sales Orders: E-invoice modal closed, refreshing data");
 
       // Clear cache completely and force fresh fetch
-      queryClient.removeQueries({ queryKey: ["/api/orders"] });
-      queryClient.removeQueries({ queryKey: ["/api/order-items"] });
-      queryClient.removeQueries({ queryKey: ["/api/invoices"] });
+      queryClient.removeQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] });
+      queryClient.removeQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/order-items"] });
+      queryClient.removeQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/invoices"] });
 
       // Force immediate refetch with fresh data
       await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ["/api/orders"] }),
-        queryClient.invalidateQueries({ queryKey: ["/api/order-items"] }),
-        queryClient.invalidateQueries({ queryKey: ["/api/invoices"] }),
-        queryClient.invalidateQueries({ queryKey: ["/api/tables"] }),
-        queryClient.refetchQueries({ queryKey: ["/api/orders"] }),
-        queryClient.refetchQueries({ queryKey: ["/api/invoices"] }),
+        queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] }),
+        queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/order-items"] }),
+        queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/invoices"] }),
+        queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/tables"] }),
+        queryClient.refetchQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] }),
+        queryClient.refetchQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/invoices"] }),
       ]);
 
       console.log("✅ Sales Orders: Data refreshed successfully from database");
@@ -196,58 +196,58 @@ export default function SalesOrders() {
       "printCompleted",
       handlePrintCompleted as EventListener,
     );
-    window.addEventListener("https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
-      "einvoiceModalClosed","https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
+    window.addEventListener(
+      "einvoiceModalClosed",
       handleEInvoiceModalClosed as EventListener,
     );
 
     return () => {
       window.removeEventListener(
         "printCompleted",
-        handlePrintCompleted as EventListener"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
-      );"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
-      window.removeEventListener("https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
+        handlePrintCompleted as EventListener,
+      );
+      window.removeEventListener(
         "einvoiceModalClosed",
         handleEInvoiceModalClosed as EventListener,
       );
-    };"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
-  }, [queryClient]);"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
-"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
-  // Auto-refresh when new orders are created"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
-  useEffect(() => {"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
-    const handleNewOrder = () => {"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
+    };
+  }, [queryClient]);
+
+  // Auto-refresh when new orders are created
+  useEffect(() => {
+    const handleNewOrder = () => {
       console.log("📱 Sales Orders: New order detected, refreshing data...");
       // Force immediate refresh with all date ranges
-      queryClient.invalidateQueries({ queryKey: ["/api/orders"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/invoices"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/transactions"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/orders/date-range"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/invoices/date-range"] });
+      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] });
+      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/invoices"] });
+      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/transactions"] });
+      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders/date-range"] });
+      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/invoices/date-range"] });
     };
 
     const handleOrderUpdate = () => {
       console.log("🔄 Sales Orders: Order updated, refreshing data...");
-      queryClient.invalidateQueries({ queryKey: ["/api/orders"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/invoices"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/transactions"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/orders/date-range"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/invoices/date-range"] });
+      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] });
+      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/invoices"] });
+      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/transactions"] });
+      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders/date-range"] });
+      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/invoices/date-range"] });
     };
 
     const handleRefreshOrders = () => {
       console.log("🔄 Sales Orders: Manual refresh triggered...");
-      queryClient.invalidateQueries({ queryKey: ["/api/orders"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/invoices"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/transactions"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/orders/date-range"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/invoices/date-range"] });
+      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] });
+      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/invoices"] });
+      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/transactions"] });
+      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders/date-range"] });
+      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/invoices/date-range"] });
     };
 
     // Listen for order creation and update events
     window.addEventListener("newOrderCreated", handleNewOrder);
     window.addEventListener("orderStatusUpdated", handleOrderUpdate);
     window.addEventListener("paymentCompleted", handleOrderUpdate);
-    window.addEvent"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/apiner("refreshOrders", handleRefreshOrders);
+    window.addEventListener("refreshOrders", handleRefreshOrders);
     window.addEventListener("invoiceCreated", handleNewOrder);
     window.addEventListener("receiptCreated", handleNewOrder);
 
@@ -313,7 +313,7 @@ export default function SalesOrders() {
   useEffect(() => {
     const fetchSettings = async () => {
       try {
-        const response = await apiRequest("GET", "/api/store-settings");
+        const response = await apiRequest("GET", "https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/store-settings");
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
@@ -324,14 +324,14 @@ export default function SalesOrders() {
       }
     };
     fetchSettings();
-  }, []);"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
+  }, []);
 
   // Query customers for datalist
   const { data: customers = [] } = useQuery({
-    queryKey: ["/api/customers"],
+    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/customers"],
     queryFn: async () => {
       try {
-        const response = await apiRequest("GET", "/api/customers");
+        const response = await apiRequest("GET", "https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/customers");
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
@@ -344,16 +344,16 @@ export default function SalesOrders() {
     },
     staleTime: 0,
     gcTime: 0,
-  });"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
+  });
 
   // Query orders using /api/orders/list with storeCode filter
-  const {"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
+  const {
     data: ordersResponse,
     isLoading: ordersLoading,
     error: ordersError,
   } = useQuery({
     queryKey: [
-      "/api/orders/list",
+      "https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders/list",
       startDate,
       endDate,
       customerSearch,
@@ -369,7 +369,7 @@ export default function SalesOrders() {
       try {
         const params = new URLSearchParams();
 
-      "https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api(startDate) params.append("startDate", startDate);
+        if (startDate) params.append("startDate", startDate);
         if (endDate) params.append("endDate", endDate);
         if (customerSearch) params.append("customerName", customerSearch);
         if (orderNumberSearch) params.append("orderNumber", orderNumberSearch);
@@ -423,10 +423,10 @@ export default function SalesOrders() {
 
   // Query all products to get tax rates
   const { data: products = [] } = useQuery({
-    queryKey: ["/api/products"],
+    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products"],
     queryFn: async () => {
       try {
-        const response = await apiRequest("GET", "/api/products");
+        const response = await apiRequest("GET", "https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products");
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
@@ -443,10 +443,10 @@ export default function SalesOrders() {
 
   // Query tables to map tableId to table number
   const { data: tables = [] } = useQuery({
-    queryKey: ["/api/tables"],
+    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/tables"],
     queryFn: async () => {
       try {
-        const response = await apiRequest("GET", "/api/tables");
+        const response = await apiRequest("GET", "https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/tables");
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
@@ -462,10 +462,10 @@ export default function SalesOrders() {
   });
 
   const getTableNumber = (tableId: number): string => {
-    const table"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/apibles.find((t: any) => t.id === tableId);
+    const table = tables.find((t: any) => t.id === tableId);
     // Use table.name if available, fallback to table.number or table.tableNumber
     const tableName =
-      table?.name || table?.number || table?.tabl"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/apier || tableId;
+      table?.name || table?.number || table?.tableNumber || tableId;
 
     // Check if tableName already starts with "Bàn" or "Ban" to avoid duplication
     const tableNameStr = String(tableName);
@@ -488,12 +488,12 @@ export default function SalesOrders() {
     isLoading: orderItemsLoading,
     error: orderItemsError,
   } = useQuery({
-    queryKey: ["/api/order-items", selectedInvoice?.id],
+    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/order-items", selectedInvoice?.id],
     queryFn: async () => {
-      if (!sele"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/apinvoice?.id) {
+      if (!selectedInvoice?.id) {
         console.log("❌ No selected invoice ID");
         return [];
-      }"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
+      }
 
       console.log("📦 Fetching order items for order:", selectedInvoice.id);
 
@@ -535,7 +535,7 @@ export default function SalesOrders() {
       console.log("🔄 Updating order with data:", updatedOrder);
 
       const updatePayload = {
-        custome"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api: updatedOrder.customerName || "",
+        customerName: updatedOrder.customerName || "",
         customerPhone: updatedOrder.customerPhone || "",
         customerAddress: updatedOrder.customerAddress || "",
         customerTaxCode: updatedOrder.customerTaxCode || "",
@@ -570,20 +570,20 @@ export default function SalesOrders() {
       console.log("✅ Order updated successfully:", data);
 
       // Clear cache completely
-      queryClient.removeQueries({ queryKey: ["/api/orders"] });
+      queryClient.removeQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] });
       queryClient.removeQueries({
-        queryKey: ["/api/order-items", updatedOrder.id],
+        queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/order-items", updatedOrder.id],
       });
 
       // Force fresh fetch from server
       await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ["/api/orders"] }),
+        queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] }),
         queryClient.invalidateQueries({
-          queryKey: ["/api/order-items", updatedOrder.id],
+          queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/order-items", updatedOrder.id],
         }),
-        queryClient.refetchQueries({ queryKey: ["/api/orders"] }),
+        queryClient.refetchQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] }),
         queryClient.refetchQueries({
-          queryKey: ["/api/order-items", updatedOrder.id],
+          queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/order-items", updatedOrder.id],
         }),
       ]);
 
@@ -652,7 +652,7 @@ export default function SalesOrders() {
       setShowBulkCancelDialog(false);
       setSelectedOrderIds(new Set());
 
-      queryClient.invalidateQueries({ queryKey: ["/api/orders"] });
+      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] });
 
       // Update selected order if it was cancelled
       if (selectedInvoice) {
@@ -689,15 +689,15 @@ export default function SalesOrders() {
     mutationFn: async (invoiceData: any) => {
       const response = await apiRequest(
         "POST",
-        "/api/einvoice/publish",
+        "https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/einvoice/publish",
         invoiceData,
       );
-      return respon"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/apion();
+      return response.json();
     },
     onSuccess: async (result, variables) => {
       console.log("✅ E-invoice published successfully:", result);
 
-      if (result.su"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api && selectedInvoice) {
+      if (result.success && selectedInvoice) {
         try {
           const invoiceNo =
             result.data?.invoiceNo || result.invoiceNumber || null;
@@ -759,12 +759,12 @@ export default function SalesOrders() {
           setPrintReceiptData(receiptData);
           setShowPrintDialog(true);
 
-          queryClient.invalidateQueries({ queryKey: ["/api/orders"] });
+          queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] });
 
           setShowPublishDialog(false);
           setSelectedInvoice(null);
 
-          alert("https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
+          alert(
             `Hóa đơn đã phát hành thành công!\nSố hóa đơn: ${invoiceNo || "N/A"}\n\nMàn hình in hóa đơn sẽ hiển thị.`,
           );
         } catch (updateError) {
@@ -801,7 +801,7 @@ export default function SalesOrders() {
         `https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders/${orderId}/status`,
         {
           status: "cancelled",
-        "https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
+        },
       );
 
       if (!response.ok) {
@@ -869,26 +869,26 @@ export default function SalesOrders() {
       setShowCancelDialog(false);
 
       // Clear cache completely and force fresh fetch
-      queryClient.removeQueries({ queryKey: ["/api/orders"] });
-      queryClient.removeQueries({ queryKey: ["/api/orders/date-range"] });
-      queryClient.removeQueries({ queryKey: ["/api/ta"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api] });
+      queryClient.removeQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] });
+      queryClient.removeQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders/date-range"] });
+      queryClient.removeQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/tables"] });
 
       // Force immediate refetch with fresh data
       await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ["/api/orders"] }),
-        queryClient.invalidateQueries({ queryKey: ["/api/orders/date-range"] }),
-        queryClient.invalidateQueries({ queryKey: ["/api/tables"] }),
-        queryClient.refetchQueries({ queryKey: ["/api/orders"] }),
+        queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] }),
+        queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders/date-range"] }),
+        queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/tables"] }),
+        queryClient.refetchQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] }),
         queryClient.refetchQueries({
           queryKey: [
-            "/api/orders/date-range",
+            "https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders/date-range",
             startDate,
             endDate,
             currentPage,
             itemsPerPage,
           ],
         }),
-        queryClient.refetchQueries({ queryKey: ["/api/tables"] }),
+        queryClient.refetchQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/tables"] }),
       ]);
 
       // Update selected order if it was cancelled
@@ -949,7 +949,7 @@ export default function SalesOrders() {
         return t("common.unpaid"); // Changed default from "Tiền mặt" to "Chưa thanh toán"
     }
   };
-"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
+
   const getStatusBadge = (status: string) => {
     const statusColors = {
       draft: "bg-gray-100 text-gray-800",
@@ -1437,7 +1437,7 @@ export default function SalesOrders() {
 
     // Add to the orderItems query data temporarily for display
     queryClient.setQueryData(
-      ["/api/order-items", selectedInvoice.id],
+      ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/order-items", selectedInvoice.id],
       (oldData: any) => {
         const currentItems = Array.isArray(oldData) ? oldData : [];
         return [...currentItems, newEmptyItem];
@@ -1464,7 +1464,7 @@ export default function SalesOrders() {
 
   const handleSaveOrder = async () => {
     if (!editableInvoice) return;
-"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
+
     try {
       console.log("💾 Starting save order process:", {
         orderId: editableInvoice.id,
@@ -1841,27 +1841,27 @@ export default function SalesOrders() {
       await updateOrderMutation.mutateAsync(orderData as Order);
 
       // Clear and refresh all related queries
-      queryClient.removeQueries({ queryKey: ["/api/orders"] });
-      queryClient.removeQueries({ queryKey: ["/api/order-items"] });
+      queryClient.removeQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] });
+      queryClient.removeQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/order-items"] });
       queryClient.removeQueries({
-        queryKey: ["/api/orders/date-range"],
+        queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders/date-range"],
       });
 
       await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ["/api/orders"] }),
+        queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] }),
         queryClient.invalidateQueries({
-          queryKey: ["/api/order-items", editableInvoice.id],
+          queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/order-items", editableInvoice.id],
         }),
         queryClient.invalidateQueries({
-          queryKey: ["/api/orders/date-range"],
+          queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders/date-range"],
         }),
-        queryClient.refetchQueries({ queryKey: ["/api/orders"] }),
+        queryClient.refetchQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] }),
         queryClient.refetchQueries({
-          queryKey: ["/api/order-items", editableInvoice.id],
+          queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/order-items", editableInvoice.id],
         }),
         queryClient.refetchQueries({
           queryKey: [
-            "/api/orders/date-range",
+            "https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders/date-range",
             startDate,
             endDate,
             currentPage,
@@ -1898,7 +1898,7 @@ export default function SalesOrders() {
     setEditedOrderItems({}); // Clear local edits
     // Invalidate order items to reset them if any changes were made but not saved
     queryClient.invalidateQueries({
-      queryKey: ["/api/order-items", selectedInvoice?.id],
+      queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/order-items", selectedInvoice?.id],
     });
   };
 
@@ -2114,7 +2114,7 @@ export default function SalesOrders() {
           itemTax = Math.round(priceBeforeTax * taxRate);
         }
       } else {
-        priceBeforeTax = Math.round"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/apiSubtotal - itemDiscountAmount);
+        priceBeforeTax = Math.round(itemSubtotal - itemDiscountAmount);
       }
 
       const calculatedTotal = priceBeforeTax + itemTax;
@@ -2127,14 +2127,14 @@ export default function SalesOrders() {
           sku,
           quantity,
           unitPrice,
-          itemSubtotal,"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
-          taxRate: taxRate * 100 + "%","https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
+          itemSubtotal,
+          taxRate: taxRate * 100 + "%",
           priceIncludeTax,
-          itemDiscoun"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/apint,
+          itemDiscountAmount,
           priceBeforeTax,
           itemTax: Math.round(itemTax),
           calculatedTotal,
-        },"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
+        },
       );
 
       // ALWAYS return updated calculated fields to ensure UI reflects latest values
@@ -2169,7 +2169,7 @@ export default function SalesOrders() {
     const currentFieldIndex = editableFields.indexOf(fieldType);
 
     // Get visible items (not deleted)
-    const visible"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api = orderItems.filter(
+    const visibleItems = orderItems.filter(
       (item: any) => !editedOrderItems[item.id]?._deleted,
     );
 
@@ -2421,10 +2421,10 @@ export default function SalesOrders() {
 
     const headers = [
       "Số đơn bán",
-      "Ngày đơn"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api,
+      "Ngày đơn bán",
       "Bàn",
       "Mã khách hàng",
-      "Tên khách hàng","https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
+      "Tên khách hàng",
       "Thành tiền",
       "Giảm giá",
       "Tiền thuế",
@@ -2635,8 +2635,8 @@ export default function SalesOrders() {
         console.log("✅ Order payment status updated successfully");
 
         // Refresh orders list
-        queryClient.invalidateQueries({ queryKey: ["/api/orders"] });
-        queryClient.invalidateQueries({ queryKey: ["/api/tables"] });
+        queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] });
+        queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/tables"] });
 
         toast({
           title: "Thanh toán thành công",
@@ -2722,10 +2722,10 @@ export default function SalesOrders() {
 
       // Refresh orders list after a delay to avoid interfering with receipt modal
       setTimeout(() => {
-        queryClient.invalidateQueries({ queryKey: ["/api/orders"] });
+        queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] });
         queryClient.invalidateQueries({
           queryKey: [
-            "/api/orders/date-range",
+            "https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders/date-range",
             startDate,
             endDate,
             currentPage,
@@ -2856,9 +2856,9 @@ export default function SalesOrders() {
         console.log("✅ Order updated successfully after publish.");
 
         // Trigger refresh after successful update
-        queryClient.invalidateQueries({ queryKey: ["/api/orders"] });
+        queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] });
         queryClient.invalidateQueries({
-          queryKey: ["/api/order-items", selectedInvoice.id],
+          queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/order-items", selectedInvoice.id],
         });
 
         setShowEInvoiceModal(false);
@@ -3063,7 +3063,7 @@ export default function SalesOrders() {
                   <Button
                     onClick={() => {
                       queryClient.invalidateQueries({
-                        queryKey: ["/api/orders"],
+                        queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"],
                       });
                     }}
                   >
@@ -3473,8 +3473,8 @@ export default function SalesOrders() {
                                   <td className="px-3 py-3">
                                     <div
                                       className="text-sm font-mono truncate"
-                                      title={custom"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/apie}
-                                    >"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
+                                      title={customerCode}
+                                    >
                                       {customerCode}
                                     </div>
                                   </td>
@@ -3560,10 +3560,10 @@ export default function SalesOrders() {
                                             <CardHeader className="pb-3">
                                               <CardTitle className="text-lg text-blue-700">
                                                 {t("common.orderDetails")}
-                                              </Car"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/apie>
+                                              </CardTitle>
                                             </CardHeader>
                                             <CardContent className="space-y-4">
-            "https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api                             <div className="bg-white p-4 rounded-lg overflow-x-auto">
+                                              <div className="bg-white p-4 rounded-lg overflow-x-auto">
                                                 <div className="min-w-[1200px]">
                                                   <table className="w-full text-sm border-collapse">
                                                     <tbody>
@@ -3960,7 +3960,7 @@ export default function SalesOrders() {
                                                             <td className="py-1 pr-6">
                                                               {isEditing &&
                                                               editableInvoice ? (
-                                   "https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api                        <Checkbox
+                                                                <Checkbox
                                                                   checked={
                                                                     editableInvoice.isPaid ||
                                                                     false
@@ -4167,7 +4167,7 @@ export default function SalesOrders() {
                                                         queryClient.invalidateQueries(
                                                           {
                                                             queryKey: [
-                                                              "/api/order-items",
+                                                              "https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/order-items",
                                                               selectedInvoice?.id,
                                                             ],
                                                           },
@@ -4970,7 +4970,7 @@ export default function SalesOrders() {
                                                                     {isEditing &&
                                                                       selectedInvoice.displayStatus !==
                                                                         1 && (
-                                                                "https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api   <Button
+                                                                        <Button
                                                                           size="sm"
                                                                           variant="ghost"
                                                                           className="text-red-600 hover:text-red-700 hover:bg-red-50"
@@ -5973,7 +5973,7 @@ export default function SalesOrders() {
             setOrderForPayment(null);
 
             // Refresh data after closing
-            // queryClient.invalidateQueries({ queryKey: ["/api/orders"] });
+            // queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] });
           }}
           onSelectMethod={handlePaymentComplete}
           total={
@@ -6053,7 +6053,7 @@ export default function SalesOrders() {
             setShowReceiptModal(false);
             setSelectedReceipt(null);
 
-            queryClient.invalidateQueries({ queryKey: ["/api/orders"] });
+            queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] });
           }}
           receipt={selectedReceipt}
           isPreview={false}
@@ -6062,4 +6062,3 @@ export default function SalesOrders() {
     </div>
   );
 }
-"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api

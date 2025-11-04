@@ -78,10 +78,10 @@ export default function CashBookPage({ onLogout }: CashBookPageProps) {
 
   // Query orders (thu - income from sales)
   const { data: orders = [] } = useQuery({
-    queryKey: ["/api/orders"],
+    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"],
     queryFn: async () => {
       try {
-        const response = await fetch("/api/orders");
+        const response = await fetch("https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders");
         if (!response.ok)
           throw new Error(`HTTP error! status: ${response.status}`);
         const data = await response.json();
@@ -95,10 +95,10 @@ export default function CashBookPage({ onLogout }: CashBookPageProps) {
 
   // Query purchase receipts (chi - expenses from purchases)
   const { data: purchaseReceipts = [] } = useQuery({
-    queryKey: ["/api/purchase-receipts"],
+    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/purchase-receipts"],
     queryFn: async () => {
       try {
-        const response = await fetch("/api/purchase-receipts");
+        const response = await fetch("https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/purchase-receipts");
         if (!response.ok)
           throw new Error(`HTTP error! status: ${response.status}`);
         const data = await response.json();
@@ -112,10 +112,10 @@ export default function CashBookPage({ onLogout }: CashBookPageProps) {
 
   // Query income vouchers (thu - manual income entries)
   const { data: incomeVouchers = [] } = useQuery({
-    queryKey: ["/api/income-vouchers"],
+    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/income-vouchers"],
     queryFn: async () => {
       try {
-        const response = await fetch("/api/income-vouchers");
+        const response = await fetch("https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/income-vouchers");
         if (!response.ok)
           throw new Error(`HTTP error! status: ${response.status}`);
         const data = await response.json();
@@ -129,10 +129,10 @@ export default function CashBookPage({ onLogout }: CashBookPageProps) {
 
   // Query expense vouchers (chi - manual expense entries)
   const { data: expenseVouchers = [] } = useQuery({
-    queryKey: ["/api/expense-vouchers"],
+    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/expense-vouchers"],
     queryFn: async () => {
       try {
-        const response = await fetch("/api/expense-vouchers");
+        const response = await fetch("https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/expense-vouchers");
         if (!response.ok)
           throw new Error(`HTTP error! status: ${response.status}`);
         const data = await response.json();
@@ -146,10 +146,10 @@ export default function CashBookPage({ onLogout }: CashBookPageProps) {
 
   // Query suppliers for name mapping
   const { data: suppliers = [] } = useQuery({
-    queryKey: ["/api/suppliers"],
+    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/suppliers"],
     queryFn: async () => {
       try {
-        const response = await fetch("/api/suppliers");
+        const response = await fetch("https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/suppliers");
         if (!response.ok)
           throw new Error(`HTTP error! status: ${response.status}`);
         const data = await response.json();
@@ -164,9 +164,9 @@ export default function CashBookPage({ onLogout }: CashBookPageProps) {
   // Load payment methods from localStorage (same as settings page)
   // Query payment methods from API
   const { data: paymentMethodsData } = useQuery({
-    queryKey: ["/api/payment-methods"],
+    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/payment-methods"],
     queryFn: async () => {
-      const response = await fetch("/api/payment-methods");
+      const response = await fetch("https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/payment-methods");
       return response.json();
     },
   });
@@ -180,7 +180,7 @@ export default function CashBookPage({ onLogout }: CashBookPageProps) {
 
   const paymentMethods = getPaymentMethods();
 
-  // Calculate "https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/apibook data
+  // Calculate cash book data
   const cashBookData = useMemo(() => {
     const transactions: CashTransaction[] = [];
 
@@ -201,7 +201,7 @@ export default function CashBookPage({ onLogout }: CashBookPageProps) {
               return paymentMethods.some(
                 (pm: any) => pm.method === paymentMethodFilter,
               );
-            } c"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api(e) {
+            } catch (e) {
               console.error("Error parsing payment method:", e);
               return false;
             }
@@ -222,7 +222,7 @@ export default function CashBookPage({ onLogout }: CashBookPageProps) {
           paymentMethodFilter !== "all" &&
           order.paymentMethod &&
           order.paymentMethod.startsWith("[")
-        ) {"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
+        ) {
           try {
             const paymentMethods = JSON.parse(order.paymentMethod);
             const matchedMethod = paymentMethods.find(
@@ -243,7 +243,7 @@ export default function CashBookPage({ onLogout }: CashBookPageProps) {
           description:
             order.salesChannel === "table"
               ? "tableSalesTransaction"
-              :"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/apiesTransaction",
+              : "salesTransaction",
           source: order.customerName || t("common.customer"),
           type: "thu", // All paid orders are income transactions
           amount: transactionAmount,
@@ -264,10 +264,10 @@ export default function CashBookPage({ onLogout }: CashBookPageProps) {
       .forEach((voucher) => {
         // Validate date before adding to transactions
         const voucherDate = voucher.date ? new Date(voucher.date) : new Date();
-        const i"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/apidDate = !isNaN(voucherDate.getTime());
+        const isValidDate = !isNaN(voucherDate.getTime());
 
         if (isValidDate) {
-          transactions.push({"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
+          transactions.push({
             id: voucher.voucherNumber, // Use actual voucher number instead of internal ID
             date: voucher.date || new Date().toISOString().split("T")[0],
             description: voucher.category || "orther",
@@ -282,9 +282,9 @@ export default function CashBookPage({ onLogout }: CashBookPageProps) {
       });
 
     // Add expense transactions from expense vouchers (chi)
-    expenseVouc"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
+    expenseVouchers
       .filter((voucher) => {
-        // Apply payment method fil"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api expense vouchers use 'account' field
+        // Apply payment method filter - expense vouchers use 'account' field
         if (paymentMethodFilter !== "all") {
           const matches = voucher.account === paymentMethodFilter;
           console.log(

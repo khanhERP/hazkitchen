@@ -123,12 +123,12 @@ export function DashboardOverview() {
 
   const handleRefresh = () => {
     // Refresh the queries to get the latest data for the selected date
-    setStartDat"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/apimatDateToYYYYMMDD(new Date()));
+    setStartDate(formatDateToYYYYMMDD(new Date()));
     setEndDate(formatDateToYYYYMMDD(new Date()));
-    queryClient.invalidateQueries({ queryKey: ["/api/orders"] });
-    queryClient.invalidateQueries({ q"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/apiey: ["/api/orders/date-range"] });
-    queryClient.invalidateQueries({ queryKey: ["/api/order-items"] });
-    queryClient.invalidateQueries({ queryKey: ["/api/tables"] });
+    queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] });
+    queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders/date-range"] });
+    queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/order-items"] });
+    queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/tables"] });
   };
 
   const getDashboardStats = () => {
@@ -142,10 +142,10 @@ export function DashboardOverview() {
           periodCustomerCount: 0,
           dailyAverageRevenue: 0,
           activeOrders: 0,
-          occupiedTables: 0,"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
-          monthRevenue: 0,"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
-          averageOrderValue: 0,"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
-          peakHour: 12,"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
+          occupiedTables: 0,
+          monthRevenue: 0,
+          averageOrderValue: 0,
+          peakHour: 12,
           totalTables: Array.isArray(tables) ? tables.length : 0,
         };
       }
@@ -328,10 +328,10 @@ export function DashboardOverview() {
 
   // Get all current orders to check active ones (not date-filtered)
   const { data: allCurrentOrders = [] } = useQuery({
-    queryKey: ["/api/orders"],
+    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"],
     queryFn: async () => {
       try {
-        const response = await fetch("/api/orders");
+        const response = await fetch("https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders");
         if (!response.ok)
           throw new Error(`HTTP error! status: ${response.status}`);
         return await response.json();
@@ -362,10 +362,10 @@ export function DashboardOverview() {
       };
 
       const locale = localeMap[currentLanguage] || "ko-KR";
-"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
+
       return new Date(dateStr).toLocaleDateString(locale, {
         year: "numeric",
-        month: "long","https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
+        month: "long",
         day: "numeric",
       });
     } catch (error) {

@@ -182,12 +182,12 @@ export default function PurchaseFormPage({
 
   // Form setup
   const form = useForm<z.infer<typeof insertPurchaseReceiptSchema>>({
-    resolver: z"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/apiolver(insertPurchaseReceiptSchema),
+    resolver: zodResolver(insertPurchaseReceiptSchema),
     defaultValues: {
       receiptNumber: `PN${Date.now()}`,
       supplierId: 0,
       purchaseDate: format(new Date(), "yyyy-MM-dd"),
-      actualDel"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/apiDate: "",
+      actualDeliveryDate: "",
       notes: "",
       subtotal: "0.00",
       tax: "0.00",
@@ -226,47 +226,47 @@ export default function PurchaseFormPage({
 
   // Fetch suppliers
   const { data: suppliers = [] } = useQuery({
-    queryKey: ["/api/suppliers"],
+    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/suppliers"],
     select: (data: any) => data || [],
   });
 
   // Fetch employees for assignment
   const { data: employees = [] } = useQuery({
-    queryKey: ["/api/employees"],
+    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/employees"],
     select: (data: any[]) =>
       (data || []).map((emp: any) => ({
         id: emp.id,
-        name:"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
+        name:
           emp.name ||
           `${emp.firstName || ""} ${emp.lastName || ""}`.trim() ||
           "Unnamed Employee",
       })),
   });
-"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
+
   // Fetch categories for new product form
   const { data: categories = [] } = useQuery({
-    queryKey: ["/api/categories"],
+    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/categories"],
     select: (data: any) => data || [],
   });
 
   // Fetch payment methods
   const { data: paymentMethods = [] } = useQuery({
-    queryKey: ["/api/payment-methods"],
+    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/payment-methods"],
     select: (data: any[]) =>
       (data || [])
         .filter((method: any) => method.enabled === true) // Only show enabled payment methods
-        .map((m"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api: any) => ({
+        .map((method: any) => ({
           id: method.id,
           name: method.name,
           nameKey: method.nameKey,
           icon: method.icon || "",
         })),
-  });"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
+  });
 
 
   // Fetch products for selection - only active products, exclude expenses
   const { data: allProducts = [] } = useQuery({
-    queryKey: ["/api/products"],
+    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products"],
     select: (data: any[]) =>
       (data || [])
         .filter((product: any) => 
@@ -275,7 +275,7 @@ export default function PurchaseFormPage({
         )
         .map((product: any) => ({
           id: product.id,
-          name:"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/apiuct.name,
+          name: product.name,
           sku: product.sku,
           stock: product.stock,
           unitPrice: Number(product.price) || 0,
@@ -1235,8 +1235,8 @@ export default function PurchaseFormPage({
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(submissionData),
           })
-        : await fetch("/api/purchase-receipts", {
-            method: "P"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
+        : await fetch("https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/purchase-receipts", {
+            method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(submissionData),
           });
@@ -1400,9 +1400,9 @@ export default function PurchaseFormPage({
       });
 
       // Refresh queries and navigate
-      queryClient.invalidateQueries({ queryKey: ["/api/purchase-receipts"] });
+      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/purchase-receipts"] });
       queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/suppliers"] });
-"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
+
       setTimeout(() => {
         navigate("/purchases");
       }, 1000);
@@ -1440,7 +1440,7 @@ export default function PurchaseFormPage({
 
   // Check if products are loading
   const { isLoading: isLoadingProducts } = useQuery({
-    queryKey: ["/api/products"],
+    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products"],
   });
 
   // Show loading screen when fetching existing order or products

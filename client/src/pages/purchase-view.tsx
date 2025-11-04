@@ -38,15 +38,15 @@ export default function PurchaseViewPage({ onLogout }: PurchaseViewPageProps) {
 
   // Fetch categories for new product form
   const { data: categories = [] } = useQuery({
-    queryKey: ["/api/categories"],
+    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/categories"],
     select: (data: any) => data || [],
   });
 
   // Fetch payment methods from API
   const { data: paymentMethodsData } = useQuery({
-    queryKey: ["/api/payment-methods"],
+    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/payment-methods"],
     queryFn: async () => {
-      const response = await fetch("/api/payment-methods");
+      const response = await fetch("https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/payment-methods");
       return response.json();
     },
   });
@@ -86,15 +86,15 @@ export default function PurchaseViewPage({ onLogout }: PurchaseViewPageProps) {
     return paymentMethods.filter((method: any) => method.enabled === true);
   };
 
-  const payment"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/apids = getPaymentMethods();
+  const paymentMethods = getPaymentMethods();
 
   // Fetch purchase receipt details
   const { data: purchaseOrder, isLoading: isOrderLoading, error: orderError } = useQuery<PurchaseOrder>({
-    queryKey: ["/api/purchase-receipts", purchaseId],
+    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/purchase-receipts", purchaseId],
     queryFn: async () => {
-      if (!purc"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/apid) throw new Error("Purchase ID not found");
+      if (!purchaseId) throw new Error("Purchase ID not found");
 
-      console.log('🔍 Fetching purc"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/apireceipt with ID:', purchaseId);
+      console.log('🔍 Fetching purchase receipt with ID:', purchaseId);
       const response = await fetch(`https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/purchase-receipts/${purchaseId}`);
 
       if (!response.ok) {
@@ -114,7 +114,7 @@ export default function PurchaseViewPage({ onLogout }: PurchaseViewPageProps) {
 
   // Fetch purchase receipt items
   const { data: purchaseItems = [], isLoading: isItemsLoading } = useQuery<PurchaseReceiptItem[]>({
-    queryKey: ["/api/purchase-receipts", purchaseId, "items"],
+    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/purchase-receipts", purchaseId, "items"],
     queryFn: async () => {
       if (!purchaseId) throw new Error("Purchase ID not found");
 
@@ -132,7 +132,7 @@ export default function PurchaseViewPage({ onLogout }: PurchaseViewPageProps) {
 
   // Fetch attached documents
   const { data: attachedDocuments = [] } = useQuery({
-    queryKey: ["/api/purchase-receipts", purchaseId, "documents"],
+    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/purchase-receipts", purchaseId, "documents"],
     queryFn: async () => {
       if (!purchaseId) throw new Error("Purchase ID not found");
 
@@ -147,10 +147,10 @@ export default function PurchaseViewPage({ onLogout }: PurchaseViewPageProps) {
     },
     enabled: !!purchaseId,
   });
-"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
+
   // Fetch suppliers for name lookup
   const { data: suppliers = [] } = useQuery<Supplier[]>({
-    queryKey: ["/api/suppliers"],
+    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/suppliers"],
   });
 
   // Initialize form data when purchase order loads
@@ -173,7 +173,7 @@ export default function PurchaseViewPage({ onLogout }: PurchaseViewPageProps) {
   useEffect(() => {
     if (purchaseItems.length > 0) {
       const initialItems: Record<number, any> = {};
-      purchaseI"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/apiforEach(item => {
+      purchaseItems.forEach(item => {
         // Convert discount percent - handle both camelCase and snake_case
         let discountPercent = item.discountPercent || item.discount_percent || '0';
         const discountValue = parseFloat(discountPercent);
@@ -193,7 +193,7 @@ export default function PurchaseViewPage({ onLogout }: PurchaseViewPageProps) {
           sku: item.sku,
           discountAmount: discountAmount, // Keep as string to preserve exact value
           productId: item.productId
-        };"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
+        };
       });
       setEditedItems(initialItems);
     }
@@ -213,7 +213,7 @@ export default function PurchaseViewPage({ onLogout }: PurchaseViewPageProps) {
       let initialMethod = { method: 'cash', amount: Math.round(itemsTotal).toString() };
 
       // Try to parse as JSON first
-      if (payme"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/apihodStr && paymentMethodStr.trim() !== '') {
+      if (paymentMethodStr && paymentMethodStr.trim() !== '') {
         try {
           const parsed = JSON.parse(paymentMethodStr);
           if (Array.isArray(parsed) && parsed.length > 0) {
@@ -255,7 +255,7 @@ export default function PurchaseViewPage({ onLogout }: PurchaseViewPageProps) {
 
   // Fetch employees for display
   const { data: employees = [] } = useQuery({
-    queryKey: ["/api/employees"],
+    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/employees"],
     select: (data: any[]) =>
       (data || []).map((emp: any) => ({
         id: emp.id,
@@ -265,7 +265,7 @@ export default function PurchaseViewPage({ onLogout }: PurchaseViewPageProps) {
 
   // Fetch products for selection
   const { data: allProducts = [] } = useQuery({
-    queryKey: ["/api/products"],
+    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products"],
     select: (data: any[]) =>
       (data || []).map((product: any) => ({
         ...product,
@@ -336,7 +336,7 @@ export default function PurchaseViewPage({ onLogout }: PurchaseViewPageProps) {
       currency: currency
     }).format(parseFloat(amount || '0'));
   };
-"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
+
   const formatDate = (dateString: string) => {
     if (!dateString) return '-';
     try {
@@ -349,7 +349,7 @@ export default function PurchaseViewPage({ onLogout }: PurchaseViewPageProps) {
       console.error('Date parsing error:', error);
       return '-';
     }
-  };"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
+  };
 
   const handleItemChange = (itemId: number, field: string, value: any) => {
     setEditedItems(prev => ({
@@ -476,7 +476,7 @@ export default function PurchaseViewPage({ onLogout }: PurchaseViewPageProps) {
 
     // Update purchaseItems with synced data and new item
     queryClient.setQueryData(
-      ["/api/purchase-receipts", purchaseId, "items"],
+      ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/purchase-receipts", purchaseId, "items"],
       [...syncedItems, newItem]
     );
 
@@ -568,13 +568,13 @@ export default function PurchaseViewPage({ onLogout }: PurchaseViewPageProps) {
 
       // Refresh documents list
       await queryClient.invalidateQueries({
-        queryKey: ["/api/purchase-receipts", purchaseId, "documents"]
+        queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/purchase-receipts", purchaseId, "documents"]
       });
     } catch (error) {
       console.error('Error uploading files:', error);
       toast({
         variant: "destructive",
-       "https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/apie: "Lỗi",
+        title: "Lỗi",
         description: "Không thể tải lên tệp đính kèm",
       });
     } finally {
@@ -661,7 +661,7 @@ export default function PurchaseViewPage({ onLogout }: PurchaseViewPageProps) {
 
       // Refresh documents list
       await queryClient.invalidateQueries({
-        queryKey: ["/api/purchase-receipts", purchaseId, "documents"]
+        queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/purchase-receipts", purchaseId, "documents"]
       });
     } catch (error) {
       console.error('Error deleting file:', error);
@@ -671,7 +671,7 @@ export default function PurchaseViewPage({ onLogout }: PurchaseViewPageProps) {
         description: error instanceof Error ? error.message : "Không thể xóa tệp",
       });
     }
-  };"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
+  };
 
   const calculateItemValues = (itemId: number, originalItem: any) => {
     const edited = editedItems[itemId] || {};
@@ -779,7 +779,7 @@ export default function PurchaseViewPage({ onLogout }: PurchaseViewPageProps) {
         setTimeout(() => {
           const prevInput = document.querySelector(`[data-field="${prevFieldType}-${index}"]`) as HTMLInputElement;
           prevInput?.focus();
-        }, 50);"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
+        }, 50);
       }
     }
     // Arrow Down - move to same field in next row
@@ -1138,10 +1138,10 @@ export default function PurchaseViewPage({ onLogout }: PurchaseViewPageProps) {
 
       // Refresh the data
       await queryClient.invalidateQueries({ 
-        queryKey: ["/api/purchase-receipts", purchaseId] 
+        queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/purchase-receipts", purchaseId] 
       });
       await queryClient.invalidateQueries({ 
-        queryKey: ["/api/purchase-receipts", purchaseId, "items"] 
+        queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/purchase-receipts", purchaseId, "items"] 
       });
     } catch (error: any) {
       console.error('❌ Frontend: Error updating purchase receipt:', error);
@@ -1327,7 +1327,7 @@ export default function PurchaseViewPage({ onLogout }: PurchaseViewPageProps) {
                                     <div className="flex items-center gap-1">
                                       <Button
                                         variant="ghost"
-                                       "https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api="sm"
+                                        size="sm"
                                         className="h-5 w-5 p-0 text-blue-500 hover:text-blue-700"
                                         onClick={() => handleFileDownload(doc)}
                                       >
@@ -1373,10 +1373,10 @@ export default function PurchaseViewPage({ onLogout }: PurchaseViewPageProps) {
                                           handleFileDownload(doc);
                                         }}
                                         title="Tải xuống"
-                   "https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api              >
+                                      >
                                         <Download className="h-4 w-4" />
                                       </Button>
-                   "https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api              {isEditMode && (
+                                      {isEditMode && (
                                         <Button
                                           variant="ghost"
                                           size="sm"
@@ -2069,7 +2069,7 @@ export default function PurchaseViewPage({ onLogout }: PurchaseViewPageProps) {
 
                                           // Refresh the items list
                                           await queryClient.invalidateQueries({ 
-                                            queryKey: ["/api/purchase-receipts", purchaseId, "items"] 
+                                            queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/purchase-receipts", purchaseId, "items"] 
                                           });
                                         } catch (error) {
                                           console.error('Error deleting item:', error);
@@ -2215,21 +2215,21 @@ export default function PurchaseViewPage({ onLogout }: PurchaseViewPageProps) {
                 onClick={async () => {
                   // Tải lại dữ liệu từ server trước khi cho phép chỉnh sửa
                   await queryClient.invalidateQueries({ 
-                    queryKey: ["/api/purchase-receipts", purchaseId] 
+                    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/purchase-receipts", purchaseId] 
                   });
                   await queryClient.invalidateQueries({ 
-                    queryKey: ["/api/purchase-receipts", purchaseId, "items"] 
+                    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/purchase-receipts", purchaseId, "items"] 
                   });
                   await queryClient.invalidateQueries({ 
-                    queryKey: ["/api/purchase-receipts", purchaseId, "documents"] 
+                    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/purchase-receipts", purchaseId, "documents"] 
                   });
 
                   // Đợi dữ liệu load xong (refetch data)
                   await queryClient.refetchQueries({ 
-                    queryKey: ["/api/purchase-receipts", purchaseId] 
+                    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/purchase-receipts", purchaseId] 
                   });
                   await queryClient.refetchQueries({ 
-                    queryKey: ["/api/purchase-receipts", purchaseId, "items"] 
+                    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/purchase-receipts", purchaseId, "items"] 
                   });
 
                   // Bật chế độ chỉnh sửa
@@ -2249,13 +2249,13 @@ export default function PurchaseViewPage({ onLogout }: PurchaseViewPageProps) {
 
                     // Reload all data from server
                     await queryClient.invalidateQueries({ 
-                      queryKey: ["/api/purchase-receipts", purchaseId] 
+                      queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/purchase-receipts", purchaseId] 
                     });
                     await queryClient.invalidateQueries({ 
-                      queryKey: ["/api/purchase-receipts", purchaseId, "items"] 
+                      queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/purchase-receipts", purchaseId, "items"] 
                     });
                     await queryClient.invalidateQueries({ 
-                      queryKey: ["/api/purchase-receipts", purchaseId, "documents"] 
+                      queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/purchase-receipts", purchaseId, "documents"] 
                     });
 
                     // Reset form data to original values
@@ -2413,4 +2413,4 @@ export default function PurchaseViewPage({ onLogout }: PurchaseViewPageProps) {
       </Dialog>
     </div>
   );
-}"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
+}

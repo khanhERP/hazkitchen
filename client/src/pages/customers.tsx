@@ -36,11 +36,11 @@ export default function CustomersPage({ onLogout }: CustomersPageProps) {
 
   // Fetch customers
   const { data: customersData, isLoading: customersLoading } = useQuery<Customer[]>({
-    queryKey: ["/api/customers"],
+    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/customers"],
   });
 
   const handleEditCustomer = (customer: Customer) => {
-    setEditingC"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/apier(customer);
+    setEditingCustomer(customer);
     setShowCustomerForm(true);
   };
 
@@ -56,11 +56,11 @@ export default function CustomersPage({ onLogout }: CustomersPageProps) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
-      await queryClient.refetchQueries({ queryKey: ["/api/customers"] });
+      await queryClient.refetchQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/customers"] });
 
       toast({
         title: t("common.success"),
-        description: t("settings.customerDeleteSucce"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
+        description: t("settings.customerDeleteSuccess"),
       });
     } catch (error) {
       console.error("Customer delete error:", error);
