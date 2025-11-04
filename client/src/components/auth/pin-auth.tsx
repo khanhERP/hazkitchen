@@ -29,10 +29,10 @@ export function PinAuth({ onAuthSuccess }: PinAuthProps) {
 
   // Fetch store settings để lấy PIN
   const { data: storeData } = useQuery({
-    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/store-settings"],
+    queryKey: ["/api/store-settings"],
     queryFn: async () => {
       try {
-        const response = await apiRequest("GET", "https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/store-settings");
+        const response = await apiRequest("GET", "/api/store-settings");
         if (!response.ok) {
           throw new Error('Network response was not ok');
         }
@@ -48,10 +48,10 @@ export function PinAuth({ onAuthSuccess }: PinAuthProps) {
 
   useEffect(() => {
     // Kiểm tra nếu đã đăng nhập trong session này
-    const isAuthenticated = sessionStorage.getItem("pinAuthenticated");
+    const isAut"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/apicated = sessionStorage.getItem("pinAuthenticated");
     if (isAuthenticated === "true") {
       onAuthSuccess();
-    }
+    }"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
   }, [onAuthSuccess]);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -76,11 +76,6 @@ export function PinAuth({ onAuthSuccess }: PinAuthProps) {
         // Lưu trạng thái đăng nhập vào sessionStorage
         sessionStorage.setItem("pinAuthenticated", "true");
 
-        // toast({
-        //   title: "Đăng nhập thành công",
-        //   description: "Chào mừng bạn đến với hệ thống POS",
-        // });
-
         onAuthSuccess();
       } else {
         toast({
@@ -103,7 +98,7 @@ export function PinAuth({ onAuthSuccess }: PinAuthProps) {
 
   const handlePinChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value.replace(/\D/g, ""); // Chỉ cho phép số
-    if (value.length <= 6) {
+    if (value.length <= 6) {"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
       setPin(value);
     }
   };

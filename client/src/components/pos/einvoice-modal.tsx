@@ -211,9 +211,9 @@ export function EInvoiceModal({
     queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/invoice-templates/active"],
     queryFn: async () => {
       try {
-        const response = await apiRequest(
+        const response = await apiRequest("https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
           "GET",
-          "https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/invoice-templates/active",
+          "/api/invoice-templates/active",
         );
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
@@ -229,13 +229,13 @@ export function EInvoiceModal({
     enabled: isOpen,
     staleTime: 300000,
   });
-
+"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
   // Query all products to get tax rates
   const { data: products = [] } = useQuery({
-    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products"],
+    queryKey: ["/api/products"],"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
     queryFn: async () => {
       try {
-        const response = await apiRequest("GET", "https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products");
+        const response = await apiRequest("GET", "/api/products");
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
@@ -248,10 +248,10 @@ export function EInvoiceModal({
     },
     staleTime: 300000, // Cache for 5 minutes
   });
-
+"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
   // Query order data to get priceIncludeTax setting
   const { data: orderData } = useQuery({
-    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders", orderId],
+    queryKey: ["/api/orders", orderId],
     queryFn: async () => {
       if (!orderId) return null;
       try {
@@ -399,10 +399,10 @@ export function EInvoiceModal({
       return;
     }
 
-    setIsTaxCodeLoading(true);
+    setIsTaxCodeLoading(true);"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
     try {
       // Use a proxy endpoint through our server to avoid CORS issues
-      const response = await fetch("https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/tax-code-lookup", {
+      const response = await fetch("/api/tax-code-lookup", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -836,10 +836,10 @@ export function EInvoiceModal({
       console.log(
         "💾 Lưu hóa đơn vào bảng invoices và invoice_items:",
         JSON.stringify(invoicePayload, null, 2),
-      );
+      );"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
 
       // Lưu hóa đơn vào bảng invoices và invoice_items
-      const invoiceResponse = await fetch("https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/invoices", {
+      const invoiceResponse = await fetch("/api/invoices", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -1335,10 +1335,10 @@ export function EInvoiceModal({
     console.log(
       "Publishing invoice with data:",
       JSON.stringify(publishRequest, null, 2),
-    );
+    );"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
 
     // Call the proxy API
-    const response = await fetch("https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/einvoice/publish", {
+    const response = await fetch("/api/einvoice/publish", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -1477,10 +1477,10 @@ export function EInvoiceModal({
             };
           }),
         };
-
+"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
         console.log("💾 Saving published invoice to database:", invoicePayload);
 
-        const invoiceResponse = await fetch("https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/invoices", {
+        const invoiceResponse = await fetch("/api/invoices", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -1578,10 +1578,10 @@ export function EInvoiceModal({
             employeeId: null, // Can be set if employee info is available
             salesChannel: "pos",
           };
-
+"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
           console.log("💾 Saving published order to database:", orderData);
 
-          const saveResponse = await fetch("https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders", {
+          const saveResponse = await fetch("/api/orders", {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
@@ -1751,10 +1751,10 @@ export function EInvoiceModal({
               : item.quantity)
           ).toString(),
         })),
-      };
+      };"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
 
       try {
-        const transactionResponse = await fetch("https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/transactions", {
+        const transactionResponse = await fetch("/api/transactions", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -1980,7 +1980,7 @@ export function EInvoiceModal({
                     handleInputChange("customerName", e.target.value)
                   }
                   onFocus={() => handleInputFocus("customerName")}
-                  placeholder="Công ty TNHH ABC"
+                  placeholder=""
                   disabled={false}
                   readOnly={false}
                 />
@@ -1995,7 +1995,7 @@ export function EInvoiceModal({
                   value={formData.address}
                   onChange={(e) => handleInputChange("address", e.target.value)}
                   onFocus={() => handleInputFocus("address")}
-                  placeholder="Cầu Giấy, Hà Nội"
+                  placeholder=""
                   disabled={false}
                   readOnly={false}
                 />
@@ -2014,7 +2014,7 @@ export function EInvoiceModal({
                     handleInputChange("phoneNumber", e.target.value)
                   }
                   onFocus={() => handleInputFocus("phoneNumber")}
-                  placeholder="0123456789"
+                  placeholder=""
                   disabled={false}
                   readOnly={false}
                 />
@@ -2031,7 +2031,7 @@ export function EInvoiceModal({
                   value={formData.email}
                   onChange={(e) => handleInputChange("email", e.target.value)}
                   onFocus={() => handleInputFocus("email")}
-                  placeholder="ngocnv@gmail.com"
+                  placeholder=""
                   disabled={false}
                   readOnly={false}
                 />

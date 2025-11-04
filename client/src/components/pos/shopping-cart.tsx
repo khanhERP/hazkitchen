@@ -97,7 +97,7 @@ export function ShoppingCart({
   const { data: storeSettings } = useQuery({
     queryKey: ["store-settings"],
     queryFn: async () => {
-      const response = await fetch("https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/store-settings");
+      const response = await fetch("/api/store-settings");
       if (!response.ok) {
         throw new Error("Failed to fetch store settings");
       }
@@ -118,7 +118,7 @@ export function ShoppingCart({
     ? orderDiscounts[activeOrderId] || "0"
     : "0";
 
-  const subtotal = cart.reduce((sum, item) => {
+  const subtotal = cart.reduce((sum"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/apim) => {
     const unitPrice = parseFloat(item.price);
     const quantity = item.quantity;
     const taxRate = parseFloat(item.taxRate || "0") / 100;
@@ -130,7 +130,7 @@ export function ShoppingCart({
       const totalBeforeDiscount = cart.reduce((total, cartItem) => {
         return total + parseFloat(cartItem.price) * cartItem.quantity;
       }, 0);
-
+"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
       const currentIndex = cart.findIndex(
         (cartItem) => cartItem.id === item.id,
       );
@@ -375,7 +375,7 @@ export function ShoppingCart({
   const { data: products } = useQuery<any[]>({
     queryKey: ["products"],
     queryFn: async () => {
-      const response = await fetch("https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products");
+      const response = await fetch("/api/products");
       if (!response.ok) {
         throw new Error("Failed to fetch products");
       }
@@ -456,7 +456,7 @@ export function ShoppingCart({
       return cleanPhone.startsWith(searchLower);
     }
 
-    // Otherwise search by name (case insensitive)
+    // Otherwise search by name (ca"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/apisensitive)
     return customer.name?.toLowerCase().includes(searchLower);
   });
 
@@ -776,9 +776,9 @@ export function ShoppingCart({
 
       // Clear any active orders
       if (typeof window !== "undefined" && (window as any).clearActiveOrder) {
-        (window as any).clearActiveOrder();
+        (window"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/apiny).clearActiveOrder();
       }
-
+"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
       // Reset states including discount
       setPreviewReceipt(null);
       setOrderForPayment(null);
@@ -988,8 +988,8 @@ export function ShoppingCart({
         items: cartItemsForOrder,
       });
 
-      const response = await fetch("https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders", {
-        method: "POST",
+      const response = await fetch("/api/orders", {
+        method: "POST","https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           order: orderData,
@@ -1024,7 +1024,7 @@ export function ShoppingCart({
       }
 
       // Refresh orders list
-      await queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] });
+      await queryClient.invalidateQueries({ queryKey: ["/api/orders"] });
     } catch (error) {
       console.error("❌ Error placing order:", error);
       toast({
@@ -1206,7 +1206,7 @@ export function ShoppingCart({
   const handleEInvoiceComplete = async (invoiceData: any) => {
     console.log("📧 POS: E-Invoice completed with data:", invoiceData);
     setShowEInvoiceModal(false);
-
+"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
     // Use the financial data from E-invoice processing (which includes all calculations)
     const receiptData = {
       transactionId: invoiceData.transactionId || `TXN-${Date.now()}`,
@@ -1268,7 +1268,7 @@ export function ShoppingCart({
     setPreviewReceipt(null);
     setShowReceiptPreview(false);
     setShowPaymentModal(false);
-    setShowEInvoiceModal(false);
+    setShowEInvoiceModal(false);"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
     setShowReceiptModal(false);
     setSelectedReceipt(null);
     setSelectedCustomer(null); // Clear selected customer
@@ -1303,7 +1303,7 @@ export function ShoppingCart({
       const updated = { ...prev };
       delete updated[orderId];
       return updated;
-    });
+    });"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
 
     // Remove discount for this order
     setOrderDiscounts((prev) => {
@@ -1513,7 +1513,7 @@ export function ShoppingCart({
                   // Clear selected customer when user types
                   if (selectedCustomer) {
                     setSelectedCustomer(null);
-                  }
+                  }"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
                 }}
                 placeholder="Nhập số điện thoại hoặc tên khách hàng..."
                 className="w-full pl-10 pr-4 py-2 border-2 border-gray-200 focus:border-blue-500 rounded-lg transition-colors"
@@ -1560,7 +1560,7 @@ export function ShoppingCart({
                                 <span className="text-xs text-gray-500 px-2 py-0.5 bg-gray-100 rounded">
                                   MST: {customer.customerTaxCode}
                                 </span>
-                              )}
+                              )}"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
                             </div>
                           </div>
                           <div className="flex items-center gap-1 text-blue-600">

@@ -121,8 +121,8 @@ export function TableGrid({ onTableSelect, selectedTableId }: TableGridProps) {
       console.log(
         "🍽️ Table Grid: Print completed, closing all modals and refreshing",
       );
-
-      // Close all table-related modals
+"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
+      // Close all table-related modals"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
       setSelectedTable(null);
       setOrderDetailsOpen(false);
       setPaymentMethodsOpen(false);
@@ -136,14 +136,14 @@ export function TableGrid({ onTableSelect, selectedTableId }: TableGridProps) {
       setSelectedReceipt(null);
 
       // Refresh data
-      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/tables"] });
-      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/tables"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/orders"] });
     };
 
     window.addEventListener(
       "printCompleted",
       handlePrintCompleted as EventListener,
-    );
+    );"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
 
     return () => {
       window.removeEventListener(
@@ -153,12 +153,12 @@ export function TableGrid({ onTableSelect, selectedTableId }: TableGridProps) {
     };
   }, [queryClient]);
 
-  const {
+  const {"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
     data: tables,
     isLoading,
     refetch: refetchTables,
   } = useQuery({
-    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/tables"],
+    queryKey: ["/api/tables"],
     staleTime: 60 * 1000, // Cache 1 phút
     gcTime: 5 * 60 * 1000, // Giữ cache 5 phút
     refetchOnWindowFocus: false,
@@ -167,8 +167,8 @@ export function TableGrid({ onTableSelect, selectedTableId }: TableGridProps) {
     retry: 2,
   });
 
-  const { data: orders, refetch: refetchOrders } = useQuery({
-    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"],
+  const { data:"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/apirs, refetch: refetchOrders } = useQuery({
+    queryKey: ["/api/orders"],
     staleTime: 30 * 1000, // Cache 30 giây cho orders
     gcTime: 2 * 60 * 1000, // Giữ cache 2 phút
     refetchOnWindowFocus: false,
@@ -182,7 +182,7 @@ export function TableGrid({ onTableSelect, selectedTableId }: TableGridProps) {
     isLoading: orderItemsLoading,
     refetch: refetchOrderItems,
   } = useQuery({
-    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/order-items", selectedOrder?.id || "none"],
+    queryKey: ["/api/order-items", selectedOrder?.id || "none"],
     enabled: !!selectedOrder?.id && orderDetailsOpen,
     refetchOnWindowFocus: false,
     refetchOnMount: false,
@@ -193,7 +193,7 @@ export function TableGrid({ onTableSelect, selectedTableId }: TableGridProps) {
     queryFn: async () => {
       const orderId = selectedOrder?.id;
       if (!orderId) {
-        return [];
+        return "https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
       }
 
       try {
@@ -208,9 +208,9 @@ export function TableGrid({ onTableSelect, selectedTableId }: TableGridProps) {
   });
 
   const { data: products } = useQuery({
-    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products"],
+    queryKey: ["/api/products"],
     staleTime: 60 * 60 * 1000, // Cache for 1 hour (products don't change often)
-    gcTime: 2 * 60 * 60 * 1000, // Keep in cache for 2 hours
+    gcTime: 2 *"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api 60 * 1000, // Keep in cache for 2 hours
     refetchOnWindowFocus: false,
     refetchOnMount: false,
     refetchInterval: false,
@@ -219,13 +219,13 @@ export function TableGrid({ onTableSelect, selectedTableId }: TableGridProps) {
   // Helper function to get product name - defined after products hook
   const getProductName = (productId: number) => {
     const product = Array.isArray(products)
-      ? products.find((p: any) => p.id === productId)
+      ? product"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/apid((p: any) => p.id === productId)
       : null;
     return product?.name || `Product #${productId}`;
   };
 
   const { data: storeSettings } = useQuery({
-    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/store-settings"],
+    queryKey: ["/api/store-settings"],
     staleTime: 2 * 60 * 60 * 1000, // Cache for 2 hours (settings rarely change)
     gcTime: 4 * 60 * 60 * 1000, // Keep in cache for 4 hours
     refetchOnWindowFocus: false,
@@ -234,7 +234,7 @@ export function TableGrid({ onTableSelect, selectedTableId }: TableGridProps) {
   });
 
   const { data: customers } = useQuery({
-    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/customers"],
+    queryKey: ["/api/customers"],
     enabled: pointsPaymentOpen,
     staleTime: 30 * 60 * 1000, // Cache for 30 minutes
     gcTime: 60 * 60 * 1000, // Keep in cache for 1 hour
@@ -266,7 +266,7 @@ export function TableGrid({ onTableSelect, selectedTableId }: TableGridProps) {
 
   // Calculate subtotal, tax, and total from active orders for broadcasting
   let subtotal = 0;
-  let totalTax = 0;
+  let to"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/apix = 0;
   let grandTotal = 0;
 
   if (Array.isArray(activeOrders) && activeOrders.length > 0) {
@@ -281,12 +281,12 @@ export function TableGrid({ onTableSelect, selectedTableId }: TableGridProps) {
   useEffect(() => {
     if (orderDetailsOpen && selectedOrder?.id) {
       const cachedData = queryClient.getQueryData([
-        "https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/order-items",
+        "/api/order-items",
         selectedOrder.id,
       ]);
       if (!cachedData) {
-        console.log(
-          `🔍 Table Grid: Loading order items for order ${selectedOrder.id} (no cached data)`,
+        console.log("https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
+          `🔍 Table Grid: Loading order items for o"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api${selectedOrder.id} (no cached data)`,
         );
         refetchOrderItems();
       }
@@ -296,12 +296,12 @@ export function TableGrid({ onTableSelect, selectedTableId }: TableGridProps) {
   // Handle events but only refresh when absolutely necessary
   useEffect(() => {
     const handlePaymentCompleted = (event: CustomEvent) => {
-      console.log("🛡️ Table Grid: Payment completed event received");
+      console.log("🛡"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/apile Grid: Payment completed event received");
 
       // Only invalidate - don't force refetch, let cache handle it
       if (!event.detail?.skipAllRefetch) {
-        queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] });
-        queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/tables"] });
+        queryClient.invalidateQueries({ queryKey: ["/api/orders"] });
+        queryClient.invalidateQueries({ queryKey: ["/api/tables"] });
       }
     };
 
@@ -311,7 +311,7 @@ export function TableGrid({ onTableSelect, selectedTableId }: TableGridProps) {
       // Only invalidate specific data that changed
       if (!event.detail?.skipAllRefetch && event.detail?.orderId) {
         queryClient.invalidateQueries({
-          queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/order-items", event.detail.orderId],
+          queryKey: ["/api/order-items", event.detail.orderId],
         });
       }
     };
@@ -596,8 +596,8 @@ export function TableGrid({ onTableSelect, selectedTableId }: TableGridProps) {
 
   // Clear customer display when no order details are open
   useEffect(() => {
-    if (!orderDetailsOpen && !selectedOrder) {
-      // Clear customer display when no order is being viewed
+    if (!orderDetailsOpen && !selectedOrder) "https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
+      // Clear customer display when no order"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/apieing viewed
       broadcastCartUpdate(null);
     }
   }, [orderDetailsOpen, selectedOrder, broadcastCartUpdate]);
@@ -611,8 +611,8 @@ export function TableGrid({ onTableSelect, selectedTableId }: TableGridProps) {
       );
 
       // Clear cache and force immediate refresh for immediate UI update
-      queryClient.removeQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/tables"] });
-      queryClient.removeQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] });
+      queryClient.removeQueries({ queryKey: ["/api/tables"] });
+      queryClient.removeQueries({ queryKey: ["/api/orders"] });
 
       // Force immediate fresh data fetch
       try {
@@ -715,41 +715,41 @@ export function TableGrid({ onTableSelect, selectedTableId }: TableGridProps) {
           }
         } catch (error) {
           console.error("❌ Error checking table status update:", error);
-        }
+        }"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
       }
 
       // IMMEDIATE: Clear all cache before any other operation
-      queryClient.clear();
+      queryClien"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/apiar();
       queryClient.removeQueries();
 
       console.log(
         "🔄 Table: Starting aggressive data refresh after payment success",
       );
 
-      // IMMEDIATE: Force fresh API calls with no-cache headers
-      try {
+      // IMMEDIATE: Force fresh AP"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/apils with no-cache headers
+      try {"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
         // Use fetch directly with no-cache to bypass React Query entirely for immediate update
         const [freshTables, freshOrders] = await Promise.all([
-          fetch("https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/tables", {
+          fetch("/api/tables", {
             cache: "no-store",
             headers: { "Cache-Control": "no-cache" },
-          }).then((r) => r.json()),
-          fetch("https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders", {
+          }).then((r) => r.json()),"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
+          fetch("/api/orders", {"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
             cache: "no-store",
             headers: { "Cache-Control": "no-cache" },
           }).then((r) => r.json()),
         ]);
 
         // Set fresh data immediately in cache
-        queryClient.setQueryData(["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/tables"], freshTables);
-        queryClient.setQueryData(["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"], freshOrders);
+        queryClient.setQueryData(["/api/tables"], freshTables);
+        queryClient.setQueryData(["/api/orders"], freshOrders);
 
         console.log("✅ Table: Fresh data fetched and set in cache");
 
         // Force component re-render by invalidating after setting fresh data
         setTimeout(() => {
-          queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/tables"] });
-          queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] });
+          queryClient.invalidateQueries({ queryKey: ["/api/tables"] });
+          queryClient.invalidateQueries({ queryKey: ["/api/orders"] });
         }, 50);
       } catch (fetchError) {
         console.error(
@@ -787,7 +787,7 @@ export function TableGrid({ onTableSelect, selectedTableId }: TableGridProps) {
           }),
         ];
 
-        events.forEach((event) => {
+        events.forEach("https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/apit) => {
           console.log("📡 Table: Dispatching refresh event:", event.type);
           window.dispatchEvent(event);
         });
@@ -797,12 +797,12 @@ export function TableGrid({ onTableSelect, selectedTableId }: TableGridProps) {
         title: "Thanh toán thành công",
         description: "Đơn hàng đã được thanh toán và dữ liệu đã được làm mới",
       });
-
+"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
       // Fetch the completed order and its items for receipt
       try {
         const [completedOrder, orderItemsData] = await Promise.all([
           queryClient.fetchQuery({
-            queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders", variables.orderId],
+            queryKey: ["/api/orders", variables.orderId],
             queryFn: async () => {
               const response = await apiRequest(
                 "GET",
@@ -812,7 +812,7 @@ export function TableGrid({ onTableSelect, selectedTableId }: TableGridProps) {
             },
           }),
           queryClient.fetchQuery({
-            queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/order-items", variables.orderId],
+            queryKey: ["/api/order-items", variables.orderId],
             queryFn: async () => {
               const response = await apiRequest(
                 "GET",
@@ -902,7 +902,7 @@ export function TableGrid({ onTableSelect, selectedTableId }: TableGridProps) {
         description: "Không thể hoàn tất thanh toán",
         variant: "destructive",
       });
-      setOrderForPayment(null);
+      setOrderForPayment(null);"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
     },
   });
 
@@ -917,7 +917,7 @@ export function TableGrid({ onTableSelect, selectedTableId }: TableGridProps) {
       orderId: number;
     }) => {
       // First redeem points
-      await apiRequest("POST", "https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/customers/redeem-points", {
+      await apiRequest("POST", "/api/customers/redeem-points", {
         customerId,
         points,
       });
@@ -976,11 +976,11 @@ export function TableGrid({ onTableSelect, selectedTableId }: TableGridProps) {
               console.log(
                 `✅ Table ${completedOrder.tableId} updated to available after points payment`,
               );
-            } catch (tableError) {
-              console.error(
-                `❌ Error updating table ${completedOrder.tableId} after points payment:`,
+            } catch (tableError) {"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
+              console.error("https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
+                `❌ Error updating table ${complet"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/apier.tableId} after points payment:`,
                 tableError,
-              );
+              );"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
             }
           }
         } catch (error) {
@@ -991,11 +991,11 @@ export function TableGrid({ onTableSelect, selectedTableId }: TableGridProps) {
         }
       }
 
-      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] });
-      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/tables"] });
-      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/customers"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/orders"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/tables"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/customers"] });
       queryClient.invalidateQueries({
-        queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/order-items", variables.orderId],
+        queryKey: ["/"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/apirder-items", variables.orderId],
       });
       setOrderDetailsOpen(false);
       setPointsPaymentOpen(false);
@@ -1010,7 +1010,7 @@ export function TableGrid({ onTableSelect, selectedTableId }: TableGridProps) {
       // Fetch the completed order to get its details for receipt
       queryClient
         .fetchQuery({
-          queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders", variables.orderId],
+          queryKey: ["/api/orders", variables.orderId],
           queryFn: async () => {
             const response = await apiRequest(
               "GET",
@@ -1143,7 +1143,7 @@ export function TableGrid({ onTableSelect, selectedTableId }: TableGridProps) {
       setPointsPaymentOpen(false);
       setMixedPaymentOpen(true);
     }
-  };
+  };"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
 
   const mixedPaymentMutation = useMutation({
     mutationFn: async ({
@@ -1158,7 +1158,7 @@ export function TableGrid({ onTableSelect, selectedTableId }: TableGridProps) {
       paymentMethod: string;
     }) => {
       // First redeem all available points
-      await apiRequest("POST", "https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/customers/redeem-points", {
+      await apiRequest("POST", "/api/customers/redeem-points", {
         customerId,
         points,
       });
@@ -1217,11 +1217,11 @@ export function TableGrid({ onTableSelect, selectedTableId }: TableGridProps) {
               console.log(
                 `✅ Table ${completedOrder.tableId} updated to available after mixed payment`,
               );
-            } catch (tableError) {
-              console.error(
-                `❌ Error updating table ${completedOrder.tableId} after mixed payment:`,
+            } catch (tableError) {"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
+              console.error("https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
+                `❌ Error updating table ${complet"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/apier.tableId} after mixed payment:`,
                 tableError,
-              );
+              );"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
             }
           }
         } catch (error) {
@@ -1232,13 +1232,13 @@ export function TableGrid({ onTableSelect, selectedTableId }: TableGridProps) {
         }
       }
 
-      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] });
-      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/tables"] });
-      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/customers"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/orders"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/tables"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/customers"] });
       queryClient.invalidateQueries({
-        queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/order-items", variables.orderId],
+        queryKey: ["/api/order-items", variables.orderId],
       });
-      setOrderDetailsOpen(false);
+      setOrderDetails"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/apifalse);
       setMixedPaymentOpen(false);
       setMixedPaymentData(null);
       setSelectedCustomer(null);
@@ -1253,7 +1253,7 @@ export function TableGrid({ onTableSelect, selectedTableId }: TableGridProps) {
       // Fetch the completed order to get its details for receipt
       queryClient
         .fetchQuery({
-          queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders", variables.orderId],
+          queryKey: ["/api/orders", variables.orderId],
           queryFn: async () => {
             const response = await apiRequest(
               "GET",
@@ -1359,10 +1359,10 @@ export function TableGrid({ onTableSelect, selectedTableId }: TableGridProps) {
         const otherActiveOrders = orders?.filter(
           (o: any) =>
             o.tableId === order.tableId &&
-            o.id !== orderId &&
-            !["paid", "cancelled"].includes(o.status),
+            o.id !== orderId &&"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
+            !["paid", "cancelled"].includes(o.sta"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
         );
-
+"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
         // If no other active orders, update table status to available
         if (!otherActiveOrders || otherActiveOrders.length === 0) {
           await apiRequest("PUT", `https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/tables/${order.tableId}/status`, {
@@ -1374,10 +1374,10 @@ export function TableGrid({ onTableSelect, selectedTableId }: TableGridProps) {
       return response;
     },
     onSuccess: (data, orderId) => {
-      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] });
-      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/tables"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/orders"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/tables"] });
       queryClient.invalidateQueries({
-        queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/order-items", orderId],
+        queryKey: ["/api/order-items", orderId],
       }); // Invalidate items for the deleted order
       toast({
         title: "Xóa đơn hàng thành công",
@@ -1462,8 +1462,8 @@ export function TableGrid({ onTableSelect, selectedTableId }: TableGridProps) {
       console.log("🎉 Table transfer successful, refreshing data...");
 
       // Clear cache and force fresh data
-      queryClient.clear();
-      queryClient.removeQueries();
+      queryCli"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/apilear();
+      queryCli"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/apiemoveQueries();
 
       // Force immediate fresh fetch
       try {
@@ -1474,18 +1474,18 @@ export function TableGrid({ onTableSelect, selectedTableId }: TableGridProps) {
         const [freshTables, freshOrders] = await Promise.all([
           fetch(`https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/tables?${params}`).then((r) => r.json()),
           fetch(`https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders?${params}`).then((r) => r.json()),
-        ]);
+        ]);"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
 
         // Set fresh data immediately
-        queryClient.setQueryData(["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/tables"], freshTables);
-        queryClient.setQueryData(["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"], freshOrders);
+        queryClient.setQueryData(["/api/tables"], freshTables);
+        queryClient.setQueryData(["/api/orders"], freshOrders);
 
         console.log("✅ Fresh data loaded after table transfer");
 
         // Force re-render with invalidation
         setTimeout(() => {
-          queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/tables"] });
-          queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] });
+          queryClient.invalidateQueries({ queryKey: ["/api/tables"] });
+          queryClient.invalidateQueries({ queryKey: ["/api/orders"] });
         }, 50);
       } catch (fetchError) {
         console.error("❌ Error fetching fresh data:", fetchError);
@@ -1603,8 +1603,8 @@ export function TableGrid({ onTableSelect, selectedTableId }: TableGridProps) {
 
       // Force immediate fresh fetch with no-cache
       Promise.all([
-        fetch("https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders", { cache: "no-store" }).then((r) => r.json()),
-        fetch("https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/tables", { cache: "no-store" }).then((r) => r.json()),
+        fetch("/api/orders", { cache: "no-store" }).then((r) => r.json()),
+        fetch("/api/tables", { cache: "no-store" }).then((r) => r.json()),
         fetch(`https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/order-items/${orderId}`, { cache: "no-store" }).then((r) =>
           r.json(),
         ),
@@ -1615,7 +1615,7 @@ export function TableGrid({ onTableSelect, selectedTableId }: TableGridProps) {
           );
 
           // Force component re-render by setting a timestamp
-          queryClient.setQueryData(["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"], (oldData: any) => {
+          queryClient.setQueryData(["/api/orders"], (oldData: any) => {
             if (!oldData || !Array.isArray(oldData)) return oldData;
 
             return oldData.map((order: any) => {
@@ -1897,7 +1897,7 @@ export function TableGrid({ onTableSelect, selectedTableId }: TableGridProps) {
           depositAmt: depositAmt,
           posUniqueId: "ER002",
           accntNo: "0900993023",
-          posfranchiseeName: "DOOKI-HANOI",
+          po"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/apichiseeName: "DOOKI-HANOI",
           posCompanyName: "HYOJUNG",
           posBillNo: `BILL-${Date.now()}`,
         };
@@ -1912,7 +1912,7 @@ export function TableGrid({ onTableSelect, selectedTableId }: TableGridProps) {
         });
 
         const qrResponse = await createQRPosAsync(
-          qrRequest,
+          qr"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/apist,
           bankCode,
           clientID,
         );
@@ -1929,19 +1929,19 @@ export function TableGrid({ onTableSelect, selectedTableId }: TableGridProps) {
           } catch (e) {
             // If decode fails, use the raw qrData
             console.log("Using raw qrData as it is not base64 encoded");
-          }
-
+          }"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
+"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
           const qrUrl = await QRCodeLib.toDataURL(qrContent, {
             width: 256,
             margin: 2,
             color: {
-              dark: "#000000",
-              light: "#FFFFFF",
+              dark: "#000000","https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
+              light: "#FFFFFF","https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
             },
           });
           setQrCodeUrl(qrUrl);
-          setSelectedPaymentMethod({ key: paymentMethodKey, method });
-          setShowQRPayment(true);
+          setSelectedPaymentMethod({ key: paymentM"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/apiKey, method });
+          setShowQRPayment(true);"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
           setPaymentMethodsOpen(false);
         } else {
           console.error("No QR data received from API");
@@ -2046,19 +2046,19 @@ export function TableGrid({ onTableSelect, selectedTableId }: TableGridProps) {
         ]);
 
         // STEP 3: Set fresh data immediately in cache
-        queryClient.setQueryData(["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/tables"], freshTables);
-        queryClient.setQueryData(["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"], freshOrders);
+        queryClient.setQueryData(["/api/tables"], freshTables);
+        queryClient.setQueryData(["/api/orders"], freshOrders);
         console.log("✅ Table Grid: Fresh data loaded and cached");
 
         // STEP 4: Force multiple re-renders with different timings
         setTimeout(() => {
-          queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/tables"] });
-          queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] });
+          queryClient.invalidateQueries({ queryKey: ["/api/tables"] });
+          queryClient.invalidateQueries({ queryKey: ["/api/orders"] });
         }, 50);
 
         setTimeout(() => {
-          queryClient.refetchQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/tables"] });
-          queryClient.refetchQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] });
+          queryClient.refetchQueries({ queryKey: ["/api/tables"] });
+          queryClient.refetchQueries({ queryKey: ["/api/orders"] });
         }, 200);
 
         // STEP 5: Close all modals and clear states
@@ -2212,8 +2212,8 @@ export function TableGrid({ onTableSelect, selectedTableId }: TableGridProps) {
                 const afterTaxPrice = parseFloat(product.afterTaxPrice);
                 const taxPerUnit = afterTaxPrice - basePrice;
                 calculatedTax += Math.floor(taxPerUnit * quantity);
-              }
-
+              }"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
+"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
               return {
                 id: item.id,
                 productId: item.productId,
@@ -2329,8 +2329,8 @@ export function TableGrid({ onTableSelect, selectedTableId }: TableGridProps) {
 
       // Clear cache completely
       queryClient.clear();
-      queryClient.removeQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/tables"] });
-      queryClient.removeQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] });
+      queryClient.removeQueries({ queryKey: ["/api/tables"] });
+      queryClient.removeQueries({ queryKey: ["/api/orders"] });
 
       // Force fresh fetch immediately
       try {
@@ -2595,7 +2595,7 @@ export function TableGrid({ onTableSelect, selectedTableId }: TableGridProps) {
         icon: "📱",
       },
       {
-        id: 8,
+        id: 8,"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
         name: "ShopeePay",
         nameKey: "shopeepay",
         type: "digital",
@@ -2712,13 +2712,13 @@ export function TableGrid({ onTableSelect, selectedTableId }: TableGridProps) {
       };
 
       // Call auto-print API for both employee and kitchen printers
-      const response = await fetch("https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/auto-print", {
+      const response = await fetch("/api/auto-print", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          receiptData,
+          receiptData,"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
           printerType: "both", // Print to both employee and kitchen printers
         }),
       });
@@ -2731,7 +2731,7 @@ export function TableGrid({ onTableSelect, selectedTableId }: TableGridProps) {
           title: "In hóa đơn thành công",
           description: `${result.message}`,
         });
-
+"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
         // Show detailed results for each printer
         const successfulPrints = result.results.filter(
           (r) => r.status === "success",
@@ -2767,7 +2767,7 @@ export function TableGrid({ onTableSelect, selectedTableId }: TableGridProps) {
           variant: "destructive",
         });
       }
-    } catch (error) {
+    } catch (error) {"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
       console.error("❌ Auto-print error:", error);
 
       toast({
@@ -2790,7 +2790,7 @@ export function TableGrid({ onTableSelect, selectedTableId }: TableGridProps) {
           },
         });
 
-        const receiptData = {
+        cons"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/apieiptData = {
           transactionId: order.orderNumber || `ORD-${order.id}`,
           items: order.items.map((item: any) => ({
             id: item.id,
@@ -2805,7 +2805,7 @@ export function TableGrid({ onTableSelect, selectedTableId }: TableGridProps) {
               const product = Array.isArray(products)
                 ? products.find((p: any) => p.id === item.productId)
                 : null;
-              return product?.taxRate ? parseFloat(product.taxRate) : 10;
+            "https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/apiurn product?.taxRate ? parseFloat(product.taxRate) : 10;
             })(),
           })),
           subtotal: order.subtotal,
@@ -2822,8 +2822,8 @@ export function TableGrid({ onTableSelect, selectedTableId }: TableGridProps) {
         setSelectedReceipt(receiptData);
         setShowReceiptModal(true);
       } catch (fallbackError) {
-        console.error("Error preparing fallback receipt:", fallbackError);
-      }
+        console.error("Error prepa"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/apifallback receipt:", fallbackError);
+      }"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
     }
   };
 
@@ -2832,10 +2832,10 @@ export function TableGrid({ onTableSelect, selectedTableId }: TableGridProps) {
       originalOrderId: number;
       splitItems: any[];
     }) => {
-      console.log("🔪 Split order mutation starting with data:", splitData);
-
+      console.log("🔪 Split order mutation starting w"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/apiata:", splitData);
+"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
       // Call split order API
-      const response = await apiRequest("POST", "https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders/split", {
+      const response = await apiRequest("POST", "/api/orders/split", {
         originalOrderId: splitData.originalOrderId,
         splitItems: splitData.splitItems,
       });
@@ -2848,7 +2848,7 @@ export function TableGrid({ onTableSelect, selectedTableId }: TableGridProps) {
         refetchOrders(),
         refetchTables(),
         queryClient.invalidateQueries({
-          queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/order-items", splitData.originalOrderId],
+          queryKey: ["/api/order-items", splitData.originalOrderId],
         }),
       ]);
 
@@ -2884,7 +2884,7 @@ export function TableGrid({ onTableSelect, selectedTableId }: TableGridProps) {
     try {
       console.log("🔪 Split order data:", splitData);
 
-      const response = await apiRequest("POST", "https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders/split", splitData);
+      const response = await apiRequest("POST", "/api/orders/split", splitData);
 
       if (!response.ok) {
         throw new Error("Failed to split order");
@@ -2915,8 +2915,8 @@ export function TableGrid({ onTableSelect, selectedTableId }: TableGridProps) {
         ]);
 
         // Set fresh data immediately
-        queryClient.setQueryData(["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/tables"], freshTables);
-        queryClient.setQueryData(["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"], freshOrders);
+        queryClient.setQueryData(["/api/tables"], freshTables);
+        queryClient.setQueryData(["/api/orders"], freshOrders);
 
         console.log("✅ Fresh data loaded after split:", {
           tables: freshTables?.length || 0,
@@ -2925,8 +2925,8 @@ export function TableGrid({ onTableSelect, selectedTableId }: TableGridProps) {
 
         // Force re-render with invalidation
         setTimeout(() => {
-          queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/tables"] });
-          queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] });
+          queryClient.invalidateQueries({ queryKey: ["/api/tables"] });
+          queryClient.invalidateQueries({ queryKey: ["/api/orders"] });
         }, 50);
       } catch (fetchError) {
         console.error("❌ Error fetching fresh data:", fetchError);
@@ -3084,10 +3084,10 @@ export function TableGrid({ onTableSelect, selectedTableId }: TableGridProps) {
                                 table.status === "occupied" && activeOrder
                                   ? getOrderStatusBadge(activeOrder.status)
                                       .variant
-                                  : statusConfig.variant
-                              }
+                                  : statusConfig.varian"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
+                              }"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
                               className="text-xs rounded-full px-3 py-1 font-medium shadow-sm border-0"
-                              style={{
+                         "https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/apistyle={{
                                 backgroundColor:
                                   table.status === "available"
                                     ? "#dcfce7"
@@ -3095,8 +3095,8 @@ export function TableGrid({ onTableSelect, selectedTableId }: TableGridProps) {
                                       ? "#fecaca"
                                       : table.status === "reserved"
                                         ? "#fef3c7"
-                                        : "#f3f4f6",
-                                color:
+                                        : "#f3f4f6","https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
+                                color:"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
                                   table.status === "available"
                                     ? "#166534"
                                     : table.status === "occupied"
@@ -3180,10 +3180,10 @@ export function TableGrid({ onTableSelect, selectedTableId }: TableGridProps) {
             console.log("📋 Returning to order details list after edit");
 
             // Force refresh order data
-            queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] });
-            queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/tables"] });
+            queryClient.invalidateQueries({ queryKey: ["/api/orders"] });
+            queryClient.invalidateQueries({ queryKey: ["/api/tables"] });
             queryClient.invalidateQueries({
-              queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/order-items", editingOrder.id],
+              queryKey: ["/api/order-items", editingOrder.id],
             });
 
             // Immediately reopen order details
@@ -3191,8 +3191,8 @@ export function TableGrid({ onTableSelect, selectedTableId }: TableGridProps) {
 
             // Additional refresh after delay to ensure UI is updated
             setTimeout(() => {
-              queryClient.refetchQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] });
-              queryClient.refetchQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/tables"] });
+              queryClient.refetchQueries({ queryKey: ["/api/orders"] });
+              queryClient.refetchQueries({ queryKey: ["/api/tables"] });
             }, 200);
           }
         }}

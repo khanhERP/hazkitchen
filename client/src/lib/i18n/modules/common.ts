@@ -4,6 +4,7 @@ export const commonTranslations: { [key: string]: CommonTranslations } = {
   ko: {
     loading: "로딩 중...",
     save: "저장",
+    unpaid: "미결제",
     taxWithRate: "세금 ({rate}%)",
     pay: "결제",
     discount: "할인",
@@ -691,6 +692,7 @@ export const commonTranslations: { [key: string]: CommonTranslations } = {
   en: {
     save: "Save",
     sku: "SKU",
+    unpaid: "Unpaid",
     taxWithRate: "Tax ({rate}%)",
     pay: "Pay",
     discount: "Discount",
@@ -1269,6 +1271,7 @@ export const commonTranslations: { [key: string]: CommonTranslations } = {
   vi: {
     save: "Lưu",
     cancel: "Hủy",
+    unpaid: "Chưa thanh toán",
     taxWithRate: "Thuế ({rate}%)",
     pay: "Thanh toán",
     sku: "Mã hàng",

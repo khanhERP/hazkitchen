@@ -154,8 +154,8 @@ function MenuReport() {
     error: analysisError,
     refetch,
   } = useQuery({
-    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/menu-analysis", startDate, endDate, selectedCategory, productSearch],
-    queryFn: async () => {
+    queryKey: ["/api/menu-analysis", startDate, endDate, selectedCategory, productSearch],
+    qu"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api: async () => {
       try {
         const params = new URLSearchParams({
           startDate,
@@ -262,8 +262,8 @@ function MenuReport() {
 
   const handleRefresh = () => {
     // Refresh both orders and order items data
-    queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders/date-range"] });
-    queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/order-items"] });
+    queryClient.invalidateQueries({ queryKey: ["/api/orders/date-range"] });
+    queryClient.invalidateQueries({ queryKey: ["/api/order-items"] });
   };
 
   if (analysisError) {
@@ -272,9 +272,9 @@ function MenuReport() {
         <div className="text-center py-8">
           <div className="text-red-500 mb-4">
             <BarChart3 className="w-12 h-12 mx-auto mb-2" />
-            <p className="font-medium">Lỗi tải dữ liệu phân tích menu</p>
+            <p className="font-medium">Lỗi tải "https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/apiệu phân tích menu</p>
           </div>
-          <p className="text-gray-500 mb-4">
+          <p clas"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api="text-gray-500 mb-4">
             {analysisError instanceof Error
               ? analysisError.message
               : "Không thể tải dữ liệu phân tích"}

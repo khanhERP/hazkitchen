@@ -67,11 +67,11 @@ export function EmployeeFormModal({
     isActive: z.boolean(),
     hireDate: z.date(),
   });
-
+"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
   // Generate employee ID for new employees
   const generateEmployeeId = async () => {
     try {
-      const response = await apiRequest("GET", "https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/employees/next-id");
+      const response = await apiRequest("GET", "/api/employees/next-id");
       const data = await response.json();
       return data.nextId;
     } catch (error) {
@@ -119,19 +119,19 @@ export function EmployeeFormModal({
         hireDate: employee.hireDate ? new Date(employee.hireDate) : new Date(),
       });
     }
-  }, [mode, employee, form]);
+  }, [mode, employee, form]);"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
 
   const createMutation = useMutation({
     mutationFn: async (data: InsertEmployee) => {
-      const response = await apiRequest("POST", "https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/employees", data);
+      const response = await apiRequest("POST", "/api/employees", data);
       if (!response.ok) {
         const errorData = await response.json();
         throw errorData;
-      }
+      }"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/employees"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/employees"] });
       toast({
         title: t("common.successTitle"),
         description: t("employees.addEmployeeSuccess"),
@@ -183,11 +183,11 @@ export function EmployeeFormModal({
       if (!response.ok) {
         const errorData = await response.json();
         throw errorData;
-      }
+      }"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/employees"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/employees"] });
       toast({
         title: t("common.successTitle"),
         description: t("employees.updateEmployeeSuccess"),

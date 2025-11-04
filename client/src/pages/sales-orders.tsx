@@ -167,26 +167,26 @@ export default function SalesOrders() {
       setPrintReceiptData(null);
 
       // Refresh data
-      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] });
-      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/tables"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/orders"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/tables"] });
     };
 
     const handleEInvoiceModalClosed = async (event: CustomEvent) => {
       console.log("📧 Sales Orders: E-invoice modal closed, refreshing data");
 
       // Clear cache completely and force fresh fetch
-      queryClient.removeQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] });
-      queryClient.removeQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/order-items"] });
-      queryClient.removeQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/invoices"] });
+      queryClient.removeQueries({ queryKey: ["/api/orders"] });
+      queryClient.removeQueries({ queryKey: ["/api/order-items"] });
+      queryClient.removeQueries({ queryKey: ["/api/invoices"] });
 
       // Force immediate refetch with fresh data
       await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] }),
-        queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/order-items"] }),
-        queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/invoices"] }),
-        queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/tables"] }),
-        queryClient.refetchQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] }),
-        queryClient.refetchQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/invoices"] }),
+        queryClient.invalidateQueries({ queryKey: ["/api/orders"] }),
+        queryClient.invalidateQueries({ queryKey: ["/api/order-items"] }),
+        queryClient.invalidateQueries({ queryKey: ["/api/invoices"] }),
+        queryClient.invalidateQueries({ queryKey: ["/api/tables"] }),
+        queryClient.refetchQueries({ queryKey: ["/api/orders"] }),
+        queryClient.refetchQueries({ queryKey: ["/api/invoices"] }),
       ]);
 
       console.log("✅ Sales Orders: Data refreshed successfully from database");
@@ -196,58 +196,58 @@ export default function SalesOrders() {
       "printCompleted",
       handlePrintCompleted as EventListener,
     );
-    window.addEventListener(
-      "einvoiceModalClosed",
+    window.addEventListener("https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
+      "einvoiceModalClosed","https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
       handleEInvoiceModalClosed as EventListener,
     );
 
     return () => {
       window.removeEventListener(
         "printCompleted",
-        handlePrintCompleted as EventListener,
-      );
-      window.removeEventListener(
+        handlePrintCompleted as EventListener"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
+      );"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
+      window.removeEventListener("https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
         "einvoiceModalClosed",
         handleEInvoiceModalClosed as EventListener,
       );
-    };
-  }, [queryClient]);
-
-  // Auto-refresh when new orders are created
-  useEffect(() => {
-    const handleNewOrder = () => {
+    };"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
+  }, [queryClient]);"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
+"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
+  // Auto-refresh when new orders are created"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
+  useEffect(() => {"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
+    const handleNewOrder = () => {"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
       console.log("📱 Sales Orders: New order detected, refreshing data...");
       // Force immediate refresh with all date ranges
-      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] });
-      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/invoices"] });
-      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/transactions"] });
-      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders/date-range"] });
-      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/invoices/date-range"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/orders"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/invoices"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/transactions"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/orders/date-range"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/invoices/date-range"] });
     };
 
     const handleOrderUpdate = () => {
       console.log("🔄 Sales Orders: Order updated, refreshing data...");
-      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] });
-      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/invoices"] });
-      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/transactions"] });
-      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders/date-range"] });
-      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/invoices/date-range"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/orders"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/invoices"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/transactions"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/orders/date-range"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/invoices/date-range"] });
     };
 
     const handleRefreshOrders = () => {
       console.log("🔄 Sales Orders: Manual refresh triggered...");
-      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] });
-      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/invoices"] });
-      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/transactions"] });
-      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders/date-range"] });
-      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/invoices/date-range"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/orders"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/invoices"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/transactions"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/orders/date-range"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/invoices/date-range"] });
     };
 
     // Listen for order creation and update events
     window.addEventListener("newOrderCreated", handleNewOrder);
     window.addEventListener("orderStatusUpdated", handleOrderUpdate);
     window.addEventListener("paymentCompleted", handleOrderUpdate);
-    window.addEventListener("refreshOrders", handleRefreshOrders);
+    window.addEvent"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/apiner("refreshOrders", handleRefreshOrders);
     window.addEventListener("invoiceCreated", handleNewOrder);
     window.addEventListener("receiptCreated", handleNewOrder);
 
@@ -264,8 +264,12 @@ export default function SalesOrders() {
   const urlParams = new URLSearchParams(window.location.search);
   const orderParam = urlParams.get("order");
 
-  const [startDate, setStartDate] = useState("");
-  const [endDate, setEndDate] = useState("");
+  const [startDate, setStartDate] = useState(
+    new Date().toISOString().split("T")[0],
+  );
+  const [endDate, setEndDate] = useState(
+    new Date().toISOString().split("T")[0],
+  );
   const [customerSearch, setCustomerSearch] = useState("");
   const [orderNumberSearch, setOrderNumberSearch] = useState(orderParam || "");
   const [customerCodeSearch, setCustomerCodeSearch] = useState("");
@@ -309,7 +313,7 @@ export default function SalesOrders() {
   useEffect(() => {
     const fetchSettings = async () => {
       try {
-        const response = await apiRequest("GET", "https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/store-settings");
+        const response = await apiRequest("GET", "/api/store-settings");
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
@@ -320,14 +324,14 @@ export default function SalesOrders() {
       }
     };
     fetchSettings();
-  }, []);
+  }, []);"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
 
   // Query customers for datalist
   const { data: customers = [] } = useQuery({
-    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/customers"],
+    queryKey: ["/api/customers"],
     queryFn: async () => {
       try {
-        const response = await apiRequest("GET", "https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/customers");
+        const response = await apiRequest("GET", "/api/customers");
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
@@ -340,16 +344,16 @@ export default function SalesOrders() {
     },
     staleTime: 0,
     gcTime: 0,
-  });
+  });"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
 
   // Query orders using /api/orders/list with storeCode filter
-  const {
+  const {"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
     data: ordersResponse,
     isLoading: ordersLoading,
     error: ordersError,
   } = useQuery({
     queryKey: [
-      "https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders/list",
+      "/api/orders/list",
       startDate,
       endDate,
       customerSearch,
@@ -365,7 +369,7 @@ export default function SalesOrders() {
       try {
         const params = new URLSearchParams();
 
-        if (startDate) params.append("startDate", startDate);
+      "https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api(startDate) params.append("startDate", startDate);
         if (endDate) params.append("endDate", endDate);
         if (customerSearch) params.append("customerName", customerSearch);
         if (orderNumberSearch) params.append("orderNumber", orderNumberSearch);
@@ -419,10 +423,10 @@ export default function SalesOrders() {
 
   // Query all products to get tax rates
   const { data: products = [] } = useQuery({
-    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products"],
+    queryKey: ["/api/products"],
     queryFn: async () => {
       try {
-        const response = await apiRequest("GET", "https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products");
+        const response = await apiRequest("GET", "/api/products");
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
@@ -439,10 +443,10 @@ export default function SalesOrders() {
 
   // Query tables to map tableId to table number
   const { data: tables = [] } = useQuery({
-    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/tables"],
+    queryKey: ["/api/tables"],
     queryFn: async () => {
       try {
-        const response = await apiRequest("GET", "https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/tables");
+        const response = await apiRequest("GET", "/api/tables");
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
@@ -458,10 +462,10 @@ export default function SalesOrders() {
   });
 
   const getTableNumber = (tableId: number): string => {
-    const table = tables.find((t: any) => t.id === tableId);
+    const table"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/apibles.find((t: any) => t.id === tableId);
     // Use table.name if available, fallback to table.number or table.tableNumber
     const tableName =
-      table?.name || table?.number || table?.tableNumber || tableId;
+      table?.name || table?.number || table?.tabl"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/apier || tableId;
 
     // Check if tableName already starts with "Bàn" or "Ban" to avoid duplication
     const tableNameStr = String(tableName);
@@ -484,12 +488,12 @@ export default function SalesOrders() {
     isLoading: orderItemsLoading,
     error: orderItemsError,
   } = useQuery({
-    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/order-items", selectedInvoice?.id],
+    queryKey: ["/api/order-items", selectedInvoice?.id],
     queryFn: async () => {
-      if (!selectedInvoice?.id) {
+      if (!sele"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/apinvoice?.id) {
         console.log("❌ No selected invoice ID");
         return [];
-      }
+      }"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
 
       console.log("📦 Fetching order items for order:", selectedInvoice.id);
 
@@ -531,7 +535,7 @@ export default function SalesOrders() {
       console.log("🔄 Updating order with data:", updatedOrder);
 
       const updatePayload = {
-        customerName: updatedOrder.customerName || "",
+        custome"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api: updatedOrder.customerName || "",
         customerPhone: updatedOrder.customerPhone || "",
         customerAddress: updatedOrder.customerAddress || "",
         customerTaxCode: updatedOrder.customerTaxCode || "",
@@ -566,20 +570,20 @@ export default function SalesOrders() {
       console.log("✅ Order updated successfully:", data);
 
       // Clear cache completely
-      queryClient.removeQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] });
+      queryClient.removeQueries({ queryKey: ["/api/orders"] });
       queryClient.removeQueries({
-        queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/order-items", updatedOrder.id],
+        queryKey: ["/api/order-items", updatedOrder.id],
       });
 
       // Force fresh fetch from server
       await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] }),
+        queryClient.invalidateQueries({ queryKey: ["/api/orders"] }),
         queryClient.invalidateQueries({
-          queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/order-items", updatedOrder.id],
+          queryKey: ["/api/order-items", updatedOrder.id],
         }),
-        queryClient.refetchQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] }),
+        queryClient.refetchQueries({ queryKey: ["/api/orders"] }),
         queryClient.refetchQueries({
-          queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/order-items", updatedOrder.id],
+          queryKey: ["/api/order-items", updatedOrder.id],
         }),
       ]);
 
@@ -648,7 +652,7 @@ export default function SalesOrders() {
       setShowBulkCancelDialog(false);
       setSelectedOrderIds(new Set());
 
-      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/orders"] });
 
       // Update selected order if it was cancelled
       if (selectedInvoice) {
@@ -685,15 +689,15 @@ export default function SalesOrders() {
     mutationFn: async (invoiceData: any) => {
       const response = await apiRequest(
         "POST",
-        "https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/einvoice/publish",
+        "/api/einvoice/publish",
         invoiceData,
       );
-      return response.json();
+      return respon"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/apion();
     },
     onSuccess: async (result, variables) => {
       console.log("✅ E-invoice published successfully:", result);
 
-      if (result.success && selectedInvoice) {
+      if (result.su"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api && selectedInvoice) {
         try {
           const invoiceNo =
             result.data?.invoiceNo || result.invoiceNumber || null;
@@ -755,12 +759,12 @@ export default function SalesOrders() {
           setPrintReceiptData(receiptData);
           setShowPrintDialog(true);
 
-          queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] });
+          queryClient.invalidateQueries({ queryKey: ["/api/orders"] });
 
           setShowPublishDialog(false);
           setSelectedInvoice(null);
 
-          alert(
+          alert("https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
             `Hóa đơn đã phát hành thành công!\nSố hóa đơn: ${invoiceNo || "N/A"}\n\nMàn hình in hóa đơn sẽ hiển thị.`,
           );
         } catch (updateError) {
@@ -797,7 +801,7 @@ export default function SalesOrders() {
         `https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders/${orderId}/status`,
         {
           status: "cancelled",
-        },
+        "https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
       );
 
       if (!response.ok) {
@@ -865,26 +869,26 @@ export default function SalesOrders() {
       setShowCancelDialog(false);
 
       // Clear cache completely and force fresh fetch
-      queryClient.removeQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] });
-      queryClient.removeQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders/date-range"] });
-      queryClient.removeQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/tables"] });
+      queryClient.removeQueries({ queryKey: ["/api/orders"] });
+      queryClient.removeQueries({ queryKey: ["/api/orders/date-range"] });
+      queryClient.removeQueries({ queryKey: ["/api/ta"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api] });
 
       // Force immediate refetch with fresh data
       await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] }),
-        queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders/date-range"] }),
-        queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/tables"] }),
-        queryClient.refetchQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] }),
+        queryClient.invalidateQueries({ queryKey: ["/api/orders"] }),
+        queryClient.invalidateQueries({ queryKey: ["/api/orders/date-range"] }),
+        queryClient.invalidateQueries({ queryKey: ["/api/tables"] }),
+        queryClient.refetchQueries({ queryKey: ["/api/orders"] }),
         queryClient.refetchQueries({
           queryKey: [
-            "https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders/date-range",
+            "/api/orders/date-range",
             startDate,
             endDate,
             currentPage,
             itemsPerPage,
           ],
         }),
-        queryClient.refetchQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/tables"] }),
+        queryClient.refetchQueries({ queryKey: ["/api/tables"] }),
       ]);
 
       // Update selected order if it was cancelled
@@ -945,7 +949,7 @@ export default function SalesOrders() {
         return t("common.unpaid"); // Changed default from "Tiền mặt" to "Chưa thanh toán"
     }
   };
-
+"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
   const getStatusBadge = (status: string) => {
     const statusColors = {
       draft: "bg-gray-100 text-gray-800",
@@ -1433,7 +1437,7 @@ export default function SalesOrders() {
 
     // Add to the orderItems query data temporarily for display
     queryClient.setQueryData(
-      ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/order-items", selectedInvoice.id],
+      ["/api/order-items", selectedInvoice.id],
       (oldData: any) => {
         const currentItems = Array.isArray(oldData) ? oldData : [];
         return [...currentItems, newEmptyItem];
@@ -1460,7 +1464,7 @@ export default function SalesOrders() {
 
   const handleSaveOrder = async () => {
     if (!editableInvoice) return;
-
+"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
     try {
       console.log("💾 Starting save order process:", {
         orderId: editableInvoice.id,
@@ -1837,27 +1841,27 @@ export default function SalesOrders() {
       await updateOrderMutation.mutateAsync(orderData as Order);
 
       // Clear and refresh all related queries
-      queryClient.removeQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] });
-      queryClient.removeQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/order-items"] });
+      queryClient.removeQueries({ queryKey: ["/api/orders"] });
+      queryClient.removeQueries({ queryKey: ["/api/order-items"] });
       queryClient.removeQueries({
-        queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders/date-range"],
+        queryKey: ["/api/orders/date-range"],
       });
 
       await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] }),
+        queryClient.invalidateQueries({ queryKey: ["/api/orders"] }),
         queryClient.invalidateQueries({
-          queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/order-items", editableInvoice.id],
+          queryKey: ["/api/order-items", editableInvoice.id],
         }),
         queryClient.invalidateQueries({
-          queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders/date-range"],
+          queryKey: ["/api/orders/date-range"],
         }),
-        queryClient.refetchQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] }),
+        queryClient.refetchQueries({ queryKey: ["/api/orders"] }),
         queryClient.refetchQueries({
-          queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/order-items", editableInvoice.id],
+          queryKey: ["/api/order-items", editableInvoice.id],
         }),
         queryClient.refetchQueries({
           queryKey: [
-            "https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders/date-range",
+            "/api/orders/date-range",
             startDate,
             endDate,
             currentPage,
@@ -1894,7 +1898,7 @@ export default function SalesOrders() {
     setEditedOrderItems({}); // Clear local edits
     // Invalidate order items to reset them if any changes were made but not saved
     queryClient.invalidateQueries({
-      queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/order-items", selectedInvoice?.id],
+      queryKey: ["/api/order-items", selectedInvoice?.id],
     });
   };
 
@@ -2110,7 +2114,7 @@ export default function SalesOrders() {
           itemTax = Math.round(priceBeforeTax * taxRate);
         }
       } else {
-        priceBeforeTax = Math.round(itemSubtotal - itemDiscountAmount);
+        priceBeforeTax = Math.round"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/apiSubtotal - itemDiscountAmount);
       }
 
       const calculatedTotal = priceBeforeTax + itemTax;
@@ -2123,14 +2127,14 @@ export default function SalesOrders() {
           sku,
           quantity,
           unitPrice,
-          itemSubtotal,
-          taxRate: taxRate * 100 + "%",
+          itemSubtotal,"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
+          taxRate: taxRate * 100 + "%","https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
           priceIncludeTax,
-          itemDiscountAmount,
+          itemDiscoun"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/apint,
           priceBeforeTax,
           itemTax: Math.round(itemTax),
           calculatedTotal,
-        },
+        },"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
       );
 
       // ALWAYS return updated calculated fields to ensure UI reflects latest values
@@ -2165,7 +2169,7 @@ export default function SalesOrders() {
     const currentFieldIndex = editableFields.indexOf(fieldType);
 
     // Get visible items (not deleted)
-    const visibleItems = orderItems.filter(
+    const visible"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api = orderItems.filter(
       (item: any) => !editedOrderItems[item.id]?._deleted,
     );
 
@@ -2417,10 +2421,10 @@ export default function SalesOrders() {
 
     const headers = [
       "Số đơn bán",
-      "Ngày đơn bán",
+      "Ngày đơn"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api,
       "Bàn",
       "Mã khách hàng",
-      "Tên khách hàng",
+      "Tên khách hàng","https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
       "Thành tiền",
       "Giảm giá",
       "Tiền thuế",
@@ -2631,8 +2635,8 @@ export default function SalesOrders() {
         console.log("✅ Order payment status updated successfully");
 
         // Refresh orders list
-        queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] });
-        queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/tables"] });
+        queryClient.invalidateQueries({ queryKey: ["/api/orders"] });
+        queryClient.invalidateQueries({ queryKey: ["/api/tables"] });
 
         toast({
           title: "Thanh toán thành công",
@@ -2718,10 +2722,10 @@ export default function SalesOrders() {
 
       // Refresh orders list after a delay to avoid interfering with receipt modal
       setTimeout(() => {
-        queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] });
+        queryClient.invalidateQueries({ queryKey: ["/api/orders"] });
         queryClient.invalidateQueries({
           queryKey: [
-            "https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders/date-range",
+            "/api/orders/date-range",
             startDate,
             endDate,
             currentPage,
@@ -2818,7 +2822,8 @@ export default function SalesOrders() {
     console.log("📧 E-Invoice completed:", result);
     if (result.success && selectedInvoice) {
       try {
-        const invoiceNo = result.data?.invoiceNo || result.invoiceNumber || null;
+        const invoiceNo =
+          result.data?.invoiceNo || result.invoiceNumber || null;
         const symbol = result.data?.symbol || result.symbol || "AA/25E";
         const templateNumber =
           result.data?.templateNumber || result.templateNumber || "1C25TYY";
@@ -2826,7 +2831,7 @@ export default function SalesOrders() {
         const updateData = {
           einvoiceStatus: 1, // Đã phát hành
           invoiceStatus: 1, // Hoàn thành
-          status: "published",
+          //status: "published",
           invoiceNumber: invoiceNo,
           symbol: symbol,
           templateNumber: templateNumber,
@@ -2851,17 +2856,13 @@ export default function SalesOrders() {
         console.log("✅ Order updated successfully after publish.");
 
         // Trigger refresh after successful update
-        queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] });
+        queryClient.invalidateQueries({ queryKey: ["/api/orders"] });
         queryClient.invalidateQueries({
-          queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/order-items", selectedInvoice.id],
+          queryKey: ["/api/order-items", selectedInvoice.id],
         });
 
         setShowEInvoiceModal(false);
         setSelectedInvoice(null);
-
-        alert(
-          `Hóa đơn đã phát hành thành công!\nSố hóa đơn: ${invoiceNo || "N/A"}\n\nĐơn hàng đã được cập nhật.`,
-        );
       } catch (error) {
         console.error("❌ Error updating order after publish:", error);
         alert(
@@ -3062,7 +3063,7 @@ export default function SalesOrders() {
                   <Button
                     onClick={() => {
                       queryClient.invalidateQueries({
-                        queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"],
+                        queryKey: ["/api/orders"],
                       });
                     }}
                   >
@@ -3354,15 +3355,23 @@ export default function SalesOrders() {
                                       : ""
                                   }`}
                                   onClick={() => {
-                                    const itemWithType = {
-                                      ...item,
-                                      type:
-                                        item.type ||
-                                        (item.orderNumber
-                                          ? "order"
-                                          : "invoice"),
-                                    };
-                                    setSelectedInvoice(itemWithType);
+                                    // Toggle: if clicking on the same row, close it
+                                    if (
+                                      selectedInvoice?.id === item.id &&
+                                      selectedInvoice?.type === item.type
+                                    ) {
+                                      setSelectedInvoice(null);
+                                    } else {
+                                      const itemWithType = {
+                                        ...item,
+                                        type:
+                                          item.type ||
+                                          (item.orderNumber
+                                            ? "order"
+                                            : "invoice"),
+                                      };
+                                      setSelectedInvoice(itemWithType);
+                                    }
                                   }}
                                 >
                                   <td className="px-3 py-3 text-center">
@@ -3464,8 +3473,8 @@ export default function SalesOrders() {
                                   <td className="px-3 py-3">
                                     <div
                                       className="text-sm font-mono truncate"
-                                      title={customerCode}
-                                    >
+                                      title={custom"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/apie}
+                                    >"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
                                       {customerCode}
                                     </div>
                                   </td>
@@ -3551,10 +3560,10 @@ export default function SalesOrders() {
                                             <CardHeader className="pb-3">
                                               <CardTitle className="text-lg text-blue-700">
                                                 {t("common.orderDetails")}
-                                              </CardTitle>
+                                              </Car"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/apie>
                                             </CardHeader>
                                             <CardContent className="space-y-4">
-                                              <div className="bg-white p-4 rounded-lg overflow-x-auto">
+            "https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api                             <div className="bg-white p-4 rounded-lg overflow-x-auto">
                                                 <div className="min-w-[1200px]">
                                                   <table className="w-full text-sm border-collapse">
                                                     <tbody>
@@ -3951,7 +3960,7 @@ export default function SalesOrders() {
                                                             <td className="py-1 pr-6">
                                                               {isEditing &&
                                                               editableInvoice ? (
-                                                                <Checkbox
+                                   "https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api                        <Checkbox
                                                                   checked={
                                                                     editableInvoice.isPaid ||
                                                                     false
@@ -4158,7 +4167,7 @@ export default function SalesOrders() {
                                                         queryClient.invalidateQueries(
                                                           {
                                                             queryKey: [
-                                                              "https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/order-items",
+                                                              "/api/order-items",
                                                               selectedInvoice?.id,
                                                             ],
                                                           },
@@ -4403,7 +4412,8 @@ export default function SalesOrders() {
                                                                               editedOrderItems[
                                                                                 item
                                                                                   .id
-                                                                              ] || {};
+                                                                              ] ||
+                                                                              {};
                                                                             const itPrice =
                                                                               parseFloat(
                                                                                 editedItem.unitPrice !==
@@ -4960,7 +4970,7 @@ export default function SalesOrders() {
                                                                     {isEditing &&
                                                                       selectedInvoice.displayStatus !==
                                                                         1 && (
-                                                                        <Button
+                                                                "https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api   <Button
                                                                           size="sm"
                                                                           variant="ghost"
                                                                           className="text-red-600 hover:text-red-700 hover:bg-red-50"
@@ -5963,7 +5973,7 @@ export default function SalesOrders() {
             setOrderForPayment(null);
 
             // Refresh data after closing
-            // queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] });
+            // queryClient.invalidateQueries({ queryKey: ["/api/orders"] });
           }}
           onSelectMethod={handlePaymentComplete}
           total={
@@ -6012,14 +6022,14 @@ export default function SalesOrders() {
               quantity: item.quantity,
               discount: item.discount || "0",
               taxRate: item.taxRate || "0",
-              sku: item.productSku || `ITEM${String(item.productId).padStart(3, "0")}`,
+              sku:
+                item.productSku ||
+                `ITEM${String(item.productId).padStart(3, "0")}`,
             })) || []
           }
           source="table"
           orderId={selectedInvoice.id}
-          selectedPaymentMethod={
-            selectedInvoice.paymentMethod || "cash"
-          }
+          selectedPaymentMethod={selectedInvoice.paymentMethod || "cash"}
         />
       )}
 
@@ -6043,7 +6053,7 @@ export default function SalesOrders() {
             setShowReceiptModal(false);
             setSelectedReceipt(null);
 
-            queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] });
+            queryClient.invalidateQueries({ queryKey: ["/api/orders"] });
           }}
           receipt={selectedReceipt}
           isPreview={false}
@@ -6052,3 +6062,4 @@ export default function SalesOrders() {
     </div>
   );
 }
+"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
