@@ -449,10 +449,10 @@ export function OrderDialog({
       setSearchQuery(""); // Reset search query
       setExistingItems([]);
 
-      toast({
-        title: t("orders.orderUpdateSuccess"),
-        description: t("orders.orderUpdateSuccessDesc"),
-      });
+      // toast({
+      //   title: t("orders.orderUpdateSuccess"),
+      //   description: t("orders.orderUpdateSuccessDesc"),
+      // });
 
       // Đóng dialog - parent component sẽ xử lý việc mở lại order details
       console.log(
@@ -1580,19 +1580,63 @@ export function OrderDialog({
                     product.trackInventory === false || Number(product.stock) > 0
                       ? "cursor-pointer hover:shadow-md hover:border-green-500"
                       : "cursor-not-allowed opacity-50"
-                  } border`}
+                  } border overflow-hidden`}
                 >
                   <CardContent
-                    className="p-3"
+                    className="p-0"
                     onClick={() =>
                       (product.trackInventory === false || Number(product.stock) > 0) && addToCart(product)
                     }
                   >
-                    <div className="space-y-1">
+                    {/* Product Image */}
+                    <div className="w-full h-32 bg-gradient-to-br from-gray-100 to-gray-200 relative overflow-hidden">
+                      {product.imageUrl ? (
+                        <img
+                          src={product.imageUrl}
+                          alt={product.name}
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            e.currentTarget.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="100" height="100"%3E%3Crect fill="%23f3f4f6" width="100" height="100"/%3E%3Ctext x="50%25" y="50%25" font-size="14" text-anchor="middle" dy=".3em" fill="%239ca3af"%3ENo Image%3C/text%3E%3C/svg%3E';
+                          }}
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center">
+                          <span className="text-gray-400 text-xs">No Image</span>
+                        </div>
+                      )}
+                      {/* Stock badge overlay */}
+                      <div className="absolute top-1 right-1">
+                        {product.trackInventory !== false ? (
+                          <Badge
+                            variant={Number(product.stock) > 0 ? "default" : "destructive"}
+                            className="text-xs px-1.5 py-0.5 shadow-sm"
+                          >
+                            {Number(product.stock) > 0
+                              ? `${product.stock}`
+                              : "Hết"}
+                          </Badge>
+                        ) : (
+                          <Badge
+                            variant="outline"
+                            className="text-green-600 border-green-600 bg-white text-xs px-1.5 py-0.5 shadow-sm"
+                          >
+                            ✓
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+                    
+                    {/* Product Info */}
+                    <div className="p-2 space-y-1">
                       <h4 className="font-semibold text-sm line-clamp-2 min-h-[2.5rem] text-gray-800 leading-tight">
                         {product.name}
                       </h4>
-                      <div className="flex flex-col gap-1">
+                      {product.sku && (
+                        <p className="text-xs text-gray-500 truncate">
+                          SKU: {product.sku}
+                        </p>
+                      )}
+                      <div className="flex items-center justify-between">
                         <span className={`font-bold text-base ${
                           product.trackInventory === false || Number(product.stock) > 0
                             ? "text-green-600"
@@ -1600,22 +1644,10 @@ export function OrderDialog({
                         }`}>
                           {Math.round(Number(product.price)).toLocaleString()} ₫
                         </span>
-                        {product.trackInventory !== false ? (
-                          <Badge
-                            variant={Number(product.stock) > 0 ? "default" : "destructive"}
-                            className="text-xs px-1.5 py-0.5 w-fit"
-                          >
-                            {Number(product.stock) > 0
-                              ? `Còn ${product.stock}`
-                              : "Hết hàng"}
-                          </Badge>
-                        ) : (
-                          <Badge
-                            variant="outline"
-                            className="text-green-600 border-green-600 text-xs px-1.5 py-0.5 w-fit"
-                          >
-                            ✓ Sẵn sàng
-                          </Badge>
+                        {product.taxRate && parseFloat(product.taxRate) > 0 && (
+                          <span className="text-xs text-gray-500">
+                            +{product.taxRate}% VAT
+                          </span>
                         )}
                       </div>
                     </div>
