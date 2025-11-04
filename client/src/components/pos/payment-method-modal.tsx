@@ -864,8 +864,8 @@ export function PaymentMethodModal({
         console.log(`📦 Order items:`, orderItems);
 
         // Create order via API
-        const createResponse = await fetch("/api/orders", {
-          method: "POST","https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
+        const createResponse = await fetch("https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders", {
+          method: "POST",
           headers: {
             "Content-Type": "application/json",
           },
@@ -946,7 +946,7 @@ export function PaymentMethodModal({
 
               try {
                 // Check if there are any other unpaid orders on this table
-                const ordersResponse = await fetch("/api/orders", {
+                const ordersResponse = await fetch("https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders", {
                   method: "GET",
                   headers: {
                     "Content-Type": "application/json",
@@ -990,7 +990,7 @@ export function PaymentMethodModal({
 
                   const tableUpdateResponse = await fetch(
                     `https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/tables/${updatedOrder.tableId}/status`,
-                    {"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
+                    {
                       method: "PUT",
                       headers: {
                         "Content-Type": "application/json",
@@ -1219,7 +1219,7 @@ export function PaymentMethodModal({
       console.log("📦 Order items:", orderItems);
 
       // Create order via API
-      const createResponse = await fetch("/api/orders", {
+      const createResponse = await fetch("https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -1289,7 +1289,7 @@ export function PaymentMethodModal({
 
             try {
               // Check if there are any other unpaid orders on this table
-              const ordersResponse = await fetch("/api/orders", {
+              const ordersResponse = await fetch("https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders", {
                 method: "GET",
                 headers: {
                   "Content-Type": "application/json",
@@ -1315,7 +1315,7 @@ export function PaymentMethodModal({
 
                 // If no other unpaid orders, update table to available
                 if (otherActiveOrders.length === 0) {
-                  const tableUpdateRespon"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/apiawait fetch(
+                  const tableUpdateResponse = await fetch(
                     `https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/tables/${data.tableId}/status`,
                     {
                       method: "PUT",
@@ -1441,7 +1441,7 @@ export function PaymentMethodModal({
   };
 
   // Handle amount change
-  const handleAmountChange = (methodId: string, a"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api: number) => {
+  const handleAmountChange = (methodId: string, amount: number) => {
     setSelectedPaymentMethods(
       selectedPaymentMethods.map((p) =>
         p.method === methodId ? { ...p, amount } : p,
@@ -1528,7 +1528,7 @@ export function PaymentMethodModal({
         discount: discountAmount.toString(),
       };
 
-      const createResponse = await fetch("/api/orders", {
+      const createResponse = await fetch("https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ order: orderData, items: orderItems }),
@@ -1570,7 +1570,7 @@ export function PaymentMethodModal({
 
           try {
             // Check if there are any other unpaid orders on this table
-            const ordersResponse = await fetch("/api/orders", {
+            const ordersResponse = await fetch("https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders", {
               method: "GET",
               headers: {
                 "Content-Type": "application/json",
@@ -1728,7 +1728,7 @@ export function PaymentMethodModal({
     // Get discount amount and calculate distribution for cash payment
     let discountAmount = Math.floor(
       parseFloat(
-        receipt?.discount ||"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
+        receipt?.discount ||
           receipt?.exactDiscount ||
           orderForPayment?.discount ||
           orderInfo?.discount ||
@@ -1770,7 +1770,7 @@ export function PaymentMethodModal({
           quantity: parseInt(item.quantity?.toString() || "1"),
           unitPrice: item.unitPrice || item.price?.toString() || "0",
           total:
-            item.total ||"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
+            item.total ||
             (
               parseFloat(item.price || "0") * parseInt(item.quantity || "1")
             ).toString(),
@@ -1859,7 +1859,7 @@ export function PaymentMethodModal({
       console.log("📦 Order items:", orderItems);
 
       // Create order via API
-      const createResponse = await fetch("/api/orders", {
+      const createResponse = await fetch("https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -1970,7 +1970,7 @@ export function PaymentMethodModal({
 
             try {
               // Check if there are any other unpaid orders on this table
-              const ordersResponse = await fetch("/api/orders", {
+              const ordersResponse = await fetch("https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders", {
                 method: "GET",
                 headers: {
                   "Content-Type": "application/json",
@@ -2112,7 +2112,7 @@ export function PaymentMethodModal({
               isInvoice: true,
             };
 
-            // Set receipt data for modal"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
+            // Set receipt data for modal
             setReceiptDataForModal(receiptData);
             setShowReceiptModal(true);
           } else {
@@ -2223,7 +2223,7 @@ export function PaymentMethodModal({
     const inputRef = amountInputRef.current;
     if (inputRef) {
       inputRef.focus();
-      // Set cursor to end"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
+      // Set cursor to end
       setTimeout(() => {
         inputRef.setSelectionRange(newValue.length, newValue.length);
       }, 0);

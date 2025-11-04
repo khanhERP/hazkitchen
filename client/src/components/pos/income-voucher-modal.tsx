@@ -118,7 +118,7 @@ export default function IncomeVoucherModal({
       const dateStr = today.toISOString().split("T")[0].replace(/-/g, "");
       const timeStr = Date.now().toString().slice(-3);
       setFormData((prev) => ({
-        ...prev,"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
+        ...prev,
         voucherNumber: `PT${dateStr}${timeStr}`,
         account: "cash", // Use nameKey instead of hardcoded Vietnamese
       }));
@@ -128,7 +128,7 @@ export default function IncomeVoucherModal({
 
   const createVoucherMutation = useMutation({
     mutationFn: async (data: IncomeVoucher) => {
-      const response = await fetch("/api/income-vouchers", {
+      const response = await fetch("https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/income-vouchers", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
@@ -141,8 +141,8 @@ export default function IncomeVoucherModal({
         title: "Thành công",
         description: "Đã tạo phiếu thu mới",
       });
-      queryClient.invalidateQueries({ queryKey: ["/api/income-vouchers"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/orders"] });
+      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/income-vouchers"] });
+      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] });
       onClose();
     },
     onError: (error) => {
@@ -158,7 +158,7 @@ export default function IncomeVoucherModal({
     mutationFn: async (data: IncomeVoucher) => {
       console.log("Updating income voucher with data:", data);
       const response = await fetch(`https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/income-vouchers/${data.id}`, {
-        method: "PUT","https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
+        method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
       });
@@ -171,15 +171,15 @@ export default function IncomeVoucherModal({
       }
 
       return response.json();
-    },"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
-    onSuccess: (data) => {"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
+    },
+    onSuccess: (data) => {
       console.log("Income voucher updated successfully:", data);
       toast({
         title: "Thành công",
         description: `Đã cập nhật phiếu thu ${formData.voucherNumber} thành công`,
       });
-      queryClient.invalidateQueries({ queryKey: ["/api/income-vouchers"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/orders"] });
+      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/income-vouchers"] });
+      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] });
       setIsEditing(false);
     },
     onError: (error) => {
@@ -207,8 +207,8 @@ export default function IncomeVoucherModal({
         title: "Thành công",
         description: "Đã xóa phiếu thu",
       });
-      queryClient.invalidateQueries({ queryKey: ["/api/income-vouchers"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/orders"] });
+      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/income-vouchers"] });
+      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] });
       setShowDeleteDialog(false);
       onClose();
     },
@@ -227,8 +227,8 @@ export default function IncomeVoucherModal({
       toast({
         title: t("common.error"),
         description: t("common.enterVoucherNumber"),
-        variant: "destructive","https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
-      });"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
+        variant: "destructive",
+      });
       return;
     }
 
@@ -257,8 +257,8 @@ export default function IncomeVoucherModal({
         variant: "destructive",
       });
       return;
-    }"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
-"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
+    }
+
     // Prepare clean data for submission
     const cleanData = {
       ...formData,

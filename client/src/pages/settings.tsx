@@ -266,23 +266,23 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
 
   // Fetch store settings
   const { data: storeData, isLoading } = useQuery<StoreSettings>({
-    queryKey: ["/api/store-settings"],
+    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/store-settings"],
   });
-"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
+
   // Fetch customers
   const { data: customersData, isLoading: customersLoading } = useQuery<
     Customer[]
   >({
-    queryKey: ["/api/customers"],
+    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/customers"],
   });
-"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
+
   // Fetch employees
   const { data: employeesRawData, isLoading: employeesLoading } = useQuery<
     any[]
   >({
-    queryKey: ["/api/employees"],
+    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/employees"],
   });
-"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
+
   // Sort employees by ID descending (newest first)
   const employeesData = employeesRawData?.sort((a, b) => b.id - a.id);
 
@@ -324,16 +324,16 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
   const { data: categoriesData, isLoading: categoriesLoading } = useQuery<
     any[]
   >({
-    queryKey: ["/api/categories"],
+    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/categories"],
   });
-"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
+
   // Fetch products (include inactive products in settings)
   const { data: productsData, isLoading: productsLoading } = useQuery<any[]>({
-    queryKey: ["/api/products"],
+    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products"],
     queryFn: async () => {
-      const res"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api = await fetch("/api/products");
+      const response = await fetch("https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products");
       if (!response.ok) throw new Error("Failed to fetch products");
-      return response.json();"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
+      return response.json();
     },
   });
 
@@ -382,9 +382,9 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
   // Fetch payment methods from API
   const { data: paymentMethodsData, isLoading: paymentMethodsLoading } =
     useQuery<any[]>({
-      queryKey: ["/api/payment-methods"],
+      queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/payment-methods"],
     });
-"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
+
   // Update local state when data is loaded
   useEffect(() => {
     if (paymentMethodsData) {
@@ -395,13 +395,13 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
   // Mutation to update store settings
   const updateStoreSettingsMutation = useMutation({
     mutationFn: async (settings: Partial<InsertStoreSettings>) => {
-      const response = await apiRequest("PUT", "/api/store-settings", settings);
+      const response = await apiRequest("PUT", "https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/store-settings", settings);
       return response.json();
-    },"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
+    },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/store-settings"] });
+      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/store-settings"] });
       toast({
-        title: t("common.success"),"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
+        title: t("common.success"),
         description: t("settings.storeUpdated"),
       });
     },
@@ -505,13 +505,13 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
   // Mutation to create payment method
   const createPaymentMethodMutation = useMutation({
     mutationFn: async (data: any) => {
-      const response = await apiRequest("POST", "/api/payment-methods", data);
+      const response = await apiRequest("POST", "https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/payment-methods", data);
       return response.json();
-    },"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
+    },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/payment-methods"] });
+      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/payment-methods"] });
       toast({
-        title: t("common.success"),"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
+        title: t("common.success"),
         description: "Đã thêm phương thức thanh toán mới",
       });
     },
@@ -535,9 +535,9 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/payment-methods"] });
+      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/payment-methods"] });
       toast({
-        title: t("common.success"),"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
+        title: t("common.success"),
         description: t("settings.paymentUpdateSuccessDesc"),
       });
     },
@@ -557,9 +557,9 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/payment-methods"] });
+      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/payment-methods"] });
       toast({
-        title: t("common.success"),"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
+        title: t("common.success"),
         description: "Đã xóa phương thức thanh toán",
       });
     },
@@ -650,9 +650,9 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
-      await queryClient.refetchQueries({ queryKey: ["/api/customers"] });
+      await queryClient.refetchQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/customers"] });
 
-      toast({"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
+      toast({
         title: t("common.success"),
         description: t("settings.customerDeleteSuccess"),
       });
@@ -730,9 +730,9 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
     }
 
     try {
-      const response = await fetch("/api/categories", {
+      const response = await fetch("https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/categories", {
         method: "POST",
-        headers: {"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
+        headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify(categoryForm),
@@ -745,10 +745,10 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
       const result = await response.json();
 
       // Refetch data immediately
-      await queryClient.refetchQueries({ queryKey: ["/api/categories"] });
-      await queryClient.refetchQueries({ queryKey: ["/api/products"] });
-"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
-      toast({"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
+      await queryClient.refetchQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/categories"] });
+      await queryClient.refetchQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products"] });
+
+      toast({
         title: t("common.success"),
         description: t("settings.categoryCreateSuccess"),
       });
@@ -803,10 +803,10 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
       resetCategoryForm();
 
       // Refetch data immediately
-      await queryClient.refetchQueries({ queryKey: ["/api/categories"] });
-      await queryClient.refetchQueries({ queryKey: ["/api/products"] });
-"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
-      toast({"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
+      await queryClient.refetchQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/categories"] });
+      await queryClient.refetchQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products"] });
+
+      toast({
         title: t("common.success"),
         description: t("settings.categoryUpdateSuccess"),
       });
@@ -859,10 +859,10 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
       }
 
       // Refetch data immediately
-      await queryClient.refetchQueries({ queryKey: ["/api/categories"] });
-      await queryClient.refetchQueries({ queryKey: ["/api/products"] });
-"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
-      toast({"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
+      await queryClient.refetchQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/categories"] });
+      await queryClient.refetchQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products"] });
+
+      toast({
         title: t("common.success"),
         description: t("settings.categoryDeleteSuccess"),
       });
@@ -951,7 +951,7 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
         try {
           const base64Image = await convertFileToBase64(
             productForm.selectedImageFile,
-          );"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
+          );
           finalProductData.imageUrl = base64Image;
         } catch (error) {
           console.error("파일 변환 오류:", error);
@@ -964,10 +964,10 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
         }
       } else if (productForm.imageInputMethod === "url") {
         // Ensure imageUrl is set if URL method is selected
-        finalProductData.imageUrl = productForm.imag"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
+        finalProductData.imageUrl = productForm.imageUrl;
       }
 
-      const response = await fetch("/api/products", {
+      const response = await fetch("https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(finalProductData),
@@ -980,7 +980,7 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
         throw new Error(errorData.message || "Failed to create product");
       }
 
-      await queryClient.refetchQueries({ queryKey: ["/api/products"] });
+      await queryClient.refetchQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products"] });
       setShowProductForm(false);
       resetProductForm();
       toast({
@@ -1037,7 +1037,7 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
       // Handle file upload if file method is selected
       if (
         productForm.imageInputMethod === "file" &&
-        productForm.selectedImageFile"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
+        productForm.selectedImageFile
       ) {
         try {
           const base64Image = await convertFileToBase64(
@@ -1071,7 +1071,7 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
         throw new Error(errorData.message || "Failed to update product");
       }
 
-      await queryClient.refetchQueries({ queryKey: ["/api/products"] });
+      await queryClient.refetchQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products"] });
       setShowProductForm(false);
       setEditingProduct(null);
       resetProductForm();
@@ -1091,7 +1091,7 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
   };
 
   const handleEditProduct = (product: any) => {
-    let dropdownValue = "0"; // default"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
+    let dropdownValue = "0"; // default
 
     if (product.taxRateName) {
       const trimmedTaxRateName = product.taxRateName.trim();
@@ -1150,7 +1150,7 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
       trackInventory: product.trackInventory !== false,
       productType: product.productType || 1,
       taxRate: dropdownValue || "0",
-      unit: produ"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/apiit || "Cái",
+      unit: product.unit || "Cái",
     });
     setEditingProduct(product);
     setShowProductForm(true);
@@ -1158,19 +1158,19 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
 
   const handleDeleteProduct = async (
     productId: number,
-    prod"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/apime: string,
+    productName: string,
   ) => {
     setProductToDelete({ id: productId, name: productName });
     setShowProductDeleteDialog(true);
   };
 
   const confirmDeleteProduct = async () => {
-    if (!productToD"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api) return;
+    if (!productToDelete) return;
 
     try {
       await apiRequest("DELETE", `https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products/${productToDelete.id}`);
 
-      await queryClient.refetchQueries({ queryKey: ["/api/products"] });
+      await queryClient.refetchQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products"] });
 
       toast({
         title: t("common.success"),
@@ -1194,7 +1194,7 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
       id: category.id.toString(), // Set ID from category
       name: category.name || "",
       icon: category.icon || "fas fa-utensils",
-    });"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
+    });
     setEditingCategory(category);
     setShowCategoryForm(true);
   };
@@ -1217,22 +1217,22 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
   // Fetch E-invoice connections
   const { data: eInvoiceConnections = [], isLoading: eInvoiceLoading } =
     useQuery<any[]>({
-      queryKey: ["/api/einvoice-connections"],
+      queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/einvoice-connections"],
     });
 
   // E-invoice mutations
   const createEInvoiceMutation = useMutation({
-    mutationFn: asy"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/apiata: any) => {
+    mutationFn: async (data: any) => {
       const response = await apiRequest(
         "POST",
-        "/api/einvoice-connections",
+        "https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/einvoice-connections",
         data,
       );
       return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: ["/api/einvoice-connections"],
+        queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/einvoice-connections"],
       });
       toast({
         title: t("common.success"),
@@ -1261,7 +1261,7 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: ["/api/einvoice-connections"],
+        queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/einvoice-connections"],
       });
       toast({
         title: t("common.success"),
@@ -1289,7 +1289,7 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: ["/api/einvoice-connections"],
+        queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/einvoice-connections"],
       });
       toast({
         title: t("common.success"),
@@ -1411,17 +1411,17 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
       taxCode: eInvoice.taxCode || "",
       loginId: eInvoice.loginId || "",
       password: eInvoice.password || "",
-      softwareN"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/apieInvoice.softwareName || "",
+      softwareName: eInvoice.softwareName || "",
       loginUrl: eInvoice.loginUrl || "",
       signMethod: eInvoice.signMethod || "Ký server",
       cqtCode: eInvoice.cqtCode || "Cập nhật", // Set to 'Cập nhật' if not present
       notes: eInvoice.notes === "-" ? "" : eInvoice.notes || "",
       isActive: eInvoice.isActive !== undefined ? eInvoice.isActive : true,
-    });"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
+    });
 
     // Set editing state and show form
     setEditingEInvoice(eInvoice);
-    setShowEInvoiceForm(true);"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
+    setShowEInvoiceForm(true);
 
     console.log("E-invoice form opened for editing");
   };
@@ -1448,7 +1448,7 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
   // Invoice template management state
   const [showTemplateForm, setShowTemplateForm] = useState(false);
   const [editingTemplate, setEditingTemplate] = useState<any>(null);
-  const [showTemplateDeleteDialog, setShowTemplat"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/apiteDialog] =
+  const [showTemplateDeleteDialog, setShowTemplateDeleteDialog] =
     useState(false);
   const [templateToDelete, setTemplateToDelete] = useState<any>(null);
   const [templateForm, setTemplateForm] = useState({
@@ -1474,21 +1474,21 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
     setEditingTemplate(null);
   };
 
-  // Fetch invoice templates"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
+  // Fetch invoice templates
   const { data: invoiceTemplates = [], isLoading: templatesLoading } = useQuery<
     any[]
   >({
-    queryKey: ["/api/invoice-templates"],
+    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/invoice-templates"],
   });
 
   // Invoice template mutations
   const createTemplateMutation = useMutation({
     mutationFn: async (data: any) => {
-      const response = await apiRequest("POST", "/api/invoice-templates", data);
+      const response = await apiRequest("POST", "https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/invoice-templates", data);
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/invoice-templates"] });
+      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/invoice-templates"] });
       toast({
         title: t("common.success"),
         description: t("settings.einvoiceTemplateCreateSuccess"),
@@ -1515,7 +1515,7 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/invoice-templates"] });
+      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/invoice-templates"] });
       toast({
         title: t("common.success"),
         description: t("settings.einvoiceTemplateUpdateSuccess"),
@@ -1541,7 +1541,7 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/invoice-templates"] });
+      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/invoice-templates"] });
       toast({
         title: t("common.success"),
         description: t("settings.einvoiceTemplateDeleteSuccess"),
@@ -1578,7 +1578,7 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
       name: templateForm.name.trim(),
       templateNumber: templateForm.templateNumber.trim(),
       templateCode: templateForm.templateCode.trim(), // Include templateCode
-      symbol: templateForm.symbol.trim(),"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
+      symbol: templateForm.symbol.trim(),
       notes: templateForm.notes.trim() || null,
       useCK: templateForm.useCK, // Explicitly include useCK
       isDefault: templateForm.isDefault, // Explicitly include isDefault
@@ -1645,7 +1645,7 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
   };
 
   const refetchProducts = () => {
-    queryClient.invalidateQueries({ queryKey: ["/api/products"] });
+    queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products"] });
   };
 
   const handleOpenCategoryDialog = () => {

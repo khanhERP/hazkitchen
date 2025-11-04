@@ -94,9 +94,9 @@ export default function CustomerDisplayPage() {
 
   // Fetch store settings using react-query with proper interface
   const { data: storeSettings } = useQuery({
-    queryKey: ["/api/store-settings"],
+    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/store-settings"],
     queryFn: async () => {
-      const response = await fetch("/api/store-settings");
+      const response = await fetch("https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/store-settings");
       if (!response.ok) throw new Error("Failed to fetch store settings");
       return response.json();
     },

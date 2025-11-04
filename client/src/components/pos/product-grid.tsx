@@ -52,9 +52,9 @@ export function ProductGrid({
 
   // Fetch store settings to check price inclusion of tax
   const { data: storeSettings } = useQuery({
-    queryKey: ["/api/store-settings"],
+    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/store-settings"],
     queryFn: async () => {
-      const response = await fetch("/api/store-settings");
+      const response = await fetch("https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/store-settings");
       if (!response.ok) throw new Error("Failed to fetch store settings");
       return response.json();
     },
@@ -63,15 +63,15 @@ export function ProductGrid({
 
   const priceIncludesTax = storeSettings?.priceIncludesTax ?? false;
 
-  // Assume set"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/apiand other necessary hooks/context are available if this were a real component
+  // Assume setCart and other necessary hooks/context are available if this were a real component
   // For demonstration, we'll just use the onAddToCart prop
-  const setCart = (items: CartItem["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api {
+  const setCart = (items: CartItem[]) => {
     console.log("Set cart called with:", items);
   };
 
   const { data: products = [], isLoading } = useQuery<Product[]>({
     queryKey: [
-      "/api/products",
+      "https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products",
       { category: selectedCategory, search: searchQuery },
     ],
     queryFn: async () => {
@@ -82,7 +82,7 @@ export function ProductGrid({
 
       const response = await fetch(`https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products?${params}`);
       if (!response.ok) throw new Error("Failed to fetch products");
-      "https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api allProducts = await response.json();
+      const allProducts = await response.json();
 
       console.log("Raw products from API:", allProducts);
       console.log("Total products received:", allProducts.length);

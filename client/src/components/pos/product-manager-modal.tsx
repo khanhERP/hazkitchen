@@ -117,12 +117,12 @@ export function ProductManagerModal({
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.readAsDataURL(file);
-      reader.on"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api= () => resolve(reader.result as string);
+      reader.onload = () => resolve(reader.result as string);
       reader.onerror = (error) => reject(error);
     });
   };
 
-  const {"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
+  const {
     data: products = [],
     isLoading,
     refetch,
@@ -132,14 +132,14 @@ export function ProductManagerModal({
   });
 
   const { data: categories = [] } = useQuery<Category[]>({
-    queryKey: ["/api/categories"],
+    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/categories"],
     enabled: isOpen,
   });
 
   const createProductMutation = useMutation({
     mutationFn: async (data: z.infer<typeof productFormSchema>) => {
       console.log("Sending product data:", data);
-      const response = await fetch("/api/products", {
+      const response = await fetch("https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
@@ -147,22 +147,22 @@ export function ProductManagerModal({
 
       if (!response.ok) {
         const errorData = await response.json();
-        console.error("Product crea"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/apierror:", errorData);
+        console.error("Product creation error:", errorData);
         throw new Error(errorData.message || "Failed to create product");
       }
       return response.json();
     },
     onSuccess: (newProduct) => {
-      queryClient.invalidateQueries({ queryKey: ["/api/products"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/products/active"] });
+      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products"] });
+      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products/active"] });
 
       toast({
         title: "✅ Tạo sản phẩm thành công",
         description: `Sản phẩm "${newProduct.name}" đã được thêm vào hệ thống`,
         duration: 3000,
       });
-"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
-      // Small delay to show toast before closing"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
+
+      // Small delay to show toast before closing form
       setTimeout(() => {
         setShowAddForm(false);
         resetForm();
@@ -230,8 +230,8 @@ export function ProductManagerModal({
       return result;
     },
     onSuccess: (updatedProduct) => {
-      queryClient.invalidateQueries({ queryKey: ["/api/products"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/products/active"] });
+      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products"] });
+      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products/active"] });
 
       toast({
         title: `${t("tables.updatedProduct")}`,
@@ -246,8 +246,8 @@ export function ProductManagerModal({
         resetForm();
         setSelectedImageFile(null);
         setImageInputMethod("url");
-      }, 500);"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
-    },"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
+      }, 500);
+    },
     onError: (error: Error) => {
       toast({
         title: "❌ Lỗi cập nhật",
@@ -268,8 +268,8 @@ export function ProductManagerModal({
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/products"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/products/active"] });
+      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products"] });
+      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products/active"] });
       toast({
         title: "Success",
         description: "Product deleted successfully",
@@ -283,8 +283,8 @@ export function ProductManagerModal({
       });
     },
   });
-"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
-  const form = useForm<z.infer<typeof productForm"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/apia>>({
+
+  const form = useForm<z.infer<typeof productFormSchema>>({
     resolver: zodResolver(productFormSchema),
     defaultValues: {
       name: "",

@@ -113,11 +113,11 @@ export default function ExpenseVoucherModal({
 
   // Fetch employees
   const { data: employees = [] } = useQuery({
-    queryKey: ["/api/employees"],
-    queryFn: as"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api) => {
+    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/employees"],
+    queryFn: async () => {
       try {
-        const response = await fetch("/api/employees");
-        if (!response.ok) throw new E"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api`HTTP error! status: ${response.status}`);
+        const response = await fetch("https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/employees");
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
         const data = await response.json();
         return Array.isArray(data) ? data : [];
       } catch (error) {
@@ -129,12 +129,12 @@ export default function ExpenseVoucherModal({
 
   // Fetch suppliers
   const { data: suppliers = [] } = useQuery({
-    queryKey: ["/api/suppliers"],
+    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/suppliers"],
     queryFn: async () => {
-      try {"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
-        const response = await fetch("/api/suppliers");
+      try {
+        const response = await fetch("https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/suppliers");
         if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-        const data = await response.j"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api;
+        const data = await response.json();
         return Array.isArray(data) ? data : [];
       } catch (error) {
         console.error('Error fetching suppliers:', error);
@@ -166,7 +166,7 @@ export default function ExpenseVoucherModal({
         const dateStr = today.toISOString().split('T')[0].replace(/-/g, '');
         const timeStr = Date.now().toString().slice(-3);
         const autoVoucherNumber = `PC${dateStr}${timeStr}`;
-"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
+
         console.log(`✅ Auto-generated expense voucher number: ${autoVoucherNumber}`);
 
         setFormData({
@@ -190,7 +190,7 @@ export default function ExpenseVoucherModal({
   const createVoucherMutation = useMutation({
     mutationFn: async (data: ExpenseVoucher) => {
       console.log("Creating expense voucher with data:", data);
-      const response = await fetch("/api/expense-vouchers", {
+      const response = await fetch("https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/expense-vouchers", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
@@ -210,8 +210,8 @@ export default function ExpenseVoucherModal({
         title: "Thành công",
         description: `Đã tạo phiếu chi ${formData.voucherNumber} thành công`,
       });
-      queryClient.invalidateQueries({ queryKey: ["/api/expense-vouchers"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/orders"] });
+      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/expense-vouchers"] });
+      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] });
       onClose();
     },
     onError: (error) => {
@@ -235,7 +235,7 @@ export default function ExpenseVoucherModal({
       });
 
       if (!response.ok) {
-        const errorData = await res"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api.json().catch(() => ({}));
+        const errorData = await response.json().catch(() => ({}));
         const errorMessage = errorData.error || `HTTP ${response.status}: ${response.statusText}`;
         throw new Error(errorMessage);
       }
@@ -248,16 +248,16 @@ export default function ExpenseVoucherModal({
         title: "Thành công",
         description: `Đã cập nhật phiếu chi ${formData.voucherNumber} thành công`,
       });
-      queryClient.invalidateQueries({ queryKey: ["/api/expense-vouchers"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/orders"] });
+      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/expense-vouchers"] });
+      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] });
       setIsEditing(false);
     },
     onError: (error) => {
       console.error("Failed to update expense voucher:", error);
       const errorMessage = error instanceof Error ? error.message : "Không thể cập nhật phiếu chi";
       toast({
-        title: "Lỗi cập nhật phiếu chi","https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
-        description: errorMessage,"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
+        title: "Lỗi cập nhật phiếu chi",
+        description: errorMessage,
         variant: "destructive",
       });
     },
@@ -276,8 +276,8 @@ export default function ExpenseVoucherModal({
         title: "Thành công",
         description: "Đã xóa phiếu chi",
       });
-      queryClient.invalidateQueries({ queryKey: ["/api/expense-vouchers"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/orders"] });
+      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/expense-vouchers"] });
+      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] });
       setShowDeleteDialog(false);
       onClose();
     },
@@ -315,8 +315,8 @@ export default function ExpenseVoucherModal({
         title: "Lỗi",
         description: "Vui lòng chọn ngày chi",
         variant: "destructive",
-      });"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
-      return;"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
+      });
+      return;
     }
 
     // Use existing voucher number or validate it exists
@@ -345,8 +345,8 @@ export default function ExpenseVoucherModal({
       phone: formData.phone?.trim() || "",
       description: formData.description?.trim() || "",
       amount: Number(formData.amount),
-    };"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
-"https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api
+    };
+
     // Add supplierId if recipient is a supplier
     const selectedRecipient = recipientOptions.find(option => option.name === formData.recipient);
     if (selectedRecipient && selectedRecipient.id) {
