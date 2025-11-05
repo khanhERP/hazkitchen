@@ -24,15 +24,15 @@ import VirtualKeyboard from "@/components/ui/virtual-keyboard";
 
 // E-invoice software providers mapping
 const EINVOICE_PROVIDERS = [
-  { name: "EasyInvoice", value: "1" },
-  { name: "VnInvoice", value: "2" },
-  { name: "FptInvoice", value: "3" },
-  { name: "MifiInvoice", value: "4" },
-  { name: "EHoaDon", value: "5" },
-  { name: "BkavInvoice", value: "6" },
+  // { name: "EasyInvoice", value: "1" },
+  // { name: "VnInvoice", value: "2" },
+  // { name: "FptInvoice", value: "3" },
+  // { name: "MifiInvoice", value: "4" },
+  // { name: "EHoaDon", value: "5" },
+  // { name: "BkavInvoice", value: "6" },
   { name: "MInvoice", value: "7" },
-  { name: "SInvoice", value: "8" },
-  { name: "WinInvoice", value: "9" },
+  // { name: "SInvoice", value: "8" },
+  // { name: "WinInvoice", value: "9" },
 ];
 
 interface EInvoiceModalProps {
@@ -74,7 +74,7 @@ export function EInvoiceModal({
   console.log("- cartItems is array:", Array.isArray(cartItems));
   console.log("- cartItems length:", cartItems?.length || 0);
   const [formData, setFormData] = useState({
-    invoiceProvider: "",
+    invoiceProvider: "MInvoice",
     invoiceTemplate: "",
     selectedTemplateId: "",
     taxCode: "",
@@ -289,10 +289,10 @@ export function EInvoiceModal({
       const defaultTemplate = invoiceTemplates.find((t: any) => t.isDefault);
 
       setFormData({
-        invoiceProvider: "EasyInvoice", // Default provider
+        invoiceProvider: "MInvoice", // Default provider
         invoiceTemplate: defaultTemplate?.name || "", // Use actual template name
         selectedTemplateId: defaultTemplate?.id?.toString() || "",
-        taxCode: "0123456789", // Default tax code
+        taxCode: "", // Default tax code
         customerName: "Khách hàng lẻ", // Default customer name
         address: "",
         phoneNumber: "",
