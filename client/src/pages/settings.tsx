@@ -147,6 +147,7 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
     cqtCode: "Cập nhật", // Set default to 'Cập nhật'
     notes: "",
     isActive: true,
+    autoPublish: false,
   });
   const [eInvoiceFormErrors, setEInvoiceFormErrors] = useState({
     taxCode: "",
@@ -1319,6 +1320,7 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
       cqtCode: "Cập nhật", // Ensure this is reset correctly
       notes: "",
       isActive: true,
+      autoPublish: false,
     });
     setEInvoiceFormErrors({
       taxCode: "",
@@ -1417,6 +1419,7 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
       cqtCode: eInvoice.cqtCode || "Cập nhật", // Set to 'Cập nhật' if not present
       notes: eInvoice.notes === "-" ? "" : eInvoice.notes || "",
       isActive: eInvoice.isActive !== undefined ? eInvoice.isActive : true,
+      autoPublish: eInvoice.autoPublish || false,
     });
 
     // Set editing state and show form
@@ -5020,6 +5023,26 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
                     />
                     <Label htmlFor="isDefault" className="text-sm">
                       {t("settings.setAsDefaultConnection")}
+                    </Label>
+                  </div>
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="autoPublish" className="text-right">
+                    Phát hành tự động
+                  </Label>
+                  <div className="col-span-3 flex items-center space-x-2">
+                    <Switch
+                      id="autoPublish"
+                      checked={eInvoiceForm.autoPublish || false}
+                      onCheckedChange={(checked) =>
+                        setEInvoiceForm((prev) => ({
+                          ...prev,
+                          autoPublish: checked,
+                        }))
+                      }
+                    />
+                    <Label htmlFor="autoPublish" className="text-sm">
+                      Tự động phát hành hóa đơn sau khi tạo
                     </Label>
                   </div>
                 </div>

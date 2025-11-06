@@ -750,6 +750,7 @@ export const eInvoiceConnections = pgTable("einvoice_connections", {
   notes: text("notes"),
   isDefault: boolean("is_default").notNull().default(false),
   isActive: boolean("is_active").notNull().default(true),
+  autoPublish: boolean("auto_publish").notNull().default(false),
   createdAt: timestamp("created_at", { withTimezone: true })
     .defaultNow()
     .notNull(),
