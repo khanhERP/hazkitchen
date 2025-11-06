@@ -1896,9 +1896,6 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
                                   <SelectItem value="restaurant">
                                     {t("settings.posRestaurant")}
                                   </SelectItem>
-                                  <SelectItem value="laundry">
-                                    POS Giặt là
-                                  </SelectItem>
                                 </SelectContent>
                               </Select>
                             </div>
