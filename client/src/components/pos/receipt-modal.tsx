@@ -216,7 +216,7 @@ export function ReceiptModal({
         // Filter kitchen printers by floor if we have table floor info
         if (tableFloor) {
           kitchenPrinters = kitchenPrinters.filter(
-            (config) => config.floor === tableFloor,
+            (config) => config.floor === tableFloor || config.floor === 'all',
           );
           console.log(
             `🖨️ Filtered to ${kitchenPrinters.length} kitchen printers for floor ${tableFloor}`,
