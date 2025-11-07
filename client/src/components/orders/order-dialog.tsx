@@ -80,9 +80,29 @@ export function OrderDialog({
   const [showDeleteItemDialog, setShowDeleteItemDialog] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<any>(null);
 
-  const { data: products, isLoading: productsLoading } = useQuery({
-    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products"],
+  const { data: productsResponse } = useQuery({
+    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products", { category: selectedCategory, search: searchQuery }],
+    queryFn: async () => {
+      const params = new URLSearchParams();
+      
+      if (searchQuery) {
+        params.append("search", searchQuery);
+      }
+      
+      if (selectedCategory !== null) {
+        params.append("category", selectedCategory.toString());
+      }
+      
+      // Load all products without pagination limit
+      params.append("limit", "50000");
+
+      const response = await fetch(`https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products?${params}`);
+      if (!response.ok) throw new Error("Failed to fetch products");
+      return await response.json();
+    },
   });
+
+  const products = productsResponse?.products || [];
 
   const { data: categories, isLoading: categoriesLoading } = useQuery({
     queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/categories"],
@@ -1290,6 +1310,8 @@ export function OrderDialog({
     }
   }, [table, open, mode, existingOrder]);
 
+  
+
   useEffect(() => {
     if (
       mode === "edit" &&
@@ -1312,15 +1334,15 @@ export function OrderDialog({
         <DialogHeader className="flex-shrink-0 px-4 pt-3 pb-2 bg-white border-b border-gray-200 sticky top-0 z-10">
           <div className="flex items-start justify-between gap-4">
             <div className="flex-1">
-              <DialogTitle className="flex items-center gap-2 text-3xl font-bold text-gray-800">
-                <div className="p-2 bg-green-100 rounded-lg">
-                  <ShoppingCart className="w-7 h-7 text-green-600" />
+              <DialogTitle className="flex items-center gap-2 text-2xl font-bold text-gray-800">
+                <div className="p-1.5 bg-green-100 rounded-lg">
+                  <ShoppingCart className="w-5 h-5 text-green-600" />
                 </div>
                 {mode === "edit"
                   ? `${t("orders.editOrderTitle")} ${table.tableNumber}`
                   : `Bàn ${table.tableNumber}`}
               </DialogTitle>
-              <DialogDescription className="text-lg text-gray-600 mt-1">
+              <DialogDescription className="text-sm text-gray-600 mt-1">
                 {mode === "edit"
                   ? t("orders.editOrderDesc").replace(
                       "{orderNumber}",
@@ -1329,154 +1351,29 @@ export function OrderDialog({
                   : `${t("tables.tableCapacity")}: ${table.capacity} ${t("orders.people")} | ${t("tables.selectMenuToOrder")}`}
               </DialogDescription>
             </div>
-
-            {/* Action Buttons - Moved to top-right */}
-            <div className="flex flex-row gap-2 flex-shrink-0">
-              <Button 
-                variant="outline" 
-                onClick={handleClose}
-                className="h-11 text-base border-2 border-gray-300 hover:bg-gray-100 font-semibold px-6"
-              >
-                {t("common.close")}
-              </Button>
-              {(cart.length > 0 || (mode === "edit" && existingItems.length > 0) || mode === "edit") && (
-                <>
-                  <Button
-                    variant="outline"
-                    onClick={() => {
-                      console.log("🖨️ Order Dialog: In tạm tính clicked", {
-                        existingItemsCount: existingItems.length,
-                        cartItemsCount: cart.length,
-                        customerName,
-                        discount,
-                      });
-  
-                      const previewItems = [
-                        ...existingItems.map((item) => ({
-                          id: item.id,
-                          productId: item.productId,
-                          productName: item.productName,
-                          quantity: item.quantity,
-                          price: item.unitPrice,
-                          unitPrice: item.unitPrice,
-                          total: item.total,
-                          discount: item.discount || "0",
-                          tax: item.tax || "0",
-                          sku: item.productSku || `SP${item.productId}`,
-                          taxRate: (() => {
-                            const product = products?.find(
-                              (p: Product) => p.id === item.productId,
-                            );
-                            return product?.taxRate
-                              ? parseFloat(product.taxRate)
-                              : 0;
-                          })(),
-                        })),
-                        ...cart.map((item) => ({
-                          id: item.product.id,
-                          productId: item.product.id,
-                          productName: item.product.name,
-                          quantity: item.quantity,
-                          price: item.product.price,
-                          unitPrice: item.product.price,
-                          total: (
-                            parseFloat(item.product.price) * item.quantity
-                          ).toString(),
-                          discount: "0",
-                          tax: "0",
-                          sku: item.product.sku || `SP${item.product.id}`,
-                          taxRate: item.product.taxRate
-                            ? parseFloat(item.product.taxRate)
-                            : 0,
-                        })),
-                      ];
-  
-                      const subtotalAmount = Math.floor(calculateSubtotal());
-                      const taxAmount = Math.floor(calculateTax());
-                      const totalAmount = Math.floor(calculateTotal());
-  
-                      const previewReceipt = {
-                        id: existingOrder?.id || 0,
-                        orderId: existingOrder?.id || 0,
-                        orderNumber:
-                          existingOrder?.orderNumber ||
-                          `ORD-PREVIEW-${Date.now()}`,
-                        tableId: table?.id,
-                        tableNumber: table?.tableNumber,
-                        customerName: customerName || "Khách hàng",
-                        customerPhone: existingOrder?.customerPhone || "",
-                        customerCount: customerCount,
-                        items: previewItems,
-                        subtotal: subtotalAmount.toString(),
-                        tax: taxAmount.toString(),
-                        discount: discount.toString(),
-                        total: totalAmount.toString(),
-                        exactSubtotal: subtotalAmount,
-                        exactTax: taxAmount,
-                        exactDiscount: Math.floor(discount),
-                        exactTotal: totalAmount,
-                        transactionId:
-                          existingOrder?.orderNumber || `PREVIEW-${Date.now()}`,
-                        createdAt: new Date().toISOString(),
-                        cashierName: "Table Service",
-                        paymentMethod: "preview",
-                        isPreview: true,
-                        priceIncludeTax: storeSettings?.priceIncludesTax || false,
-                      };
-  
-                      setPreviewReceipt(previewReceipt);
-                      setShowReceiptPreview(true);
-                    }}
-                    disabled={
-                      !table ||
-                      (mode !== "edit" && cart.length === 0) ||
-                      (mode === "edit" &&
-                        existingItems.length === 0 &&
-                        cart.length === 0)
-                    }
-                    className="h-11 text-base border-2 border-blue-400 text-blue-600 hover:bg-blue-50 font-semibold px-6"
-                  >
-                    📄 {t("tables.printBill")}
-                  </Button>
-                  <Button
-                    onClick={handlePlaceOrder}
-                    disabled={!table || (mode !== "edit" && cart.length === 0) || createOrderMutation.isPending}
-                    className="bg-gradient-to-r from-green-600 to-green-500 hover:from-green-700 hover:to-green-600 text-white h-11 shadow-lg hover:shadow-xl transition-all font-bold text-base px-8"
-                  >
-                    {createOrderMutation.isPending
-                      ? mode === "edit"
-                        ? t("orders.updating")
-                        : t("tables.placing")
-                      : mode === "edit"
-                        ? t("orders.updateOrder")
-                        : t("orders.placeOrder")}
-                  </Button>
-                </>
-              )}
-            </div>
           </div>
-          
-          {/* Summary Section - Moved to top */}
+
+          {/* Summary Section */}
           {(cart.length > 0 || (mode === "edit" && existingItems.length > 0) || mode === "edit") && (
-            <div className="bg-gradient-to-r from-green-50 to-blue-50 rounded-lg p-3 mt-2 border-2 border-green-200">
-              <div className="flex items-center justify-between gap-4 text-sm">
-                <div className="flex items-center gap-2">
+            <div className="bg-gradient-to-r from-green-50 to-blue-50 rounded-lg p-2 mt-2 border border-green-200">
+              <div className="flex items-center justify-between gap-3 text-xs">
+                <div className="flex items-center gap-1.5">
                   <span className="text-gray-600 font-medium">{t("orders.subtotal")}</span>
                   <span className="font-semibold">
                     {Math.floor(calculateSubtotal()).toLocaleString()} ₫
                   </span>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1.5">
                   <span className="text-gray-600 font-medium">{t("reports.tax")}</span>
                   <span className="font-semibold">
                     {Math.floor(calculateTax()).toLocaleString()} ₫
                   </span>
                 </div>
-                <div className="flex items-center gap-2 pl-4 border-l border-gray-300">
-                  <span className="text-gray-800 font-bold text-base">
+                <div className="flex items-center gap-1.5 pl-3 border-l border-gray-300">
+                  <span className="text-gray-800 font-bold text-sm">
                     {t("orders.totalAmount")}
                   </span>
-                  <span className="font-bold text-xl text-green-600">
+                  <span className="font-bold text-base text-green-600">
                     {Math.floor(calculateTotal()).toLocaleString()} ₫
                   </span>
                 </div>
@@ -1625,7 +1522,7 @@ export function OrderDialog({
                         )}
                       </div>
                     </div>
-                    
+
                     {/* Product Info */}
                     <div className="p-2 space-y-1">
                       <h4 className="font-semibold text-sm line-clamp-2 min-h-[2.5rem] text-gray-800 leading-tight">
@@ -1655,16 +1552,145 @@ export function OrderDialog({
                 </Card>
               ))}
             </div>
+
+            
           </div>
 
           {/* Right Panel - Order Summary */}
           <div className="flex flex-col min-h-0 bg-gradient-to-br from-green-50 to-white rounded-lg border-2 border-green-200 shadow-md">
-            <div className="flex items-center justify-between p-3 border-b-2 border-green-200 flex-shrink-0 bg-green-600">
-              <h3 className="text-lg font-bold text-white flex items-center gap-2">
-                <ShoppingCart className="w-5 h-5" />
+            
+              <div className="flex-shrink-0 p-2 bg-white border-b border-green-200">
+                <div className="flex gap-1.5">
+                  <Button
+                    variant="outline"
+                    onClick={handleClose}
+                    className="flex-1 h-9 text-sm border border-gray-300 hover:bg-gray-100 font-medium px-2"
+                  >
+                    {t("common.close")}
+                  </Button>
+                  {/* Action Buttons */}
+                  {(cart.length > 0 || (mode === "edit" && existingItems.length > 0)) && (
+                    <>
+                      <Button
+                        variant="outline"
+                        onClick={() => {
+                          console.log("🖨️ Order Dialog: In tạm tính clicked", {
+                            existingItemsCount: existingItems.length,
+                            cartItemsCount: cart.length,
+                            customerName,
+                            discount,
+                          });
+
+                          const previewItems = [
+                            ...existingItems.map((item) => ({
+                              id: item.id,
+                              productId: item.productId,
+                              productName: item.productName,
+                              quantity: item.quantity,
+                              price: item.unitPrice,
+                              unitPrice: item.unitPrice,
+                              total: item.total,
+                              discount: item.discount || "0",
+                              tax: item.tax || "0",
+                              sku: item.productSku || `SP${item.productId}`,
+                              taxRate: (() => {
+                                const product = products?.find(
+                                  (p: Product) => p.id === item.productId,
+                                );
+                                return product?.taxRate
+                                  ? parseFloat(product.taxRate)
+                                  : 0;
+                              })(),
+                            })),
+                            ...cart.map((item) => ({
+                              id: item.product.id,
+                              productId: item.product.id,
+                              productName: item.product.name,
+                              quantity: item.quantity,
+                              price: item.product.price,
+                              unitPrice: item.product.price,
+                              total: (
+                                parseFloat(item.product.price) * item.quantity
+                              ).toString(),
+                              discount: "0",
+                              tax: "0",
+                              sku: item.product.sku || `SP${item.product.id}`,
+                              taxRate: item.product.taxRate
+                                ? parseFloat(item.product.taxRate)
+                                : 0,
+                            })),
+                          ];
+
+                          const subtotalAmount = Math.floor(calculateSubtotal());
+                          const taxAmount = Math.floor(calculateTax());
+                          const totalAmount = Math.floor(calculateTotal());
+
+                          const previewReceipt = {
+                            id: existingOrder?.id || 0,
+                            orderId: existingOrder?.id || 0,
+                            orderNumber:
+                              existingOrder?.orderNumber ||
+                              `ORD-PREVIEW-${Date.now()}`,
+                            tableId: table?.id,
+                            tableNumber: table?.tableNumber,
+                            customerName: customerName || "Khách hàng",
+                            customerPhone: existingOrder?.customerPhone || "",
+                            customerCount: customerCount,
+                            items: previewItems,
+                            subtotal: subtotalAmount.toString(),
+                            tax: taxAmount.toString(),
+                            discount: discount.toString(),
+                            total: totalAmount.toString(),
+                            exactSubtotal: subtotalAmount,
+                            exactTax: taxAmount,
+                            exactDiscount: Math.floor(discount),
+                            exactTotal: totalAmount,
+                            transactionId:
+                              existingOrder?.orderNumber || `PREVIEW-${Date.now()}`,
+                            createdAt: new Date().toISOString(),
+                            cashierName: "Table Service",
+                            paymentMethod: "preview",
+                            isPreview: true,
+                            priceIncludeTax: storeSettings?.priceIncludesTax || false,
+                          };
+
+                          setPreviewReceipt(previewReceipt);
+                          setShowReceiptPreview(true);
+                        }}
+                        disabled={
+                          !table ||
+                          (mode !== "edit" && cart.length === 0) ||
+                          (mode === "edit" &&
+                            existingItems.length === 0 &&
+                            cart.length === 0)
+                        }
+                        className="flex-1 h-9 text-sm border border-blue-400 text-blue-600 hover:bg-blue-50 font-medium px-2"
+                      >
+                        📄 {t("tables.printBill")}
+                      </Button>
+                      <Button
+                        onClick={handlePlaceOrder}
+                        disabled={!table || (mode !== "edit" && cart.length === 0) || createOrderMutation.isPending}
+                        className="flex-1 bg-gradient-to-r from-green-600 to-green-500 hover:from-green-700 hover:to-green-600 text-white h-9 shadow-md hover:shadow-lg transition-all font-semibold text-sm px-2"
+                      >
+                        {createOrderMutation.isPending
+                          ? mode === "edit"
+                            ? t("orders.updating")
+                            : t("tables.placing")
+                          : mode === "edit"
+                            ? t("orders.updateOrder")
+                            : t("orders.placeOrder")}
+                      </Button>
+                    </>
+                  )}
+                </div>
+              </div>
+            <div className="flex items-center justify-between p-2 border-b border-green-200 flex-shrink-0 bg-green-600">
+              <h3 className="text-sm font-bold text-white flex items-center gap-1.5">
+                <ShoppingCart className="w-4 h-4" />
                 {mode === "edit" ? t("orders.itemsAndNewItems") : t("tables.orderHistory")}
               </h3>
-              <Badge variant="secondary" className="px-2.5 py-1 text-sm font-bold bg-white text-green-700 shadow-sm">
+              <Badge variant="secondary" className="px-2 py-0.5 text-xs font-bold bg-white text-green-700 shadow-sm">
                 {mode === "edit"
                   ? `${existingItems.length + cart.length} ${t("common.items")}`
                   : `${cart.length} ${t("tables.itemsSelected")}`}

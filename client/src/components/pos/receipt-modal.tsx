@@ -216,7 +216,7 @@ export function ReceiptModal({
         // Filter kitchen printers by floor if we have table floor info
         if (tableFloor) {
           kitchenPrinters = kitchenPrinters.filter(
-            (config) => config.floor === tableFloor || config.floor === 'all',
+            (config) => config.floor === tableFloor || config.floor === "all",
           );
           console.log(
             `🖨️ Filtered to ${kitchenPrinters.length} kitchen printers for floor ${tableFloor}`,
@@ -1950,7 +1950,7 @@ export function ReceiptModal({
           </div>
         )}
 
-        <div className="flex justify-center p-2 border-t">
+        <div className="flex justify-center p-2 border-t mb-6">
           {isPreview ? (
             <div className="flex space-x-3 w-full">
               <Button
