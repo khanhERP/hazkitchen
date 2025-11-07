@@ -83,16 +83,12 @@ export function OrderDialog({
   const [itemToDelete, setItemToDelete] = useState<any>(null);
 
   const { data: productsResponse } = useQuery({
-    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products", { page: currentPage, limit: pageSize, category: selectedCategory, search: searchQuery }],
+    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products", { search: searchQuery }],
     queryFn: async () => {
       const params = new URLSearchParams();
       
       if (searchQuery) {
         params.append("search", searchQuery);
-      }
-      
-      if (selectedCategory !== null) {
-        params.append("category", selectedCategory.toString());
       }
 
       const response = await fetch(`https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products?${params}`);
