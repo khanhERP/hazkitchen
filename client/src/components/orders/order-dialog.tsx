@@ -70,6 +70,8 @@ export function OrderDialog({
   const [selectedCategory, setSelectedCategory] = useState<number | null>(null);
   const [existingItems, setExistingItems] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState(""); // State for search input
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(20);
   const { toast } = useToast();
   const { t } = useTranslation();
   const queryClient = useQueryClient();
@@ -81,7 +83,7 @@ export function OrderDialog({
   const [itemToDelete, setItemToDelete] = useState<any>(null);
 
   const { data: productsResponse } = useQuery({
-    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products", { category: selectedCategory, search: searchQuery }],
+    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products", { page: currentPage, limit: pageSize, category: selectedCategory, search: searchQuery }],
     queryFn: async () => {
       const params = new URLSearchParams();
       
@@ -92,9 +94,6 @@ export function OrderDialog({
       if (selectedCategory !== null) {
         params.append("category", selectedCategory.toString());
       }
-      
-      // Load all products without pagination limit
-      params.append("limit", "50000");
 
       const response = await fetch(`https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products?${params}`);
       if (!response.ok) throw new Error("Failed to fetch products");
@@ -102,7 +101,7 @@ export function OrderDialog({
     },
   });
 
-  const products = productsResponse?.products || [];
+  const products = productsResponse || [];
 
   const { data: categories, isLoading: categoriesLoading } = useQuery({
     queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/categories"],
@@ -1310,7 +1309,10 @@ export function OrderDialog({
     }
   }, [table, open, mode, existingOrder]);
 
-  
+  // Reset to page 1 when category or search changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [selectedCategory, searchQuery]);
 
   useEffect(() => {
     if (
@@ -1553,7 +1555,64 @@ export function OrderDialog({
               ))}
             </div>
 
-            
+            {/* Pagination Controls */}
+            {productsResponse?.pagination && productsResponse.pagination.totalCount > 0 && (
+              <div className="flex items-center justify-between space-x-4 py-2 border-t mt-2">
+                <div className="flex items-center space-x-2">
+                  <p className="text-sm font-medium">{t("common.show")}</p>
+                  <select
+                    value={pageSize.toString()}
+                    onChange={(e) => {
+                      setPageSize(Number(e.target.value));
+                      setCurrentPage(1);
+                    }}
+                    className="h-8 w-[70px] rounded-md border border-input bg-background px-2 py-1 text-sm"
+                  >
+                    <option value="20">20</option>
+                    <option value="30">30</option>
+                    <option value="50">50</option>
+                    <option value="100">100</option>
+                  </select>
+                  <p className="text-sm font-medium">{t("common.rows")}</p>
+                </div>
+
+                <div className="flex items-center space-x-2">
+                  <p className="text-sm font-medium">
+                    {t("common.page")} {productsResponse.pagination.currentPage} / {productsResponse.pagination.totalPages}
+                  </p>
+                  <div className="flex items-center space-x-1">
+                    <button
+                      onClick={() => setCurrentPage(1)}
+                      disabled={!productsResponse.pagination.hasPrev}
+                      className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-8 w-8"
+                    >
+                      «
+                    </button>
+                    <button
+                      onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                      disabled={!productsResponse.pagination.hasPrev}
+                      className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-8 w-8"
+                    >
+                      ‹
+                    </button>
+                    <button
+                      onClick={() => setCurrentPage((prev) => Math.min(prev + 1, productsResponse.pagination.totalPages))}
+                      disabled={!productsResponse.pagination.hasNext}
+                      className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-8 w-8"
+                    >
+                      ›
+                    </button>
+                    <button
+                      onClick={() => setCurrentPage(productsResponse.pagination.totalPages)}
+                      disabled={!productsResponse.pagination.hasNext}
+                      className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-8 w-8"
+                    >
+                      »
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Right Panel - Order Summary */}
@@ -1564,7 +1623,7 @@ export function OrderDialog({
                   <Button
                     variant="outline"
                     onClick={handleClose}
-                    className="flex-1 h-9 text-sm border border-gray-300 hover:bg-gray-100 font-medium px-2"
+                    className="flex-1 h-8 text-xs border border-gray-300 hover:bg-gray-100 font-medium px-2"
                   >
                     {t("common.close")}
                   </Button>
@@ -1664,14 +1723,14 @@ export function OrderDialog({
                             existingItems.length === 0 &&
                             cart.length === 0)
                         }
-                        className="flex-1 h-9 text-sm border border-blue-400 text-blue-600 hover:bg-blue-50 font-medium px-2"
+                        className="flex-1 h-8 text-xs border border-blue-400 text-blue-600 hover:bg-blue-50 font-medium px-2"
                       >
                         📄 {t("tables.printBill")}
                       </Button>
                       <Button
                         onClick={handlePlaceOrder}
                         disabled={!table || (mode !== "edit" && cart.length === 0) || createOrderMutation.isPending}
-                        className="flex-1 bg-gradient-to-r from-green-600 to-green-500 hover:from-green-700 hover:to-green-600 text-white h-9 shadow-md hover:shadow-lg transition-all font-semibold text-sm px-2"
+                        className="flex-1 bg-gradient-to-r from-green-600 to-green-500 hover:from-green-700 hover:to-green-600 text-white h-8 shadow-md hover:shadow-lg transition-all font-semibold text-xs px-2"
                       >
                         {createOrderMutation.isPending
                           ? mode === "edit"
