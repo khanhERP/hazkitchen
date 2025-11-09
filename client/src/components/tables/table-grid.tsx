@@ -136,8 +136,8 @@ export function TableGrid({ onTableSelect, selectedTableId }: TableGridProps) {
       setSelectedReceipt(null);
 
       // Refresh data
-      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/tables"] });
-      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] });
+      queryClient.invalidateQueries({ queryKey: ["https://edpos-be.onrender.com/api/tables"] });
+      queryClient.invalidateQueries({ queryKey: ["https://edpos-be.onrender.com/api/orders"] });
     };
 
     window.addEventListener(
@@ -158,7 +158,7 @@ export function TableGrid({ onTableSelect, selectedTableId }: TableGridProps) {
     isLoading,
     refetch: refetchTables,
   } = useQuery({
-    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/tables"],
+    queryKey: ["https://edpos-be.onrender.com/api/tables"],
     staleTime: 60 * 1000, // Cache 1 phút
     gcTime: 5 * 60 * 1000, // Giữ cache 5 phút
     refetchOnWindowFocus: false,
@@ -168,7 +168,7 @@ export function TableGrid({ onTableSelect, selectedTableId }: TableGridProps) {
   });
 
   const { data: orders, refetch: refetchOrders } = useQuery({
-    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"],
+    queryKey: ["https://edpos-be.onrender.com/api/orders"],
     staleTime: 30 * 1000, // Cache 30 giây cho orders
     gcTime: 2 * 60 * 1000, // Giữ cache 2 phút
     refetchOnWindowFocus: false,
@@ -182,7 +182,7 @@ export function TableGrid({ onTableSelect, selectedTableId }: TableGridProps) {
     isLoading: orderItemsLoading,
     refetch: refetchOrderItems,
   } = useQuery({
-    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/order-items", selectedOrder?.id || "none"],
+    queryKey: ["https://edpos-be.onrender.com/api/order-items", selectedOrder?.id || "none"],
     enabled: !!selectedOrder?.id && orderDetailsOpen,
     refetchOnWindowFocus: false,
     refetchOnMount: false,
@@ -197,7 +197,7 @@ export function TableGrid({ onTableSelect, selectedTableId }: TableGridProps) {
       }
 
       try {
-        const response = await apiRequest("GET", `https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/order-items/${orderId}`);
+        const response = await apiRequest("GET", `https://edpos-be.onrender.com/api/order-items/${orderId}`);
         const data = await response.json();
         return Array.isArray(data) ? data : [];
       } catch (error) {
@@ -208,7 +208,7 @@ export function TableGrid({ onTableSelect, selectedTableId }: TableGridProps) {
   });
 
   const { data: products } = useQuery({
-    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products"],
+    queryKey: ["https://edpos-be.onrender.com/api/products"],
     staleTime: 60 * 60 * 1000, // Cache for 1 hour (products don't change often)
     gcTime: 2 * 60 * 60 * 1000, // Keep in cache for 2 hours
     refetchOnWindowFocus: false,
@@ -225,7 +225,7 @@ export function TableGrid({ onTableSelect, selectedTableId }: TableGridProps) {
   };
 
   const { data: storeSettings } = useQuery({
-    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/store-settings"],
+    queryKey: ["https://edpos-be.onrender.com/api/store-settings"],
     staleTime: 2 * 60 * 60 * 1000, // Cache for 2 hours (settings rarely change)
     gcTime: 4 * 60 * 60 * 1000, // Keep in cache for 4 hours
     refetchOnWindowFocus: false,
@@ -234,7 +234,7 @@ export function TableGrid({ onTableSelect, selectedTableId }: TableGridProps) {
   });
 
   const { data: customers } = useQuery({
-    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/customers"],
+    queryKey: ["https://edpos-be.onrender.com/api/customers"],
     enabled: pointsPaymentOpen,
     staleTime: 30 * 60 * 1000, // Cache for 30 minutes
     gcTime: 60 * 60 * 1000, // Keep in cache for 1 hour
@@ -281,7 +281,7 @@ export function TableGrid({ onTableSelect, selectedTableId }: TableGridProps) {
   useEffect(() => {
     if (orderDetailsOpen && selectedOrder?.id) {
       const cachedData = queryClient.getQueryData([
-        "https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/order-items",
+        "https://edpos-be.onrender.com/api/order-items",
         selectedOrder.id,
       ]);
       if (!cachedData) {
@@ -300,8 +300,8 @@ export function TableGrid({ onTableSelect, selectedTableId }: TableGridProps) {
 
       // Only invalidate - don't force refetch, let cache handle it
       if (!event.detail?.skipAllRefetch) {
-        queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] });
-        queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/tables"] });
+        queryClient.invalidateQueries({ queryKey: ["https://edpos-be.onrender.com/api/orders"] });
+        queryClient.invalidateQueries({ queryKey: ["https://edpos-be.onrender.com/api/tables"] });
       }
     };
 
@@ -311,7 +311,7 @@ export function TableGrid({ onTableSelect, selectedTableId }: TableGridProps) {
       // Only invalidate specific data that changed
       if (!event.detail?.skipAllRefetch && event.detail?.orderId) {
         queryClient.invalidateQueries({
-          queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/order-items", event.detail.orderId],
+          queryKey: ["https://edpos-be.onrender.com/api/order-items", event.detail.orderId],
         });
       }
     };
@@ -373,7 +373,7 @@ export function TableGrid({ onTableSelect, selectedTableId }: TableGridProps) {
                 // Fetch order items for this order
                 const response = await apiRequest(
                   "GET",
-                  `https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/order-items/${order.id}`,
+                  `https://edpos-be.onrender.com/api/order-items/${order.id}`,
                 );
                 const orderItemsData = await response.json();
 
@@ -604,15 +604,15 @@ export function TableGrid({ onTableSelect, selectedTableId }: TableGridProps) {
 
   const updateTableStatusMutation = useMutation({
     mutationFn: ({ tableId, status }: { tableId: number; status: string }) =>
-      apiRequest("PUT", `https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/tables/${tableId}/status`, { status }),
+      apiRequest("PUT", `https://edpos-be.onrender.com/api/tables/${tableId}/status`, { status }),
     onSuccess: async (data, variables) => {
       console.log(
         `🔄 Table Grid: Table ${variables.tableId} status updated to ${variables.status}`,
       );
 
       // Clear cache and force immediate refresh for immediate UI update
-      queryClient.removeQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/tables"] });
-      queryClient.removeQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] });
+      queryClient.removeQueries({ queryKey: ["https://edpos-be.onrender.com/api/tables"] });
+      queryClient.removeQueries({ queryKey: ["https://edpos-be.onrender.com/api/orders"] });
 
       // Force immediate fresh data fetch
       try {
@@ -644,7 +644,7 @@ export function TableGrid({ onTableSelect, selectedTableId }: TableGridProps) {
       orderId: number;
       paymentMethod: string;
     }) =>
-      apiRequest("PUT", `https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders/${orderId}/status`, {
+      apiRequest("PUT", `https://edpos-be.onrender.com/api/orders/${orderId}/status`, {
         status: "paid",
         paymentMethod,
       }),
@@ -694,7 +694,7 @@ export function TableGrid({ onTableSelect, selectedTableId }: TableGridProps) {
             try {
               await apiRequest(
                 "PUT",
-                `https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/tables/${completedOrder.tableId}/status`,
+                `https://edpos-be.onrender.com/api/tables/${completedOrder.tableId}/status`,
                 {
                   status: "available",
                 },
@@ -730,26 +730,26 @@ export function TableGrid({ onTableSelect, selectedTableId }: TableGridProps) {
       try {
         // Use fetch directly with no-cache to bypass React Query entirely for immediate update
         const [freshTables, freshOrders] = await Promise.all([
-          fetch("https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/tables", {
+          fetch("https://edpos-be.onrender.com/api/tables", {
             cache: "no-store",
             headers: { "Cache-Control": "no-cache" },
           }).then((r) => r.json()),
-          fetch("https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders", {
+          fetch("https://edpos-be.onrender.com/api/orders", {
             cache: "no-store",
             headers: { "Cache-Control": "no-cache" },
           }).then((r) => r.json()),
         ]);
 
         // Set fresh data immediately in cache
-        queryClient.setQueryData(["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/tables"], freshTables);
-        queryClient.setQueryData(["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"], freshOrders);
+        queryClient.setQueryData(["https://edpos-be.onrender.com/api/tables"], freshTables);
+        queryClient.setQueryData(["https://edpos-be.onrender.com/api/orders"], freshOrders);
 
         console.log("✅ Table: Fresh data fetched and set in cache");
 
         // Force component re-render by invalidating after setting fresh data
         setTimeout(() => {
-          queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/tables"] });
-          queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] });
+          queryClient.invalidateQueries({ queryKey: ["https://edpos-be.onrender.com/api/tables"] });
+          queryClient.invalidateQueries({ queryKey: ["https://edpos-be.onrender.com/api/orders"] });
         }, 50);
       } catch (fetchError) {
         console.error(
@@ -802,21 +802,21 @@ export function TableGrid({ onTableSelect, selectedTableId }: TableGridProps) {
       try {
         const [completedOrder, orderItemsData] = await Promise.all([
           queryClient.fetchQuery({
-            queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders", variables.orderId],
+            queryKey: ["https://edpos-be.onrender.com/api/orders", variables.orderId],
             queryFn: async () => {
               const response = await apiRequest(
                 "GET",
-                `https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders/${variables.orderId}`,
+                `https://edpos-be.onrender.com/api/orders/${variables.orderId}`,
               );
               return response.json();
             },
           }),
           queryClient.fetchQuery({
-            queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/order-items", variables.orderId],
+            queryKey: ["https://edpos-be.onrender.com/api/order-items", variables.orderId],
             queryFn: async () => {
               const response = await apiRequest(
                 "GET",
-                `https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/order-items/${variables.orderId}`,
+                `https://edpos-be.onrender.com/api/order-items/${variables.orderId}`,
               );
               return response.json();
             },
@@ -917,13 +917,13 @@ export function TableGrid({ onTableSelect, selectedTableId }: TableGridProps) {
       orderId: number;
     }) => {
       // First redeem points
-      await apiRequest("POST", "https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/customers/redeem-points", {
+      await apiRequest("POST", "https://edpos-be.onrender.com/api/customers/redeem-points", {
         customerId,
         points,
       });
 
       // Then mark order as paid
-      await apiRequest("PUT", `https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders/${orderId}/status`, {
+      await apiRequest("PUT", `https://edpos-be.onrender.com/api/orders/${orderId}/status`, {
         status: "paid",
         paymentMethod: "points",
         customerId,
@@ -968,7 +968,7 @@ export function TableGrid({ onTableSelect, selectedTableId }: TableGridProps) {
             try {
               await apiRequest(
                 "PUT",
-                `https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/tables/${completedOrder.tableId}/status`,
+                `https://edpos-be.onrender.com/api/tables/${completedOrder.tableId}/status`,
                 {
                   status: "available",
                 },
@@ -991,11 +991,11 @@ export function TableGrid({ onTableSelect, selectedTableId }: TableGridProps) {
         }
       }
 
-      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] });
-      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/tables"] });
-      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/customers"] });
+      queryClient.invalidateQueries({ queryKey: ["https://edpos-be.onrender.com/api/orders"] });
+      queryClient.invalidateQueries({ queryKey: ["https://edpos-be.onrender.com/api/tables"] });
+      queryClient.invalidateQueries({ queryKey: ["https://edpos-be.onrender.com/api/customers"] });
       queryClient.invalidateQueries({
-        queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/order-items", variables.orderId],
+        queryKey: ["https://edpos-be.onrender.com/api/order-items", variables.orderId],
       });
       setOrderDetailsOpen(false);
       setPointsPaymentOpen(false);
@@ -1010,11 +1010,11 @@ export function TableGrid({ onTableSelect, selectedTableId }: TableGridProps) {
       // Fetch the completed order to get its details for receipt
       queryClient
         .fetchQuery({
-          queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders", variables.orderId],
+          queryKey: ["https://edpos-be.onrender.com/api/orders", variables.orderId],
           queryFn: async () => {
             const response = await apiRequest(
               "GET",
-              `https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders/${variables.orderId}`,
+              `https://edpos-be.onrender.com/api/orders/${variables.orderId}`,
             );
             return response.json();
           },
@@ -1030,7 +1030,7 @@ export function TableGrid({ onTableSelect, selectedTableId }: TableGridProps) {
             try {
               const orderItemsResponse = await apiRequest(
                 "GET",
-                `https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/order-items/${variables.orderId}`,
+                `https://edpos-be.onrender.com/api/order-items/${variables.orderId}`,
               );
               const orderItemsData = await orderItemsResponse.json();
 
@@ -1158,13 +1158,13 @@ export function TableGrid({ onTableSelect, selectedTableId }: TableGridProps) {
       paymentMethod: string;
     }) => {
       // First redeem all available points
-      await apiRequest("POST", "https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/customers/redeem-points", {
+      await apiRequest("POST", "https://edpos-be.onrender.com/api/customers/redeem-points", {
         customerId,
         points,
       });
 
       // Then mark order as paid with mixed payment
-      await apiRequest("PUT", `https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders/${orderId}/status`, {
+      await apiRequest("PUT", `https://edpos-be.onrender.com/api/orders/${orderId}/status`, {
         status: "paid",
         paymentMethod: `points + ${paymentMethod}`,
         customerId,
@@ -1209,7 +1209,7 @@ export function TableGrid({ onTableSelect, selectedTableId }: TableGridProps) {
             try {
               await apiRequest(
                 "PUT",
-                `https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/tables/${completedOrder.tableId}/status`,
+                `https://edpos-be.onrender.com/api/tables/${completedOrder.tableId}/status`,
                 {
                   status: "available",
                 },
@@ -1232,11 +1232,11 @@ export function TableGrid({ onTableSelect, selectedTableId }: TableGridProps) {
         }
       }
 
-      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] });
-      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/tables"] });
-      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/customers"] });
+      queryClient.invalidateQueries({ queryKey: ["https://edpos-be.onrender.com/api/orders"] });
+      queryClient.invalidateQueries({ queryKey: ["https://edpos-be.onrender.com/api/tables"] });
+      queryClient.invalidateQueries({ queryKey: ["https://edpos-be.onrender.com/api/customers"] });
       queryClient.invalidateQueries({
-        queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/order-items", variables.orderId],
+        queryKey: ["https://edpos-be.onrender.com/api/order-items", variables.orderId],
       });
       setOrderDetailsOpen(false);
       setMixedPaymentOpen(false);
@@ -1253,11 +1253,11 @@ export function TableGrid({ onTableSelect, selectedTableId }: TableGridProps) {
       // Fetch the completed order to get its details for receipt
       queryClient
         .fetchQuery({
-          queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders", variables.orderId],
+          queryKey: ["https://edpos-be.onrender.com/api/orders", variables.orderId],
           queryFn: async () => {
             const response = await apiRequest(
               "GET",
-              `https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders/${variables.orderId}`,
+              `https://edpos-be.onrender.com/api/orders/${variables.orderId}`,
             );
             return response.json();
           },
@@ -1273,7 +1273,7 @@ export function TableGrid({ onTableSelect, selectedTableId }: TableGridProps) {
             try {
               const orderItemsResponse = await apiRequest(
                 "GET",
-                `https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/order-items/${variables.orderId}`,
+                `https://edpos-be.onrender.com/api/order-items/${variables.orderId}`,
               );
               const orderItemsData = await orderItemsResponse.json();
 
@@ -1348,7 +1348,7 @@ export function TableGrid({ onTableSelect, selectedTableId }: TableGridProps) {
       // First cancel the order
       const response = await apiRequest(
         "PUT",
-        `https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders/${orderId}/status`,
+        `https://edpos-be.onrender.com/api/orders/${orderId}/status`,
         { status: "cancelled" },
       );
 
@@ -1365,7 +1365,7 @@ export function TableGrid({ onTableSelect, selectedTableId }: TableGridProps) {
 
         // If no other active orders, update table status to available
         if (!otherActiveOrders || otherActiveOrders.length === 0) {
-          await apiRequest("PUT", `https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/tables/${order.tableId}/status`, {
+          await apiRequest("PUT", `https://edpos-be.onrender.com/api/tables/${order.tableId}/status`, {
             status: "available",
           });
         }
@@ -1374,10 +1374,10 @@ export function TableGrid({ onTableSelect, selectedTableId }: TableGridProps) {
       return response;
     },
     onSuccess: (data, orderId) => {
-      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] });
-      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/tables"] });
+      queryClient.invalidateQueries({ queryKey: ["https://edpos-be.onrender.com/api/orders"] });
+      queryClient.invalidateQueries({ queryKey: ["https://edpos-be.onrender.com/api/tables"] });
       queryClient.invalidateQueries({
-        queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/order-items", orderId],
+        queryKey: ["https://edpos-be.onrender.com/api/order-items", orderId],
       }); // Invalidate items for the deleted order
       toast({
         title: "Xóa đơn hàng thành công",
@@ -1408,7 +1408,7 @@ export function TableGrid({ onTableSelect, selectedTableId }: TableGridProps) {
       });
 
       // Step 1: Update order's table ID - this will transfer all order items automatically
-      const orderUpdateResponse = await apiRequest("PUT", `https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders/${orderId}`, {
+      const orderUpdateResponse = await apiRequest("PUT", `https://edpos-be.onrender.com/api/orders/${orderId}`, {
         tableId: newTableId,
       });
 
@@ -1417,7 +1417,7 @@ export function TableGrid({ onTableSelect, selectedTableId }: TableGridProps) {
 
       // Step 2: Update new table status to occupied
       try {
-        await apiRequest("PUT", `https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/tables/${newTableId}/status`, {
+        await apiRequest("PUT", `https://edpos-be.onrender.com/api/tables/${newTableId}/status`, {
           status: "occupied",
         });
         console.log(`✅ New table ${newTableId} set to occupied`);
@@ -1429,7 +1429,7 @@ export function TableGrid({ onTableSelect, selectedTableId }: TableGridProps) {
       if (oldTableId) {
         try {
           // Fetch fresh orders data to check remaining orders on old table
-          const freshOrdersResponse = await apiRequest("GET", `https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders`);
+          const freshOrdersResponse = await apiRequest("GET", `https://edpos-be.onrender.com/api/orders`);
           const freshOrders = await freshOrdersResponse.json();
 
           const otherActiveOrders = freshOrders?.filter(
@@ -1444,7 +1444,7 @@ export function TableGrid({ onTableSelect, selectedTableId }: TableGridProps) {
           });
 
           if (!otherActiveOrders || otherActiveOrders.length === 0) {
-            await apiRequest("PUT", `https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/tables/${oldTableId}/status`, {
+            await apiRequest("PUT", `https://edpos-be.onrender.com/api/tables/${oldTableId}/status`, {
               status: "available",
             });
             console.log(`✅ Old table ${oldTableId} set to available`);
@@ -1472,20 +1472,20 @@ export function TableGrid({ onTableSelect, selectedTableId }: TableGridProps) {
           _force: "true",
         });
         const [freshTables, freshOrders] = await Promise.all([
-          fetch(`https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/tables?${params}`).then((r) => r.json()),
-          fetch(`https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders?${params}`).then((r) => r.json()),
+          fetch(`https://edpos-be.onrender.com/api/tables?${params}`).then((r) => r.json()),
+          fetch(`https://edpos-be.onrender.com/api/orders?${params}`).then((r) => r.json()),
         ]);
 
         // Set fresh data immediately
-        queryClient.setQueryData(["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/tables"], freshTables);
-        queryClient.setQueryData(["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"], freshOrders);
+        queryClient.setQueryData(["https://edpos-be.onrender.com/api/tables"], freshTables);
+        queryClient.setQueryData(["https://edpos-be.onrender.com/api/orders"], freshOrders);
 
         console.log("✅ Fresh data loaded after table transfer");
 
         // Force re-render with invalidation
         setTimeout(() => {
-          queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/tables"] });
-          queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] });
+          queryClient.invalidateQueries({ queryKey: ["https://edpos-be.onrender.com/api/tables"] });
+          queryClient.invalidateQueries({ queryKey: ["https://edpos-be.onrender.com/api/orders"] });
         }, 50);
       } catch (fetchError) {
         console.error("❌ Error fetching fresh data:", fetchError);
@@ -1523,7 +1523,7 @@ export function TableGrid({ onTableSelect, selectedTableId }: TableGridProps) {
   const recalculateOrderTotalMutation = useMutation({
     mutationFn: async (orderId: number) => {
       // Fetch current order items after deletion
-      const response = await apiRequest("GET", `https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/order-items/${orderId}`);
+      const response = await apiRequest("GET", `https://edpos-be.onrender.com/api/order-items/${orderId}`);
       const remainingItems = await response.json();
 
       console.log(
@@ -1538,7 +1538,7 @@ export function TableGrid({ onTableSelect, selectedTableId }: TableGridProps) {
         );
 
         // Set totals to zero instead of deleting the order
-        const updateResult = await apiRequest("PUT", `https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders/${orderId}`, {
+        const updateResult = await apiRequest("PUT", `https://edpos-be.onrender.com/api/orders/${orderId}`, {
           subtotal: "0",
           tax: "0",
           total: "0",
@@ -1582,7 +1582,7 @@ export function TableGrid({ onTableSelect, selectedTableId }: TableGridProps) {
       });
 
       // Update order with new totals
-      const updateResult = await apiRequest("PUT", `https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders/${orderId}`, {
+      const updateResult = await apiRequest("PUT", `https://edpos-be.onrender.com/api/orders/${orderId}`, {
         subtotal: newSubtotal.toString(),
         tax: newTax.toString(),
         total: newTotal.toString(),
@@ -1603,9 +1603,9 @@ export function TableGrid({ onTableSelect, selectedTableId }: TableGridProps) {
 
       // Force immediate fresh fetch with no-cache
       Promise.all([
-        fetch("https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders", { cache: "no-store" }).then((r) => r.json()),
-        fetch("https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/tables", { cache: "no-store" }).then((r) => r.json()),
-        fetch(`https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/order-items/${orderId}`, { cache: "no-store" }).then((r) =>
+        fetch("https://edpos-be.onrender.com/api/orders", { cache: "no-store" }).then((r) => r.json()),
+        fetch("https://edpos-be.onrender.com/api/tables", { cache: "no-store" }).then((r) => r.json()),
+        fetch(`https://edpos-be.onrender.com/api/order-items/${orderId}`, { cache: "no-store" }).then((r) =>
           r.json(),
         ),
       ])
@@ -1615,7 +1615,7 @@ export function TableGrid({ onTableSelect, selectedTableId }: TableGridProps) {
           );
 
           // Force component re-render by setting a timestamp
-          queryClient.setQueryData(["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"], (oldData: any) => {
+          queryClient.setQueryData(["https://edpos-be.onrender.com/api/orders"], (oldData: any) => {
             if (!oldData || !Array.isArray(oldData)) return oldData;
 
             return oldData.map((order: any) => {
@@ -2041,24 +2041,24 @@ export function TableGrid({ onTableSelect, selectedTableId }: TableGridProps) {
           _force: "true",
         });
         const [freshTables, freshOrders] = await Promise.all([
-          fetch(`https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/tables?${params}`).then((r) => r.json()),
-          fetch(`https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders?${params}`).then((r) => r.json()),
+          fetch(`https://edpos-be.onrender.com/api/tables?${params}`).then((r) => r.json()),
+          fetch(`https://edpos-be.onrender.com/api/orders?${params}`).then((r) => r.json()),
         ]);
 
         // STEP 3: Set fresh data immediately in cache
-        queryClient.setQueryData(["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/tables"], freshTables);
-        queryClient.setQueryData(["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"], freshOrders);
+        queryClient.setQueryData(["https://edpos-be.onrender.com/api/tables"], freshTables);
+        queryClient.setQueryData(["https://edpos-be.onrender.com/api/orders"], freshOrders);
         console.log("✅ Table Grid: Fresh data loaded and cached");
 
         // STEP 4: Force multiple re-renders with different timings
         setTimeout(() => {
-          queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/tables"] });
-          queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] });
+          queryClient.invalidateQueries({ queryKey: ["https://edpos-be.onrender.com/api/tables"] });
+          queryClient.invalidateQueries({ queryKey: ["https://edpos-be.onrender.com/api/orders"] });
         }, 50);
 
         setTimeout(() => {
-          queryClient.refetchQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/tables"] });
-          queryClient.refetchQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] });
+          queryClient.refetchQueries({ queryKey: ["https://edpos-be.onrender.com/api/tables"] });
+          queryClient.refetchQueries({ queryKey: ["https://edpos-be.onrender.com/api/orders"] });
         }, 200);
 
         // STEP 5: Close all modals and clear states
@@ -2329,8 +2329,8 @@ export function TableGrid({ onTableSelect, selectedTableId }: TableGridProps) {
 
       // Clear cache completely
       queryClient.clear();
-      queryClient.removeQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/tables"] });
-      queryClient.removeQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] });
+      queryClient.removeQueries({ queryKey: ["https://edpos-be.onrender.com/api/tables"] });
+      queryClient.removeQueries({ queryKey: ["https://edpos-be.onrender.com/api/orders"] });
 
       // Force fresh fetch immediately
       try {
@@ -2343,7 +2343,7 @@ export function TableGrid({ onTableSelect, selectedTableId }: TableGridProps) {
       // Send WebSocket signal for data refresh
       try {
         const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-        const wsUrl = `https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/ws`;
+        const wsUrl = `https://edpos-be.onrender.com/ws`;
         const ws = new WebSocket(wsUrl);
 
         ws.onopen = () => {
@@ -2434,7 +2434,7 @@ export function TableGrid({ onTableSelect, selectedTableId }: TableGridProps) {
         try {
           const response = await apiRequest(
             "GET",
-            `https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/order-items/${currentOrderId}`,
+            `https://edpos-be.onrender.com/api/order-items/${currentOrderId}`,
           );
           currentOrderItems = await response.json();
           console.log(
@@ -2670,11 +2670,11 @@ export function TableGrid({ onTableSelect, selectedTableId }: TableGridProps) {
 
     try {
       const orderItems = await queryClient.fetchQuery({
-        queryKey: [`https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/order-items/${order.id}`],
+        queryKey: [`https://edpos-be.onrender.com/api/order-items/${order.id}`],
         queryFn: async () => {
           const response = await apiRequest(
             "GET",
-            `https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/order-items/${order.id}`,
+            `https://edpos-be.onrender.com/api/order-items/${order.id}`,
           );
           return response.json();
         },
@@ -2712,7 +2712,7 @@ export function TableGrid({ onTableSelect, selectedTableId }: TableGridProps) {
       };
 
       // Call auto-print API for both employee and kitchen printers
-      const response = await fetch("https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/auto-print", {
+      const response = await fetch("https://edpos-be.onrender.com/api/auto-print", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -2780,11 +2780,11 @@ export function TableGrid({ onTableSelect, selectedTableId }: TableGridProps) {
       // Fallback to manual print - try to show receipt modal
       try {
         const orderItems = await queryClient.fetchQuery({
-          queryKey: [`https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/order-items/${order.id}`],
+          queryKey: [`https://edpos-be.onrender.com/api/order-items/${order.id}`],
           queryFn: async () => {
             const response = await apiRequest(
               "GET",
-              `https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/order-items/${order.id}`,
+              `https://edpos-be.onrender.com/api/order-items/${order.id}`,
             );
             return response.json();
           },
@@ -2835,7 +2835,7 @@ export function TableGrid({ onTableSelect, selectedTableId }: TableGridProps) {
       console.log("🔪 Split order mutation starting with data:", splitData);
 
       // Call split order API
-      const response = await apiRequest("POST", "https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders/split", {
+      const response = await apiRequest("POST", "https://edpos-be.onrender.com/api/orders/split", {
         originalOrderId: splitData.originalOrderId,
         splitItems: splitData.splitItems,
       });
@@ -2848,7 +2848,7 @@ export function TableGrid({ onTableSelect, selectedTableId }: TableGridProps) {
         refetchOrders(),
         refetchTables(),
         queryClient.invalidateQueries({
-          queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/order-items", splitData.originalOrderId],
+          queryKey: ["https://edpos-be.onrender.com/api/order-items", splitData.originalOrderId],
         }),
       ]);
 
@@ -2884,7 +2884,7 @@ export function TableGrid({ onTableSelect, selectedTableId }: TableGridProps) {
     try {
       console.log("🔪 Split order data:", splitData);
 
-      const response = await apiRequest("POST", "https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders/split", splitData);
+      const response = await apiRequest("POST", "https://edpos-be.onrender.com/api/orders/split", splitData);
 
       if (!response.ok) {
         throw new Error("Failed to split order");
@@ -2910,13 +2910,13 @@ export function TableGrid({ onTableSelect, selectedTableId }: TableGridProps) {
           _force: "true",
         });
         const [freshTables, freshOrders] = await Promise.all([
-          fetch(`https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/tables?${params}`).then((r) => r.json()),
-          fetch(`https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders?${params}`).then((r) => r.json()),
+          fetch(`https://edpos-be.onrender.com/api/tables?${params}`).then((r) => r.json()),
+          fetch(`https://edpos-be.onrender.com/api/orders?${params}`).then((r) => r.json()),
         ]);
 
         // Set fresh data immediately
-        queryClient.setQueryData(["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/tables"], freshTables);
-        queryClient.setQueryData(["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"], freshOrders);
+        queryClient.setQueryData(["https://edpos-be.onrender.com/api/tables"], freshTables);
+        queryClient.setQueryData(["https://edpos-be.onrender.com/api/orders"], freshOrders);
 
         console.log("✅ Fresh data loaded after split:", {
           tables: freshTables?.length || 0,
@@ -2925,8 +2925,8 @@ export function TableGrid({ onTableSelect, selectedTableId }: TableGridProps) {
 
         // Force re-render with invalidation
         setTimeout(() => {
-          queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/tables"] });
-          queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] });
+          queryClient.invalidateQueries({ queryKey: ["https://edpos-be.onrender.com/api/tables"] });
+          queryClient.invalidateQueries({ queryKey: ["https://edpos-be.onrender.com/api/orders"] });
         }, 50);
       } catch (fetchError) {
         console.error("❌ Error fetching fresh data:", fetchError);
@@ -3180,10 +3180,10 @@ export function TableGrid({ onTableSelect, selectedTableId }: TableGridProps) {
             console.log("📋 Returning to order details list after edit");
 
             // Force refresh order data
-            queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] });
-            queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/tables"] });
+            queryClient.invalidateQueries({ queryKey: ["https://edpos-be.onrender.com/api/orders"] });
+            queryClient.invalidateQueries({ queryKey: ["https://edpos-be.onrender.com/api/tables"] });
             queryClient.invalidateQueries({
-              queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/order-items", editingOrder.id],
+              queryKey: ["https://edpos-be.onrender.com/api/order-items", editingOrder.id],
             });
 
             // Immediately reopen order details
@@ -3191,8 +3191,8 @@ export function TableGrid({ onTableSelect, selectedTableId }: TableGridProps) {
 
             // Additional refresh after delay to ensure UI is updated
             setTimeout(() => {
-              queryClient.refetchQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] });
-              queryClient.refetchQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/tables"] });
+              queryClient.refetchQueries({ queryKey: ["https://edpos-be.onrender.com/api/orders"] });
+              queryClient.refetchQueries({ queryKey: ["https://edpos-be.onrender.com/api/tables"] });
             }, 200);
           }
         }}
@@ -3364,7 +3364,7 @@ export function TableGrid({ onTableSelect, selectedTableId }: TableGridProps) {
                                       // Fetch order items for THIS SPECIFIC order - not any cached data
                                       const response = await apiRequest(
                                         "GET",
-                                        `https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/order-items/${order.id}`,
+                                        `https://edpos-be.onrender.com/api/order-items/${order.id}`,
                                       );
                                       const orderItemsData =
                                         await response.json();
@@ -3502,7 +3502,7 @@ export function TableGrid({ onTableSelect, selectedTableId }: TableGridProps) {
                                       // Fetch order items for this specific order
                                       const response = await apiRequest(
                                         "GET",
-                                        `https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/order-items/${order.id}`,
+                                        `https://edpos-be.onrender.com/api/order-items/${order.id}`,
                                       );
                                       const orderItemsData =
                                         await response.json();

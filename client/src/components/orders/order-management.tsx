@@ -132,8 +132,8 @@ export function OrderManagement() {
       setSelectedReceipt(null);
 
       // Refresh data
-      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] });
-      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/tables"] });
+      queryClient.invalidateQueries({ queryKey: ["https://edpos-be.onrender.com/api/orders"] });
+      queryClient.invalidateQueries({ queryKey: ["https://edpos-be.onrender.com/api/tables"] });
     };
 
     window.addEventListener(
@@ -215,7 +215,7 @@ export function OrderManagement() {
 
   // Query orders by date range - filter only table orders
   const { data: orders, isLoading: ordersLoading } = useQuery({
-    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders", "table"],
+    queryKey: ["https://edpos-be.onrender.com/api/orders", "table"],
     refetchInterval: 2000, // Faster polling - every 2 seconds
     refetchOnWindowFocus: true, // Refetch when window regains focus
     refetchIntervalInBackground: true, // Continue refetching in background
@@ -223,7 +223,7 @@ export function OrderManagement() {
     queryFn: async () => {
       const response = await apiRequest(
         "GET",
-        "https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders?salesChannel=table",
+        "https://edpos-be.onrender.com/api/orders?salesChannel=table",
       );
       if (!response.ok) {
         throw new Error("Failed to fetch table orders");
@@ -255,28 +255,28 @@ export function OrderManagement() {
   });
 
   const { data: tables } = useQuery({
-    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/tables"],
+    queryKey: ["https://edpos-be.onrender.com/api/tables"],
   });
 
   const { data: products } = useQuery({
-    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products"],
+    queryKey: ["https://edpos-be.onrender.com/api/products"],
   });
 
   const { data: customers } = useQuery({
-    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/customers"],
+    queryKey: ["https://edpos-be.onrender.com/api/customers"],
     enabled: pointsPaymentOpen,
   });
 
   const { data: storeSettings } = useQuery({
-    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/store-settings"],
+    queryKey: ["https://edpos-be.onrender.com/api/store-settings"],
     queryFn: async () => {
-      const response = await apiRequest("GET", "https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/store-settings");
+      const response = await apiRequest("GET", "https://edpos-be.onrender.com/api/store-settings");
       return response.json();
     },
   });
 
   const { data: orderItems, isLoading: orderItemsLoading } = useQuery({
-    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/order-items", selectedOrder?.id],
+    queryKey: ["https://edpos-be.onrender.com/api/order-items", selectedOrder?.id],
     enabled: !!selectedOrder?.id && orderDetailsOpen,
     refetchOnWindowFocus: false,
     refetchOnMount: false,
@@ -288,7 +288,7 @@ export function OrderManagement() {
       try {
         const response = await apiRequest(
           "GET",
-          `https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/order-items/${selectedOrder.id}`,
+          `https://edpos-be.onrender.com/api/order-items/${selectedOrder.id}`,
         );
         if (!response.ok) {
           console.error(
@@ -307,10 +307,10 @@ export function OrderManagement() {
 
   const updateOrderStatusMutation = useMutation({
     mutationFn: ({ orderId, status }: { orderId: number; status: string }) =>
-      apiRequest("PUT", `https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders/${orderId}/status`, { status }),
+      apiRequest("PUT", `https://edpos-be.onrender.com/api/orders/${orderId}/status`, { status }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] });
-      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/tables"] });
+      queryClient.invalidateQueries({ queryKey: ["https://edpos-be.onrender.com/api/orders"] });
+      queryClient.invalidateQueries({ queryKey: ["https://edpos-be.onrender.com/api/tables"] });
       toast({
         title: t("common.success"),
         description: t("orders.orderStatusUpdated"),
@@ -361,10 +361,10 @@ export function OrderManagement() {
 
       // Force immediate refresh
       await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] }),
-        queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/tables"] }),
-        queryClient.refetchQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] }),
-        queryClient.refetchQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/tables"] }),
+        queryClient.invalidateQueries({ queryKey: ["https://edpos-be.onrender.com/api/orders"] }),
+        queryClient.invalidateQueries({ queryKey: ["https://edpos-be.onrender.com/api/tables"] }),
+        queryClient.refetchQueries({ queryKey: ["https://edpos-be.onrender.com/api/orders"] }),
+        queryClient.refetchQueries({ queryKey: ["https://edpos-be.onrender.com/api/tables"] }),
       ]);
 
       // Don't show toast immediately to avoid conflicts with receipt modal
@@ -444,13 +444,13 @@ export function OrderManagement() {
       remainingAmount?: number;
     }) => {
       // First redeem points
-      await apiRequest("POST", "https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/customers/redeem-points", {
+      await apiRequest("POST", "https://edpos-be.onrender.com/api/customers/redeem-points", {
         customerId,
         points,
       });
 
       // Then mark order as paid
-      await apiRequest("PUT", `https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders/${orderId}/status`, {
+      await apiRequest("PUT", `https://edpos-be.onrender.com/api/orders/${orderId}/status`, {
         status: "paid",
         paymentMethod: paymentMethod || "points",
         customerId,
@@ -458,9 +458,9 @@ export function OrderManagement() {
       });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] });
-      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/tables"] });
-      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/customers"] });
+      queryClient.invalidateQueries({ queryKey: ["https://edpos-be.onrender.com/api/orders"] });
+      queryClient.invalidateQueries({ queryKey: ["https://edpos-be.onrender.com/api/tables"] });
+      queryClient.invalidateQueries({ queryKey: ["https://edpos-be.onrender.com/api/customers"] });
       setOrderDetailsOpen(false);
       setPointsPaymentOpen(false);
       setSelectedCustomer(null);
@@ -493,22 +493,22 @@ export function OrderManagement() {
       paymentMethod: string;
     }) => {
       // First redeem all available points
-      await apiRequest("POST", "https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/customers/redeem-points", {
+      await apiRequest("POST", "https://edpos-be.onrender.com/api/customers/redeem-points", {
         customerId,
         points,
       });
 
       // Then mark order as paid with mixed payment
-      await apiRequest("PUT", `https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders/${orderId}/status`, {
+      await apiRequest("PUT", `https://edpos-be.onrender.com/api/orders/${orderId}/status`, {
         status: "paid",
         paymentMethod: `points + ${paymentMethod}`,
         customerId,
       });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] });
-      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/tables"] });
-      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/customers"] });
+      queryClient.invalidateQueries({ queryKey: ["https://edpos-be.onrender.com/api/orders"] });
+      queryClient.invalidateQueries({ queryKey: ["https://edpos-be.onrender.com/api/tables"] });
+      queryClient.invalidateQueries({ queryKey: ["https://edpos-be.onrender.com/api/customers"] });
       setOrderDetailsOpen(false);
       setMixedPaymentOpen(false);
       setMixedPaymentData(null);
@@ -603,7 +603,7 @@ export function OrderManagement() {
       );
 
       console.log("🔍 API Call Details:", {
-        url: `https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders/${orderId}/status`,
+        url: `https://edpos-be.onrender.com/api/orders/${orderId}/status`,
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status: "paid" }),
@@ -611,7 +611,7 @@ export function OrderManagement() {
 
       const statusResponse = await apiRequest(
         "PUT",
-        `https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders/${orderId}/status`,
+        `https://edpos-be.onrender.com/api/orders/${orderId}/status`,
         { status: "paid" },
       );
 
@@ -641,7 +641,7 @@ export function OrderManagement() {
       // Step 2: Update additional payment details
       console.log("📋 Step 2: Updating payment details for order:", orderId);
 
-      const paymentDetailsResponse = await fetch(`https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders/${orderId}`, {
+      const paymentDetailsResponse = await fetch(`https://edpos-be.onrender.com/api/orders/${orderId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -668,10 +668,10 @@ export function OrderManagement() {
       // Force immediate refresh with multiple attempts (5 times)
       for (let i = 0; i < 5; i++) {
         await Promise.all([
-          queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] }),
-          queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/tables"] }),
-          queryClient.refetchQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] }),
-          queryClient.refetchQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/tables"] }),
+          queryClient.invalidateQueries({ queryKey: ["https://edpos-be.onrender.com/api/orders"] }),
+          queryClient.invalidateQueries({ queryKey: ["https://edpos-be.onrender.com/api/tables"] }),
+          queryClient.refetchQueries({ queryKey: ["https://edpos-be.onrender.com/api/orders"] }),
+          queryClient.refetchQueries({ queryKey: ["https://edpos-be.onrender.com/api/tables"] }),
         ]);
 
         if (i < 4) {
@@ -684,8 +684,8 @@ export function OrderManagement() {
       intervals.forEach((delay, index) => {
         setTimeout(async () => {
           await Promise.all([
-            queryClient.refetchQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] }),
-            queryClient.refetchQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/tables"] }),
+            queryClient.refetchQueries({ queryKey: ["https://edpos-be.onrender.com/api/orders"] }),
+            queryClient.refetchQueries({ queryKey: ["https://edpos-be.onrender.com/api/tables"] }),
           ]);
           console.log(
             `🔄 Delayed refresh ${index + 1} completed after ${delay}ms`,
@@ -793,7 +793,7 @@ export function OrderManagement() {
         try {
           const response = await apiRequest(
             "GET",
-            `https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/order-items/${currentOrderId}`,
+            `https://edpos-be.onrender.com/api/order-items/${currentOrderId}`,
           );
           currentOrderItems = await response.json();
           console.log(
@@ -1094,7 +1094,7 @@ export function OrderManagement() {
       const startTime = Date.now();
       const response = await apiRequest(
         "PUT",
-        `https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders/${orderId}/status`,
+        `https://edpos-be.onrender.com/api/orders/${orderId}/status`,
         { status: newStatus },
       );
       const endTime = Date.now();
@@ -1131,10 +1131,10 @@ export function OrderManagement() {
 
         // Invalidate and refetch queries immediately
         await Promise.all([
-          queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] }),
-          queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/tables"] }),
-          queryClient.refetchQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] }),
-          queryClient.refetchQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/tables"] }),
+          queryClient.invalidateQueries({ queryKey: ["https://edpos-be.onrender.com/api/orders"] }),
+          queryClient.invalidateQueries({ queryKey: ["https://edpos-be.onrender.com/api/tables"] }),
+          queryClient.refetchQueries({ queryKey: ["https://edpos-be.onrender.com/api/orders"] }),
+          queryClient.refetchQueries({ queryKey: ["https://edpos-be.onrender.com/api/tables"] }),
         ]);
 
         console.log(`✅ Queries refreshed after status update`);
@@ -1214,7 +1214,7 @@ export function OrderManagement() {
       // Fetch order items
       const orderItemsResponse = await apiRequest(
         "GET",
-        `https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/order-items/${order.id}`,
+        `https://edpos-be.onrender.com/api/order-items/${order.id}`,
       );
 
       if (!orderItemsResponse.ok) {
@@ -1377,10 +1377,10 @@ export function OrderManagement() {
       try {
         // Force immediate refresh
         await Promise.all([
-          queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] }),
-          queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/tables"] }),
-          queryClient.refetchQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] }),
-          queryClient.refetchQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/tables"] }),
+          queryClient.invalidateQueries({ queryKey: ["https://edpos-be.onrender.com/api/orders"] }),
+          queryClient.invalidateQueries({ queryKey: ["https://edpos-be.onrender.com/api/tables"] }),
+          queryClient.refetchQueries({ queryKey: ["https://edpos-be.onrender.com/api/orders"] }),
+          queryClient.refetchQueries({ queryKey: ["https://edpos-be.onrender.com/api/tables"] }),
         ]);
 
         // Close all modals immediately and prevent any reopening
@@ -1442,10 +1442,10 @@ export function OrderManagement() {
 
       // Force immediate UI refresh
       await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] }),
-        queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/tables"] }),
-        queryClient.refetchQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] }),
-        queryClient.refetchQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/tables"] }),
+        queryClient.invalidateQueries({ queryKey: ["https://edpos-be.onrender.com/api/orders"] }),
+        queryClient.invalidateQueries({ queryKey: ["https://edpos-be.onrender.com/api/tables"] }),
+        queryClient.refetchQueries({ queryKey: ["https://edpos-be.onrender.com/api/orders"] }),
+        queryClient.refetchQueries({ queryKey: ["https://edpos-be.onrender.com/api/tables"] }),
       ]);
 
       // Close all modals immediately - no receipt display for direct payments
@@ -1889,7 +1889,7 @@ export function OrderManagement() {
           // Fetch order items for calculation
           const response = await apiRequest(
             "GET",
-            `https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/order-items/${order.id}`,
+            `https://edpos-be.onrender.com/api/order-items/${order.id}`,
           );
           if (!response.ok) {
             console.warn(
@@ -3395,10 +3395,10 @@ export function OrderManagement() {
 
               // Step 2: Force data refresh before clearing states
               await Promise.all([
-                queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] }),
-                queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/tables"] }),
-                queryClient.refetchQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] }),
-                queryClient.refetchQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/tables"] }),
+                queryClient.invalidateQueries({ queryKey: ["https://edpos-be.onrender.com/api/orders"] }),
+                queryClient.invalidateQueries({ queryKey: ["https://edpos-be.onrender.com/api/tables"] }),
+                queryClient.refetchQueries({ queryKey: ["https://edpos-be.onrender.com/api/orders"] }),
+                queryClient.refetchQueries({ queryKey: ["https://edpos-be.onrender.com/api/tables"] }),
               ]);
 
               // Step 3: Clear modal states gradually to prevent white screen

@@ -74,9 +74,9 @@ export default function IncomeVoucherModal({
   // Load payment methods from localStorage (same as expense voucher)
   // Query payment methods from API
   const { data: paymentMethodsData } = useQuery({
-    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/payment-methods"],
+    queryKey: ["https://edpos-be.onrender.com/api/payment-methods"],
     queryFn: async () => {
-      const response = await fetch("https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/payment-methods");
+      const response = await fetch("https://edpos-be.onrender.com/api/payment-methods");
       return response.json();
     },
   });
@@ -128,7 +128,7 @@ export default function IncomeVoucherModal({
 
   const createVoucherMutation = useMutation({
     mutationFn: async (data: IncomeVoucher) => {
-      const response = await fetch("https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/income-vouchers", {
+      const response = await fetch("https://edpos-be.onrender.com/api/income-vouchers", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
@@ -141,8 +141,8 @@ export default function IncomeVoucherModal({
         title: "Thành công",
         description: "Đã tạo phiếu thu mới",
       });
-      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/income-vouchers"] });
-      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] });
+      queryClient.invalidateQueries({ queryKey: ["https://edpos-be.onrender.com/api/income-vouchers"] });
+      queryClient.invalidateQueries({ queryKey: ["https://edpos-be.onrender.com/api/orders"] });
       onClose();
     },
     onError: (error) => {
@@ -157,7 +157,7 @@ export default function IncomeVoucherModal({
   const updateVoucherMutation = useMutation({
     mutationFn: async (data: IncomeVoucher) => {
       console.log("Updating income voucher with data:", data);
-      const response = await fetch(`https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/income-vouchers/${data.id}`, {
+      const response = await fetch(`https://edpos-be.onrender.com/api/income-vouchers/${data.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
@@ -178,8 +178,8 @@ export default function IncomeVoucherModal({
         title: "Thành công",
         description: `Đã cập nhật phiếu thu ${formData.voucherNumber} thành công`,
       });
-      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/income-vouchers"] });
-      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] });
+      queryClient.invalidateQueries({ queryKey: ["https://edpos-be.onrender.com/api/income-vouchers"] });
+      queryClient.invalidateQueries({ queryKey: ["https://edpos-be.onrender.com/api/orders"] });
       setIsEditing(false);
     },
     onError: (error) => {
@@ -196,7 +196,7 @@ export default function IncomeVoucherModal({
 
   const deleteVoucherMutation = useMutation({
     mutationFn: async (id: string) => {
-      const response = await fetch(`https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/income-vouchers/${id}`, {
+      const response = await fetch(`https://edpos-be.onrender.com/api/income-vouchers/${id}`, {
         method: "DELETE",
       });
       if (!response.ok) throw new Error("Failed to delete income voucher");
@@ -207,8 +207,8 @@ export default function IncomeVoucherModal({
         title: "Thành công",
         description: "Đã xóa phiếu thu",
       });
-      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/income-vouchers"] });
-      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] });
+      queryClient.invalidateQueries({ queryKey: ["https://edpos-be.onrender.com/api/income-vouchers"] });
+      queryClient.invalidateQueries({ queryKey: ["https://edpos-be.onrender.com/api/orders"] });
       setShowDeleteDialog(false);
       onClose();
     },

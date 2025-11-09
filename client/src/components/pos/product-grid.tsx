@@ -52,9 +52,9 @@ export function ProductGrid({
 
   // Fetch store settings to check price inclusion of tax
   const { data: storeSettings } = useQuery({
-    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/store-settings"],
+    queryKey: ["https://edpos-be.onrender.com/api/store-settings"],
     queryFn: async () => {
-      const response = await fetch("https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/store-settings");
+      const response = await fetch("https://edpos-be.onrender.com/api/store-settings");
       if (!response.ok) throw new Error("Failed to fetch store settings");
       return response.json();
     },
@@ -71,7 +71,7 @@ export function ProductGrid({
 
   const { data: products = [], isLoading } = useQuery<Product[]>({
     queryKey: [
-      "https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products",
+      "https://edpos-be.onrender.com/api/products",
       { category: selectedCategory, search: searchQuery },
     ],
     queryFn: async () => {
@@ -80,7 +80,7 @@ export function ProductGrid({
         params.append("search", searchQuery);
       }
 
-      const response = await fetch(`https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products?${params}`);
+      const response = await fetch(`https://edpos-be.onrender.com/api/products?${params}`);
       if (!response.ok) throw new Error("Failed to fetch products");
       const allProducts = await response.json();
 
