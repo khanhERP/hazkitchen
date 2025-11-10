@@ -138,10 +138,10 @@ export function CustomerFormModal({ isOpen, onClose, customer, initialPhone }: C
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["https://edpos-be.onrender.com/api/customers"] });
-      toast({
-        title: "common.success",
-        description: customer ? "customers.customerUpdated" : "customers.customerAdded",
-      });
+      // toast({
+      //   title: "common.success",
+      //   description: customer ? "customers.customerUpdated" : "customers.customerAdded",
+      // });
       onClose();
       form.reset();
     },
@@ -164,10 +164,10 @@ export function CustomerFormModal({ isOpen, onClose, customer, initialPhone }: C
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["https://edpos-be.onrender.com/api/customers"] });
-      toast({
-        title: t('common.success'),
-        description: "Cập nhật thông tin khách hàng thành công",
-      });
+      // toast({
+      //   title: t('common.success'),
+      //   description: "Cập nhật thông tin khách hàng thành công",
+      // });
       onClose();
       form.reset();
     },

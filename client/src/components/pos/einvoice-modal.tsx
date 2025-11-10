@@ -172,11 +172,11 @@ export function EInvoiceModal({
       queryClient.invalidateQueries({ queryKey: ["https://edpos-be.onrender.com/api/orders"] });
       queryClient.invalidateQueries({ queryKey: ["https://edpos-be.onrender.com/api/tables"] });
 
-      toast({
-        title: `${t("common.success")}`,
-        description:
-          "Hóa đơn điện tử đã được phát hành và đơn hàng đã được thanh toán",
-      });
+      // toast({
+      //   title: `${t("common.success")}`,
+      //   description:
+      //     "Hóa đơn điện tử đã được phát hành và đơn hàng đã được thanh toán",
+      // });
 
       console.log("✅ E-invoice modal: Payment completed, queries invalidated");
     },
@@ -1603,10 +1603,10 @@ export function EInvoiceModal({
         }
       }
 
-      toast({
-        title: `${t("common.success")}`,
-        description: `Hóa đơn điện tử đã được phát hành thành công!\nSố hóa đơn: ${result.data?.invoiceNo || "N/A"}`,
-      });
+      // toast({
+      //   title: `${t("common.success")}`,
+      //   description: `Hóa đơn điện tử đã được phát hành thành công!\nSố hóa đơn: ${result.data?.invoiceNo || "N/A"}`,
+      // });
 
       // Create receipt data for printing
       const receiptData = {

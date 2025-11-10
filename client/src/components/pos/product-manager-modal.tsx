@@ -156,11 +156,11 @@ export function ProductManagerModal({
       queryClient.invalidateQueries({ queryKey: ["https://edpos-be.onrender.com/api/products"] });
       queryClient.invalidateQueries({ queryKey: ["https://edpos-be.onrender.com/api/products/active"] });
 
-      toast({
-        title: "✅ Tạo sản phẩm thành công",
-        description: `Sản phẩm "${newProduct.name}" đã được thêm vào hệ thống`,
-        duration: 3000,
-      });
+      // toast({
+      //   title: "✅ Tạo sản phẩm thành công",
+      //   description: `Sản phẩm "${newProduct.name}" đã được thêm vào hệ thống`,
+      //   duration: 3000,
+      // });
 
       // Small delay to show toast before closing form
       setTimeout(() => {
@@ -233,11 +233,11 @@ export function ProductManagerModal({
       queryClient.invalidateQueries({ queryKey: ["https://edpos-be.onrender.com/api/products"] });
       queryClient.invalidateQueries({ queryKey: ["https://edpos-be.onrender.com/api/products/active"] });
 
-      toast({
-        title: `${t("tables.updatedProduct")}`,
-        description: `Sản phẩm "${updatedProduct.name}" đã được cập nhật`,
-        duration: 3000,
-      });
+      // toast({
+      //   title: `${t("tables.updatedProduct")}`,
+      //   description: `Sản phẩm "${updatedProduct.name}" đã được cập nhật`,
+      //   duration: 3000,
+      // });
 
       // Small delay to show toast before closing form
       setTimeout(() => {
@@ -270,10 +270,10 @@ export function ProductManagerModal({
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["https://edpos-be.onrender.com/api/products"] });
       queryClient.invalidateQueries({ queryKey: ["https://edpos-be.onrender.com/api/products/active"] });
-      toast({
-        title: "Success",
-        description: "Product deleted successfully",
-      });
+      // toast({
+      //   title: "Success",
+      //   description: "Product deleted successfully",
+      // });
     },
     onError: () => {
       toast({
@@ -713,10 +713,10 @@ export function ProductManagerModal({
     const timestamp = new Date().toISOString().slice(0, 19).replace(/:/g, "-");
     XLSX.writeFile(wb, `danh_sach_san_pham_${timestamp}.xlsx`);
 
-    toast({
-      title: "Thành công",
-      description: `Đã xuất ${products.length} sản phẩm ra file Excel`,
-    });
+    // toast({
+    //   title: "Thành công",
+    //   description: `Đã xuất ${products.length} sản phẩm ra file Excel`,
+    // });
   };
 
   useEffect(() => {

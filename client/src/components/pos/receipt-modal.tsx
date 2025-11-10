@@ -363,10 +363,10 @@ export function ReceiptModal({
         );
       });
       console.log("🖨️ ============ KẾT THÚC IN HÓA ĐƠN ============\n");
-      toast({
-        title: `${t("common.success")}`,
-        description: `${t("common.success")}`,
-      });
+      // toast({
+      //   title: `${t("common.success")}`,
+      //   description: `${t("common.success")}`,
+      // });
 
       onClose();
     } catch (error) {

@@ -1006,10 +1006,10 @@ export function ShoppingCart({
 
       console.log("✅ Order placed successfully:", result);
 
-      toast({
-        title: "Đặt hàng thành công",
-        description: `Đơn hàng ${result.orderNumber} đã được tạo - Trạng thái: Đặt hàng chưa thanh toán`,
-      });
+      // toast({
+      //   title: "Đặt hàng thành công",
+      //   description: `Đơn hàng ${result.orderNumber} đã được tạo - Trạng thái: Đặt hàng chưa thanh toán`,
+      // });
 
       // Clear cart and customer info
       onClearCart();
@@ -1354,10 +1354,10 @@ export function ShoppingCart({
 
       // Show success notification if requested
       if (event.detail.showSuccessNotification) {
-        toast({
-          title: `${t("common.success")}`,
-          description: event.detail.message || "Thao tác hoàn tất",
-        });
+        // toast({
+        //   title: `${t("common.success")}`,
+        //   description: event.detail.message || "Thao tác hoàn tất",
+        // });
       }
     };
 
@@ -1405,10 +1405,10 @@ export function ShoppingCart({
         );
       }
 
-      toast({
-        title: `${t("common.success")}`,
-        description: `${t("common.invoiceprintingcompleted")}`,
-      });
+      // toast({
+      //   title: `${t("common.success")}`,
+      //   description: `${t("common.invoiceprintingcompleted")}`,
+      // });
     };
 
     // Add event listeners

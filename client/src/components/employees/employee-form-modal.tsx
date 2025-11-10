@@ -132,10 +132,10 @@ export function EmployeeFormModal({
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["https://edpos-be.onrender.com/api/employees"] });
-      toast({
-        title: t("common.successTitle"),
-        description: t("employees.addEmployeeSuccess"),
-      });
+      // toast({
+      //   title: t("common.successTitle"),
+      //   description: t("employees.addEmployeeSuccess"),
+      // });
       onClose();
       generateEmployeeId().then((nextId) => {
         form.reset({
@@ -188,10 +188,10 @@ export function EmployeeFormModal({
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["https://edpos-be.onrender.com/api/employees"] });
-      toast({
-        title: t("common.successTitle"),
-        description: t("employees.updateEmployeeSuccess"),
-      });
+      // toast({
+      //   title: t("common.successTitle"),
+      //   description: t("employees.updateEmployeeSuccess"),
+      // });
       onClose();
     },
     onError: (error: any) => {

@@ -2309,10 +2309,10 @@ export function OrderDialog({
                       item.productName,
                     );
 
-                    toast({
-                      title: "Xóa món thành công",
-                      description: `Đã xóa "${item.productName}" khỏi đơn hàng`,
-                    });
+                    // toast({
+                    //   title: "Xóa món thành công",
+                    //   description: `Đã xóa "${item.productName}" khỏi đơn hàng`,
+                    // });
 
                     // Recalculate order total if this is an existing order
                     if (existingOrder?.id) {
@@ -2433,12 +2433,12 @@ export function OrderDialog({
                           "❌ Order Dialog: Error recalculating order total:",
                           error,
                         );
-                        toast({
-                          title: "Cảnh báo",
-                          description:
-                            "Món đã được xóa nhưng có lỗi khi cập nhật tổng tiền",
-                          variant: "destructive",
-                        });
+                        // toast({
+                        //   title: "Cảnh báo",
+                        //   description:
+                        //     "Món đã được xóa nhưng có lỗi khi cập nhật tổng tiền",
+                        //   variant: "destructive",
+                        // });
                       }
                     }
 

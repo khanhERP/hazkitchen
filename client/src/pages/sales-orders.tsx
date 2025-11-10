@@ -595,10 +595,10 @@ export default function SalesOrders() {
         setSelectedInvoice({ ...selectedInvoice, ...data });
       }
 
-      toast({
-        title: "Cập nhật thành công",
-        description: "Đơn hàng đã được cập nhật và danh sách đã được làm mới",
-      });
+      // toast({
+      //   title: "Cập nhật thành công",
+      //   description: "Đơn hàng đã được cập nhật và danh sách đã được làm mới",
+      // });
     },
     onError: (error) => {
       console.error("Error updating order:", error);
@@ -904,10 +904,10 @@ export default function SalesOrders() {
 
       console.log("✅ Order cancelled and list refreshed from database");
 
-      toast({
-        title: "Đã hủy đơn hàng",
-        description: "Đơn hàng đã được hủy và danh sách đã được cập nhật",
-      });
+      // toast({
+      //   title: "Đã hủy đơn hàng",
+      //   description: "Đơn hàng đã được hủy và danh sách đã được cập nhật",
+      // });
     },
     onError: (error) => {
       console.error("Error canceling order:", error);
@@ -1444,10 +1444,10 @@ export default function SalesOrders() {
       },
     );
 
-    toast({
-      title: "Đã thêm dòng mới",
-      description: "Vui lòng nhập thông tin sản phẩm và ấn Lưu",
-    });
+    // toast({
+    //   title: "Đã thêm dòng mới",
+    //   description: "Vui lòng nhập thông tin sản phẩm và ấn Lưu",
+    // });
 
     // Focus on SKU field of new row after a short delay
     setTimeout(() => {
@@ -1878,10 +1878,10 @@ export default function SalesOrders() {
       // Close the selected invoice to show the updated list
       setSelectedInvoice(null);
 
-      toast({
-        title: "Lưu thành công",
-        description: "Đơn hàng đã được cập nhật và danh sách đã được làm mới",
-      });
+      // toast({
+      //   title: "Lưu thành công",
+      //   description: "Đơn hàng đã được cập nhật và danh sách đã được làm mới",
+      // });
     } catch (error) {
       console.error("❌ Error saving order:", error);
       toast({
@@ -2638,10 +2638,10 @@ export default function SalesOrders() {
         queryClient.invalidateQueries({ queryKey: ["https://edpos-be.onrender.com/api/orders"] });
         queryClient.invalidateQueries({ queryKey: ["https://edpos-be.onrender.com/api/tables"] });
 
-        toast({
-          title: "Thanh toán thành công",
-          description: "Đơn hàng đã được cập nhật trạng thái thanh toán",
-        });
+        // toast({
+        //   title: "Thanh toán thành công",
+        //   description: "Đơn hàng đã được cập nhật trạng thái thanh toán",
+        // });
 
         // For laundry business, show receipt modal after payment
         if (storeSettings?.businessType === "laundry") {

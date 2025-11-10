@@ -37,10 +37,10 @@ export default function AttendanceQRPage() {
       queryClient.invalidateQueries({ queryKey: ['https://edpos-be.onrender.com/api/attendance'] });
       refetchTodayAttendance();
       setNotes("");
-      toast({
-        title: "출근 기록 완료",
-        description: "출근이 성공적으로 기록되었습니다.",
-      });
+      // toast({
+      //   title: "출근 기록 완료",
+      //   description: "출근이 성공적으로 기록되었습니다.",
+      // });
     },
     onError: () => {
       toast({
@@ -56,10 +56,10 @@ export default function AttendanceQRPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['https://edpos-be.onrender.com/api/attendance'] });
       refetchTodayAttendance();
-      toast({
-        title: "퇴근 기록 완료",
-        description: "퇴근이 성공적으로 기록되었습니다.",
-      });
+      // toast({
+      //   title: "퇴근 기록 완료",
+      //   description: "퇴근이 성공적으로 기록되었습니다.",
+      // });
     },
     onError: () => {
       toast({
@@ -75,10 +75,10 @@ export default function AttendanceQRPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['https://edpos-be.onrender.com/api/attendance'] });
       refetchTodayAttendance();
-      toast({
-        title: t('attendance.breakStartSuccess'),
-        description: t('attendance.breakStartSuccessDesc'),
-      });
+      // toast({
+      //   title: t('attendance.breakStartSuccess'),
+      //   description: t('attendance.breakStartSuccessDesc'),
+      // });
     },
     onError: () => {
       toast({
@@ -94,10 +94,10 @@ export default function AttendanceQRPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['https://edpos-be.onrender.com/api/attendance'] });
       refetchTodayAttendance();
-      toast({
-        title: "휴식 종료",
-        description: "휴식이 종료되었습니다.",
-      });
+      // toast({
+      //   title: "휴식 종료",
+      //   description: "휴식이 종료되었습니다.",
+      // });
     },
     onError: () => {
       toast({

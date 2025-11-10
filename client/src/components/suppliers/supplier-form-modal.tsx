@@ -77,10 +77,10 @@ export function SupplierFormModal({ isOpen, onClose, supplier }: SupplierFormMod
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['https://edpos-be.onrender.com/api/suppliers'] });
-      toast({
-        title: t("common.successTitle"),
-        description: t("suppliers.createSuccess"),
-      });
+      // toast({
+      //   title: t("common.successTitle"),
+      //   description: t("suppliers.createSuccess"),
+      // });
       onClose();
     },
     onError: () => {
@@ -99,10 +99,10 @@ export function SupplierFormModal({ isOpen, onClose, supplier }: SupplierFormMod
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['https://edpos-be.onrender.com/api/suppliers'] });
-      toast({
-        title: t("common.successTitle"),
-        description: t("suppliers.updateSuccess"),
-      });
+      // toast({
+      //   title: t("common.successTitle"),
+      //   description: t("suppliers.updateSuccess"),
+      // });
       onClose();
     },
     onError: () => {

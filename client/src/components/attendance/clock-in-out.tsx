@@ -65,10 +65,10 @@ export function ClockInOut() {
       queryClient.invalidateQueries({ queryKey: ["https://edpos-be.onrender.com/api/attendance"] });
       refetchTodayAttendance();
       setNotes("");
-      toast({
-        title: t("common.success"),
-        description: t("attendance.clockInSuccessDesc"),
-      });
+      // toast({
+      //   title: t("common.success"),
+      //   description: t("attendance.clockInSuccessDesc"),
+      // });
     },
     onError: () => {
       toast({
@@ -89,10 +89,10 @@ export function ClockInOut() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["https://edpos-be.onrender.com/api/attendance"] });
       refetchTodayAttendance();
-      toast({
-        title: t("common.success"),
-        description: t("attendance.clockOutSuccessDesc"),
-      });
+      // toast({
+      //   title: t("common.success"),
+      //   description: t("attendance.clockOutSuccessDesc"),
+      // });
     },
     onError: () => {
       toast({
@@ -113,10 +113,10 @@ export function ClockInOut() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["https://edpos-be.onrender.com/api/attendance"] });
       refetchTodayAttendance();
-      toast({
-        title: t("common.success"),
-        description: t("attendance.breakStartSuccessDesc"),
-      });
+      // toast({
+      //   title: t("common.success"),
+      //   description: t("attendance.breakStartSuccessDesc"),
+      // });
     },
     onError: () => {
       toast({
@@ -137,10 +137,10 @@ export function ClockInOut() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["https://edpos-be.onrender.com/api/attendance"] });
       refetchTodayAttendance();
-      toast({
-        title: t("common.success"),
-        description: t("attendance.breakEndSuccessDesc"),
-      });
+      // toast({
+      //   title: t("common.success"),
+      //   description: t("attendance.breakEndSuccessDesc"),
+      // });
     },
     onError: () => {
       toast({
@@ -446,10 +446,10 @@ export function ClockInOut() {
                   navigator.clipboard.writeText(
                     `${window.location.origin}/attendance-qr`,
                   );
-                  toast({
-                    title: t("common.success"),
-                    description: t("attendance.copySuccessDesc"),
-                  });
+                  // toast({
+                  //   title: t("common.success"),
+                  //   description: t("attendance.copySuccessDesc"),
+                  // });
                 }}
                 className="flex-1"
               >

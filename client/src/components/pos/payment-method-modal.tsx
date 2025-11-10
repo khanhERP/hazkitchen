@@ -1061,10 +1061,10 @@ export function PaymentMethodModal({
             }
 
             // Show success toast
-            toast({
-              title: "Thanh toán thành công",
-              description: `Đã thanh toán bằng ${getPaymentMethodName(method)}`,
-            });
+            // toast({
+            //   title: "Thanh toán thành công",
+            //   description: `Đã thanh toán bằng ${getPaymentMethodName(method)}`,
+            // });
 
             // Set payment method and show E-Invoice modal
             setSelectedPaymentMethod(method);
@@ -1677,10 +1677,10 @@ export function PaymentMethodModal({
         }
 
         // Show success toast
-        toast({
-          title: "Thanh toán thành công",
-          description: "Đã thanh toán bằng nhiều phương thức",
-        });
+        // toast({
+        //   title: "Thanh toán thành công",
+        //   description: "Đã thanh toán bằng nhiều phương thức",
+        // });
 
         setShowMultiPayment(false);
         setSelectedPaymentMethods([]);
@@ -2159,10 +2159,10 @@ export function PaymentMethodModal({
       console.log(
         "⏳ E-Invoice publish later completed - preparing receipt data",
       );
-      toast({
-        title: `${t("common.success")}`,
-        description: `${t("einvoice.savedForLaterPublish")}. ${t("einvoice.displayingForPrint")}`,
-      });
+      // toast({
+      //   title: `${t("common.success")}`,
+      //   description: `${t("einvoice.savedForLaterPublish")}. ${t("einvoice.displayingForPrint")}`,
+      // });
     } else {
       console.log("✅ E-Invoice published - preparing receipt data");
       toast({

@@ -622,10 +622,10 @@ export function TableGrid({ onTableSelect, selectedTableId }: TableGridProps) {
         console.error("❌ Table status update refresh failed:", error);
       }
 
-      toast({
-        title: t("tables.title"),
-        description: t("common.success"),
-      });
+      // toast({
+      //   title: t("tables.title"),
+      //   description: t("common.success"),
+      // });
     },
     onError: () => {
       toast({
@@ -793,10 +793,10 @@ export function TableGrid({ onTableSelect, selectedTableId }: TableGridProps) {
         });
       }
 
-      toast({
-        title: "Thanh toán thành công",
-        description: "Đơn hàng đã được thanh toán và dữ liệu đã được làm mới",
-      });
+      // toast({
+      //   title: "Thanh toán thành công",
+      //   description: "Đơn hàng đã được thanh toán và dữ liệu đã được làm mới",
+      // });
 
       // Fetch the completed order and its items for receipt
       try {
@@ -888,11 +888,11 @@ export function TableGrid({ onTableSelect, selectedTableId }: TableGridProps) {
         }
       } catch (error) {
         console.error("Error fetching order details for receipt:", error);
-        toast({
-          title: "Cảnh báo",
-          description: "Thanh toán thành công nhưng không thể hiển thị hóa đõn",
-          variant: "destructive",
-        });
+        // toast({
+        //   title: "Cảnh báo",
+        //   description: "Thanh toán thành công nhưng không thể hiển thị hóa đõn",
+        //   variant: "destructive",
+        // });
       }
     },
     onError: () => {
@@ -1002,10 +1002,10 @@ export function TableGrid({ onTableSelect, selectedTableId }: TableGridProps) {
       setSelectedCustomer(null);
       setPointsAmount("");
       setSearchTerm("");
-      toast({
-        title: "Thanh toán thành công",
-        description: "Đơn hàng đã được thanh toán bằng điểm",
-      });
+      // toast({
+      //   title: "Thanh toán thành công",
+      //   description: "Đơn hàng đã được thanh toán bằng điểm",
+      // });
 
       // Fetch the completed order to get its details for receipt
       queryClient
@@ -1244,11 +1244,11 @@ export function TableGrid({ onTableSelect, selectedTableId }: TableGridProps) {
       setSelectedCustomer(null);
       setPointsAmount("");
       setSearchTerm("");
-      toast({
-        title: "Thanh toán thành công",
-        description:
-          "Đơn hàng đã được thanh toán bằng điểm + tiền mặt/chuyển khoản",
-      });
+      // toast({
+      //   title: "Thanh toán thành công",
+      //   description:
+      //     "Đơn hàng đã được thanh toán bằng điểm + tiền mặt/chuyển khoản",
+      // });
 
       // Fetch the completed order to get its details for receipt
       queryClient
@@ -1379,10 +1379,10 @@ export function TableGrid({ onTableSelect, selectedTableId }: TableGridProps) {
       queryClient.invalidateQueries({
         queryKey: ["https://edpos-be.onrender.com/api/order-items", orderId],
       }); // Invalidate items for the deleted order
-      toast({
-        title: "Xóa đơn hàng thành công",
-        description: "Đơn hàng đã được hủy và trạng thái bàn đã được cập nhật",
-      });
+      // toast({
+      //   title: "Xóa đơn hàng thành công",
+      //   description: "Đơn hàng đã được hủy và trạng thái bàn đã được cập nhật",
+      // });
     },
     onError: () => {
       toast({
@@ -1493,10 +1493,10 @@ export function TableGrid({ onTableSelect, selectedTableId }: TableGridProps) {
         await Promise.all([refetchTables(), refetchOrders()]);
       }
 
-      toast({
-        title: "Chuyển bàn thành công",
-        description: "Đơn hàng đã được chuyển sang bàn mới và trạng thái bàn đã được cập nhật",
-      });
+      // toast({
+      //   title: "Chuyển bàn thành công",
+      //   description: "Đơn hàng đã được chuyển sang bàn mới và trạng thái bàn đã được cập nhật",
+      // });
 
       // Close dialogs and clear states
       setShowTransferTableDialog(false);
@@ -2069,12 +2069,12 @@ export function TableGrid({ onTableSelect, selectedTableId }: TableGridProps) {
         setOrderForEInvoice(null);
 
         // Show success message
-        toast({
-          title: `${t("common.success")}`,
-          description: paymentData.publishLater
-            ? "Đơn hàng đã được thanh toán và lưu để phát hành hóa đơn sau"
-            : "Đơn hàng đã được thanh toán thành công",
-        });
+        // toast({
+        //   title: `${t("common.success")}`,
+        //   description: paymentData.publishLater
+        //     ? "Đơn hàng đã được thanh toán và lưu để phát hành hóa đơn sau"
+        //     : "Đơn hàng đã được thanh toán thành công",
+        // });
 
         // CRITICAL: Show receipt modal if receipt data is provided
         if (paymentData.receipt && paymentData.shouldShowReceipt !== false) {
@@ -2373,11 +2373,11 @@ export function TableGrid({ onTableSelect, selectedTableId }: TableGridProps) {
         }),
       );
 
-      toast({
-        title: "Thành công",
-        description:
-          "Thanh toán đã được hoàn thành và dữ liệu đã được cập nhật",
-      });
+      // toast({
+      //   title: "Thành công",
+      //   description:
+      //     "Thanh toán đã được hoàn thành và dữ liệu đã được cập nhật",
+      // });
     } catch (error) {
       console.error("❌ Error completing payment from table:", error);
       toast({
@@ -2727,10 +2727,10 @@ export function TableGrid({ onTableSelect, selectedTableId }: TableGridProps) {
 
       if (result.success) {
         console.log("✅ Auto-print successful:", result.message);
-        toast({
-          title: "In hóa đơn thành công",
-          description: `${result.message}`,
-        });
+        // toast({
+        //   title: "In hóa đơn thành công",
+        //   description: `${result.message}`,
+        // });
 
         // Show detailed results for each printer
         const successfulPrints = result.results.filter(
@@ -2747,7 +2747,7 @@ export function TableGrid({ onTableSelect, selectedTableId }: TableGridProps) {
 
         if (failedPrints.length > 0) {
           toast({
-            title: "Một s  máy in gặp lỗi",
+            title: "Một máy in gặp lỗi",
             description: failedPrints
               .map((r) => `• ${r.printerName}: ${r.message}`)
               .join("\n"),
@@ -2856,12 +2856,12 @@ export function TableGrid({ onTableSelect, selectedTableId }: TableGridProps) {
     },
     onSuccess: (data, variables) => {
       console.log("Split order successful:", data);
-      toast({
-        title: "Tách đơn thành công",
-        description: `Đơn hàng ${
-          selectedOrder?.orderNumber
-        } đã được tách thành công.`,
-      });
+      // toast({
+      //   title: "Tách đơn thành công",
+      //   description: `Đơn hàng ${
+      //     selectedOrder?.orderNumber
+      //   } đã được tách thành công.`,
+      // });
       setSplitOrderOpen(false);
       setOrderDetailsOpen(false);
       setSelectedOrder(null);
@@ -2893,10 +2893,10 @@ export function TableGrid({ onTableSelect, selectedTableId }: TableGridProps) {
       const result = await response.json();
       console.log("✅ Split order result:", result);
 
-      toast({
-        title: "Thành công",
-        description: `Đã tách thành ${result.orders.length} đơn mới`,
-      });
+      // toast({
+      //   title: "Thành công",
+      //   description: `Đã tách thành ${result.orders.length} đơn mới`,
+      // });
 
       // IMMEDIATE: Clear all cache and force fresh data
       console.log("🔄 Clearing cache and forcing fresh data after split");

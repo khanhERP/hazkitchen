@@ -268,11 +268,11 @@ export default function PurchasesPage({ onLogout }: PurchasesPageProps) {
     onSuccess: (data) => {
       console.log("✅ Bulk delete successful:", data);
 
-      toast({
-        title: t("purchases.deleteSuccess"),
-        description: `${data.deletedCount} ${t("purchases.deleteSuccess")}`,
-        variant: "default",
-      });
+      // toast({
+      //   title: t("purchases.deleteSuccess"),
+      //   description: `${data.deletedCount} ${t("purchases.deleteSuccess")}`,
+      //   variant: "default",
+      // });
 
       // Clear selected orders
       setSelectedOrders(new Set());

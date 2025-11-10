@@ -93,20 +93,20 @@ export function PaymentMethodsModal({
     setEditingMethod(null);
     setMethodForm({ nameKey: "", icon: "" });
 
-    toast({
-      title: t("common.success"),
-      description: "Đã cập nhật phương thức thanh toán",
-    });
+    // toast({
+    //   title: t("common.success"),
+    //   description: "Đã cập nhật phương thức thanh toán",
+    // });
   };
 
   const handleDelete = (id: number) => {
     const updated = paymentMethods.filter((method) => method.id !== id);
     saveToLocalStorage(updated);
 
-    toast({
-      title: t("common.success"),
-      description: "Đã xóa phương thức thanh toán",
-    });
+    // toast({
+    //   title: t("common.success"),
+    //   description: "Đã xóa phương thức thanh toán",
+    // });
   };
 
   const getPaymentMethodName = (nameKey: string) => {

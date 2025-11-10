@@ -134,10 +134,10 @@ export function usePOS() {
         events.forEach((event) => window.dispatchEvent(event));
       }
 
-      toast({
-        title: "Đơn hàng hoàn tất",
-        description: `Đơn hàng ${order.orderNumber} đã được xử lý thành công`,
-      });
+      // toast({
+      //   title: "Đơn hàng hoàn tất",
+      //   description: `Đơn hàng ${order.orderNumber} đã được xử lý thành công`,
+      // });
     },
     onError: (error: Error) => {
       toast({

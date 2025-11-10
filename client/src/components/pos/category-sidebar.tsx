@@ -118,10 +118,10 @@ export function CategorySidebar({
       .then((product) => {
         if (product.id) {
           onAddToCart(product.id);
-          toast({
-            title: t("pos.productScanned"),
-            description: `${product.name} ${t("pos.addedToCart")}`,
-          });
+          // toast({
+          //   title: t("pos.productScanned"),
+          //   description: `${product.name} ${t("pos.addedToCart")}`,
+          // });
         }
       })
       .catch(() => {

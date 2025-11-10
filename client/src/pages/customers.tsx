@@ -58,10 +58,10 @@ export default function CustomersPage({ onLogout }: CustomersPageProps) {
 
       await queryClient.refetchQueries({ queryKey: ["https://edpos-be.onrender.com/api/customers"] });
 
-      toast({
-        title: t("common.success"),
-        description: t("settings.customerDeleteSuccess"),
-      });
+      // toast({
+      //   title: t("common.success"),
+      //   description: t("settings.customerDeleteSuccess"),
+      // });
     } catch (error) {
       console.error("Customer delete error:", error);
       toast({

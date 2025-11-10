@@ -223,10 +223,10 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
         queryKey: ["https://edpos-be.onrender.com/api/employees"],
       });
 
-      toast({
-        title: t("settings.employeeDeleteSuccessTitle"),
-        description: t("settings.employeeDeleteSuccessDesc"),
-      });
+      // toast({
+      //   title: t("settings.employeeDeleteSuccessTitle"),
+      //   description: t("settings.employeeDeleteSuccessDesc"),
+      // });
 
       setShowEmployeeDeleteDialog(false);
       setEmployeeToDelete(null);
@@ -401,10 +401,10 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["https://edpos-be.onrender.com/api/store-settings"] });
-      toast({
-        title: t("common.success"),
-        description: t("settings.storeUpdated"),
-      });
+      // toast({
+      //   title: t("common.success"),
+      //   description: t("settings.storeUpdated"),
+      // });
     },
     onError: () => {
       toast({
@@ -511,10 +511,10 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["https://edpos-be.onrender.com/api/payment-methods"] });
-      toast({
-        title: t("common.success"),
-        description: "Đã thêm phương thức thanh toán mới",
-      });
+      // toast({
+      //   title: t("common.success"),
+      //   description: "Đã thêm phương thức thanh toán mới",
+      // });
     },
     onError: () => {
       toast({
@@ -537,10 +537,10 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["https://edpos-be.onrender.com/api/payment-methods"] });
-      toast({
-        title: t("common.success"),
-        description: t("settings.paymentUpdateSuccessDesc"),
-      });
+      // toast({
+      //   title: t("common.success"),
+      //   description: t("settings.paymentUpdateSuccessDesc"),
+      // });
     },
     onError: () => {
       toast({
@@ -559,10 +559,10 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["https://edpos-be.onrender.com/api/payment-methods"] });
-      toast({
-        title: t("common.success"),
-        description: "Đã xóa phương thức thanh toán",
-      });
+      // toast({
+      //   title: t("common.success"),
+      //   description: "Đã xóa phương thức thanh toán",
+      // });
     },
     onError: () => {
       toast({
@@ -653,10 +653,10 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
 
       await queryClient.refetchQueries({ queryKey: ["https://edpos-be.onrender.com/api/customers"] });
 
-      toast({
-        title: t("common.success"),
-        description: t("settings.customerDeleteSuccess"),
-      });
+      // toast({
+      //   title: t("common.success"),
+      //   description: t("settings.customerDeleteSuccess"),
+      // });
 
       setShowCustomerDeleteDialog(false);
       setCustomerToDelete(null);
@@ -749,10 +749,10 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
       await queryClient.refetchQueries({ queryKey: ["https://edpos-be.onrender.com/api/categories"] });
       await queryClient.refetchQueries({ queryKey: ["https://edpos-be.onrender.com/api/products"] });
 
-      toast({
-        title: t("common.success"),
-        description: t("settings.categoryCreateSuccess"),
-      });
+      // toast({
+      //   title: t("common.success"),
+      //   description: t("settings.categoryCreateSuccess"),
+      // });
       setShowCategoryForm(false);
       resetCategoryForm();
     } catch (error) {
@@ -807,10 +807,10 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
       await queryClient.refetchQueries({ queryKey: ["https://edpos-be.onrender.com/api/categories"] });
       await queryClient.refetchQueries({ queryKey: ["https://edpos-be.onrender.com/api/products"] });
 
-      toast({
-        title: t("common.success"),
-        description: t("settings.categoryUpdateSuccess"),
-      });
+      // toast({
+      //   title: t("common.success"),
+      //   description: t("settings.categoryUpdateSuccess"),
+      // });
     } catch (error) {
       console.error("Category update error:", error);
       toast({
@@ -863,10 +863,10 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
       await queryClient.refetchQueries({ queryKey: ["https://edpos-be.onrender.com/api/categories"] });
       await queryClient.refetchQueries({ queryKey: ["https://edpos-be.onrender.com/api/products"] });
 
-      toast({
-        title: t("common.success"),
-        description: t("settings.categoryDeleteSuccess"),
-      });
+      // toast({
+      //   title: t("common.success"),
+      //   description: t("settings.categoryDeleteSuccess"),
+      // });
 
       setShowDeleteDialog(false);
       setCategoryToDelete(null);
@@ -984,10 +984,10 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
       await queryClient.refetchQueries({ queryKey: ["https://edpos-be.onrender.com/api/products"] });
       setShowProductForm(false);
       resetProductForm();
-      toast({
-        title: t("common.success"),
-        description: t("settings.productCreatedSuccess"),
-      });
+      // toast({
+      //   title: t("common.success"),
+      //   description: t("settings.productCreatedSuccess"),
+      // });
     } catch (error) {
       console.error("Product creation error:", error);
       toast({
@@ -1047,11 +1047,11 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
           finalProductData.imageUrl = base64Image;
         } catch (error) {
           console.error("파일 변환 오류:", error);
-          toast({
-            title: "오류",
-            description: "이미지 파일 처리 중 오류가 발생했습니다.",
-            variant: "destructive",
-          });
+          // toast({
+          //   title: "오류",
+          //   description: "이미지 파일 처리 중 오류가 발생했습니다.",
+          //   variant: "destructive",
+          // });
           return;
         }
       } else if (productForm.imageInputMethod === "url") {
@@ -1076,10 +1076,10 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
       setShowProductForm(false);
       setEditingProduct(null);
       resetProductForm();
-      toast({
-        title: t("common.success"),
-        description: t("settings.productUpdatedSuccess"),
-      });
+      // toast({
+      //   title: t("common.success"),
+      //   description: t("settings.productUpdatedSuccess"),
+      // });
     } catch (error) {
       console.error("Product update error:", error);
       toast({
@@ -1173,10 +1173,10 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
 
       await queryClient.refetchQueries({ queryKey: ["https://edpos-be.onrender.com/api/products"] });
 
-      toast({
-        title: t("common.success"),
-        description: t("settings.productDeleteSuccess"),
-      });
+      // toast({
+      //   title: t("common.success"),
+      //   description: t("settings.productDeleteSuccess"),
+      // });
 
       setShowProductDeleteDialog(false);
       setProductToDelete(null);
@@ -1235,10 +1235,10 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
       queryClient.invalidateQueries({
         queryKey: ["https://edpos-be.onrender.com/api/einvoice-connections"],
       });
-      toast({
-        title: t("common.success"),
-        description: t("settings.einvoiceConnectionCreateSuccess"),
-      });
+      // toast({
+      //   title: t("common.success"),
+      //   description: t("settings.einvoiceConnectionCreateSuccess"),
+      // });
       setShowEInvoiceForm(false);
       resetEInvoiceForm();
     },
@@ -1264,10 +1264,10 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
       queryClient.invalidateQueries({
         queryKey: ["https://edpos-be.onrender.com/api/einvoice-connections"],
       });
-      toast({
-        title: t("common.success"),
-        description: t("settings.einvoiceConnectionUpdateSuccess"),
-      });
+      // toast({
+      //   title: t("common.success"),
+      //   description: t("settings.einvoiceConnectionUpdateSuccess"),
+      // });
       setShowEInvoiceForm(false);
       resetEInvoiceForm();
     },
@@ -1292,10 +1292,10 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
       queryClient.invalidateQueries({
         queryKey: ["https://edpos-be.onrender.com/api/einvoice-connections"],
       });
-      toast({
-        title: t("common.success"),
-        description: t("settings.einvoiceConnectionDeleteSuccess"),
-      });
+      // toast({
+      //   title: t("common.success"),
+      //   description: t("settings.einvoiceConnectionDeleteSuccess"),
+      // });
       setShowEInvoiceDeleteDialog(false);
       setEInvoiceToDelete(null);
     },
@@ -1492,10 +1492,10 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["https://edpos-be.onrender.com/api/invoice-templates"] });
-      toast({
-        title: t("common.success"),
-        description: t("settings.einvoiceTemplateCreateSuccess"),
-      });
+      // toast({
+      //   title: t("common.success"),
+      //   description: t("settings.einvoiceTemplateCreateSuccess"),
+      // });
       setShowTemplateForm(false);
       resetTemplateForm();
     },
@@ -1519,10 +1519,10 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["https://edpos-be.onrender.com/api/invoice-templates"] });
-      toast({
-        title: t("common.success"),
-        description: t("settings.einvoiceTemplateUpdateSuccess"),
-      });
+      // toast({
+      //   title: t("common.success"),
+      //   description: t("settings.einvoiceTemplateUpdateSuccess"),
+      // });
       setShowTemplateForm(false);
       resetTemplateForm();
     },
@@ -1545,10 +1545,10 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["https://edpos-be.onrender.com/api/invoice-templates"] });
-      toast({
-        title: t("common.success"),
-        description: t("settings.einvoiceTemplateDeleteSuccess"),
-      });
+      // toast({
+      //   title: t("common.success"),
+      //   description: t("settings.einvoiceTemplateDeleteSuccess"),
+      // });
       setShowTemplateDeleteDialog(false);
       setTemplateToDelete(null);
     },
@@ -1596,11 +1596,11 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
       !templateForm.templateNumber.trim() ||
       !templateForm.symbol.trim()
     ) {
-      toast({
-        title: t("common.error"),
-        description: t("settings.requiredFieldsError"),
-        variant: "destructive",
-      });
+      // toast({
+      //   title: t("common.error"),
+      //   description: t("settings.requiredFieldsError"),
+      //   variant: "destructive",
+      // });
       return;
     }
 

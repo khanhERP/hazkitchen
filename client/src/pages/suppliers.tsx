@@ -56,17 +56,17 @@ export default function SuppliersPage({ onLogout }: SuppliersPageProps) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['https://edpos-be.onrender.com/api/suppliers'] });
-      toast({
-        title: t('suppliers.deleteSuccess'),
-        description: t('suppliers.deleteSuccessDesc'),
-      });
+      // toast({
+      //   title: t('suppliers.deleteSuccess'),
+      //   description: t('suppliers.deleteSuccessDesc'),
+      // });
     },
     onError: () => {
-      toast({
-        title: t('suppliers.deleteFailed'),
-        description: t('suppliers.deleteFailedDesc'),
-        variant: "destructive",
-      });
+      // toast({
+      //   title: t('suppliers.deleteFailed'),
+      //   description: t('suppliers.deleteFailedDesc'),
+      //   variant: "destructive",
+      // });
     },
   });
 

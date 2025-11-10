@@ -561,10 +561,10 @@ export default function PurchaseViewPage({ onLogout }: PurchaseViewPageProps) {
 
       await Promise.all(uploadPromises);
 
-      toast({
-        title: "Thành công",
-        description: "Tải lên tệp đính kèm thành công",
-      });
+      // toast({
+      //   title: "Thành công",
+      //   description: "Tải lên tệp đính kèm thành công",
+      // });
 
       // Refresh documents list
       await queryClient.invalidateQueries({
@@ -623,10 +623,10 @@ export default function PurchaseViewPage({ onLogout }: PurchaseViewPageProps) {
 
       console.log('✅ File download triggered successfully');
 
-      toast({
-        title: "Thành công",
-        description: "Đã tải xuống tệp",
-      });
+      // toast({
+      //   title: "Thành công",
+      //   description: "Đã tải xuống tệp",
+      // });
     } catch (error) {
       console.error('❌ Error downloading file:', error);
       toast({
@@ -654,10 +654,10 @@ export default function PurchaseViewPage({ onLogout }: PurchaseViewPageProps) {
 
       console.log('✅ Document deleted successfully');
 
-      toast({
-        title: "Đã xóa",
-        description: "Xóa tệp đính kèm thành công",
-      });
+      // toast({
+      //   title: "Đã xóa",
+      //   description: "Xóa tệp đính kèm thành công",
+      // });
 
       // Refresh documents list
       await queryClient.invalidateQueries({
@@ -1128,11 +1128,11 @@ export default function PurchaseViewPage({ onLogout }: PurchaseViewPageProps) {
 
       console.log(`✅ Frontend: Update successful - Created ${createdCount} items`);
 
-      toast({
-        title: "Thành công!",
-        description: `Cập nhật phiếu nhập thành công với ${createdCount} sản phẩm`,
-        className: "bg-green-50 border-green-200",
-      });
+      // toast({
+      //   title: "Thành công!",
+      //   description: `Cập nhật phiếu nhập thành công với ${createdCount} sản phẩm`,
+      //   className: "bg-green-50 border-green-200",
+      // });
 
       setIsEditMode(false);
 
@@ -2062,10 +2062,10 @@ export default function PurchaseViewPage({ onLogout }: PurchaseViewPageProps) {
                                             throw new Error('Failed to delete item');
                                           }
 
-                                          toast({
-                                            title: "Đã xóa",
-                                            description: "Xóa sản phẩm thành công",
-                                          });
+                                          // toast({
+                                          //   title: "Đã xóa",
+                                          //   description: "Xóa sản phẩm thành công",
+                                          // });
 
                                           // Refresh the items list
                                           await queryClient.invalidateQueries({ 
@@ -2092,10 +2092,10 @@ export default function PurchaseViewPage({ onLogout }: PurchaseViewPageProps) {
                                         // we might need a way to manage them before they appear in `purchaseItems`.
                                         // If `purchaseItems` is updated directly when adding new rows, then removing from `purchaseItems` is also needed.
                                         // For now, assuming `purchaseItems` is only populated from server initially.
-                                        toast({
-                                          title: "Đã xóa",
-                                          description: "Đã xóa sản phẩm tạm thời",
-                                        });
+                                        // toast({
+                                        //   title: "Đã xóa",
+                                        //   description: "Đã xóa sản phẩm tạm thời",
+                                        // });
                                       }
                                     }}
                                     className="text-red-500 hover:text-red-700 hover:bg-red-50 w-8 h-8 p-0 rounded-full"

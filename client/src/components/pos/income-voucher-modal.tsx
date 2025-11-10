@@ -137,10 +137,10 @@ export default function IncomeVoucherModal({
       return response.json();
     },
     onSuccess: () => {
-      toast({
-        title: "Thành công",
-        description: "Đã tạo phiếu thu mới",
-      });
+      // toast({
+      //   title: "Thành công",
+      //   description: "Đã tạo phiếu thu mới",
+      // });
       queryClient.invalidateQueries({ queryKey: ["https://edpos-be.onrender.com/api/income-vouchers"] });
       queryClient.invalidateQueries({ queryKey: ["https://edpos-be.onrender.com/api/orders"] });
       onClose();
@@ -174,10 +174,10 @@ export default function IncomeVoucherModal({
     },
     onSuccess: (data) => {
       console.log("Income voucher updated successfully:", data);
-      toast({
-        title: "Thành công",
-        description: `Đã cập nhật phiếu thu ${formData.voucherNumber} thành công`,
-      });
+      // toast({
+      //   title: "Thành công",
+      //   description: `Đã cập nhật phiếu thu ${formData.voucherNumber} thành công`,
+      // });
       queryClient.invalidateQueries({ queryKey: ["https://edpos-be.onrender.com/api/income-vouchers"] });
       queryClient.invalidateQueries({ queryKey: ["https://edpos-be.onrender.com/api/orders"] });
       setIsEditing(false);
@@ -203,10 +203,10 @@ export default function IncomeVoucherModal({
       return response.json();
     },
     onSuccess: () => {
-      toast({
-        title: "Thành công",
-        description: "Đã xóa phiếu thu",
-      });
+      // toast({
+      //   title: "Thành công",
+      //   description: "Đã xóa phiếu thu",
+      // });
       queryClient.invalidateQueries({ queryKey: ["https://edpos-be.onrender.com/api/income-vouchers"] });
       queryClient.invalidateQueries({ queryKey: ["https://edpos-be.onrender.com/api/orders"] });
       setShowDeleteDialog(false);

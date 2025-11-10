@@ -87,10 +87,10 @@ export function PointsManagementModal({ isOpen, onClose }: PointsManagementModal
       queryClient.invalidateQueries({ queryKey: ['https://edpos-be.onrender.com/api/customers'] });
       queryClient.invalidateQueries({ queryKey: ['https://edpos-be.onrender.com/api/point-transactions'] });
       queryClient.invalidateQueries({ queryKey: ['customer-points', selectedCustomer?.id] });
-      toast({
-        title: t("customers.customerUpdated"),
-        description: t("customers.pointsManagementDesc"),
-      });
+      // toast({
+      //   title: t("customers.customerUpdated"),
+      //   description: t("customers.pointsManagementDesc"),
+      // });
       setPointsAmount('');
       setAdjustmentReason('');
       setSelectedCustomer(null);
@@ -117,10 +117,10 @@ export function PointsManagementModal({ isOpen, onClose }: PointsManagementModal
       queryClient.invalidateQueries({ queryKey: ['https://edpos-be.onrender.com/api/customers'] });
       queryClient.invalidateQueries({ queryKey: ['https://edpos-be.onrender.com/api/point-transactions'] });
       queryClient.invalidateQueries({ queryKey: ['customer-points', selectedCustomer?.id] });
-      toast({
-        title: t("common.success"),
-        description: t("customers.processPayment"),
-      });
+      // toast({
+      //   title: t("common.success"),
+      //   description: t("customers.processPayment"),
+      // });
       setPointsAmount('');
       setSelectedCustomer(null);
     },
@@ -182,11 +182,11 @@ export function PointsManagementModal({ isOpen, onClose }: PointsManagementModal
     const currentPoints = selectedCustomer.points || 0;
     
     if (points > currentPoints) {
-      toast({
-        title: t("customers.insufficientPoints"),
-        description: t("customers.insufficientPoints"),
-        variant: 'destructive',
-      });
+      // toast({
+      //   title: t("customers.insufficientPoints"),
+      //   description: t("customers.insufficientPoints"),
+      //   variant: 'destructive',
+      // });
       return;
     }
 

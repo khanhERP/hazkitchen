@@ -126,12 +126,12 @@ export default function InventoryPage({ onLogout }: InventoryPageProps) {
       queryClient.refetchQueries({ queryKey: ["https://edpos-be.onrender.com/api/products"] });
       setShowStockDialog(false);
       stockUpdateForm.reset();
-      toast({
-        title: t("inventory.updateSuccess") || "Cập nhật thành công",
-        description:
-          t("inventory.updateSuccessDescription") ||
-          "Thông tin sản phẩm đã được cập nhật",
-      });
+      // toast({
+      //   title: t("inventory.updateSuccess") || "Cập nhật thành công",
+      //   description:
+      //     t("inventory.updateSuccessDescription") ||
+      //     "Thông tin sản phẩm đã được cập nhật",
+      // });
     },
     onError: (error) => {
       console.error("Update stock error:", error);
@@ -167,10 +167,10 @@ export default function InventoryPage({ onLogout }: InventoryPageProps) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["https://edpos-be.onrender.com/api/products"] });
-      toast({
-        title: "Thành công",
-        description: "Trạng thái theo dõi tồn kho đã được cập nhật",
-      });
+      // toast({
+      //   title: "Thành công",
+      //   description: "Trạng thái theo dõi tồn kho đã được cập nhật",
+      // });
     },
     onError: () => {
       toast({
@@ -200,12 +200,12 @@ export default function InventoryPage({ onLogout }: InventoryPageProps) {
       queryClient.invalidateQueries({ queryKey: ["https://edpos-be.onrender.com/api/products"] });
       setShowStockDialog(false);
       stockUpdateForm.reset();
-      toast({
-        title: t("inventory.createSuccess") || "Tạo mới thành công",
-        description:
-          t("inventory.createSuccessDescription") ||
-          "Sản phẩm mới đã được thêm vào kho hàng",
-      });
+      // toast({
+      //   title: t("inventory.createSuccess") || "Tạo mới thành công",
+      //   description:
+      //     t("inventory.createSuccessDescription") ||
+      //     "Sản phẩm mới đã được thêm vào kho hàng",
+      // });
     },
     onError: (error: any) => {
       console.error("Create product error:", error);
@@ -215,13 +215,13 @@ export default function InventoryPage({ onLogout }: InventoryPageProps) {
         error?.response?.status === 409 &&
         error?.response?.data?.code === "DUPLICATE_SKU"
       ) {
-        toast({
-          title: t("inventory.duplicateSku") || "Đã tồn tại sản phẩm trong kho",
-          description:
-            t("inventory.duplicateSkuDescription") ||
-            "SKU này đã được sử dụng cho sản phẩm khác",
-          variant: "destructive",
-        });
+        // toast({
+        //   title: t("inventory.duplicateSku") || "Đã tồn tại sản phẩm trong kho",
+        //   description:
+        //     t("inventory.duplicateSkuDescription") ||
+        //     "SKU này đã được sử dụng cho sản phẩm khác",
+        //   variant: "destructive",
+        // });
       } else {
         toast({
           title: t("inventory.createFailed") || "Tạo mới thất bại",
@@ -247,10 +247,10 @@ export default function InventoryPage({ onLogout }: InventoryPageProps) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["https://edpos-be.onrender.com/api/products"] });
-      toast({
-        title: "",
-        description: t("inventory.deleteSuccess") || "Xóa sản phẩm thành công",
-      });
+      // toast({
+      //   title: "",
+      //   description: t("inventory.deleteSuccess") || "Xóa sản phẩm thành công",
+      // });
     },
     onError: (error) => {
       console.error("Delete product error:", error);
@@ -292,10 +292,10 @@ export default function InventoryPage({ onLogout }: InventoryPageProps) {
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["https://edpos-be.onrender.com/api/products"] });
-      toast({
-        title: "Dọn dẹp thành công",
-        description: `Đã xóa ${data.deletedCount} sản phẩm vô hiệu khỏi cơ sở dữ liệu`,
-      });
+      // toast({
+      //   title: "Dọn dẹp thành công",
+      //   description: `Đã xóa ${data.deletedCount} sản phẩm vô hiệu khỏi cơ sở dữ liệu`,
+      // });
     },
     onError: (error) => {
       console.error("Cleanup error:", error);

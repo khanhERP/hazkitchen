@@ -566,11 +566,11 @@ export default function PurchaseFormPage({
       return response.json();
     },
     onSuccess: (newProduct) => {
-      toast({
-        title: t("common.success"),
-        description:
-          t("inventory.productCreated") || "Product created successfully",
-      });
+      // toast({
+      //   title: t("common.success"),
+      //   description:
+      //     t("inventory.productCreated") || "Product created successfully",
+      // });
 
       // Update products query cache
       queryClient.setQueryData(["https://edpos-be.onrender.com/api/products"], (old: any[]) => {
@@ -1392,12 +1392,12 @@ export default function PurchaseFormPage({
         }
       }
 
-      toast({
-        title: "Thành công",
-        description: isEditMode
-          ? "Phiếu nhập hàng đã được cập nhật thành công"
-          : "Phiếu nhập hàng đã được tạo thành công",
-      });
+      // toast({
+      //   title: "Thành công",
+      //   description: isEditMode
+      //     ? "Phiếu nhập hàng đã được cập nhật thành công"
+      //     : "Phiếu nhập hàng đã được tạo thành công",
+      // });
 
       // Refresh queries and navigate
       queryClient.invalidateQueries({ queryKey: ["https://edpos-be.onrender.com/api/purchase-receipts"] });

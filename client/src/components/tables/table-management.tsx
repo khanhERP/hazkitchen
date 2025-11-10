@@ -120,10 +120,10 @@ export function TableManagement() {
       apiRequest("POST", "https://edpos-be.onrender.com/api/tables", data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["https://edpos-be.onrender.com/api/tables"] });
-      toast({
-        title: t("common.success"),
-        description: t("tables.tableCreateSuccess"),
-      });
+      // toast({
+      //   title: t("common.success"),
+      //   description: t("tables.tableCreateSuccess"),
+      // });
       handleCloseDialog();
     },
     onError: () => {
@@ -140,10 +140,10 @@ export function TableManagement() {
       apiRequest("PUT", `https://edpos-be.onrender.com/api/tables/${id}`, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["https://edpos-be.onrender.com/api/tables"] });
-      toast({
-        title: t("common.success"),
-        description: t("tables.tableUpdateSuccess"),
-      });
+      // toast({
+      //   title: t("common.success"),
+      //   description: t("tables.tableUpdateSuccess"),
+      // });
       handleCloseDialog();
     },
     onError: () => {
@@ -159,10 +159,10 @@ export function TableManagement() {
     mutationFn: (id: number) => apiRequest("DELETE", `https://edpos-be.onrender.com/api/tables/${id}`, {}),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["https://edpos-be.onrender.com/api/tables"] });
-      toast({
-        title: t("common.success"),
-        description: t("tables.tableDeleteSuccess"),
-      });
+      // toast({
+      //   title: t("common.success"),
+      //   description: t("tables.tableDeleteSuccess"),
+      // });
     },
     onError: () => {
       toast({
