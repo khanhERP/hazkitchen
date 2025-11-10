@@ -258,19 +258,21 @@ export function POSHeader({ onLogout }: POSHeaderProps) {
               {posMenuOpen && (
                 <div className="absolute top-full right-0 mt-1 bg-white rounded-xl shadow-lg border border-gray-200 py-2 min-w-48 z-50">
                   {/* Bán trực tiếp */}
-                  <Link href="/pos">
-                    <button
-                      className={`w-full flex items-center px-4 py-2 text-left hover:bg-green-50 transition-colors ${
-                        location === "/pos"
-                          ? "bg-green-50 text-green-600"
-                          : "text-gray-700"
-                      }`}
-                      onClick={() => setPosMenuOpen(false)}
-                    >
-                      <Home className="w-4 h-4 mr-3" />
-                      {t("nav.directSales")}
-                    </button>
-                  </Link>
+                  {storeSettings?.businessType !== "restaurant" && (
+                    <Link href="/pos">
+                      <button
+                        className={`w-full flex items-center px-4 py-2 text-left hover:bg-green-50 transition-colors ${
+                          location === "/pos"
+                            ? "bg-green-50 text-green-600"
+                            : "text-gray-700"
+                        }`}
+                        onClick={() => setPosMenuOpen(false)}
+                      >
+                        <Home className="w-4 h-4 mr-3" />
+                        {t("nav.directSales")}
+                      </button>
+                    </Link>
+                  )}
 
                   {/* Bán tại bàn */}
                   {storeSettings?.businessType === "restaurant" && (
