@@ -311,10 +311,6 @@ export function OrderManagement() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["https://edpos-be.onrender.com/api/orders"] });
       queryClient.invalidateQueries({ queryKey: ["https://edpos-be.onrender.com/api/tables"] });
-      // toast({
-      //   title: t("common.success"),
-      //   description: t("orders.orderStatusUpdated"),
-      // });
     },
     onError: () => {
       toast({
@@ -366,14 +362,6 @@ export function OrderManagement() {
         queryClient.refetchQueries({ queryKey: ["https://edpos-be.onrender.com/api/orders"] }),
         queryClient.refetchQueries({ queryKey: ["https://edpos-be.onrender.com/api/tables"] }),
       ]);
-
-      // Don't show toast immediately to avoid conflicts with receipt modal
-      // setTimeout(() => {
-      //   toast({
-      //     title: "Thanh toán thành công",
-      //     description: "Đơn hàng đã được thanh toán thành công",
-      //   });
-      // }, 1000);
 
       // Dispatch UI refresh events
       if (typeof window !== "undefined") {
@@ -466,10 +454,6 @@ export function OrderManagement() {
       setSelectedCustomer(null);
       setPointsAmount("");
       setSearchTerm("");
-      // toast({
-      //   title: t("common.success"),
-      //   description: t("orders.pointsPaymentTitle"),
-      // });
     },
     onError: () => {
       toast({
@@ -515,11 +499,6 @@ export function OrderManagement() {
       setSelectedCustomer(null);
       setPointsAmount("");
       setSearchTerm("");
-      // toast({
-      //   title: "Thanh toán thành công",
-      //   description:
-      //     "Đơn hàng đã được thanh toán bằng điểm + tiền mặt/chuyển khoản",
-      // });
     },
     onError: () => {
       toast({
@@ -1148,11 +1127,6 @@ export function OrderManagement() {
             timestamp: new Date().toISOString(),
           });
         }, 1000);
-
-        // toast({
-        //   title: "Thành công",
-        //   description: `Trạng thái đơn hàng đã được cập nhật thành ${newStatus}`,
-        // });
       } else {
         const errorText = await response.text();
         console.error(
@@ -1392,11 +1366,6 @@ export function OrderManagement() {
         setPreviewReceipt(null);
         setShowReceiptModal(false);
         setSelectedReceipt(null);
-
-        // toast({
-        //   title: "Thành công",
-        //   description: "Đơn hàng đã được thanh toán thành công",
-        // });
       } catch (error) {
         console.error("❌ Error refreshing data after payment:", error);
       }
@@ -1455,11 +1424,6 @@ export function OrderManagement() {
       setSelectedOrder(null);
       setShowReceiptPreview(false);
       setPreviewReceipt(null);
-
-      // toast({
-      //   title: "Thành công",
-      //   description: "Đơn hàng đã được thanh toán thành công",
-      // });
     } catch (error) {
       console.error("❌ Payment failed:", error);
       toast({
@@ -3270,11 +3234,11 @@ export function OrderManagement() {
 
             if (!previewReceipt || !orderForPayment) {
               console.error("❌ Missing preview data for payment flow");
-              // toast({
-              //   title: "Lỗi",
-              //   description: "Không thể tiếp tục thanh toán. Vui lòng thử lại.",
-              //   variant: "destructive",
-              // });
+              toast({
+                title: "Lỗi",
+                description: "Không thể tiếp tục thanh toán. Vui lòng thử lại.",
+                variant: "destructive",
+              });
               return;
             }
 

@@ -105,10 +105,6 @@ export function MembershipModal({ isOpen, onClose }: MembershipModalProps) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['https://edpos-be.onrender.com/api/customers'] });
-      // toast({
-      //   title: "common.success",
-      //   description: "customers.customerUpdated",
-      // });
     },
     onError: () => {
       toast({
@@ -134,10 +130,6 @@ export function MembershipModal({ isOpen, onClose }: MembershipModalProps) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['https://edpos-be.onrender.com/api/membership-thresholds'] });
       queryClient.invalidateQueries({ queryKey: ['https://edpos-be.onrender.com/api/customers'] });
-      // toast({
-      //   title: "common.success",
-      //   description: "customers.thresholdUpdated",
-      // });
     },
     onError: () => {
       toast({

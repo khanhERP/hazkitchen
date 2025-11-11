@@ -94,6 +94,7 @@ interface InvoiceItem {
   taxRate: string;
   discount?: string; // Added discount field
   sku?: string; // Added sku field
+  productSku?: string; // Added productSku field
 }
 
 interface Order {
@@ -594,11 +595,6 @@ export default function SalesOrders() {
       if (selectedInvoice) {
         setSelectedInvoice({ ...selectedInvoice, ...data });
       }
-
-      // toast({
-      //   title: "Cập nhật thành công",
-      //   description: "Đơn hàng đã được cập nhật và danh sách đã được làm mới",
-      // });
     },
     onError: (error) => {
       console.error("Error updating order:", error);
@@ -881,7 +877,7 @@ export default function SalesOrders() {
         queryClient.refetchQueries({ queryKey: ["https://edpos-be.onrender.com/api/orders"] }),
         queryClient.refetchQueries({
           queryKey: [
-            "https://edpos-be.onrender.com/api/orders/date-range",
+            "https://edpos-be.onrender.com/api/order-range",
             startDate,
             endDate,
             currentPage,
@@ -903,11 +899,6 @@ export default function SalesOrders() {
       }
 
       console.log("✅ Order cancelled and list refreshed from database");
-
-      // toast({
-      //   title: "Đã hủy đơn hàng",
-      //   description: "Đơn hàng đã được hủy và danh sách đã được cập nhật",
-      // });
     },
     onError: (error) => {
       console.error("Error canceling order:", error);
@@ -1444,11 +1435,6 @@ export default function SalesOrders() {
       },
     );
 
-    // toast({
-    //   title: "Đã thêm dòng mới",
-    //   description: "Vui lòng nhập thông tin sản phẩm và ấn Lưu",
-    // });
-
     // Focus on SKU field of new row after a short delay
     setTimeout(() => {
       const visibleItems = orderItems.filter(
@@ -1861,7 +1847,7 @@ export default function SalesOrders() {
         }),
         queryClient.refetchQueries({
           queryKey: [
-            "https://edpos-be.onrender.com/api/orders/date-range",
+            "https://edpos-be.onrender.com/api/order-range",
             startDate,
             endDate,
             currentPage,
@@ -1877,11 +1863,6 @@ export default function SalesOrders() {
 
       // Close the selected invoice to show the updated list
       setSelectedInvoice(null);
-
-      // toast({
-      //   title: "Lưu thành công",
-      //   description: "Đơn hàng đã được cập nhật và danh sách đã được làm mới",
-      // });
     } catch (error) {
       console.error("❌ Error saving order:", error);
       toast({
@@ -2009,7 +1990,7 @@ export default function SalesOrders() {
       }
 
       // Calculate item subtotal
-      const itemSubtotal = quantity * unitPrice;
+      const itemSubtotal = unitPrice * quantity;
 
       // Calculate discount allocation
       const orderDiscount = parseFloat(
@@ -2020,7 +2001,7 @@ export default function SalesOrders() {
       if (orderDiscount > 0) {
         // Get all visible items (including new items with negative IDs)
         const visibleItems = orderItems.filter(
-          (item: any) => !prev[item.id]?._deleted,
+          (item: any) => !editedOrderItems[item.id]?._deleted,
         );
 
         // Calculate total before discount for ALL items (including this updated one)
@@ -2637,11 +2618,6 @@ export default function SalesOrders() {
         // Refresh orders list
         queryClient.invalidateQueries({ queryKey: ["https://edpos-be.onrender.com/api/orders"] });
         queryClient.invalidateQueries({ queryKey: ["https://edpos-be.onrender.com/api/tables"] });
-
-        // toast({
-        //   title: "Thanh toán thành công",
-        //   description: "Đơn hàng đã được cập nhật trạng thái thanh toán",
-        // });
 
         // For laundry business, show receipt modal after payment
         if (storeSettings?.businessType === "laundry") {
@@ -3493,7 +3469,49 @@ export default function SalesOrders() {
                                   </td>
                                   <td className="px-3 py-3 text-right">
                                     <div className="text-sm">
-                                      {formatCurrency(discount)}
+                                      {(() => {
+                                        // Get order items to calculate total discount
+                                        const orderDiscount = parseFloat(
+                                          item.discount || "0",
+                                        );
+
+                                        // If order has items loaded, check if discounts match
+                                        if (
+                                          item.items &&
+                                          Array.isArray(item.items) &&
+                                          item.items.length > 0
+                                        ) {
+                                          const sumOfItemDiscounts =
+                                            item.items.reduce(
+                                              (sum: number, orderItem: any) => {
+                                                return (
+                                                  sum +
+                                                  parseFloat(
+                                                    orderItem.discount || "0",
+                                                  )
+                                                );
+                                              },
+                                              0,
+                                            );
+
+                                          // Check if sum of item discounts equals order discount (with small tolerance)
+                                          const discountsMatch =
+                                            Math.abs(
+                                              orderDiscount -
+                                                sumOfItemDiscounts,
+                                            ) < 0.01;
+
+                                          if (discountsMatch) {
+                                            // Use sum of individual item discounts
+                                            return formatCurrency(
+                                              sumOfItemDiscounts,
+                                            );
+                                          }
+                                        }
+
+                                        // Otherwise use order-level discount
+                                        return formatCurrency(orderDiscount);
+                                      })()}
                                     </div>
                                   </td>
                                   <td className="px-3 py-3 text-right">
@@ -4302,9 +4320,7 @@ export default function SalesOrders() {
 
                                                               // Get edited values or use original
                                                               const editedItem =
-                                                                editedOrderItems[
-                                                                  item.id
-                                                                ] || {};
+                                                                item;
                                                               const unitPrice =
                                                                 parseFloat(
                                                                   editedItem.unitPrice !==
@@ -4332,8 +4348,7 @@ export default function SalesOrders() {
                                                               let itemDiscountAmount = 0;
 
                                                               if (
-                                                                editedItem.discount !==
-                                                                undefined
+                                                                editedItem.discount
                                                               ) {
                                                                 // Use the allocated discount from editedOrderItems
                                                                 itemDiscountAmount =
@@ -4385,79 +4400,14 @@ export default function SalesOrders() {
                                                                   totalBeforeDiscount >
                                                                   0
                                                                 ) {
-                                                                  const isLastItem =
-                                                                    index ===
-                                                                    visibleItems.length -
-                                                                      1;
-                                                                  const itemSubtotal =
-                                                                    unitPrice *
-                                                                    quantity;
-
-                                                                  if (
-                                                                    isLastItem
-                                                                  ) {
-                                                                    // Last item: total discount - sum of all previous discounts
-                                                                    const previousDiscounts =
-                                                                      visibleItems
-                                                                        .slice(
-                                                                          0,
-                                                                          -1,
-                                                                        )
-                                                                        .reduce(
-                                                                          (
-                                                                            sum,
-                                                                            item,
-                                                                          ) => {
-                                                                            const editedItem =
-                                                                              editedOrderItems[
-                                                                                item
-                                                                                  .id
-                                                                              ] ||
-                                                                              {};
-                                                                            const itPrice =
-                                                                              parseFloat(
-                                                                                editedItem.unitPrice !==
-                                                                                  undefined
-                                                                                  ? editedItem.unitPrice
-                                                                                  : item.unitPrice ||
-                                                                                      "0",
-                                                                              );
-                                                                            const itQty =
-                                                                              parseInt(
-                                                                                editedItem.quantity !==
-                                                                                  undefined
-                                                                                  ? editedItem.quantity
-                                                                                  : item.quantity ||
-                                                                                      "0",
-                                                                              );
-                                                                            const itSubtotal =
-                                                                              itPrice *
-                                                                              itQty;
-                                                                            return (
-                                                                              sum +
-                                                                              Math.floor(
-                                                                                (orderDiscount *
-                                                                                  itSubtotal) /
-                                                                                  totalBeforeDiscount,
-                                                                              )
-                                                                            );
-                                                                          },
-                                                                          0,
-                                                                        );
-                                                                    itemDiscountAmount =
-                                                                      Math.max(
-                                                                        0,
-                                                                        orderDiscount -
-                                                                          previousDiscounts,
-                                                                      );
-                                                                  } else {
-                                                                    itemDiscountAmount =
-                                                                      Math.floor(
-                                                                        (orderDiscount *
-                                                                          itemSubtotal) /
-                                                                          totalBeforeDiscount,
-                                                                      );
-                                                                  }
+                                                                  // Calculate proportional discount
+                                                                  itemDiscountAmount =
+                                                                    Math.round(
+                                                                      (orderDiscount *
+                                                                        (unitPrice *
+                                                                          quantity)) /
+                                                                        totalBeforeDiscount,
+                                                                    );
                                                                 }
                                                               }
 
@@ -4532,7 +4482,8 @@ export default function SalesOrders() {
                                                                                     .id
                                                                                 ]
                                                                                   .sku
-                                                                              : item.sku ||
+                                                                              : item.productSku ||
+                                                                                item.sku ||
                                                                                 product?.sku ||
                                                                                 ""
                                                                           }
@@ -4641,7 +4592,8 @@ export default function SalesOrders() {
                                                                       </div>
                                                                     ) : (
                                                                       <div className="truncate">
-                                                                        {item.sku ||
+                                                                        {item.productSku ||
+                                                                          item.sku ||
                                                                           product?.sku ||
                                                                           "-"}
                                                                       </div>
@@ -5101,7 +5053,7 @@ export default function SalesOrders() {
                                                                 newDiscount.toString(),
                                                               );
 
-                                                              // Phân bổ chiết khấu vào từng mặt hàng theo tỷ lệ thành tiền
+                                                              // Phân bổ chiết khấu vào từng mặt hàng theo tỷ lệ
                                                               const visibleItems =
                                                                 orderItems.filter(
                                                                   (item: any) =>
@@ -5526,7 +5478,7 @@ export default function SalesOrders() {
                                                                         sku:
                                                                           item.productSku ||
                                                                           item.sku ||
-                                                                          `SKU${item.productId}`,
+                                                                          `ITEM${item.productId}`,
                                                                         taxRate:
                                                                           parseFloat(
                                                                             item.taxRate ||
@@ -5584,7 +5536,7 @@ export default function SalesOrders() {
                                                         </Button>
                                                       )}
 
-                                                    {/* Nút Phát hành hóa đơn: hiển thị khi order.status != 'cancelled' && order.status == 'paid' && einvoiceStatus == 0 */}
+                                                    {/* Nút Phát hành hóa đơn: hiển thị khi order.status != 'paid' */}
                                                     {selectedInvoice.status !==
                                                       "cancelled" &&
                                                       selectedInvoice.status ===

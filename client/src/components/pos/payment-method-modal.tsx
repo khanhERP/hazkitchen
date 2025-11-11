@@ -75,6 +75,7 @@ export function PaymentMethodModal({
   receipt, // Receive receipt prop
   onReceiptReady, // Receive receipt ready callback
 }: PaymentMethodModalProps) {
+  const [domainName, setDomainName] = useState("");
   // CRITICAL DEBUG: Log all props when component mounts
   console.log(`🔍 PAYMENT MODAL PROPS DEBUG:`, {
     isOpen: isOpen,
@@ -377,16 +378,31 @@ export function PaymentMethodModal({
             qrResponse.qrData,
           );
 
-          // Use the raw qrData directly - it's already in the correct format for VietQR
-          const qrUrl = await QRCodeLib.toDataURL(qrResponse.qrData, {
-            width: 256,
-            margin: 2,
-            color: {
-              dark: "#000000",
-              light: "#FFFFFF",
-            },
-          });
-          setQrCodeUrl(qrUrl);
+          if (domainName === "hazkitchen.edpos.vn") {
+            const bankId = "970457"; // Shinhan Bank as default
+            const accountNo = "100153067989";
+            const accountName = "SIM KYU YONG";
+            const amount = Math.floor(parseFloat(receipt.total || "0"));
+            const description = `THANH TOAN ${receipt.orderNumber}`;
+
+            // VietQR format - using VietQR API
+            const qrUrl = `https://img.vietqr.io/image/${bankId}-${accountNo}-compact2.jpg?amount=${amount}&addInfo=${encodeURIComponent(description)}&accountName=${encodeURIComponent(accountName)}`;
+            setQrCodeUrl(qrUrl);
+          } else {
+            // Use the raw qrData directly - it's already in the correct format for VietQR
+            const qrUrl = await QRCodeLib.toDataURL(qrResponse.qrData, {
+              width: 256,
+              margin: 2,
+              color: {
+                dark: "#000000",
+                light: "#FFFFFF",
+              },
+            });
+            setQrCodeUrl(qrUrl);
+          }
+
+          // setQrCodeUrl(qrUrl);
+
           setShowQRCode(true);
 
           // Send QR payment info to customer display via WebSocket - ENHANCED VERSION
@@ -781,7 +797,7 @@ export function PaymentMethodModal({
         let orderItems = (orderInfo.items || cartItems || []).map(
           (item: any) => ({
             productId: item.productId || item.id,
-            quantity: parseInt(item.quantity?.toString() || "1"),
+            quantity: item.quantity?.toString() || "1",
             unitPrice: item.unitPrice || item.price?.toString() || "0",
             total:
               item.total ||
@@ -789,12 +805,19 @@ export function PaymentMethodModal({
                 parseFloat(item.price || "0") * parseInt(item.quantity || "1")
               ).toString(),
             notes: null,
-            discount: "0.00", // Will be calculated below
+            discount: item.discount.toString() || "0", // Will be calculated below
           }),
         );
 
+        const countProductDiscount = orderItems.reduce((acc: number, item) => {
+          return (acc += parseFloat(item.discount || "0"));
+        }, 0);
         // Distribute discount among items if discount exists
-        if (discountAmount > 0 && orderItems.length > 0) {
+        if (
+          discountAmount > 0 &&
+          discountAmount != countProductDiscount &&
+          orderItems.length > 0
+        ) {
           console.log("💰 Distributing discount among order items");
 
           // Calculate total amount (subtotal before discount)
@@ -812,7 +835,7 @@ export function PaymentMethodModal({
               const quantity = Number(item.quantity || 0);
               const itemTotal = unitPrice * quantity;
 
-              let itemDiscount = 0;
+              let itemDiscount = parseFloat(item.discount || "0");
 
               if (index === orderItems.length - 1) {
                 // Last item gets remaining discount to ensure total matches exactly
@@ -827,6 +850,7 @@ export function PaymentMethodModal({
 
               return {
                 ...item,
+                quantity: item.quantity.toString(),
                 discount: itemDiscount.toFixed(2),
               };
             });
@@ -1048,23 +1072,12 @@ export function PaymentMethodModal({
                   `❌ Error updating table status after ${method} payment:`,
                   tableError,
                 );
-                toast({
-                  title: "Cảnh báo",
-                  description: `Thanh toán thành công nhưng không thể cập nhật trạng thái bàn`,
-                  variant: "destructive",
-                });
               }
             } else {
               console.log(
                 "ℹ️ Order has no table, skipping table status update",
               );
             }
-
-            // Show success toast
-            // toast({
-            //   title: "Thanh toán thành công",
-            //   description: `Đã thanh toán bằng ${getPaymentMethodName(method)}`,
-            // });
 
             // Set payment method and show E-Invoice modal
             setSelectedPaymentMethod(method);
@@ -1129,7 +1142,7 @@ export function PaymentMethodModal({
       let orderItems = (orderInfo.items || cartItems || []).map(
         (item: any) => ({
           productId: item.productId || item.id,
-          quantity: parseInt(item.quantity?.toString() || "1"),
+          quantity: item.quantity?.toString() || "1",
           unitPrice: item.unitPrice || item.price?.toString() || "0",
           total:
             item.total ||
@@ -1137,12 +1150,19 @@ export function PaymentMethodModal({
               parseFloat(item.price || "0") * parseInt(item.quantity || "1")
             ).toString(),
           notes: null,
-          discount: item.discount || "0", // Will be calculated below
+          discount: item.discount.toString() || "0", // Will be calculated below
         }),
       );
 
+      const countProductDiscount = orderItems.reduce((acc: number, item) => {
+        return (acc += parseFloat(item.discount || "0"));
+      }, 0);
       // Distribute discount among items if discount exists
-      if (discountAmount > 0 && orderItems.length > 0) {
+      if (
+        discountAmount > 0 &&
+        discountAmount != countProductDiscount &&
+        orderItems.length > 0
+      ) {
         console.log("💰 Distributing QR discount among order items");
 
         // Calculate total amount (subtotal before discount)
@@ -1176,6 +1196,7 @@ export function PaymentMethodModal({
             item.total = itemTotal.toString();
             return {
               ...item,
+              quantity: quantity.toString(),
               discount: itemDiscount.toFixed(2),
             };
           });
@@ -1499,7 +1520,7 @@ export function PaymentMethodModal({
       let orderItems = (orderInfo.items || cartItems || []).map(
         (item: any) => ({
           productId: item.productId || item.id,
-          quantity: parseInt(item.quantity?.toString() || "1"),
+          quantity: item.quantity?.toString() || "1",
           unitPrice: item.unitPrice || item.price?.toString() || "0",
           total:
             item.total ||
@@ -1507,7 +1528,7 @@ export function PaymentMethodModal({
               parseFloat(item.price || "0") * parseInt(item.quantity || "1")
             ).toString(),
           notes: null,
-          discount: item.discount || "0",
+          discount: item.discount.toString() || "0",
         }),
       );
 
@@ -1676,12 +1697,6 @@ export function PaymentMethodModal({
           console.log("ℹ️ Order has no table, skipping table status update");
         }
 
-        // Show success toast
-        // toast({
-        //   title: "Thanh toán thành công",
-        //   description: "Đã thanh toán bằng nhiều phương thức",
-        // });
-
         setShowMultiPayment(false);
         setSelectedPaymentMethods([]);
         setSelectedPaymentMethod("multi");
@@ -1767,7 +1782,7 @@ export function PaymentMethodModal({
       let orderItems = (orderInfo.items || cartItems || []).map(
         (item: any) => ({
           productId: item.productId || item.id,
-          quantity: parseInt(item.quantity?.toString() || "1"),
+          quantity: item.quantity?.toString() || "1",
           unitPrice: item.unitPrice || item.price?.toString() || "0",
           total:
             item.total ||
@@ -1779,8 +1794,15 @@ export function PaymentMethodModal({
         }),
       );
 
+      const countProductDiscount = orderItems.reduce((acc: number, item) => {
+        return (acc += parseFloat(item.discount || "0"));
+      }, 0);
       // Distribute discount among items if discount exists
-      if (discountAmount > 0 && orderItems.length > 0) {
+      if (
+        discountAmount > 0 &&
+        discountAmount != countProductDiscount &&
+        orderItems.length > 0
+      ) {
         console.log("💰 Distributing cash discount among order items");
 
         // Calculate total amount (subtotal before discount)
@@ -1814,6 +1836,7 @@ export function PaymentMethodModal({
             item.total = itemTotal.toString();
             return {
               ...item,
+              quantity: quantity.toString(),
               discount: itemDiscount.toFixed(2),
             };
           });
@@ -2159,16 +2182,6 @@ export function PaymentMethodModal({
       console.log(
         "⏳ E-Invoice publish later completed - preparing receipt data",
       );
-      // toast({
-      //   title: `${t("common.success")}`,
-      //   description: `${t("einvoice.savedForLaterPublish")}. ${t("einvoice.displayingForPrint")}`,
-      // });
-    } else {
-      console.log("✅ E-Invoice published - preparing receipt data");
-      toast({
-        title: `${t("common.success")}`,
-        description: `${t("einvoice.electronicinvoicehasbeensuccessfully")}`,
-      });
     }
 
     // CRITICAL: Prepare complete receipt data
@@ -2295,6 +2308,8 @@ export function PaymentMethodModal({
 
   // Track when QR code is showing
   useEffect(() => {
+    const domainConnect = window.location.hostname;
+    setDomainName(domainConnect);
     if (showQRCode) {
       setWasShowingQRCode(true);
     }
@@ -3254,7 +3269,7 @@ export function PaymentMethodModal({
                   id: item.productId || item.id,
                   name: item.productName || item.name,
                   price: parseFloat(item.unitPrice || item.price || "0"),
-                  quantity: parseInt(item.quantity?.toString() || "1"),
+                  quantity: item.quantity?.toString() || "1",
                   discount: parseFloat(item.discount || "0"),
                   sku:
                     product?.sku ||

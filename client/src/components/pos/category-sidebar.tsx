@@ -17,8 +17,8 @@ import { useTranslation } from "@/lib/i18n";
 import type { Category, Product } from "@shared/schema";
 
 interface CategorySidebarProps {
-  selectedCategory: number | "all";
-  onCategorySelect: (categoryId: number | "all") => void;
+  selectedCategory: number | "all" | "bestsellers";
+  onCategorySelect: (categoryId: number | "all" | "bestsellers") => void;
   searchQuery: string;
   onSearchChange: (query: string) => void;
   onOpenProductManager: () => void;
@@ -44,68 +44,35 @@ export function CategorySidebar({
   const { toast } = useToast();
   const { t } = useTranslation();
 
-  const { data: categories = [] } = useQuery<Category[]>({
-    queryKey: ["https://edpos-be.onrender.com/api/categories"],
-  });
-
-  const { data: products = [] } = useQuery<Product[]>({
-    queryKey: ["https://edpos-be.onrender.com/api/products"],
+  // Fetch category counts using new optimized API
+  const { data: categoryCountsData } = useQuery({
+    queryKey: ["https://edpos-be.onrender.com/api/categories/product-counts"],
     queryFn: async () => {
-      const response = await fetch(`https://edpos-be.onrender.com/api/products`);
-      if (!response.ok) throw new Error("Failed to fetch products");
-      const allProducts = await response.json();
-
-      // Apply same filtering as ProductGrid - exclude raw materials and inactive products
-      return allProducts.filter((product: any) => {
-        const isNotRawMaterial =
-          product.productType !== 2 || product.productType !== 4;
-        const isActive = product.isActive !== false;
-        return isNotRawMaterial && isActive;
-      });
+      const response = await fetch(`https://edpos-be.onrender.com/api/categories/product-counts`);
+      if (!response.ok) throw new Error("Failed to fetch category counts");
+      return await response.json();
     },
   });
 
-  // Filter out expense categories
-  const filteredCategories = categories.filter((cat: Category) => {
-    const categoryName = cat.name.toLowerCase();
-    const isExpenseCategory = cat.id == 15 || cat.id == 17;
+  const filteredCategories = categoryCountsData?.categories || [];
+  const totalProducts = categoryCountsData?.totalProducts || 0;
 
-    // Get product count for this category
-    const categoryProducts = products.filter(
-      (p: Product) => p.categoryId === cat.id,
-    );
-    const hasProducts = categoryProducts.length > 0;
-
-    // Only show category if it has products AND is not an expense category
-    return hasProducts && !isExpenseCategory;
-  });
-
-  const getProductCountForCategory = (categoryId: number | "all") => {
+  const getProductCountForCategory = (categoryId: number | "all" | "bestsellers") => {
     if (categoryId === "all") {
-      // Count all products excluding those in expense categories
-      const expenseCategoryIds = categories
-        .filter((cat: Category) => {
-          return cat.id == 15 || cat.id == 17;
-        })
-        .map((cat: Category) => cat.id);
-
-      const count = products.filter(
-        (p: Product) => !expenseCategoryIds.includes(p.categoryId),
-      ).length;
-      console.log("All products count (excluding expenses):", count);
-      return count;
+      console.log("All products count (excluding expenses):", totalProducts);
+      return totalProducts;
     }
 
-    const categoryProducts = products.filter(
-      (p: Product) => p.categoryId === categoryId,
-    );
-    console.log(
-      `Category ${categoryId} products:`,
-      categoryProducts.length,
-      categoryProducts.map((p) => p.name),
-    );
+    if (categoryId === "bestsellers") {
+      // Bestsellers shows top 30 products, use totalProducts as fallback
+      console.log("Bestsellers count: 30");
+      return 30;
+    }
 
-    return categoryProducts.length;
+    const category = filteredCategories.find((cat: any) => cat.id === categoryId);
+    const count = category?.productCount || 0;
+    console.log(`Category ${categoryId} products:`, count);
+    return count;
   };
 
   const handleBarcodeScan = () => {
@@ -118,10 +85,6 @@ export function CategorySidebar({
       .then((product) => {
         if (product.id) {
           onAddToCart(product.id);
-          // toast({
-          //   title: t("pos.productScanned"),
-          //   description: `${product.name} ${t("pos.addedToCart")}`,
-          // });
         }
       })
       .catch(() => {
@@ -158,19 +121,16 @@ export function CategorySidebar({
           </h3>
           <div className="space-y-2">
             <button
-              onClick={() => onCategorySelect("all")}
+              onClick={() => onCategorySelect("bestsellers")}
               className={`w-full text-left px-3 py-2 rounded-xl transition-colors duration-200 flex items-center justify-between ${
-                selectedCategory === "all"
+                selectedCategory === "bestsellers"
                   ? "bg-green-50 text-green-600 border-l-4 border-green-500"
                   : "hover:bg-gray-50"
               }`}
             >
               <span className="flex items-center">
-                <Grid3X3 className="w-5 mr-2 text-gray-500" size={16} />
-                {t("pos.allProducts")}
-              </span>
-              <span className="text-xs bg-gray-200 pos-text-secondary px-2 py-1 rounded-full">
-                {getProductCountForCategory("all")}
+                <BarChart3 className="w-5 mr-2 text-gray-500" size={16} />
+                {t("pos.bestsellers")}
               </span>
             </button>
 

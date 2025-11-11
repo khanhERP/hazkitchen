@@ -53,11 +53,11 @@ export function RightSidebar() {
       label: t("nav.tablesSales"),
       href: "/tables",
     },
-    // {
-    //   icon: ShoppingCart,
-    //   label: t("nav.directSales"),
-    //   href: "/pos",
-    // },
+    {
+      icon: ShoppingCart,
+      label: t("nav.directSales"),
+      href: "/pos",
+    },
     {
       icon: FileText,
       label: t("nav.salesOrders"),
@@ -110,9 +110,10 @@ export function RightSidebar() {
   const menuItems = baseMenuItems.filter((item) => {
     // Hide tables (Bán theo bàn) for retail and laundry business types
     if (
-      item.href === "/tables" &&
-      (storeSettings?.businessType === "retail" ||
-        storeSettings?.businessType === "laundry")
+      (item.href === "/tables" &&
+        (storeSettings?.businessType === "retail" ||
+          storeSettings?.businessType === "laundry")) ||
+      (item.href === "/pos" && storeSettings?.businessType === "restaurant")
     ) {
       return false;
     }
@@ -222,7 +223,7 @@ export function RightSidebar() {
         <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-green-200 bg-green-50">
           <div className="text-sm text-gray-500 text-center">
             <div className="font-medium">EDPOS System</div>
-            <div className="text-xs opacity-75">07/11/2025</div>
+            <div className="text-xs opacity-75">11/11/2025</div>
           </div>
         </div>
       )}

@@ -67,6 +67,7 @@ export interface POSTranslations {
   isActive: string;
   addProductsToStart: string;
   allProducts: string;
+  bestsellers: string;
   popular: string;
   lowStock: string;
   stockCount: string;
@@ -175,6 +176,8 @@ export interface POSTranslations {
   orderPlacedSuccess: string;
   orderPlacedSuccessDesc: string;
   customerPhonePlaceholder: string;
+  showingAllProducts: string;
+  bestsellersEmptyState: string;
 }
 
 export const posTranslations: { [key: string]: POSTranslations } = {
@@ -249,6 +252,7 @@ export const posTranslations: { [key: string]: POSTranslations } = {
     isActive: "활성 상태",
     addProductsToStart: "시작하려면 상품을 추가하세요",
     allProducts: "모든 상품",
+    bestsellers: "베스트셀러",
     popular: "인기",
     lowStock: "재고 부족",
     stockCount: "재고 수량",
@@ -320,6 +324,8 @@ export const posTranslations: { [key: string]: POSTranslations } = {
     tax: "세금:",
     total: "총계:",
     totalAmount: "금액:",
+    paymentMethod: "결제 방법",
+    amountReceived: "받은 금액",
     phone: "전화:",
 
     // Printer configuration
@@ -360,6 +366,8 @@ export const posTranslations: { [key: string]: POSTranslations } = {
     customerRequired: "고객을 선택해야 주문할 수 있습니다.",
     orderPlacedSuccess: "주문이 성공적으로 접수되었습니다.",
     orderPlacedSuccessDesc: "주문이 '주문됨' 상태로 저장되었습니다.",
+    showingAllProducts: "모든 {{count}}개 제품 표시 중",
+    bestsellersEmptyState: "매출이 발생하면 '베스트셀러' 데이터가 자동으로 업데이트됩니다.",
   },
   en: {
     title: "POS System",
@@ -432,6 +440,7 @@ export const posTranslations: { [key: string]: POSTranslations } = {
     isActive: "Active",
     addProductsToStart: "Add products to get started",
     allProducts: "All Products",
+    bestsellers: "Best Sellers",
     popular: "Popular",
     lowStock: "Low Stock",
     stockCount: "Stock Count",
@@ -543,6 +552,8 @@ export const posTranslations: { [key: string]: POSTranslations } = {
     customerRequired: "Customer selection is required before placing an order.",
     orderPlacedSuccess: "Order successfully placed.",
     orderPlacedSuccessDesc: "The order has been saved with a 'placed' status.",
+    showingAllProducts: "Showing all {{count}} products",
+    bestsellersEmptyState: "Bestseller data will be automatically updated when the store generates sales.",
   },
   vi: {
     title: "Hệ thống POS",
@@ -615,6 +626,7 @@ export const posTranslations: { [key: string]: POSTranslations } = {
     isActive: "Hoạt động",
     addProductsToStart: "Thêm sản phẩm để bắt đầu",
     allProducts: "Tất cả sản phẩm",
+    bestsellers: "Sản phẩm bán chạy",
     popular: "Phổ biến",
     lowStock: "Tồn kho thấp",
     stockCount: "Số lượng tồn kho",
@@ -726,5 +738,7 @@ export const posTranslations: { [key: string]: POSTranslations } = {
     customerRequired: "Vui lòng chọn khách hàng trước khi đặt hàng.",
     orderPlacedSuccess: "Đặt hàng thành công",
     orderPlacedSuccessDesc: "Đơn hàng đã được lưu với trạng thái đặt hàng",
+    showingAllProducts: "Hiển thị tất cả {{count}} sản phẩm",
+    bestsellersEmptyState: "Dữ liệu \"Sản phẩm bán chạy\" sẽ được cập nhật tự động khi cửa hàng phát sinh doanh số.",
   },
 };

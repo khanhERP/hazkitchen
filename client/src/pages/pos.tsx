@@ -225,10 +225,10 @@ export default function POS({ onLogout }: POSPageProps) {
       return {
         id: item.id,
         name: item.name || `Product ${item.id}`,
-        price: itemPrice,
-        quantity: itemQuantity,
+        price: itemPrice.toString(),
+        quantity: itemQuantity.toString(), // Convert to string for schema validation
         sku: item.sku || `ITEM${String(item.id).padStart(3, "0")}`,
-        taxRate: itemTaxRate,
+        taxRate: itemTaxRate.toString(),
       };
     });
 
@@ -308,13 +308,18 @@ export default function POS({ onLogout }: POSPageProps) {
             onUpdateQuantity={updateQuantity}
             onRemoveItem={removeFromCart}
             onClearCart={clearCart}
-            onCheckout={handleCheckout}
+            onCheckout={processCheckout}
             isProcessing={isProcessingCheckout}
-            orders={orders}
+            orders={orders.map((order) => ({
+              id: order.id,
+              name: `Đơn ${orders.indexOf(order) + 1}`,
+              cart: order.cart,
+            }))}
             activeOrderId={activeOrderId}
             onCreateNewOrder={createNewOrder}
             onSwitchOrder={switchOrder}
             onRemoveOrder={removeOrder}
+            onAddToCart={addToCart}
           />
         </div>
 

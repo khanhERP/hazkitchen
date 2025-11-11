@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useLocation, useRoute } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
@@ -136,6 +136,12 @@ export default function PurchaseFormPage({
   const [isNewProductDialogOpen, setIsNewProductDialogOpen] = useState(false);
   const [selectedItemId, setSelectedItemId] = useState<number | null>(null);
   const [selectedProductIndex, setSelectedProductIndex] = useState(0);
+  const [productPage, setProductPage] = useState(1);
+  const [productPageSize, setProductPageSize] = useState(50); // Increased from 20 to 50
+  const [allProductsFromAPI, setAllProductsFromAPI] = useState<any[]>([]);
+  const [hasMoreProducts, setHasMoreProducts] = useState(true);
+  const loadMoreRef = useRef<HTMLDivElement>(null);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [selectedItems, setSelectedItems] = useState<
     Array<{
       productId: number;
@@ -265,23 +271,95 @@ export default function PurchaseFormPage({
 
 
   // Fetch products for selection - only active products, exclude expenses
-  const { data: allProducts = [] } = useQuery({
-    queryKey: ["https://edpos-be.onrender.com/api/products"],
-    select: (data: any[]) =>
-      (data || [])
-        .filter((product: any) => 
-          product.isActive && 
-          product.productType !== 4 // Exclude expense type products
-        )
-        .map((product: any) => ({
-          id: product.id,
-          name: product.name,
-          sku: product.sku,
-          stock: product.stock,
-          unitPrice: Number(product.price) || 0,
-        })),
-    staleTime: 5 * 60 * 1000, // Cache for 5 minutes
+  const { data: productsResponse, isLoading: isLoadingProducts, isFetching: isFetchingProducts } = useQuery({
+    queryKey: ["https://edpos-be.onrender.com/api/products", { page: productPage, limit: productPageSize, search: productSearch }],
+    queryFn: async () => {
+      const params = new URLSearchParams({
+        page: productPage.toString(),
+        limit: productPageSize.toString(),
+      });
+      if (productSearch) {
+        params.append('search', productSearch);
+      }
+      const response = await fetch(`https://edpos-be.onrender.com/api/products?${params.toString()}`);
+      return response.json();
+    },
+    keepPreviousData: true,
   });
+
+  // Accumulate products when new data arrives
+  useEffect(() => {
+    if (productsResponse?.products) {
+      if (productPage === 1) {
+        // Reset list when starting fresh or searching
+        const filteredProducts = productsResponse.products
+          .filter((product: any) => 
+            product.isActive && 
+            product.productType !== 4
+          )
+          .map((product: any) => ({
+            id: product.id,
+            name: product.name,
+            sku: product.sku,
+            stock: product.stock,
+            unitPrice: Number(product.price) || 0,
+          }));
+        setAllProductsFromAPI(filteredProducts);
+      } else {
+        // Append to existing list
+        const previousCount = allProductsFromAPI.length;
+        const newProducts = productsResponse.products
+          .filter((product: any) => 
+            product.isActive && 
+            product.productType !== 4
+          )
+          .map((product: any) => ({
+            id: product.id,
+            name: product.name,
+            sku: product.sku,
+            stock: product.stock,
+            unitPrice: Number(product.price) || 0,
+          }));
+        
+        setAllProductsFromAPI(prev => {
+          const updated = [...prev, ...newProducts];
+          
+          // Scroll to first new product after state update
+          setTimeout(() => {
+            const firstNewProductElement = document.querySelector(`[data-product-index="${previousCount}"]`);
+            if (firstNewProductElement) {
+              firstNewProductElement.scrollIntoView({ 
+                behavior: 'smooth', 
+                block: 'start',
+                inline: 'nearest'
+              });
+              console.log(`📍 Auto-scrolled to product #${previousCount + 1}`);
+            }
+          }, 100);
+          
+          return updated;
+        });
+      }
+      setHasMoreProducts(productsResponse.pagination?.hasNext || false);
+      setIsLoadingMore(false); // Reset loading flag
+    }
+  }, [productsResponse, productPage, allProductsFromAPI.length]);
+
+  // Reset page when search changes - debounced to avoid flickering
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      setProductPage(1);
+      setAllProductsFromAPI([]);
+      setProductPageSize(50); // Reset page size to initial value
+    }, 300); // 300ms debounce
+    
+    return () => clearTimeout(timeoutId);
+  }, [productSearch]);
+
+  // Extract and filter products from accumulated data
+  const allProducts = useMemo(() => {
+    return allProductsFromAPI;
+  }, [allProductsFromAPI]);
 
   // Filter products based on search
   const products = useMemo(() => {
@@ -292,6 +370,46 @@ export default function PurchaseFormPage({
         product.sku?.toLowerCase().includes(productSearch.toLowerCase()),
     );
   }, [allProducts, productSearch]);
+
+  // Intersection Observer for infinite scroll - ONLY at bottom, increase pageSize by 10
+  useEffect(() => {
+    if (!hasMoreProducts || isFetchingProducts || isLoadingMore) return;
+    
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const target = entries[0];
+        // Only trigger when element is fully visible (at bottom of scroll)
+        if (target.isIntersecting) {
+          console.log('📜 Reached bottom - Loading more products');
+          console.log(`📊 Current count: ${allProductsFromAPI.length}, PageSize: ${productPageSize} → ${productPageSize + 10}`);
+          
+          setIsLoadingMore(true);
+          
+          // Increase pageSize by 10
+          setProductPageSize(prev => prev + 10);
+          
+          // Load next page
+          setProductPage(prev => prev + 1);
+        }
+      },
+      { 
+        threshold: 1.0, // Only trigger when element is 100% visible (reached bottom)
+        rootMargin: '0px' // No early loading - wait until actually at bottom
+      }
+    );
+
+    const currentRef = loadMoreRef.current;
+    if (currentRef) {
+      observer.observe(currentRef);
+      console.log('👀 Observing scroll bottom trigger');
+    }
+
+    return () => {
+      if (currentRef) {
+        observer.unobserve(currentRef);
+      }
+    };
+  }, [hasMoreProducts, isFetchingProducts, isLoadingMore, allProductsFromAPI.length, productPageSize]);
 
   // Fetch existing purchase order for edit mode
   const { data: existingOrder, isLoading: isLoadingOrder } = useQuery({
@@ -566,11 +684,6 @@ export default function PurchaseFormPage({
       return response.json();
     },
     onSuccess: (newProduct) => {
-      // toast({
-      //   title: t("common.success"),
-      //   description:
-      //     t("inventory.productCreated") || "Product created successfully",
-      // });
 
       // Update products query cache
       queryClient.setQueryData(["https://edpos-be.onrender.com/api/products"], (old: any[]) => {
@@ -1392,13 +1505,6 @@ export default function PurchaseFormPage({
         }
       }
 
-      // toast({
-      //   title: "Thành công",
-      //   description: isEditMode
-      //     ? "Phiếu nhập hàng đã được cập nhật thành công"
-      //     : "Phiếu nhập hàng đã được tạo thành công",
-      // });
-
       // Refresh queries and navigate
       queryClient.invalidateQueries({ queryKey: ["https://edpos-be.onrender.com/api/purchase-receipts"] });
       queryClient.invalidateQueries({ queryKey: ["https://edpos-be.onrender.com/api/suppliers"] });
@@ -1437,11 +1543,6 @@ export default function PurchaseFormPage({
       currency: "KRW",
     }).format(amount);
   };
-
-  // Check if products are loading
-  const { isLoading: isLoadingProducts } = useQuery({
-    queryKey: ["https://edpos-be.onrender.com/api/products"],
-  });
 
   // Show loading screen when fetching existing order or products
   if (Boolean(id) && isLoadingOrder) {
@@ -1833,6 +1934,211 @@ export default function PurchaseFormPage({
                           </div>
                         )}
                       </FormItem>
+
+                      {/* Product Selection Dialog - Improved with pagination */}
+                      <Dialog
+                        open={isProductDialogOpen}
+                        onOpenChange={(open) => {
+                          setIsProductDialogOpen(open);
+                          if (!open) {
+                            setSelectedItemId(null);
+                            setSelectedProductIndex(0);
+                            setProductSearch("");
+                          }
+                        }}
+                      >
+                        <DialogContent className="max-w-3xl h-[85vh] flex flex-col p-0 gap-0 overflow-hidden">
+                          <DialogHeader className="px-6 pt-6 pb-4 border-b shrink-0">
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <DialogTitle className="text-lg font-bold">
+                                  {t("purchases.selectProducts")}
+                                </DialogTitle>
+                                <DialogDescription className="text-sm text-gray-600">
+                                  Tìm kiếm và chọn sản phẩm để thêm vào phiếu nhập
+                                </DialogDescription>
+                              </div>
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setIsNewProductDialogOpen(true)}
+                                className="flex items-center gap-2"
+                                data-testid="button-add-new-product"
+                              >
+                                <Plus className="h-4 w-4" />
+                                {t("inventory.addProduct")}
+                              </Button>
+                            </div>
+                          </DialogHeader>
+
+                          {/* Search Input */}
+                          <div className="px-6 py-3 border-b shrink-0">
+                            <div className="relative">
+                              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                              <Input
+                                placeholder="Tìm theo tên hoặc mã sản phẩm..."
+                                value={productSearch}
+                                onChange={(e) => {
+                                  setProductSearch(e.target.value);
+                                  setSelectedProductIndex(0);
+                                  // Don't reset page here - let useEffect handle it with debounce
+                                }}
+                                onKeyDown={(e) => {
+                                  if (e.key === "ArrowDown") {
+                                    e.preventDefault();
+                                    setSelectedProductIndex((prev) =>
+                                      prev < products.length - 1 ? prev + 1 : prev,
+                                    );
+                                  } else if (e.key === "ArrowUp") {
+                                    e.preventDefault();
+                                    setSelectedProductIndex((prev) =>
+                                      prev > 0 ? prev - 1 : 0,
+                                    );
+                                  } else if (e.key === "Enter" && products.length > 0) {
+                                    e.preventDefault();
+                                    handleProductSelect(products[selectedProductIndex]);
+                                  }
+                                }}
+                                className="pl-10"
+                                data-testid="input-product-search"
+                                autoFocus
+                              />
+                            </div>
+                          </div>
+
+                          {/* Products Count */}
+                          <div className="px-6 py-2 border-b text-sm text-gray-600 shrink-0">
+                            {isLoadingProducts ? (
+                              <span className="flex items-center gap-2">
+                                <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-gray-600"></div>
+                                Đang tải sản phẩm...
+                              </span>
+                            ) : productsResponse && productsResponse.pagination ? (
+                              <span>
+                                Hiển thị <strong>{products.length}</strong> / <strong>{productsResponse.pagination.totalCount}</strong> sản phẩm
+                                {productSearch && ` cho "${productSearch}"`}
+                              </span>
+                            ) : (
+                              <span>
+                                Tìm thấy <strong>{products.length}</strong> sản phẩm
+                                {productSearch && ` cho "${productSearch}"`}
+                              </span>
+                            )}
+                          </div>
+
+                          {/* Products List - Scrollable */}
+                          <div className="flex-1 overflow-y-auto min-h-0">
+                            {isLoadingProducts && allProducts.length === 0 ? (
+                              <div className="flex items-center justify-center py-12">
+                                <div className="text-center">
+                                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-600 mx-auto mb-4"></div>
+                                  <p className="text-gray-600">Đang tải danh sách sản phẩm...</p>
+                                </div>
+                              </div>
+                            ) : products.length === 0 ? (
+                              <div className="flex items-center justify-center py-12">
+                                <div className="text-center">
+                                  <Package className="h-12 w-12 text-gray-300 mx-auto mb-4" />
+                                  <p className="text-gray-600 font-medium mb-2">
+                                    {productSearch
+                                      ? "Không tìm thấy sản phẩm phù hợp"
+                                      : "Chưa có sản phẩm nào"}
+                                  </p>
+                                  <p className="text-sm text-gray-500">
+                                    {productSearch
+                                      ? "Thử tìm kiếm với từ khóa khác"
+                                      : "Thêm sản phẩm mới để bắt đầu"}
+                                  </p>
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="divide-y">
+                                {products.map((product: any, index: number) => {
+                                // Mark the first product of newly loaded batch
+                                const isFirstOfNewBatch = index === allProductsFromAPI.length - (productsResponse?.products?.length || 0);
+                                
+                                return (
+                                  <div
+                                    key={product.id}
+                                    data-product-index={index}
+                                    className={`flex items-center justify-between p-4 cursor-pointer transition-colors ${
+                                      index === selectedProductIndex
+                                        ? "bg-blue-50 border-l-4 border-l-blue-500"
+                                        : "hover:bg-gray-50"
+                                    } ${isFirstOfNewBatch ? 'scroll-mt-4' : ''}`}
+                                    onClick={() => handleProductSelect(product)}
+                                    data-testid={`product-${product.id}`}
+                                  >
+                                    <div className="flex-1">
+                                      <div className="flex items-center gap-2 mb-1">
+                                        <h4 className="font-medium text-gray-900">
+                                          {product.name}
+                                        </h4>
+                                        {product.sku && (
+                                          <Badge variant="outline" className="text-xs">
+                                            {product.sku}
+                                          </Badge>
+                                        )}
+                                      </div>
+                                      <div className="flex items-center gap-4 text-sm text-gray-600">
+                                        <span className="flex items-center gap-1">
+                                          <Package className="h-3 w-3" />
+                                          Tồn kho: {product.stock || 0}
+                                        </span>
+                                      </div>
+                                    </div>
+                                    <div className="text-right">
+                                      <p className="font-semibold text-green-600 text-lg">
+                                        {(product.unitPrice || 0).toLocaleString("vi-VN")} ₫
+                                      </p>
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                                
+                                {/* Infinite Scroll Trigger - Inside scrollable area at bottom */}
+                                {hasMoreProducts && (
+                                  <div ref={loadMoreRef} className="py-4 text-center">
+                                    {isFetchingProducts || isLoadingMore ? (
+                                      <div className="flex items-center justify-center gap-2">
+                                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-green-600"></div>
+                                        <span className="text-sm text-gray-600">
+                                          Đang tải thêm...
+                                        </span>
+                                      </div>
+                                    ) : (
+                                      <div className="text-xs text-blue-500">
+                                        Cuộn xuống để tải thêm...
+                                      </div>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Status Footer */}
+                          <div className="px-6 py-3 border-t bg-gray-50 shrink-0">
+                            <div className="text-xs text-gray-600 text-center">
+                              {isFetchingProducts && allProducts.length > 0 ? (
+                                <span className="flex items-center justify-center gap-2">
+                                  <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-gray-600"></div>
+                                  Đang tải... (Trang {productPage}/{Math.ceil((productsResponse?.pagination?.totalCount || 0) / productPageSize)})
+                                </span>
+                              ) : hasMoreProducts ? (
+                                <span>
+                                  Hiển thị {allProducts.length} / {productsResponse?.pagination?.totalCount} sản phẩm
+                                </span>
+                              ) : (
+                                <span className="text-green-600 font-medium">
+                                  ✓ Đã hiển thị tất cả {allProducts.length} sản phẩm
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </DialogContent>
+                      </Dialog>
                     </div>
 
                     {/* Notes */}
@@ -2023,126 +2329,7 @@ export default function PurchaseFormPage({
                           {t("purchases.itemsDescription")}
                         </CardDescription>
                       </div>
-                      <Dialog
-                        open={isProductDialogOpen}
-                        onOpenChange={(open) => {
-                          setIsProductDialogOpen(open);
-                          if (!open) {
-                            setSelectedItemId(null);
-                            setSelectedProductIndex(0);
-                            setProductSearch("");
-                          }
-                        }}
-                      >
-                        <DialogTrigger asChild>
-                          <div style={{ display: "none" }}>
-                            <Button size="sm" data-testid="button-add-item">
-                              <Plus className="h-4 w-4 mr-2" />
-                              {t("purchases.addItem")}
-                            </Button>
-                          </div>
-                        </DialogTrigger>
-                        <DialogContent className="max-w-2xl">
-                          <DialogHeader>
-                            <div className="flex items-center justify-between">
-                              <div>
-                                <DialogTitle>
-                                  {t("purchases.selectProducts")}
-                                </DialogTitle>
-                                <DialogDescription>
-                                  {t("purchases.selectProductsDescription")}
-                                </DialogDescription>
-                              </div>
-                              <Button
-                                type="button"
-                                variant="outline"
-                                onClick={() => setIsNewProductDialogOpen(true)}
-                                className="flex items-center gap-2"
-                                data-testid="button-add-new-product"
-                              >
-                                <Plus className="h-4 w-4" />
-                                {t("inventory.addProduct")}
-                              </Button>
-                            </div>
-                          </DialogHeader>
-                          <div className="space-y-4">
-                            <div className="relative">
-                              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                              <Input
-                                placeholder={t("purchases.searchProducts")}
-                                value={productSearch}
-                                onChange={(e) => {
-                                  setProductSearch(e.target.value);
-                                  setSelectedProductIndex(0);
-                                }}
-                                onKeyDown={(e) => {
-                                  if (e.key === "ArrowDown") {
-                                    e.preventDefault();
-                                    setSelectedProductIndex((prev) =>
-                                      prev < products.length - 1
-                                        ? prev + 1
-                                        : prev,
-                                    );
-                                  } else if (e.key === "ArrowUp") {
-                                    e.preventDefault();
-                                    setSelectedProductIndex((prev) =>
-                                      prev > 0 ? prev - 1 : 0,
-                                    );
-                                  } else if (
-                                    e.key === "Enter" &&
-                                    products.length > 0
-                                  ) {
-                                    e.preventDefault();
-                                    handleProductSelect(
-                                      products[selectedProductIndex],
-                                    );
-                                  }
-                                }}
-                                className="pl-10"
-                                data-testid="input-product-search"
-                                autoFocus
-                              />
-                            </div>
-                            <div className="max-h-96 overflow-y-auto">
-                              <div className="grid gap-2">
-                                {products.map((product: any, index: number) => (
-                                  <div
-                                    key={product.id}
-                                    data-product-index={index}
-                                    className={`flex items-center justify-between p-3 border rounded-lg cursor-pointer transition-colors ${
-                                      index === selectedProductIndex
-                                        ? "bg-blue-50 border-blue-500"
-                                        : "hover:bg-gray-50"
-                                    }`}
-                                    onClick={() => handleProductSelect(product)}
-                                    data-testid={`product-${product.id}`}
-                                  >
-                                    <div>
-                                      <p className="font-medium">
-                                        {product.name}
-                                      </p>
-                                      {product.sku && (
-                                        <p className="text-sm text-gray-500">
-                                          SKU: {product.sku}
-                                        </p>
-                                      )}
-                                    </div>
-                                    <div className="text-right">
-                                      <p className="font-medium">
-                                        {formatCurrency(product.unitPrice || 0)}
-                                      </p>
-                                      <p className="text-sm text-gray-500">
-                                        {t("inventory.stock")}:{" "}
-                                        {product.stock || 0}
-                                      </p>
-                                    </div>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          </div>
-                        </DialogContent>
-                      </Dialog>
+
                     </div>
                   </CardHeader>
                   <CardContent>
@@ -2875,6 +3062,8 @@ export default function PurchaseFormPage({
             </div>
           </form>
         </Form>
+
+        {/* Product Selection Dialog is now moved inside form section above */}
 
         {/* New Product Dialog */}
         <Dialog

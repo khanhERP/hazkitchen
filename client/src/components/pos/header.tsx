@@ -12,6 +12,7 @@ import {
   Settings as SettingsIcon,
   Building2,
   ClipboardCheck,
+  ChefHat,
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import logoPath from "@assets/EDPOS_1753091767028.png";
@@ -288,6 +289,24 @@ export function POSHeader({ onLogout }: POSHeaderProps) {
                       >
                         <Utensils className="w-4 h-4 mr-3" />
                         {t("nav.tablesSales")}
+                      </button>
+                    </Link>
+                  )}
+
+                  {/* Màn hình Bếp */}
+                  {storeSettings?.businessType === "restaurant" && (
+                    <Link href="/kitchen">
+                      <button
+                        className={`w-full flex items-center px-4 py-2 text-left hover:bg-green-50 transition-colors ${
+                          location === "/kitchen"
+                            ? "bg-green-50 text-green-600"
+                            : "text-gray-700"
+                        }`}
+                        onClick={() => setPosMenuOpen(false)}
+                        data-testid="button-nav-kitchen"
+                      >
+                        <ChefHat className="w-4 h-4 mr-3" />
+                        {t("kitchen.title")}
                       </button>
                     </Link>
                   )}

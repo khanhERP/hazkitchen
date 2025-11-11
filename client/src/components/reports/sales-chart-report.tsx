@@ -189,8 +189,6 @@ export function SalesChartReport() {
                 order.status === "ready" ||
                 order.status === "served"
               );
-            } else if (orderStatusFilter === "cancelled") {
-              return order.status === "cancelled";
             }
             return true;
           });
@@ -746,7 +744,7 @@ export function SalesChartReport() {
         ? Number(order.subtotal || 0) + Number(order.tax || 0)
         : order.subtotal,
       discount: order.discount || 0,
-      paymentMethod: order.paymentMethod || "cash",
+      paymentMethod: order.paymentMethod || "",
       createdAt: order.createdAt || order.orderedAt || order.paidAt,
       created_at: order.createdAt || order.orderedAt || order.paidAt,
       customerName: order.customerName,
@@ -2194,10 +2192,7 @@ export function SalesChartReport() {
           selectedFloor;
 
       const dateMatch = orderDate >= start && orderDate <= end;
-      let statusMatch =
-        order.status === "paid" ||
-        order.status === "completed" ||
-        order.status === "cancelled";
+      let statusMatch = order.status === "paid" || order.status === "completed";
       if (orderStatusFilter !== "all") {
         if (orderStatusFilter == "completed") {
           statusMatch = order.status === "paid" || order.status === "completed";
@@ -4227,9 +4222,7 @@ export function SalesChartReport() {
 
       // Include paid, completed, and cancelled orders
       const validOrderStatus =
-        order.status === "paid" ||
-        order.status === "completed" ||
-        order.status === "cancelled";
+        order.status === "paid" || order.status === "completed";
 
       return (
         dateMatch &&
@@ -4909,10 +4902,7 @@ export function SalesChartReport() {
           selectedFloor;
 
       return (
-        (order.status === "paid" ||
-          order.status === "completed" ||
-          order.status === "cancelled") &&
-        floorMatch
+        (order.status === "paid" || order.status === "completed") && floorMatch
       );
     });
 

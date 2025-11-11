@@ -31,6 +31,7 @@ interface ShoppingCartProps {
   onCreateNewOrder?: () => void;
   onSwitchOrder?: (orderId: string) => void;
   onRemoveOrder?: (orderId: string) => void;
+  onAddToCart: (productId: number) => void;
 }
 
 export function ShoppingCart({
@@ -45,6 +46,7 @@ export function ShoppingCart({
   onCreateNewOrder,
   onSwitchOrder,
   onRemoveOrder,
+  onAddToCart,
 }: ShoppingCartProps) {
   const [paymentMethod, setPaymentMethod] = useState<string>("bankTransfer");
   const [amountReceived, setAmountReceived] = useState<string>("");
@@ -93,6 +95,13 @@ export function ShoppingCart({
     [orderId: string]: any | null;
   }>({});
 
+  // State for SKU search
+  const [skuSearch, setSkuSearch] = useState("");
+  const [skuSearchResults, setSkuSearchResults] = useState<any[]>([]);
+  const [selectedSkuIndex, setSelectedSkuIndex] = useState(0);
+  const [isAddingProduct, setIsAddingProduct] = useState(false);
+  const skuSearchDebounceTimer = useRef<NodeJS.Timeout | null>(null);
+
   // Fetch store settings to check price_include_tax setting
   const { data: storeSettings } = useQuery({
     queryKey: ["store-settings"],
@@ -122,73 +131,17 @@ export function ShoppingCart({
     const unitPrice = parseFloat(item.price);
     const quantity = item.quantity;
     const taxRate = parseFloat(item.taxRate || "0") / 100;
-    const orderDiscount = parseFloat(currentOrderDiscount || "0");
 
     // Calculate discount for this item
+    // Priority: Individual item discount > Order-level discount
     let itemDiscountAmount = 0;
-    if (orderDiscount > 0) {
-      const totalBeforeDiscount = cart.reduce((total, cartItem) => {
-        return total + parseFloat(cartItem.price) * cartItem.quantity;
-      }, 0);
 
-      const currentIndex = cart.findIndex(
-        (cartItem) => cartItem.id === item.id,
-      );
-      const isLastItem = currentIndex === cart.length - 1;
-
-      if (isLastItem) {
-        // Last item: total discount - sum of all previous discounts
-        let previousDiscounts = 0;
-        for (let i = 0; i < cart.length - 1; i++) {
-          const prevItem = cart[i];
-          const prevItemTotal = parseFloat(prevItem.price) * prevItem.quantity;
-          const prevItemDiscount =
-            totalBeforeDiscount > 0
-              ? Math.round(
-                  (orderDiscount * prevItemTotal) / totalBeforeDiscount,
-                )
-              : 0;
-          previousDiscounts += prevItemDiscount;
-        }
-        itemDiscountAmount = orderDiscount - previousDiscounts;
-      } else {
-        // Regular calculation for non-last items
-        const itemTotal = unitPrice * quantity;
-        itemDiscountAmount =
-          totalBeforeDiscount > 0
-            ? Math.round((orderDiscount * itemTotal) / totalBeforeDiscount)
-            : 0;
-      }
-    }
-
-    if (priceIncludesTax && taxRate > 0) {
-      // When price includes tax:
-      // giá bao gồm thuế = (price - (discount/quantity)) * quantity
-      const discountPerUnit = itemDiscountAmount / quantity;
-      const adjustedPrice = Math.max(0, unitPrice - discountPerUnit);
-      const giaGomThue = adjustedPrice * quantity;
-      // subtotal = giá bao gồm thuế / (1 + (taxRate / 100)) (làm tròn)
-      const itemSubtotal = Math.round(giaGomThue / (1 + taxRate));
-      return sum + itemSubtotal;
+    // Check if item has its own discount
+    if (item.discount && parseFloat(item.discount.toString()) > 0) {
+      itemDiscountAmount = parseFloat(item.discount.toString());
     } else {
-      // When price doesn't include tax:
-      // subtotal = (price - (discount/quantity)) * quantity
-      const discountPerUnit = itemDiscountAmount / quantity;
-      const adjustedPrice = Math.max(0, unitPrice - discountPerUnit);
-      const itemSubtotal = adjustedPrice * quantity;
-      return sum + itemSubtotal;
-    }
-  }, 0);
-
-  const tax = cart.reduce((sum, item, index) => {
-    if (item.taxRate && parseFloat(item.taxRate) > 0) {
-      const originalPrice = parseFloat(item.price);
-      const quantity = item.quantity;
-      const taxRate = parseFloat(item.taxRate) / 100;
+      // Use order-level discount if no item discount
       const orderDiscount = parseFloat(currentOrderDiscount || "0");
-
-      // Calculate discount for this item
-      let itemDiscountAmount = 0;
       if (orderDiscount > 0) {
         const totalBeforeDiscount = cart.reduce((total, cartItem) => {
           return total + parseFloat(cartItem.price) * cartItem.quantity;
@@ -217,11 +170,82 @@ export function ShoppingCart({
           itemDiscountAmount = orderDiscount - previousDiscounts;
         } else {
           // Regular calculation for non-last items
-          const itemTotal = originalPrice * quantity;
+          const itemTotal = unitPrice * quantity;
           itemDiscountAmount =
             totalBeforeDiscount > 0
               ? Math.round((orderDiscount * itemTotal) / totalBeforeDiscount)
               : 0;
+        }
+      }
+    }
+
+    if (priceIncludesTax && taxRate > 0) {
+      // When price includes tax:
+      // giá bao gồm thuế = (price - (discount/quantity)) * quantity
+      const discountPerUnit = itemDiscountAmount / quantity;
+      const adjustedPrice = Math.max(0, unitPrice - discountPerUnit);
+      const giaGomThue = adjustedPrice * quantity;
+      // subtotal = giá bao gồm thuế / (1 + (taxRate / 100)) (làm tròn)
+      const itemSubtotal = Math.round(giaGomThue / (1 + taxRate));
+      return sum + itemSubtotal;
+    } else {
+      // When price doesn't include tax:
+      // subtotal = (price - (discount/quantity)) * quantity
+      const discountPerUnit = itemDiscountAmount / quantity;
+      const adjustedPrice = Math.max(0, unitPrice - discountPerUnit);
+      const itemSubtotal = adjustedPrice * quantity;
+      return sum + itemSubtotal;
+    }
+  }, 0);
+
+  const tax = cart.reduce((sum, item, index) => {
+    if (item.taxRate && parseFloat(item.taxRate) > 0) {
+      const originalPrice = parseFloat(item.price);
+      const quantity = item.quantity;
+      const taxRate = parseFloat(item.taxRate) / 100;
+
+      // Calculate discount for this item
+      // Priority: Individual item discount > Order-level discount
+      let itemDiscountAmount = 0;
+
+      if (item.discount && parseFloat(item.discount.toString()) > 0) {
+        itemDiscountAmount = parseFloat(item.discount.toString());
+      } else {
+        const orderDiscount = parseFloat(currentOrderDiscount || "0");
+        if (orderDiscount > 0) {
+          const totalBeforeDiscount = cart.reduce((total, cartItem) => {
+            return total + parseFloat(cartItem.price) * cartItem.quantity;
+          }, 0);
+
+          const currentIndex = cart.findIndex(
+            (cartItem) => cartItem.id === item.id,
+          );
+          const isLastItem = currentIndex === cart.length - 1;
+
+          if (isLastItem) {
+            // Last item: total discount - sum of all previous discounts
+            let previousDiscounts = 0;
+            for (let i = 0; i < cart.length - 1; i++) {
+              const prevItem = cart[i];
+              const prevItemTotal =
+                parseFloat(prevItem.price) * prevItem.quantity;
+              const prevItemDiscount =
+                totalBeforeDiscount > 0
+                  ? Math.round(
+                      (orderDiscount * prevItemTotal) / totalBeforeDiscount,
+                    )
+                  : 0;
+              previousDiscounts += prevItemDiscount;
+            }
+            itemDiscountAmount = orderDiscount - previousDiscounts;
+          } else {
+            // Regular calculation for non-last items
+            const itemTotal = originalPrice * quantity;
+            itemDiscountAmount =
+              totalBeforeDiscount > 0
+                ? Math.round((orderDiscount * itemTotal) / totalBeforeDiscount)
+                : 0;
+          }
         }
       }
 
@@ -377,11 +401,105 @@ export function ShoppingCart({
     queryFn: async () => {
       const response = await fetch("https://edpos-be.onrender.com/api/products");
       if (!response.ok) {
-        throw new Error("Failed to fetch products");
+        throw new Error("Failed to fetch store settings");
       }
       return response.json();
     },
   });
+
+  // Function to search products by SKU
+  const searchProductBySku = async (searchTerm: string) => {
+    try {
+      const response = await fetch(
+        `https://edpos-be.onrender.com/api/products?search=${encodeURIComponent(searchTerm)}&limit=5`,
+      );
+      if (!response.ok) {
+        throw new Error("Failed to search products");
+      }
+      const data = await response.json();
+      const products = data.products || [];
+      setSkuSearchResults(products);
+      setSelectedSkuIndex(0);
+
+      // Tự động thêm vào giỏ nếu chỉ có 1 kết quả duy nhất
+      if (products.length === 1 && !isAddingProduct) {
+        setIsAddingProduct(true);
+        setTimeout(() => {
+          handleAddProductFromSku(products[0]);
+        }, 100);
+      }
+    } catch (error) {
+      console.error("Error searching products:", error);
+      setSkuSearchResults([]);
+    }
+  };
+
+  // Debounce SKU search to avoid multiple searches when scanning barcode
+  useEffect(() => {
+    if (skuSearch.length > 0) {
+      // Clear previous timer
+      if (skuSearchDebounceTimer.current) {
+        clearTimeout(skuSearchDebounceTimer.current);
+      }
+
+      // Set new timer - very short delay (150ms) for barcode scanner
+      skuSearchDebounceTimer.current = setTimeout(() => {
+        searchProductBySku(skuSearch);
+      }, 150);
+    } else {
+      setSkuSearchResults([]);
+      setIsAddingProduct(false);
+      if (skuSearchDebounceTimer.current) {
+        clearTimeout(skuSearchDebounceTimer.current);
+      }
+    }
+
+    return () => {
+      if (skuSearchDebounceTimer.current) {
+        clearTimeout(skuSearchDebounceTimer.current);
+      }
+    };
+  }, [skuSearch]);
+
+  // Function to add product from SKU search
+  const handleAddProductFromSku = async (product: any) => {
+    // Clear search
+    setSkuSearch("");
+    if (!product || isAddingProduct) return;
+    // Set flag to prevent duplicate calls
+    setIsAddingProduct(true);
+
+    // Check stock if tracking inventory
+    if (product.trackInventory !== false && product.stock <= 0) {
+      toast({
+        title: t("pos.outOfStock"),
+        description: `${product.name} ${t("pos.currentlyOutOfStock")}`,
+        variant: "destructive",
+      });
+      setIsAddingProduct(false);
+      return;
+    }
+
+    console.log("🔍 Adding product from SKU scan:", {
+      productId: product.id,
+      productName: product.name,
+      activeOrderId: activeOrderId,
+      currentCartLength: cart.length,
+    });
+
+    // Add to cart using the product ID - this will add to active order
+    await onAddToCart(product.id);
+
+    setSkuSearchResults([]);
+    setSelectedSkuIndex(0);
+
+    console.log("✅ Product added to active order successfully");
+
+    // Reset flag after a short delay
+    setTimeout(() => {
+      setIsAddingProduct(false);
+    }, 300);
+  };
 
   // Function to calculate display price based on store settings
   const getDisplayPrice = (item: any): number => {
@@ -631,6 +749,7 @@ export function ShoppingCart({
         price: item.price || "0",
         quantity: item.quantity || 1,
         total: item.total || "0",
+        discount: item.discount || 0, // Include individual item discount
       }));
 
       // Get current discount for active order
@@ -887,7 +1006,7 @@ export function ShoppingCart({
           : discountAmount || "0",
       );
 
-      let itemDiscountAmount = 0;
+      let itemDiscountAmount = parseFloat(item.discount || "0");
       let discountPerUnit = 0;
 
       if (orderDiscount > 0) {
@@ -948,7 +1067,7 @@ export function ShoppingCart({
       return {
         productId: item.id,
         productName: item.name,
-        quantity: item.quantity,
+        quantity: quantity.toString(),
         unitPrice: item.price,
         total: totalAfterDiscount.toString(),
         notes: null,
@@ -1049,7 +1168,7 @@ export function ShoppingCart({
     // SỬ DỤNG ĐÚNG GIÁ TRỊ ĐÃ HIỂN THỊ - KHÔNG TÍNH LẠI
     const displayedSubtotal = subtotal;
     const displayedTax = tax;
-    const displayedDiscount = parseFloat(currentOrderDiscount || "0");
+    let displayedDiscount = parseFloat(currentOrderDiscount || "0");
     const displayedTotal = total;
 
     console.log("💰 Using DISPLAYED values:", {
@@ -1067,7 +1186,7 @@ export function ShoppingCart({
       const orderDiscount = displayedDiscount;
 
       // Tính discount cho item này (giống logic hiển thị)
-      let itemDiscountAmount = 0;
+      let itemDiscountAmount = parseFloat(item.discount || "0");
       if (orderDiscount > 0) {
         const totalBeforeDiscount = cart.reduce((total, cartItem) => {
           return total + parseFloat(cartItem.price) * cartItem.quantity;
@@ -1126,22 +1245,28 @@ export function ShoppingCart({
         id: item.id,
         productId: item.id,
         productName: item.name,
-        quantity: item.quantity,
-        unitPrice: unitPrice.toString(),
+        quantity: item.quantity.toString(),
+        unitPrice: item.price.toString(),
         total: totalAfterDiscount.toString(),
-        price: unitPrice.toString(),
+        price: item.price.toString(),
         sku: item.sku || `FOOD${String(item.id).padStart(5, "0")}`,
         taxRate: item.taxRate || "0",
         afterTaxPrice: item.afterTaxPrice,
-        discount: itemDiscountAmount.toString(),
+        discount: itemDiscountAmount.toString(), // Individual item discount
         discountAmount: itemDiscountAmount.toString(),
         discountPerUnit: discountPerUnit.toString(),
-        originalPrice: unitPrice.toString(),
+        originalPrice: item.price.toString(),
         originalTotal: (unitPrice * quantity).toString(),
         tax: itemTax.toString(),
         priceBeforeTax: itemPriceBeforeTax.toString(),
       };
     });
+
+    if (displayedDiscount == 0) {
+      displayedDiscount = cartItemsForReceipt.reduce((sum, item) => {
+        return sum + parseFloat(item.discountAmount);
+      }, 0);
+    }
 
     // Receipt preview - sử dụng ĐÚNG giá trị hiển thị
     const receiptPreview = {
@@ -1229,7 +1354,7 @@ export function ShoppingCart({
         id: item.id,
         productId: item.id,
         productName: item.name,
-        quantity: item.quantity,
+        quantity: item.quantity.toString(),
         price: item.price.toString(),
         total: (parseFloat(item.price) * item.quantity).toString(),
         sku: item.sku || `ITEM${String(item.id).padStart(3, "0")}`,
@@ -1653,7 +1778,7 @@ export function ShoppingCart({
                         strokeLinecap="round"
                         strokeLinejoin="round"
                         strokeWidth={2}
-                        d="M13 7l5 5m0 0l-5 5m5-5H6"
+                        d="M13 7l5 5m0 0l-5 5m5-7H6"
                       />
                     </svg>
                   </button>
@@ -1714,6 +1839,60 @@ export function ShoppingCart({
               </div>
             </div>
           )}
+        </div>
+      )}
+
+      {/* SKU Search Input */}
+      {storeSettings?.businessType === "retail" && (
+        <div className="p-4 border-b pos-border bg-gradient-to-r from-green-50 to-emerald-50 mt-3">
+          <div className="relative">
+            <Input
+              type="text"
+              value={skuSearch}
+              onChange={(e) => {
+                // Chỉ set state, useEffect sẽ handle debounce search
+                setSkuSearch(e.target.value);
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && skuSearchResults.length > 0) {
+                  e.preventDefault();
+                  // Chỉ thêm nếu có nhiều hơn 1 kết quả (vì 1 kết quả đã tự động thêm)
+                  if (skuSearchResults.length > 1 && !isAddingProduct) {
+                    const productToAdd = skuSearchResults[selectedSkuIndex];
+                    if (productToAdd) {
+                      handleAddProductFromSku(productToAdd);
+                    }
+                  }
+                } else if (
+                  e.key === "ArrowDown" &&
+                  skuSearchResults.length > 0
+                ) {
+                  e.preventDefault();
+                  setSelectedSkuIndex((prev) =>
+                    Math.min(prev + 1, skuSearchResults.length - 1),
+                  );
+                } else if (e.key === "ArrowUp" && skuSearchResults.length > 0) {
+                  e.preventDefault();
+                  setSelectedSkuIndex((prev) => Math.max(prev - 1, 0));
+                }
+              }}
+              placeholder={t("pos.scanBarcode")}
+              className="pl-10 pr-4 py-2 border-2 border-green-300 focus:border-green-500 rounded-lg"
+            />
+            <svg
+              className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-green-600"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+              />
+            </svg>
+          </div>
         </div>
       )}
 
@@ -1859,7 +2038,11 @@ export function ShoppingCart({
                     </p>
                     {item.taxRate && parseFloat(item.taxRate) > 0 && (
                       <p className="text-xs text-orange-600">
-                        {t("common.taxWithRate").replace("{rate}", item.taxRate)}:{" "}
+                        {t("common.taxWithRate").replace(
+                          "{rate}",
+                          item.taxRate,
+                        )}
+                        :{" "}
                         {(() => {
                           const unitPrice = parseFloat(item.price);
                           const quantity = item.quantity;
@@ -1918,11 +2101,11 @@ export function ShoppingCart({
                             }
                           }
 
-                          if (priceIncludesTax) {
-                            // When price includes tax:
-                            // giá bao gồm thuế = (price - (discount/quantity)) * quantity
-                            const discountPerUnit =
-                              itemDiscountAmount / quantity;
+                          const discountPerUnit = itemDiscountAmount / quantity;
+
+                          let itemTax = 0;
+
+                          if (priceIncludesTax && taxRate > 0) {
                             const adjustedPrice = Math.max(
                               0,
                               unitPrice - discountPerUnit,
@@ -1933,24 +2116,162 @@ export function ShoppingCart({
                               giaGomThue / (1 + taxRate),
                             );
                             // tax = giá bao gồm thuế - subtotal
-                            return giaGomThue - tamTinh;
+                            itemTax = giaGomThue - tamTinh;
                           } else {
                             // When price doesn't include tax:
                             // subtotal = (price - (discount/quantity)) * quantity
-                            const discountPerUnit =
-                              itemDiscountAmount / quantity;
                             const adjustedPrice = Math.max(
                               0,
                               unitPrice - discountPerUnit,
                             );
                             const tamTinh = adjustedPrice * quantity;
                             // tax = subtotal * (taxRate / 100) (làm tròn)
-                            return Math.round(tamTinh * taxRate);
+                            itemTax = Math.round(tamTinh * taxRate);
                           }
-                        })().toLocaleString("vi-VN")}{" "}
+
+                          return itemTax.toLocaleString("vi-VN");
+                        })()}{" "}
                         ₫
                       </p>
                     )}
+
+                    {/* Individual item discount input */}
+                    <div className="flex items-center gap-1 mt-1">
+                      <span className="text-xs text-gray-500">
+                        Giảm giá SP:
+                      </span>
+                      <Input
+                        type="text"
+                        inputMode="numeric"
+                        value={
+                          item.discount &&
+                          parseFloat(item.discount.toString()) > 0
+                            ? Math.floor(
+                                parseFloat(item.discount.toString()),
+                              ).toLocaleString("vi-VN")
+                            : ""
+                        }
+                        onChange={(e) => {
+                          // Chỉ update giá trị hiển thị - KHÔNG tính toán
+                          const value = e.target.value.replace(/[^\d]/g, "");
+                          let newDiscount = value
+                            ? Math.max(0, parseInt(value))
+                            : 0;
+
+                          // Validate: nếu giảm giá > số lượng × đơn giá thì set = 0
+                          const maxDiscount =
+                            parseFloat(item.price) * item.quantity;
+                          if (newDiscount > maxDiscount) {
+                            newDiscount = 0;
+                            toast({
+                              title: "Giảm giá không hợp lệ",
+                              description: `Giảm giá không được vượt quá ${Math.floor(maxDiscount).toLocaleString("vi-VN")} ₫`,
+                              variant: "destructive",
+                            });
+                          }
+
+                          item.discount = newDiscount;
+
+                          // Reset order-level discount to 0 when entering product discount
+                          if (newDiscount > 0) {
+                            if (activeOrderId) {
+                              setOrderDiscounts((prev) => ({
+                                ...prev,
+                                [activeOrderId]: "0",
+                              }));
+                            } else {
+                              setDiscountAmount("0");
+                            }
+                          }
+
+                          // Force minimal re-render để update display
+                          const productId =
+                            typeof item.id === "string"
+                              ? parseInt(item.id)
+                              : item.id;
+                          onUpdateQuantity(productId, item.quantity);
+                        }}
+                        onBlur={(e) => {
+                          // Khi blur: Validate và tính toán lại
+                          const value = e.target.value.replace(/[^\d]/g, "");
+                          let newDiscount = value
+                            ? Math.max(0, parseInt(value))
+                            : 0;
+
+                          // Validate: nếu giảm giá > số lượng × đơn giá thì set = 0
+                          const maxDiscount =
+                            parseFloat(item.price) * item.quantity;
+                          if (newDiscount > maxDiscount) {
+                            newDiscount = 0;
+                            toast({
+                              title: "Giảm giá không hợp lệ",
+                              description: `Giảm giá không được vượt quá ${Math.floor(maxDiscount).toLocaleString("vi-VN")} ₫`,
+                              variant: "destructive",
+                            });
+                          }
+
+                          item.discount = newDiscount;
+
+                          // Tính toán lại
+                          const productId =
+                            typeof item.id === "string"
+                              ? parseInt(item.id)
+                              : item.id;
+                          onUpdateQuantity(productId, item.quantity);
+
+                          // Broadcast sau 100ms để đảm bảo calculation đã xong
+                          setTimeout(() => {
+                            if (
+                              wsRef.current &&
+                              wsRef.current.readyState === WebSocket.OPEN
+                            ) {
+                              const validatedCart = cart.map((cartItem) => ({
+                                ...cartItem,
+                                name:
+                                  cartItem.name ||
+                                  cartItem.productName ||
+                                  `Sản phẩm ${cartItem.id}`,
+                                productName:
+                                  cartItem.name ||
+                                  cartItem.productName ||
+                                  `Sản phẩm ${cartItem.id}`,
+                                price: cartItem.price || "0",
+                                quantity: cartItem.quantity || 1,
+                                total: cartItem.total || "0",
+                                discount: cartItem.discount || 0,
+                              }));
+
+                              wsRef.current.send(
+                                JSON.stringify({
+                                  type: "cart_update",
+                                  cart: validatedCart,
+                                  subtotal: subtotal,
+                                  tax: tax,
+                                  total: total,
+                                  discount: parseFloat(
+                                    currentOrderDiscount || "0",
+                                  ),
+                                  orderNumber:
+                                    activeOrderId || `ORD-${Date.now()}`,
+                                  timestamp: new Date().toISOString(),
+                                  updateType: "product_discount_update",
+                                }),
+                              );
+                            }
+                          }, 100);
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") {
+                            e.preventDefault();
+                            (e.target as HTMLInputElement).blur();
+                          }
+                        }}
+                        className="w-20 h-6 text-xs px-1 text-right bg-white border-blue-300 focus:border-blue-500"
+                        placeholder="0"
+                        title="Nhập giảm giá riêng cho sản phẩm này"
+                      />
+                      <span className="text-xs text-gray-500">₫</span>
+                    </div>
 
                     {/* Individual item discount display */}
                     {(() => {
@@ -2116,7 +2437,6 @@ export function ShoppingCart({
                       onChange={(e) => {
                         const newQuantity = parseInt(e.target.value) || 1;
                         if (item.trackInventory !== false) {
-                          // Sản phẩm có check tồn kho - giới hạn theo stock
                           const maxQuantity = item.stock || 0;
                           if (newQuantity >= 1 && newQuantity <= maxQuantity) {
                             const productId =
@@ -2126,7 +2446,6 @@ export function ShoppingCart({
                             onUpdateQuantity(productId, newQuantity);
                           }
                         } else {
-                          // Sản phẩm không check tồn kho - cho phép nhập tự do
                           if (newQuantity >= 1 && newQuantity <= 999999) {
                             const productId =
                               typeof item.id === "string"
@@ -2179,10 +2498,86 @@ export function ShoppingCart({
                     </Button>
                   </div>
                   <div className="font-bold pos-text-primary text-sm">
-                    {parseFloat(item.total).toLocaleString("vi-VN", {
-                      minimumFractionDigits: 2,
-                      maximumFractionDigits: 2,
-                    })}{" "}
+                    {(() => {
+                      const unitPrice = parseFloat(item.price);
+                      const quantity = item.quantity;
+                      const taxRate = parseFloat(item.taxRate || "0") / 100;
+                      const orderDiscount = parseFloat(
+                        currentOrderDiscount || "0",
+                      );
+
+                      let itemDiscountAmount = 0;
+                      if (orderDiscount > 0) {
+                        const totalBeforeDiscount = cart.reduce(
+                          (total, cartItem) => {
+                            return (
+                              total +
+                              parseFloat(cartItem.price) * cartItem.quantity
+                            );
+                          },
+                          0,
+                        );
+
+                        const currentIndex = cart.findIndex(
+                          (cartItem) => cartItem.id === item.id,
+                        );
+                        const isLastItem = currentIndex === cart.length - 1;
+
+                        if (isLastItem) {
+                          let previousDiscounts = 0;
+                          for (let i = 0; i < cart.length - 1; i++) {
+                            const prevItem = cart[i];
+                            const prevItemTotal =
+                              parseFloat(prevItem.price) * prevItem.quantity;
+                            const prevItemDiscount =
+                              totalBeforeDiscount > 0
+                                ? Math.round(
+                                    (orderDiscount * prevItemTotal) /
+                                      totalBeforeDiscount,
+                                  )
+                                : 0;
+                            previousDiscounts += prevItemDiscount;
+                          }
+                          itemDiscountAmount =
+                            orderDiscount - previousDiscounts;
+                        } else {
+                          const itemTotal = unitPrice * quantity;
+                          itemDiscountAmount =
+                            totalBeforeDiscount > 0
+                              ? Math.round(
+                                  (orderDiscount * itemTotal) /
+                                    totalBeforeDiscount,
+                                )
+                              : 0;
+                        }
+                      }
+
+                      const discountPerUnit = itemDiscountAmount / quantity;
+                      let itemPriceAfterDiscount = 0;
+
+                      if (priceIncludesTax && taxRate > 0) {
+                        const adjustedPrice = Math.max(
+                          0,
+                          unitPrice - discountPerUnit,
+                        );
+                        const giaGomThue = adjustedPrice * quantity;
+                        itemPriceAfterDiscount = Math.round(
+                          giaGomThue / (1 + taxRate),
+                        );
+                      } else {
+                        const adjustedPrice = Math.max(
+                          0,
+                          unitPrice - discountPerUnit,
+                        );
+                        itemPriceAfterDiscount = Math.round(
+                          adjustedPrice * quantity,
+                        );
+                      }
+
+                      return Math.floor(itemPriceAfterDiscount).toLocaleString(
+                        "vi-VN",
+                      );
+                    })()}{" "}
                     ₫
                   </div>
                 </div>
@@ -2225,61 +2620,97 @@ export function ShoppingCart({
                     0,
                     parseFloat(e.target.value.replace(/[^\d]/g, "")) || 0,
                   );
-                  setDiscountAmount(value.toString()); // Update local state for input display
+
+                  // Update order discount state
                   if (activeOrderId) {
                     setOrderDiscounts((prev) => ({
                       ...prev,
                       [activeOrderId]: value.toString(),
                     }));
                   } else {
-                    // If no active order, update discount amount directly
                     setDiscountAmount(value.toString());
                   }
 
-                  // Send discount update via WebSocket with proper cart items
+                  // Recalculate item discounts proportionally when total discount is entered
+                  if (value > 0) {
+                    const totalBeforeDiscount = cart.reduce(
+                      (total, cartItem) => {
+                        return (
+                          total + parseFloat(cartItem.price) * cartItem.quantity
+                        );
+                      },
+                      0,
+                    );
+
+                    // Update each item's discount proportionally
+                    cart.forEach((item, index) => {
+                      const itemTotal = parseFloat(item.price) * item.quantity;
+                      const isLastItem = index === cart.length - 1;
+
+                      let itemDiscount = 0;
+                      if (isLastItem) {
+                        // Last item gets remaining discount to avoid rounding errors
+                        let previousDiscounts = 0;
+                        for (let i = 0; i < cart.length - 1; i++) {
+                          const prevItem = cart[i];
+                          const prevItemTotal =
+                            parseFloat(prevItem.price) * prevItem.quantity;
+                          previousDiscounts +=
+                            totalBeforeDiscount > 0
+                              ? Math.round(
+                                  (value * prevItemTotal) / totalBeforeDiscount,
+                                )
+                              : 0;
+                        }
+                        itemDiscount = value - previousDiscounts;
+                      } else {
+                        itemDiscount =
+                          totalBeforeDiscount > 0
+                            ? Math.round(
+                                (value * itemTotal) / totalBeforeDiscount,
+                              )
+                            : 0;
+                      }
+
+                      // Update item discount in cart
+                      item.discount = itemDiscount;
+                    });
+                  } else {
+                    // Clear all item discounts when total discount is 0
+                    cart.forEach((item) => {
+                      item.discount = 0;
+                    });
+                  }
+
+                  // Send discount update via WebSocket
                   if (
                     wsRef.current &&
                     wsRef.current.readyState === WebSocket.OPEN
                   ) {
-                    // Ensure cart items have proper structure
                     const validatedCart = cart.map((item) => ({
                       ...item,
                       name:
-                        item.name ||
-                        item.productName ||
-                        item.product?.name ||
-                        `Sản phẩm ${item.id}`,
+                        item.name || item.productName || `Sản phẩm ${item.id}`,
                       productName:
-                        item.name ||
-                        item.productName ||
-                        item.product?.name ||
-                        `Sản phẩm ${item.id}`,
+                        item.name || item.productName || `Sản phẩm ${item.id}`,
                       price: item.price || "0",
                       quantity: item.quantity || 1,
                       total: item.total || "0",
+                      discount: item.discount || 0,
                     }));
 
                     wsRef.current.send(
                       JSON.stringify({
                         type: "cart_update",
-                        cart: validatedCart, // Send validated cart items
+                        cart: validatedCart,
                         subtotal: Math.floor(subtotal),
                         tax: Math.floor(tax),
-                        total: Math.floor(total), // Total before discount
-                        discount: value, // The new discount value
+                        total: Math.floor(total),
+                        discount: value,
                         orderNumber: activeOrderId || `ORD-${Date.now()}`,
                         timestamp: new Date().toISOString(),
-                        updateType: "discount_update", // Indicate this is a discount update
+                        updateType: "total_discount_update",
                       }),
-                    );
-
-                    console.log(
-                      "📡 Shopping Cart: Discount update broadcasted:",
-                      {
-                        discount: value,
-                        cartItems: validatedCart.length,
-                        total: Math.floor(total),
-                      },
                     );
                   }
                 }}
@@ -2509,7 +2940,7 @@ export function ShoppingCart({
                   typeof (item.price || item.unitPrice) === "string"
                     ? parseFloat(item.price || item.unitPrice)
                     : item.price || item.unitPrice,
-                quantity: item.quantity,
+                quantity: item.quantity.toString(),
                 sku:
                   item.sku ||
                   `FOOD${String(item.id || item.productId).padStart(5, "0")}`,
@@ -2532,7 +2963,7 @@ export function ShoppingCart({
                   typeof item.price === "string"
                     ? parseFloat(item.price)
                     : item.price,
-                quantity: item.quantity,
+                quantity: item.quantity.toString(),
                 sku: item.sku || `FOOD${String(item.id).padStart(5, "0")}`,
                 taxRate:
                   typeof item.taxRate === "string"
@@ -2680,7 +3111,7 @@ export function ShoppingCart({
               id: item.id,
               name: item.name,
               price: parseFloat(item.price),
-              quantity: item.quantity,
+              quantity: item.quantity.toString(),
               sku: `ITEM${String(item.id).padStart(3, "0")}`,
               taxRate: parseFloat(item.taxRate || "0"),
             })) ||
@@ -2688,7 +3119,7 @@ export function ShoppingCart({
               id: item.id,
               name: item.name,
               price: parseFloat(item.price),
-              quantity: item.quantity,
+              quantity: item.quantity.toString(),
               sku: `ITEM${String(item.id).padStart(3, "0")}`,
               taxRate: parseFloat(item.taxRate || "0"),
             }))
@@ -2743,7 +3174,7 @@ export function ShoppingCart({
                         typeof (item.price || item.unitPrice) === "string"
                           ? parseFloat(item.price || item.unitPrice)
                           : item.price || item.unitPrice,
-                      quantity: item.quantity,
+                      quantity: item.quantity.toString(),
                       sku:
                         item.sku ||
                         `FOOD${String(item.id || item.productId).padStart(5, "0")}`,
@@ -2760,7 +3191,7 @@ export function ShoppingCart({
                         typeof item.price === "string"
                           ? parseFloat(item.price)
                           : item.price,
-                      quantity: item.quantity,
+                      quantity: item.quantity.toString(),
                       sku:
                         item.sku || `FOOD${String(item.id).padStart(5, "0")}`,
                       taxRate:

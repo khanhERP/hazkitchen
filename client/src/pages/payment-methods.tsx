@@ -81,10 +81,6 @@ export default function PaymentMethodsPage({ onLogout }: PaymentMethodsPageProps
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["https://edpos-be.onrender.com/api/payment-methods"] });
-      // toast({
-      //   title: t("common.success"),
-      //   description: "Đã cập nhật phương thức thanh toán",
-      // });
     },
   });
 
@@ -130,10 +126,6 @@ export default function PaymentMethodsPage({ onLogout }: PaymentMethodsPageProps
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["https://edpos-be.onrender.com/api/payment-methods"] });
-      // toast({
-      //   title: t("common.success"),
-      //   description: "Đã xóa phương thức thanh toán",
-      // });
     },
     onError: () => {
       toast({

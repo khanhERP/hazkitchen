@@ -172,12 +172,6 @@ export function EInvoiceModal({
       queryClient.invalidateQueries({ queryKey: ["https://edpos-be.onrender.com/api/orders"] });
       queryClient.invalidateQueries({ queryKey: ["https://edpos-be.onrender.com/api/tables"] });
 
-      // toast({
-      //   title: `${t("common.success")}`,
-      //   description:
-      //     "Hóa đơn điện tử đã được phát hành và đơn hàng đã được thanh toán",
-      // });
-
       console.log("✅ E-invoice modal: Payment completed, queries invalidated");
     },
     onError: (error, variables) => {
@@ -569,7 +563,7 @@ export function EInvoiceModal({
           typeof item.quantity === "string"
             ? parseInt(item.quantity)
             : item.quantity;
-        const product = products?.find((p: any) => p.id === item.id);
+        const product = Array.isArray(products) ? products.find((p: any) => p.id === item.id) : null;
         const itemTaxRate = product?.taxRate ? parseFloat(product.taxRate) : 0;
 
         // Calculate discount for this item (same logic as main publish)
@@ -732,7 +726,7 @@ export function EInvoiceModal({
             typeof item.quantity === "string"
               ? parseInt(item.quantity)
               : item.quantity;
-          const product = products?.find((p: any) => p.id === item.id);
+          const product = Array.isArray(products) ? products.find((p: any) => p.id === item.id) : null;
           const itemTaxRate = product?.taxRate
             ? parseFloat(product.taxRate)
             : 0;

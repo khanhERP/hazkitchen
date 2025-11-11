@@ -92,19 +92,6 @@ export function BulkImportModal({ isOpen, onClose }: BulkImportModalProps) {
         setTimeout(() => {
           downloadErrorReport(errorItems);
         }, 500);
-
-        // toast({
-        //   title: "Hoàn thành với lỗi",
-        //   description:
-        //     errorDescription + "\nFile báo cáo lỗi đã được tải xuống tự động",
-        //   variant: "destructive",
-        // });
-      } else {
-        // toast({
-        //   title: "Thành công",
-        //   description:
-        //     data.message || `Đã nhập ${data.success} sản phẩm thành công`,
-        // });
       }
       handleClose();
     },

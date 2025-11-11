@@ -84,6 +84,7 @@ import { PrinterConfigModal } from "@/components/pos/printer-config-modal";
 import { POSHeader } from "@/components/pos/header";
 import { RightSidebar } from "@/components/ui/right-sidebar";
 import { FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form"; // Import Form components
+import JsBarcode from "jsbarcode";
 
 // E-invoice software providers mapping
 const EINVOICE_PROVIDERS = [
@@ -161,6 +162,9 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
   const [showCategoryForm, setShowCategoryForm] = useState(false);
   const [showProductForm, setShowProductForm] = useState(false);
   const [editingCategory, setEditingCategory] = useState<any>(null);
+  const [productsCurrentPage, setProductsCurrentPage] = useState(1);
+  const [productsPageSize, setProductsPageSize] = useState(20);
+
   const [editingProduct, setEditingProduct] = useState<any>(null);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [categoryToDelete, setCategoryToDelete] = useState<{
@@ -175,6 +179,9 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
   const [showEmployeeDeleteDialog, setShowEmployeeDeleteDialog] =
     useState(false);
   const [employeeToDelete, setEmployeeToDelete] = useState<any>(null);
+
+  // State for selected products in the product list
+  const [selectedProducts, setSelectedProducts] = useState<number[]>([]);
 
   const confirmDeleteEmployee = async () => {
     if (!employeeToDelete) return;
@@ -223,11 +230,6 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
         queryKey: ["https://edpos-be.onrender.com/api/employees"],
       });
 
-      // toast({
-      //   title: t("settings.employeeDeleteSuccessTitle"),
-      //   description: t("settings.employeeDeleteSuccessDesc"),
-      // });
-
       setShowEmployeeDeleteDialog(false);
       setEmployeeToDelete(null);
     } catch (error) {
@@ -259,9 +261,10 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
     imageInputMethod: "url" as "url" | "file",
     selectedImageFile: null as File | null,
     trackInventory: true, // Default to true
+    isActive: true, // Default to true
     // Added fields for product type, tax rate, and unit
     productType: 1, // Default to Goods Type
-    taxRate: "8", // Default to 8%
+    taxRate: "0", // Default to 8%
     unit: "Cái", // Default to Cái
   });
 
@@ -328,13 +331,55 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
     queryKey: ["https://edpos-be.onrender.com/api/categories"],
   });
 
-  // Fetch products (include inactive products in settings)
-  const { data: productsData, isLoading: productsLoading } = useQuery<any[]>({
-    queryKey: ["https://edpos-be.onrender.com/api/products"],
+  // Fetch products (include inactive products in settings) - with pagination and search
+  const {
+    data: productsResponse,
+    isLoading: productsLoading
+  } = useQuery({
+    queryKey: ["https://edpos-be.onrender.com/api/products", {
+      page: productsCurrentPage,
+      limit: productsPageSize,
+      category: selectedCategoryFilter,
+      search: productSearchTerm
+    }],
     queryFn: async () => {
-      const response = await fetch("https://edpos-be.onrender.com/api/products");
+      const params = new URLSearchParams({
+        page: productsCurrentPage.toString(),
+        limit: productsPageSize.toString(),
+        includeInactive: 'true'
+      });
+
+      if (selectedCategoryFilter && selectedCategoryFilter !== 'all') {
+        params.append('category', selectedCategoryFilter);
+      }
+
+      if (productSearchTerm && productSearchTerm.trim()) {
+        params.append('search', productSearchTerm.trim());
+      }
+
+      const response = await fetch(`https://edpos-be.onrender.com/api/products?${params.toString()}`);
       if (!response.ok) throw new Error("Failed to fetch products");
       return response.json();
+    },
+  });
+
+  const products = productsResponse?.products || [];
+  const productsPagination = productsResponse?.pagination || {
+    currentPage: 1,
+    totalPages: 1,
+    totalCount: 0,
+    hasNext: false,
+    hasPrev: false,
+  };
+
+  // Fetch all products for counting by category (no pagination)
+  const { data: allProductsForCount } = useQuery({
+    queryKey: ["https://edpos-be.onrender.com/api/products/all-for-count"],
+    queryFn: async () => {
+      const response = await fetch(`https://edpos-be.onrender.com/api/products?limit=100000&includeInactive=true`);
+      if (!response.ok) throw new Error("Failed to fetch all products");
+      const data = await response.json();
+      return data.products || [];
     },
   });
 
@@ -380,6 +425,11 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
     }
   }, [storeData]);
 
+  // Reset to page 1 when search term or category filter changes
+  useEffect(() => {
+    setProductsCurrentPage(1);
+  }, [productSearchTerm, selectedCategoryFilter]);
+
   // Fetch payment methods from API
   const { data: paymentMethodsData, isLoading: paymentMethodsLoading } =
     useQuery<any[]>({
@@ -401,10 +451,6 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["https://edpos-be.onrender.com/api/store-settings"] });
-      // toast({
-      //   title: t("common.success"),
-      //   description: t("settings.storeUpdated"),
-      // });
     },
     onError: () => {
       toast({
@@ -511,10 +557,6 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["https://edpos-be.onrender.com/api/payment-methods"] });
-      // toast({
-      //   title: t("common.success"),
-      //   description: "Đã thêm phương thức thanh toán mới",
-      // });
     },
     onError: () => {
       toast({
@@ -537,10 +579,6 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["https://edpos-be.onrender.com/api/payment-methods"] });
-      // toast({
-      //   title: t("common.success"),
-      //   description: t("settings.paymentUpdateSuccessDesc"),
-      // });
     },
     onError: () => {
       toast({
@@ -559,10 +597,6 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["https://edpos-be.onrender.com/api/payment-methods"] });
-      // toast({
-      //   title: t("common.success"),
-      //   description: "Đã xóa phương thức thanh toán",
-      // });
     },
     onError: () => {
       toast({
@@ -653,11 +687,6 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
 
       await queryClient.refetchQueries({ queryKey: ["https://edpos-be.onrender.com/api/customers"] });
 
-      // toast({
-      //   title: t("common.success"),
-      //   description: t("settings.customerDeleteSuccess"),
-      // });
-
       setShowCustomerDeleteDialog(false);
       setCustomerToDelete(null);
     } catch (error) {
@@ -713,6 +742,7 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
       imageInputMethod: "url",
       selectedImageFile: null,
       trackInventory: true,
+      isActive: true, // Reset isActive to true
       // Reset added fields
       productType: 1,
       taxRate: "0",
@@ -748,11 +778,6 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
       // Refetch data immediately
       await queryClient.refetchQueries({ queryKey: ["https://edpos-be.onrender.com/api/categories"] });
       await queryClient.refetchQueries({ queryKey: ["https://edpos-be.onrender.com/api/products"] });
-
-      // toast({
-      //   title: t("common.success"),
-      //   description: t("settings.categoryCreateSuccess"),
-      // });
       setShowCategoryForm(false);
       resetCategoryForm();
     } catch (error) {
@@ -806,11 +831,6 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
       // Refetch data immediately
       await queryClient.refetchQueries({ queryKey: ["https://edpos-be.onrender.com/api/categories"] });
       await queryClient.refetchQueries({ queryKey: ["https://edpos-be.onrender.com/api/products"] });
-
-      // toast({
-      //   title: t("common.success"),
-      //   description: t("settings.categoryUpdateSuccess"),
-      // });
     } catch (error) {
       console.error("Category update error:", error);
       toast({
@@ -822,8 +842,8 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
   };
 
   const handleDeleteCategory = async (categoryId: number) => {
-    // Check if category has products
-    const categoryProducts = productsData?.filter(
+    // Check if category has products - use products from pagination
+    const categoryProducts = products?.filter(
       (product: any) => product.categoryId === categoryId,
     );
 
@@ -862,11 +882,6 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
       // Refetch data immediately
       await queryClient.refetchQueries({ queryKey: ["https://edpos-be.onrender.com/api/categories"] });
       await queryClient.refetchQueries({ queryKey: ["https://edpos-be.onrender.com/api/products"] });
-
-      // toast({
-      //   title: t("common.success"),
-      //   description: t("settings.categoryDeleteSuccess"),
-      // });
 
       setShowDeleteDialog(false);
       setCategoryToDelete(null);
@@ -937,6 +952,7 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
         floor: productForm.floor, // Add floor
         zone: productForm.zone, // Add zone
         trackInventory: productForm.trackInventory,
+        isActive: productForm.isActive,
         // Include the new fields
         productType: productForm.productType,
         taxRate: taxRateValue,
@@ -981,13 +997,9 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
         throw new Error(errorData.message || "Failed to create product");
       }
 
-      await queryClient.refetchQueries({ queryKey: ["https://edpos-be.onrender.com/api/products"] });
+      await queryClient.refetchQueries({ queryKey: ["https://edpos-be.onrender.com/api/products", { page: productsCurrentPage, limit: productsPageSize }] });
       setShowProductForm(false);
       resetProductForm();
-      // toast({
-      //   title: t("common.success"),
-      //   description: t("settings.productCreatedSuccess"),
-      // });
     } catch (error) {
       console.error("Product creation error:", error);
       toast({
@@ -1028,6 +1040,7 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
         floor: productForm.floor, // Add floor
         zone: productForm.zone, // Add zone
         trackInventory: productForm.trackInventory,
+        isActive: productForm.isActive,
         // Include the new fields
         productType: productForm.productType,
         taxRate: taxRateValue,
@@ -1047,11 +1060,11 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
           finalProductData.imageUrl = base64Image;
         } catch (error) {
           console.error("파일 변환 오류:", error);
-          // toast({
-          //   title: "오류",
-          //   description: "이미지 파일 처리 중 오류가 발생했습니다.",
-          //   variant: "destructive",
-          // });
+          toast({
+            title: "오류",
+            description: "이미지 파일 처리 중 오류가 발생했습니다.",
+            variant: "destructive",
+          });
           return;
         }
       } else if (productForm.imageInputMethod === "url") {
@@ -1072,14 +1085,10 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
         throw new Error(errorData.message || "Failed to update product");
       }
 
-      await queryClient.refetchQueries({ queryKey: ["https://edpos-be.onrender.com/api/products"] });
+      await queryClient.refetchQueries({ queryKey: ["https://edpos-be.onrender.com/api/products", { page: productsCurrentPage, limit: productsPageSize }] });
       setShowProductForm(false);
       setEditingProduct(null);
       resetProductForm();
-      // toast({
-      //   title: t("common.success"),
-      //   description: t("settings.productUpdatedSuccess"),
-      // });
     } catch (error) {
       console.error("Product update error:", error);
       toast({
@@ -1149,6 +1158,7 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
       imageInputMethod: "url",
       selectedImageFile: null,
       trackInventory: product.trackInventory !== false,
+      isActive: product.isActive !== undefined ? product.isActive : true, // Set isActive
       productType: product.productType || 1,
       taxRate: dropdownValue || "0",
       unit: product.unit || "Cái",
@@ -1171,12 +1181,7 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
     try {
       await apiRequest("DELETE", `https://edpos-be.onrender.com/api/products/${productToDelete.id}`);
 
-      await queryClient.refetchQueries({ queryKey: ["https://edpos-be.onrender.com/api/products"] });
-
-      // toast({
-      //   title: t("common.success"),
-      //   description: t("settings.productDeleteSuccess"),
-      // });
+      await queryClient.refetchQueries({ queryKey: ["https://edpos-be.onrender.com/api/products", { page: productsCurrentPage, limit: productsPageSize }] });
 
       setShowProductDeleteDialog(false);
       setProductToDelete(null);
@@ -1200,20 +1205,8 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
     setShowCategoryForm(true);
   };
 
-  // Filter products based on category and search term
-  const filteredProducts = productsData
-    ? productsData.filter((product: any) => {
-        const matchesCategory =
-          selectedCategoryFilter === "all" ||
-          product.categoryId.toString() === selectedCategoryFilter;
-        const matchesSearch =
-          product.name
-            .toLowerCase()
-            .includes(productSearchTerm.toLowerCase()) ||
-          product.sku.toLowerCase().includes(productSearchTerm.toLowerCase());
-        return matchesCategory && matchesSearch;
-      })
-    : [];
+  // Products are now filtered by API, so we use them directly
+  const filteredProducts = products;
 
   // Fetch E-invoice connections
   const { data: eInvoiceConnections = [], isLoading: eInvoiceLoading } =
@@ -1235,10 +1228,6 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
       queryClient.invalidateQueries({
         queryKey: ["https://edpos-be.onrender.com/api/einvoice-connections"],
       });
-      // toast({
-      //   title: t("common.success"),
-      //   description: t("settings.einvoiceConnectionCreateSuccess"),
-      // });
       setShowEInvoiceForm(false);
       resetEInvoiceForm();
     },
@@ -1264,10 +1253,6 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
       queryClient.invalidateQueries({
         queryKey: ["https://edpos-be.onrender.com/api/einvoice-connections"],
       });
-      // toast({
-      //   title: t("common.success"),
-      //   description: t("settings.einvoiceConnectionUpdateSuccess"),
-      // });
       setShowEInvoiceForm(false);
       resetEInvoiceForm();
     },
@@ -1292,10 +1277,6 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
       queryClient.invalidateQueries({
         queryKey: ["https://edpos-be.onrender.com/api/einvoice-connections"],
       });
-      // toast({
-      //   title: t("common.success"),
-      //   description: t("settings.einvoiceConnectionDeleteSuccess"),
-      // });
       setShowEInvoiceDeleteDialog(false);
       setEInvoiceToDelete(null);
     },
@@ -1492,10 +1473,6 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["https://edpos-be.onrender.com/api/invoice-templates"] });
-      // toast({
-      //   title: t("common.success"),
-      //   description: t("settings.einvoiceTemplateCreateSuccess"),
-      // });
       setShowTemplateForm(false);
       resetTemplateForm();
     },
@@ -1519,10 +1496,6 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["https://edpos-be.onrender.com/api/invoice-templates"] });
-      // toast({
-      //   title: t("common.success"),
-      //   description: t("settings.einvoiceTemplateUpdateSuccess"),
-      // });
       setShowTemplateForm(false);
       resetTemplateForm();
     },
@@ -1545,10 +1518,6 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["https://edpos-be.onrender.com/api/invoice-templates"] });
-      // toast({
-      //   title: t("common.success"),
-      //   description: t("settings.einvoiceTemplateDeleteSuccess"),
-      // });
       setShowTemplateDeleteDialog(false);
       setTemplateToDelete(null);
     },
@@ -1596,11 +1565,11 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
       !templateForm.templateNumber.trim() ||
       !templateForm.symbol.trim()
     ) {
-      // toast({
-      //   title: t("common.error"),
-      //   description: t("settings.requiredFieldsError"),
-      //   variant: "destructive",
-      // });
+      toast({
+        title: t("common.error"),
+        description: t("settings.requiredFieldsError"),
+        variant: "destructive",
+      });
       return;
     }
 
@@ -1648,12 +1617,171 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
   };
 
   const refetchProducts = () => {
-    queryClient.invalidateQueries({ queryKey: ["https://edpos-be.onrender.com/api/products"] });
+    queryClient.invalidateQueries({ queryKey: ["https://edpos-be.onrender.com/api/products", { page: productsCurrentPage, limit: productsPageSize }] });
   };
 
   const handleOpenCategoryDialog = () => {
     resetCategoryForm();
     setShowCategoryForm(true);
+  };
+
+  // Barcode printing function
+  const printBarcodes = () => {
+    if (selectedProducts.length === 0) {
+      toast({
+        title: "Thông báo",
+        description: "Vui lòng chọn ít nhất một sản phẩm để in mã vạch",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Get selected products data
+    const selectedProductsData = products?.filter((p: Product) =>
+      selectedProducts.includes(p.id),
+    ) || [];
+
+    // Create print window
+    const printWindow = window.open("", "_blank");
+    if (!printWindow) {
+      toast({
+        title: "Lỗi",
+        description: "Không thể mở cửa sổ in. Vui lòng cho phép popup.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Generate HTML content for barcode labels
+    let barcodeHTML = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="UTF-8">
+        <title>In mã vạch</title>
+        <style>
+          @page {
+            size: 50mm 30mm;
+            margin: 0;
+          }
+
+          body {
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+          }
+
+          .barcode-label {
+            width: 50mm;
+            height: 30mm;
+            page-break-after: always;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            align-items: center;
+            border: 1px solid #000;
+            box-sizing: border-box;
+            padding: 1mm 2mm;
+          }
+
+          .barcode-label:last-child {
+            page-break-after: auto;
+          }
+
+          .product-name {
+            font-size: 7pt;
+            font-weight: bold;
+            text-align: center;
+            line-height: 1.1;
+            max-height: 8mm;
+            overflow: hidden;
+            width: 100%;
+            margin: 0;
+          }
+
+          .barcode-svg {
+            width: 100%;
+            height: auto;
+            max-height: 14mm;
+            margin: 0;
+          }
+
+          .product-price {
+            font-size: 8pt;
+            font-weight: bold;
+            text-align: center;
+            margin: 0;
+            width: 100%;
+          }
+
+          @media print {
+            body {
+              margin: 0;
+              padding: 0;
+            }
+
+            .barcode-label {
+              border: none;
+            }
+          }
+        </style>
+      </head>
+      <body>
+    `;
+
+    selectedProductsData.forEach((product: Product, index: number) => {
+      const sku = product.sku || `ITEM-${product.id}`;
+      const price = Math.round(parseFloat(product.price)).toLocaleString(
+        "vi-VN",
+      );
+
+      barcodeHTML += `
+        <div class="barcode-label">
+          <svg class="barcode-svg" id="barcode-${index}"></svg>
+          <div class="product-name">${product.name}</div>
+          <div class="product-price">${price} ₫</div>
+        </div>
+      `;
+    });
+
+    barcodeHTML += `
+        <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
+        <script>
+          window.onload = function() {
+            ${selectedProductsData
+              .map((product: Product, index: number) => {
+                const sku = product.sku || `ITEM-${product.id}`;
+                return `
+                  try {
+                    JsBarcode("#barcode-${index}", "${sku}", {
+                      format: "CODE128",
+                      width: 2,
+                      height: 50,
+                      displayValue: true,
+                      fontSize: 10,
+                      margin: 0,
+                      marginTop: 2,
+                      marginBottom: 2
+                    });
+                  } catch(e) {
+                    console.error("Error generating barcode for ${sku}:", e);
+                  }
+                `;
+              })
+              .join("\n")}
+
+            // Auto print after barcodes are generated
+            setTimeout(function() {
+              window.print();
+            }, 500);
+          };
+        </script>
+      </body>
+      </html>
+    `;
+
+    printWindow.document.write(barcodeHTML);
+    printWindow.document.close();
   };
 
   return (
@@ -1895,6 +2023,9 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
                                   </SelectItem>
                                   <SelectItem value="restaurant">
                                     {t("settings.posRestaurant")}
+                                  </SelectItem>
+                                  <SelectItem value="laundry">
+                                    POS Giặt là
                                   </SelectItem>
                                 </SelectContent>
                               </Select>
@@ -3046,7 +3177,7 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
                                 {t("settings.totalProducts")}
                               </p>
                               <p className="text-2xl font-bold text-blue-600">
-                                {productsData ? productsData.length : 0}
+                                {productsPagination ? productsPagination.totalCount : 0}
                               </p>
                             </div>
                             <ShoppingCart className="w-8h-8 text-blue-600" />
@@ -3062,9 +3193,9 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
                                 {t("settings.totalStockQuantity")}
                               </p>
                               <p className="text-2xl font-bold text-purple-600">
-                                {productsData
+                                {products
                                   ? new Intl.NumberFormat("vi-VN").format(
-                                      productsData.reduce(
+                                      products.reduce(
                                         (total: number, product: any) =>
                                           total + (product.stock || 0),
                                         0,
@@ -3122,10 +3253,38 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
                                   onChange={(e) =>
                                     setProductSearchTerm(e.target.value)
                                   }
+                                  onKeyPress={(e) => {
+                                    if (e.key === "Enter") {
+                                      queryClient.invalidateQueries({ 
+                                        queryKey: ["https://edpos-be.onrender.com/api/products", { 
+                                          page: productsCurrentPage, 
+                                          limit: productsPageSize,
+                                          category: selectedCategoryFilter,
+                                          search: productSearchTerm
+                                        }] 
+                                      });
+                                      queryClient.invalidateQueries({ 
+                                        queryKey: ["https://edpos-be.onrender.com/api/products/all-for-count"] 
+                                      });
+                                    }
+                                  }}
                                 />
                                 <Select
                                   value={selectedCategoryFilter}
-                                  onValueChange={setSelectedCategoryFilter}
+                                  onValueChange={(value) => {
+                                    setSelectedCategoryFilter(value);
+                                    queryClient.invalidateQueries({ 
+                                      queryKey: ["https://edpos-be.onrender.com/api/products", { 
+                                        page: productsCurrentPage, 
+                                        limit: productsPageSize,
+                                        category: value,
+                                        search: productSearchTerm
+                                      }] 
+                                    });
+                                    queryClient.invalidateQueries({ 
+                                      queryKey: ["https://edpos-be.onrender.com/api/products/all-for-count"] 
+                                    });
+                                  }}
                                 >
                                   <SelectTrigger className="w-48">
                                     <SelectValue
@@ -3146,21 +3305,51 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
                                     ))}
                                   </SelectContent>
                                 </Select>
-                                <Button variant="outline" size="sm">
+                                <Button 
+                                  variant="outline" 
+                                  size="sm"
+                                  onClick={() => {
+                                    queryClient.invalidateQueries({ 
+                                      queryKey: ["https://edpos-be.onrender.com/api/products", { 
+                                        page: productsCurrentPage, 
+                                        limit: productsPageSize,
+                                        category: selectedCategoryFilter,
+                                        search: productSearchTerm
+                                      }] 
+                                    });
+                                    queryClient.invalidateQueries({ 
+                                      queryKey: ["https://edpos-be.onrender.com/api/products/all-for-count"] 
+                                    });
+                                    queryClient.invalidateQueries({ 
+                                      queryKey: ["https://edpos-be.onrender.com/api/categories"] 
+                                    });
+                                  }}
+                                >
                                   <Search className="w-4 h-4 mr-2" />
                                   {t("common.search")}
                                 </Button>
                               </div>
-                              <Button
-                                className="bg-green-600 hover:bg-green-700"
-                                onClick={() => {
-                                  resetProductForm();
-                                  setShowProductForm(true);
-                                }}
-                              >
-                                <Plus className="w-4 h-4 mr-2" />
-                                {t("settings.addProduct")}
-                              </Button>
+                              <div className="flex gap-2">
+                                <Button
+                                  onClick={printBarcodes}
+                                  size="sm"
+                                  className="bg-blue-600 hover:bg-blue-700"
+                                >
+                                  <Printer className="w-4 h-4 mr-2" />
+                                  In Barcode
+                                </Button>
+                                <Button
+                                  className="bg-green-600 hover:bg-green-700"
+                                  onClick={() => {
+                                    setEditingProduct(null);
+                                    resetProductForm();
+                                    setShowProductForm(true);
+                                  }}
+                                >
+                                  <Plus className="w-4 h-4 mr-2" />
+                                  {t("settings.addProduct")}
+                                </Button>
+                              </div>
                             </div>
 
                             {productsLoading ? (
@@ -3178,11 +3367,47 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
                               </div>
                             ) : (
                               <div className="w-full overflow-x-auto border rounded-md">
-                                <table className="w-full min-w-[1100px] table-fixed">
+                                <table className="w-full min-w-[980px] table-fixed">
                                   <thead>
                                     <tr className="bg-gray-50 border-b">
-                                      <th className="w-[60px] px-4 py-3 text-center font-medium text-sm text-gray-600">
-                                        {t("common.no")}
+                                      <th className="w-[50px] px-2 py-3 text-center font-medium text-sm text-gray-600">
+                                        <Checkbox
+                                          checked={
+                                            filteredProducts.length > 0 &&
+                                            filteredProducts
+                                              .slice(
+                                                (productsCurrentPage - 1) * productsPageSize,
+                                                productsCurrentPage * productsPageSize,
+                                              )
+                                              .every((p) => selectedProducts.includes(p.id))
+                                          }
+                                          onCheckedChange={(checked) => {
+                                            const currentPageProducts =
+                                              filteredProducts.slice(
+                                                (productsCurrentPage - 1) * productsPageSize,
+                                                productsCurrentPage * productsPageSize,
+                                              );
+                                            if (checked) {
+                                              setSelectedProducts([
+                                                ...selectedProducts,
+                                                ...currentPageProducts
+                                                  .filter(
+                                                    (p) => !selectedProducts.includes(p.id),
+                                                  )
+                                                  .map((p) => p.id),
+                                              ]);
+                                            } else {
+                                              setSelectedProducts(
+                                                selectedProducts.filter(
+                                                  (id) =>
+                                                    !currentPageProducts.some(
+                                                      (p) => p.id === id,
+                                                    ),
+                                                ),
+                                              );
+                                            }
+                                          }}
+                                        />
                                       </th>
                                       <th className="w-[200px] px-4 py-3 text-left font-medium text-sm text-gray-600">
                                         <div className="leading-tight break-words">
@@ -3236,24 +3461,29 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
                                         return (
                                           <tr
                                             key={product.id}
-                                            className="hover:bg-gray-50"
+                                            className="border-b border-gray-200 hover:bg-gray-50"
                                           >
-                                            <td className="py-3 px-4 text-center text-gray-600">
-                                              {index + 1}
+                                            <td className="py-3 px-2 text-center">
+                                              <Checkbox
+                                                checked={selectedProducts.includes(product.id)}
+                                                onCheckedChange={(checked) => {
+                                                  if (checked) {
+                                                    setSelectedProducts([
+                                                      ...selectedProducts,
+                                                      product.id,
+                                                    ]);
+                                                  } else {
+                                                    setSelectedProducts(
+                                                      selectedProducts.filter(
+                                                        (id) => id !== product.id,
+                                                      ),
+                                                    );
+                                                  }
+                                                }}
+                                              />
                                             </td>
                                             <td className="px-4 py-3">
                                               <div className="flex items-center gap-3">
-                                                {product.imageUrl ? (
-                                                  <img
-                                                    src={product.imageUrl}
-                                                    alt={product.name}
-                                                    className="w-10 h-10 rounded object-cover"
-                                                  />
-                                                ) : (
-                                                  <div className="w-10 h-10 rounded bg-gray-200 flex items-center justify-center">
-                                                    <Package className="w-5 h-5 text-gray-400" />
-                                                  </div>
-                                                )}
                                                 <span className="font-medium">
                                                   {product.name}
                                                 </span>
@@ -3327,13 +3557,13 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
                                                   product.isActive === true ||
                                                   product.isActive === 1
                                                     ? "bg-blue-100 text-blue-800"
-                                                    : "bg-gray-100 text-gray-800"
+                                                    : "bg-red-100 text-red-800"
                                                 }`}
                                               >
                                                 {product.isActive === true ||
                                                 product.isActive === 1
-                                                  ? t("settings.yes")
-                                                  : t("common.no")}
+                                                  ? "Đang sử dụng"
+                                                  : "Không sử dụng"}
                                               </Badge>
                                             </td>
                                             <td className="px-4 py-3">
@@ -3371,12 +3601,75 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
                               </div>
                             )}
 
-                            <div className="flex justify-between items-center mt-6">
-                              <div className="text-sm text-gray-600">
-                                {t("settings.total")} {filteredProducts.length}{" "}
-                                {t("settings.productsShowing")}
+                            {/* Pagination Controls */}
+                            {products.length > 0 && (
+                              <div className="flex items-center justify-between space-x-6 py-4 px-4 border-t border-gray-200 mt-4">
+                                <div className="flex items-center space-x-2">
+                                  <p className="text-sm font-medium">{t("common.show")}</p>
+                                  <Select
+                                    value={productsPageSize.toString()}
+                                    onValueChange={(value) => {
+                                      setProductsPageSize(Number(value));
+                                      setProductsCurrentPage(1);
+                                    }}
+                                  >
+                                    <SelectTrigger className="h-8 w-[70px]">
+                                      <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent side="top">
+                                      <SelectItem value="10">10</SelectItem>
+                                      <SelectItem value="20">20</SelectItem>
+                                      <SelectItem value="30">30</SelectItem>
+                                      <SelectItem value="50">50</SelectItem>
+                                      <SelectItem value="100">100</SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                  <p className="text-sm font-medium">{t("common.rows")}</p>
+                                </div>
+
+                                <div className="flex items-center space-x-2">
+                                  <p className="text-sm font-medium">
+                                    {t("common.page")} {productsPagination.currentPage} / {productsPagination.totalPages}
+                                  </p>
+                                  <div className="flex items-center space-x-1">
+                                    <button
+                                      onClick={() => setProductsCurrentPage(1)}
+                                      disabled={productsPagination.currentPage === 1}
+                                      className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-8 w-8"
+                                    >
+                                      «
+                                    </button>
+                                    <button
+                                      onClick={() =>
+                                        setProductsCurrentPage((prev) => Math.max(prev - 1, 1))
+                                      }
+                                      disabled={productsPagination.currentPage === 1}
+                                      className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-8 w-8"
+                                    >
+                                      ‹
+                                    </button>
+                                    <button
+                                      onClick={() =>
+                                        setProductsCurrentPage((prev) =>
+                                          Math.min(prev + 1, productsPagination.totalPages)
+                                        )
+                                      }
+                                      disabled={productsPagination.currentPage === productsPagination.totalPages}
+                                      className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-8 w-8"
+                                    >
+                                      ›
+                                    </button>
+                                    <button
+                                      onClick={() => setProductsCurrentPage(productsPagination.totalPages)}
+                                      disabled={productsPagination.currentPage === productsPagination.totalPages}
+                                      className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-8 w-8"
+                                    >
+                                      »
+                                    </button>
+                                  </div>
+                                </div>
                               </div>
-                            </div>
+                            )}
                           </CardContent>
                         </Card>
                       </TabsContent>
@@ -3405,10 +3698,28 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
                                   onChange={(e) =>
                                     setProductSearchTerm(e.target.value)
                                   }
+                                  onKeyPress={(e) => {
+                                    if (e.key === "Enter") {
+                                      queryClient.invalidateQueries({ 
+                                        queryKey: ["https://edpos-be.onrender.com/api/categories"] 
+                                      });
+                                      queryClient.invalidateQueries({ 
+                                        queryKey: ["https://edpos-be.onrender.com/api/products/all-for-count"] 
+                                      });
+                                    }
+                                  }}
                                 />
                                 <Select
                                   value={selectedCategoryFilter}
-                                  onValueChange={setSelectedCategoryFilter}
+                                  onValueChange={(value) => {
+                                    setSelectedCategoryFilter(value);
+                                    queryClient.invalidateQueries({ 
+                                      queryKey: ["https://edpos-be.onrender.com/api/categories"] 
+                                    });
+                                    queryClient.invalidateQueries({ 
+                                      queryKey: ["https://edpos-be.onrender.com/api/products/all-for-count"] 
+                                    });
+                                  }}
                                 >
                                   <SelectTrigger className="w-48">
                                     <SelectValue
@@ -3429,7 +3740,18 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
                                     ))}
                                   </SelectContent>
                                 </Select>
-                                <Button variant="outline" size="sm">
+                                <Button 
+                                  variant="outline" 
+                                  size="sm"
+                                  onClick={() => {
+                                    queryClient.invalidateQueries({ 
+                                      queryKey: ["https://edpos-be.onrender.com/api/categories"] 
+                                    });
+                                    queryClient.invalidateQueries({ 
+                                      queryKey: ["https://edpos-be.onrender.com/api/products/all-for-count"] 
+                                    });
+                                  }}
+                                >
                                   <Search className="w-4 h-4 mr-2" />
                                   {t("common.search")}
                                 </Button>
@@ -3516,8 +3838,8 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
                                         );
                                       })
                                       .map((category: any, index) => {
-                                        const productCount = productsData
-                                          ? productsData.filter(
+                                        const productCount = allProductsForCount
+                                          ? allProductsForCount.filter(
                                               (p: any) =>
                                                 p.categoryId === category.id,
                                             ).length
@@ -3902,6 +4224,15 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
                                     <Trash2 className="w-4 h-4" />
                                   </Button>
                                 </div>
+                                <Badge
+                                  variant={
+                                    method.enabled ? "default" : "secondary"
+                                  }
+                                >
+                                  {method.enabled
+                                    ? t("settings.enabled")
+                                    : t("settings.disabled")}
+                                </Badge>
                               </div>
                               <Badge
                                 variant={
@@ -4133,6 +4464,27 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
                   </div>
                 </div>
 
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="isActive" className="text-right">
+                    {t("settings.usageStatus")}
+                  </Label>
+                  <div className="col-span-3 flex items-center space-x-2">
+                    <Checkbox
+                      id="isActive"
+                      checked={productForm.isActive !== false}
+                      onCheckedChange={(checked) =>
+                        setProductForm({
+                          ...productForm,
+                          isActive: checked as boolean,
+                        })
+                      }
+                    />
+                    <Label htmlFor="isActive" className="text-sm">
+                      Sản phẩm đang được sử dụng
+                    </Label>
+                  </div>
+                </div>
+
                 {/* Price, Stock, Category, Floor, Zone, Image Upload */}
                 <div className="grid grid-cols-4 items-center gap-4">
                   <Label htmlFor="productPrice" className="text-right">
@@ -4212,7 +4564,6 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
                       <SelectValue placeholder={t("tables.floorPlaceholder")} />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="all">{t("common.all")}</SelectItem>
                       <SelectItem value="1">{t("common.floor")} 1</SelectItem>
                       <SelectItem value="2">{t("common.floor")} 2</SelectItem>
                       <SelectItem value="3">{t("common.floor")} 3</SelectItem>

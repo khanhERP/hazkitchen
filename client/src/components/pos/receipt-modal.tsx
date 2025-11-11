@@ -1387,7 +1387,7 @@ export function ReceiptModal({
                           verticalAlign: "top",
                         }}
                       >
-                        {quantity}
+                        {parseFloat(quantity)}
                       </td>
                       <td
                         style={{

@@ -292,6 +292,31 @@ export interface SettingsTranslations {
   unitLabel: string;
 }
 
+// Kitchen translations interface
+export interface KitchenTranslations {
+  title: string;
+  description: string;
+  pending: string;
+  preparing: string;
+  ready: string;
+  readyToServe: string;
+  noPendingOrders: string;
+  noPreparingOrders: string;
+  noReadyOrders: string;
+  startCooking: string;
+  complete: string;
+  completed: string;
+  table: string;
+  minutes: string;
+  minutesAgo: string;
+  fewSecondsAgo: string;
+  byTable: string;
+  byDish: string;
+  orders: string;
+  noCompletedOrders: string;
+  returnToProgress: string;
+}
+
 // Tables translations interface
 export interface TablesTranslations {
   title: string;

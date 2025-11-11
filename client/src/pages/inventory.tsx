@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -84,14 +84,23 @@ export default function InventoryPage({ onLogout }: InventoryPageProps) {
   const [stockFilter, setStockFilter] = useState<string>("all");
   const [showStockDialog, setShowStockDialog] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(20);
 
   const queryClient = useQueryClient();
 
-  const { data: products = [], isLoading: productsLoading } = useQuery<
-    Product[]
-  >({
-    queryKey: ["https://edpos-be.onrender.com/api/products"],
+  const { data: productsResponse, isLoading: productsLoading } = useQuery({
+    queryKey: ["https://edpos-be.onrender.com/api/products", { page: 1, limit: 1000 }],
+    queryFn: async () => {
+      const response = await fetch("https://edpos-be.onrender.com/api/products?page=1&limit=1000");
+      return response.json();
+    },
   });
+
+  // Extract products from paginated response
+  const products = useMemo(() => {
+    return productsResponse?.products || [];
+  }, [productsResponse]);
 
   const { data: categories = [] } = useQuery<Category[]>({
     queryKey: ["https://edpos-be.onrender.com/api/categories"],
@@ -126,12 +135,6 @@ export default function InventoryPage({ onLogout }: InventoryPageProps) {
       queryClient.refetchQueries({ queryKey: ["https://edpos-be.onrender.com/api/products"] });
       setShowStockDialog(false);
       stockUpdateForm.reset();
-      // toast({
-      //   title: t("inventory.updateSuccess") || "Cập nhật thành công",
-      //   description:
-      //     t("inventory.updateSuccessDescription") ||
-      //     "Thông tin sản phẩm đã được cập nhật",
-      // });
     },
     onError: (error) => {
       console.error("Update stock error:", error);
@@ -167,10 +170,6 @@ export default function InventoryPage({ onLogout }: InventoryPageProps) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["https://edpos-be.onrender.com/api/products"] });
-      // toast({
-      //   title: "Thành công",
-      //   description: "Trạng thái theo dõi tồn kho đã được cập nhật",
-      // });
     },
     onError: () => {
       toast({
@@ -200,12 +199,6 @@ export default function InventoryPage({ onLogout }: InventoryPageProps) {
       queryClient.invalidateQueries({ queryKey: ["https://edpos-be.onrender.com/api/products"] });
       setShowStockDialog(false);
       stockUpdateForm.reset();
-      // toast({
-      //   title: t("inventory.createSuccess") || "Tạo mới thành công",
-      //   description:
-      //     t("inventory.createSuccessDescription") ||
-      //     "Sản phẩm mới đã được thêm vào kho hàng",
-      // });
     },
     onError: (error: any) => {
       console.error("Create product error:", error);
@@ -215,13 +208,13 @@ export default function InventoryPage({ onLogout }: InventoryPageProps) {
         error?.response?.status === 409 &&
         error?.response?.data?.code === "DUPLICATE_SKU"
       ) {
-        // toast({
-        //   title: t("inventory.duplicateSku") || "Đã tồn tại sản phẩm trong kho",
-        //   description:
-        //     t("inventory.duplicateSkuDescription") ||
-        //     "SKU này đã được sử dụng cho sản phẩm khác",
-        //   variant: "destructive",
-        // });
+        toast({
+          title: t("inventory.duplicateSku") || "Đã tồn tại sản phẩm trong kho",
+          description:
+            t("inventory.duplicateSkuDescription") ||
+            "SKU này đã được sử dụng cho sản phẩm khác",
+          variant: "destructive",
+        });
       } else {
         toast({
           title: t("inventory.createFailed") || "Tạo mới thất bại",
@@ -247,10 +240,6 @@ export default function InventoryPage({ onLogout }: InventoryPageProps) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["https://edpos-be.onrender.com/api/products"] });
-      // toast({
-      //   title: "",
-      //   description: t("inventory.deleteSuccess") || "Xóa sản phẩm thành công",
-      // });
     },
     onError: (error) => {
       console.error("Delete product error:", error);
@@ -292,10 +281,6 @@ export default function InventoryPage({ onLogout }: InventoryPageProps) {
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["https://edpos-be.onrender.com/api/products"] });
-      // toast({
-      //   title: "Dọn dẹp thành công",
-      //   description: `Đã xóa ${data.deletedCount} sản phẩm vô hiệu khỏi cơ sở dữ liệu`,
-      // });
     },
     onError: (error) => {
       console.error("Cleanup error:", error);
@@ -322,6 +307,18 @@ export default function InventoryPage({ onLogout }: InventoryPageProps) {
 
     return matchesSearch && matchesCategory && matchesStock;
   });
+
+  // Pagination calculations
+  const totalPages = Math.ceil(filteredProducts.length / pageSize);
+  const paginatedProducts = filteredProducts.slice(
+    (currentPage - 1) * pageSize,
+    currentPage * pageSize
+  );
+
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, selectedCategory, stockFilter]);
 
   const lowStockCount = products.filter(
     (p) => p.stock <= 10 && p.stock > 0,
@@ -643,7 +640,7 @@ export default function InventoryPage({ onLogout }: InventoryPageProps) {
                       </tr>
                     </thead>
                     <tbody>
-                      {filteredProducts.map((product) => {
+                      {paginatedProducts.map((product) => {
                         const category = categories.find(
                           (c) => c.id === product.categoryId,
                         );
@@ -751,6 +748,70 @@ export default function InventoryPage({ onLogout }: InventoryPageProps) {
                       </p>
                     </div>
                   )}
+                </div>
+              )}
+
+              {/* Pagination Controls */}
+              {filteredProducts.length > 0 && (
+                <div className="flex items-center justify-between space-x-6 py-4 border-t border-green-200">
+                  <div className="flex items-center space-x-2">
+                    <p className="text-sm font-medium">{t("common.show")}</p>
+                    <Select
+                      value={pageSize.toString()}
+                      onValueChange={(value) => {
+                        setPageSize(Number(value));
+                        setCurrentPage(1);
+                      }}
+                    >
+                      <SelectTrigger className="h-8 w-[70px]">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent side="top">
+                        <SelectItem value="10">10</SelectItem>
+                        <SelectItem value="20">20</SelectItem>
+                        <SelectItem value="30">30</SelectItem>
+                        <SelectItem value="50">50</SelectItem>
+                        <SelectItem value="100">100</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <p className="text-sm font-medium">{t("common.rows")}</p>
+                  </div>
+
+                  <div className="flex items-center space-x-2">
+                    <p className="text-sm font-medium">
+                      {t("common.page")} {currentPage} / {totalPages}
+                    </p>
+                    <div className="flex items-center space-x-1">
+                      <button
+                        onClick={() => setCurrentPage(1)}
+                        disabled={currentPage === 1}
+                        className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-8 w-8"
+                      >
+                        «
+                      </button>
+                      <button
+                        onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                        disabled={currentPage === 1}
+                        className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-8 w-8"
+                      >
+                        ‹
+                      </button>
+                      <button
+                        onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+                        disabled={currentPage === totalPages}
+                        className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-8 w-8"
+                      >
+                        ›
+                      </button>
+                      <button
+                        onClick={() => setCurrentPage(totalPages)}
+                        disabled={currentPage === totalPages}
+                        className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-8 w-8"
+                      >
+                        »
+                      </button>
+                    </div>
+                  </div>
                 </div>
               )}
             </CardContent>

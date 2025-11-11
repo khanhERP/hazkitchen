@@ -107,7 +107,6 @@ export function PrinterConfigModal({
       // Force refetch data
       queryClient.invalidateQueries({ queryKey: ["https://edpos-be.onrender.com/api/printer-configs"] });
       queryClient.refetchQueries({ queryKey: ["https://edpos-be.onrender.com/api/printer-configs"] });
-      // toast({ title: "Thành công", description: "Đã thêm cấu hình máy in" });
       resetForm();
     },
     onError: () => {
@@ -133,10 +132,6 @@ export function PrinterConfigModal({
       // Force refetch data
       queryClient.invalidateQueries({ queryKey: ["https://edpos-be.onrender.com/api/printer-configs"] });
       queryClient.refetchQueries({ queryKey: ["https://edpos-be.onrender.com/api/printer-configs"] });
-      // toast({
-      //   title: "Thành công",
-      //   description: "Đã cập nhật cấu hình máy in",
-      // });
       resetForm();
     },
     onError: () => {
@@ -157,7 +152,6 @@ export function PrinterConfigModal({
       // Force refetch data
       queryClient.invalidateQueries({ queryKey: ["https://edpos-be.onrender.com/api/printer-configs"] });
       queryClient.refetchQueries({ queryKey: ["https://edpos-be.onrender.com/api/printer-configs"] });
-      // toast({ title: "Thành công", description: "Đã xóa cấu hình máy in" });
     },
     onError: () => {
       toast({
@@ -178,11 +172,6 @@ export function PrinterConfigModal({
       return response.json();
     },
     onSuccess: (data) => {
-      // toast({
-      //   title: data.success ? "Kết nối thành công" : "Kết nối thất bại",
-      //   description: data.message,
-      //   variant: data.success ? "default" : "destructive",
-      // });
     },
     onError: () => {
       toast({

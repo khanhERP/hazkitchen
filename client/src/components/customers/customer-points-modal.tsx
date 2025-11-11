@@ -133,10 +133,6 @@ export function CustomerPointsModal({
       queryClient.invalidateQueries({
         queryKey: ['https://edpos-be.onrender.com/api/customers'],
       });
-      // toast({
-      //   title: t("common.success"),
-      //   description: t("customers.pointsUpdated"),
-      // });
       form.reset();
       setActiveTab('overview');
     },

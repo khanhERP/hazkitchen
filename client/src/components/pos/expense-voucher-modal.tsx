@@ -206,10 +206,6 @@ export default function ExpenseVoucherModal({
     },
     onSuccess: (data) => {
       console.log("Expense voucher created successfully:", data);
-      // toast({
-      //   title: "Thành công",
-      //   description: `Đã tạo phiếu chi ${formData.voucherNumber} thành công`,
-      // });
       queryClient.invalidateQueries({ queryKey: ["https://edpos-be.onrender.com/api/expense-vouchers"] });
       queryClient.invalidateQueries({ queryKey: ["https://edpos-be.onrender.com/api/orders"] });
       onClose();
@@ -244,10 +240,6 @@ export default function ExpenseVoucherModal({
     },
     onSuccess: (data) => {
       console.log("Expense voucher updated successfully:", data);
-      // toast({
-      //   title: "Thành công",
-      //   description: `Đã cập nhật phiếu chi ${formData.voucherNumber} thành công`,
-      // });
       queryClient.invalidateQueries({ queryKey: ["https://edpos-be.onrender.com/api/expense-vouchers"] });
       queryClient.invalidateQueries({ queryKey: ["https://edpos-be.onrender.com/api/orders"] });
       setIsEditing(false);
@@ -272,10 +264,6 @@ export default function ExpenseVoucherModal({
       return response.json();
     },
     onSuccess: () => {
-      // toast({
-      //   title: "Thành công",
-      //   description: "Đã xóa phiếu chi",
-      // });
       queryClient.invalidateQueries({ queryKey: ["https://edpos-be.onrender.com/api/expense-vouchers"] });
       queryClient.invalidateQueries({ queryKey: ["https://edpos-be.onrender.com/api/orders"] });
       setShowDeleteDialog(false);

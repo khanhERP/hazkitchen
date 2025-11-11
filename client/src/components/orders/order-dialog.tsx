@@ -70,8 +70,6 @@ export function OrderDialog({
   const [selectedCategory, setSelectedCategory] = useState<number | null>(null);
   const [existingItems, setExistingItems] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState(""); // State for search input
-  const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(20);
   const { toast } = useToast();
   const { t } = useTranslation();
   const queryClient = useQueryClient();
@@ -83,13 +81,26 @@ export function OrderDialog({
   const [itemToDelete, setItemToDelete] = useState<any>(null);
 
   const { data: productsResponse } = useQuery({
-    queryKey: ["https://edpos-be.onrender.com/api/products", { search: searchQuery }],
+    queryKey: [
+      "https://edpos-be.onrender.com/api/products",
+      { category: selectedCategory, search: searchQuery },
+    ],
     queryFn: async () => {
       const params = new URLSearchParams();
-      
+
       if (searchQuery) {
         params.append("search", searchQuery);
       }
+
+      if (selectedCategory !== null) {
+        params.append("category", selectedCategory.toString());
+      }
+
+      // Load all products without pagination limit
+      params.append("limit", "50000");
+
+      // Only show active products in order dialog
+      params.append("includeInactive", "false");
 
       const response = await fetch(`https://edpos-be.onrender.com/api/products?${params}`);
       if (!response.ok) throw new Error("Failed to fetch products");
@@ -97,7 +108,7 @@ export function OrderDialog({
     },
   });
 
-  const products = productsResponse || [];
+  const products = productsResponse?.products || [];
 
   const { data: categories, isLoading: categoriesLoading } = useQuery({
     queryKey: ["https://edpos-be.onrender.com/api/categories"],
@@ -174,9 +185,24 @@ export function OrderDialog({
           // Step 1.5: If we have existing item changes, call recalculate API first
           const hasExistingItemChanges =
             existingItems.length !== (existingOrderItems?.length || 0);
+
+          // Calculate total discount from individual items
+          const sumOfItemDiscounts =
+            existingItems.reduce((sum, item) => {
+              return sum + parseFloat(item.discount || "0");
+            }, 0) +
+            cart.reduce((sum, item) => {
+              return sum + parseFloat((item as any).itemDiscount || "0");
+            }, 0);
+
+          // Check if order discount equals sum of item discounts
+          const discountsMatch = Math.abs(discount - sumOfItemDiscounts) < 0.01;
+
           const shouldRecalculate =
             hasExistingItemChanges ||
-            parseFloat(existingOrder.discount || "0") !== discount;
+            (parseFloat(existingOrder.discount || "0") !== discount &&
+              !discountsMatch);
+
           if (shouldRecalculate) {
             console.log(
               `🧮 Calling recalculate API for order ${existingOrder.id}`,
@@ -191,11 +217,33 @@ export function OrderDialog({
             } catch (error) {
               console.error("❌ Error recalculating order:", error);
             }
+          } else if (discountsMatch) {
+            console.log(
+              `⏭️ Skipping recalculation - order discount matches sum of item discounts (${discount.toLocaleString()} ₫)`,
+            );
           }
 
           // Step 1.6: Update discount, tax and priceBeforeTax for ALL order items (existing + new) via API
           // IMPORTANT: Always update, even when discount = 0 (to reset discount)
-          if (orderData?.existingItems && orderData.existingItems.length > 0) {
+          // BUT: Skip if order discount equals sum of item discounts (already distributed correctly)
+
+          // Calculate sum of item discounts again for this check
+          const totalItemDiscounts =
+            (orderData?.existingItems?.reduce((sum, item) => {
+              return sum + parseFloat(item.discount || "0");
+            }, 0) || 0) +
+            (orderData.items?.reduce((sum, item) => {
+              return sum + parseFloat(item.discount || "0");
+            }, 0) || 0);
+
+          const shouldUpdateItemDiscounts =
+            Math.abs(discount - totalItemDiscounts) >= 0.01;
+
+          if (
+            orderData?.existingItems &&
+            orderData.existingItems.length > 0 &&
+            shouldUpdateItemDiscounts
+          ) {
             // Calculate TOTAL amount including BOTH existing items AND new items
             let totalBeforeDiscount =
               (orderData?.existingItems?.reduce((sum, item) => {
@@ -496,14 +544,14 @@ export function OrderDialog({
         errorMessage = error.message;
       }
 
-      toast({
-        title: t("common.error"),
-        description:
-          mode === "edit"
-            ? `Lỗi cập nhật đơn hàng: ${errorMessage}`
-            : `Lỗi tạo đơn hàng: ${errorMessage}`,
-        variant: "destructive",
-      });
+      // toast({
+      //   title: t("common.error"),
+      //   description:
+      //     mode === "edit"
+      //       ? `Lỗi cập nhật đơn hàng: ${errorMessage}`
+      //       : `Lỗi tạo đơn hàng: ${errorMessage}`,
+      //   variant: "destructive",
+      // });
     },
   });
 
@@ -583,7 +631,24 @@ export function OrderDialog({
             : item,
         );
       }
-      return [...prev, { product, quantity: 1 }];
+
+      // Calculate total discount already allocated to existing items
+      const sumOfItemDiscounts =
+        existingItems.reduce((sum, item) => {
+          return sum + parseFloat(item.discount || "0");
+        }, 0) +
+        prev.reduce((sum, item) => {
+          return sum + parseFloat((item as any).itemDiscount || "0");
+        }, 0);
+
+      // Check if discount is already fully allocated
+      const discountsMatch = Math.abs(discount - sumOfItemDiscounts) < 0.01;
+
+      // Add new product with itemDiscount = 0 if discount already fully allocated
+      return [
+        ...prev,
+        { product, quantity: 1, itemDiscount: discountsMatch ? 0 : undefined },
+      ];
     });
   };
 
@@ -645,7 +710,7 @@ export function OrderDialog({
         const product = products?.find((p: Product) => p.id === item.productId);
 
         let itemSubtotal = 0;
-        let itemDiscountAmount = 0;
+        let itemDiscountAmount = parseFloat(item.discount || "0");
 
         // Calculate proportional discount for this item
         if (discount > 0 && totalBeforeDiscount > 0) {
@@ -698,7 +763,7 @@ export function OrderDialog({
       const product = products?.find((p: Product) => p.id === item.product.id);
 
       let itemSubtotal = 0;
-      let itemDiscountAmount = 0;
+      let itemDiscountAmount = parseFloat(item.itemDiscount || "0");
 
       // Calculate proportional discount for this item
       if (discount > 0 && totalBeforeDiscount > 0) {
@@ -775,7 +840,11 @@ export function OrderDialog({
 
     // Calculate total before discount for proportional distribution
     const totalBeforeDiscount = cartOrder.reduce((total, cartItem) => {
-      return total + parseFloat(cartItem.product.price) * cartItem.quantity;
+      return (
+        total +
+        parseFloat(cartItem.product.price) *
+          parseFloat(cartItem.quantity || "1")
+      );
     }, 0);
 
     let allocatedDiscount = 0;
@@ -788,7 +857,7 @@ export function OrderDialog({
         const orderDiscount = discount;
 
         // Calculate discount for this item using same logic as calculateSubtotal
-        let itemDiscountAmount = 0;
+        let itemDiscountAmount = parseFloat(item.discount || "0");
         if (orderDiscount > 0 && totalBeforeDiscount > 0) {
           const isLastItem = index === cartOrder.length - 1;
 
@@ -945,11 +1014,11 @@ export function OrderDialog({
         const priceIncludesTax = storeSettings?.priceIncludesTax || false;
 
         // Calculate discount for this new item
-        let itemDiscountAmount = 0;
+        let itemDiscountAmount = parseFloat(item.itemDiscount || "0");
         const isLastNewItem = index === cart.length - 1;
         const itemSubtotal = basePrice * quantity;
 
-        if (discount > 0) {
+        if (discount > 0 && itemDiscountAmount == 0) {
           if (isLastNewItem) {
             // Last new item gets remaining discount
             itemDiscountAmount = Math.max(
@@ -1070,9 +1139,9 @@ export function OrderDialog({
       let allocatedDiscount = 0;
       const updatedExistingItems = existingItems.map((item, index) => {
         let product = products?.find((p: Product) => p.id === item.productId);
-        let itemDiscountAmount = 0;
+        let itemDiscountAmount = parseFloat(item.discount || "0");
 
-        if (discount > 0) {
+        if (discount > 0 && itemDiscountAmount == 0) {
           const itemSubtotal =
             Number(item.unitPrice || 0) * Number(item.quantity || 0);
 
@@ -1197,7 +1266,7 @@ export function OrderDialog({
           quantity: item.quantity,
           unitPrice: basePrice.toString(),
           total: itemTotal.toString(),
-          discount: "0.00", // Will be calculated below
+          discount: item.itemDiscount.toString(), // Will be calculated below
           tax: Math.round(itemTax).toString(),
           priceBeforeTax: Math.round(priceBeforeTax).toString(),
           notes: item.notes || null,
@@ -1217,18 +1286,20 @@ export function OrderDialog({
         cartItemsWithDiscount = cartItemsWithDiscount.map((item, index) => {
           let product = products?.find((p: Product) => p.id === item.productId);
 
-          let itemDiscount = 0;
+          let itemDiscount = parseFloat(item.discount || "0");
 
-          if (index === cartItemsWithDiscount.length - 1) {
-            // Last item gets remaining discount
-            itemDiscount = Math.max(0, discount - allocatedDiscount);
-          } else {
-            // Calculate proportional discount
-            itemDiscount =
-              cartSubtotal > 0
-                ? Math.round((discount * item.itemSubtotal) / cartSubtotal)
-                : 0;
-            allocatedDiscount += itemDiscount;
+          if (itemDiscount == 0) {
+            if (index === cartItemsWithDiscount.length - 1) {
+              // Last item gets remaining discount
+              itemDiscount = Math.max(0, discount - allocatedDiscount);
+            } else {
+              // Calculate proportional discount
+              itemDiscount =
+                cartSubtotal > 0
+                  ? Math.round((discount * item.itemSubtotal) / cartSubtotal)
+                  : 0;
+              allocatedDiscount += itemDiscount;
+            }
           }
 
           // Calculate tax using SAME logic as calculateTax function
@@ -1261,7 +1332,7 @@ export function OrderDialog({
       // Clean up the items array for API
       const items = cartItemsWithDiscount.map((item) => ({
         productId: item.productId,
-        quantity: item.quantity,
+        quantity: item.quantity.toString(),
         unitPrice: item.basePrice.toString(),
         total: item.total,
         discount: item.discount,
@@ -1269,6 +1340,12 @@ export function OrderDialog({
         priceBeforeTax: item.priceBeforeTax,
         notes: item.notes,
       }));
+
+      if (parseFloat(order.discount || "0") === 0) {
+        order.discount = items
+          .reduce((sum, item) => sum + parseFloat(item.discount || "0"), 0)
+          .toString();
+      }
 
       console.log("Placing order:", { order, items });
       createOrderMutation.mutate({ order, items });
@@ -1304,11 +1381,6 @@ export function OrderDialog({
       }
     }
   }, [table, open, mode, existingOrder]);
-
-  // Reset to page 1 when category or search changes
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [selectedCategory, searchQuery]);
 
   useEffect(() => {
     if (
@@ -1352,17 +1424,23 @@ export function OrderDialog({
           </div>
 
           {/* Summary Section */}
-          {(cart.length > 0 || (mode === "edit" && existingItems.length > 0) || mode === "edit") && (
+          {(cart.length > 0 ||
+            (mode === "edit" && existingItems.length > 0) ||
+            mode === "edit") && (
             <div className="bg-gradient-to-r from-green-50 to-blue-50 rounded-lg p-2 mt-2 border border-green-200">
               <div className="flex items-center justify-between gap-3 text-xs">
                 <div className="flex items-center gap-1.5">
-                  <span className="text-gray-600 font-medium">{t("orders.subtotal")}</span>
+                  <span className="text-gray-600 font-medium">
+                    {t("orders.subtotal")}
+                  </span>
                   <span className="font-semibold">
                     {Math.floor(calculateSubtotal()).toLocaleString()} ₫
                   </span>
                 </div>
                 <div className="flex items-center gap-1.5">
-                  <span className="text-gray-600 font-medium">{t("reports.tax")}</span>
+                  <span className="text-gray-600 font-medium">
+                    {t("reports.tax")}
+                  </span>
                   <span className="font-semibold">
                     {Math.floor(calculateTax()).toLocaleString()} ₫
                   </span>
@@ -1392,7 +1470,10 @@ export function OrderDialog({
               {/* Customer Info */}
               <div className="grid grid-cols-2 gap-2 mb-2 p-2 bg-gray-50 rounded">
                 <div className="flex items-center gap-2">
-                  <Label htmlFor="customerCount" className="text-base font-medium text-gray-600 whitespace-nowrap">
+                  <Label
+                    htmlFor="customerCount"
+                    className="text-base font-medium text-gray-600 whitespace-nowrap"
+                  >
                     {t("tables.customerCount")}
                   </Label>
                   <Input
@@ -1401,12 +1482,17 @@ export function OrderDialog({
                     min={1}
                     max={table.capacity}
                     value={customerCount}
-                    onChange={(e) => setCustomerCount(parseInt(e.target.value) || 1)}
+                    onChange={(e) =>
+                      setCustomerCount(parseInt(e.target.value) || 1)
+                    }
                     className="h-11 text-lg border-gray-300 focus:border-green-500 focus:ring-1 focus:ring-green-500 px-3"
                   />
                 </div>
                 <div className="flex items-center gap-2">
-                  <Label htmlFor="discount" className="text-base font-medium text-gray-600 whitespace-nowrap">
+                  <Label
+                    htmlFor="discount"
+                    className="text-base font-medium text-gray-600 whitespace-nowrap"
+                  >
                     {t("reports.discount")} (₫)
                   </Label>
                   <Input
@@ -1415,7 +1501,30 @@ export function OrderDialog({
                     value={discount > 0 ? discount.toLocaleString("vi-VN") : ""}
                     onChange={(e) => {
                       const value = e.target.value.replace(/[^\d]/g, "");
-                      setDiscount(parseFloat(value) || 0);
+                      const newDiscount = parseFloat(value) || 0;
+
+                      // Calculate total of individual item discounts
+                      const sumOfItemDiscounts = cart.reduce((sum, item) => {
+                        return (
+                          sum + parseFloat((item as any).itemDiscount || "0")
+                        );
+                      }, 0);
+
+                      // Check if new discount equals sum of item discounts
+                      const discountsMatch =
+                        Math.abs(newDiscount - sumOfItemDiscounts) < 0.01;
+
+                      // Only clear item-level discounts and recalculate if they don't match
+                      if (newDiscount > 0 && !discountsMatch) {
+                        setCart((prev) =>
+                          prev.map((cartItem) => ({
+                            ...cartItem,
+                            itemDiscount: 0,
+                          })),
+                        );
+                      }
+
+                      setDiscount(newDiscount);
                     }}
                     className="h-11 text-lg border-gray-300 focus:border-green-500 focus:ring-1 focus:ring-green-500 px-3"
                     placeholder="0"
@@ -1444,18 +1553,30 @@ export function OrderDialog({
                 {Array.isArray(categories) &&
                   categories
                     .filter((category: Category) => {
-                      const isExpenseCategory = category.id == 15 || category.id == 17;
-                      const categoryProducts = products?.filter((p: Product) => p.categoryId === category.id) || [];
-                      const hasValidProducts = categoryProducts.some((p: Product) => {
-                        const productType = Number(p.productType) !== 2 || Number(p.productType) !== 4;
-                        return productType;
-                      });
+                      const isExpenseCategory =
+                        category.id == 15 || category.id == 17;
+                      const categoryProducts =
+                        products?.filter(
+                          (p: Product) => p.categoryId === category.id,
+                        ) || [];
+                      const hasValidProducts = categoryProducts.some(
+                        (p: Product) => {
+                          const productType =
+                            Number(p.productType) !== 2 ||
+                            Number(p.productType) !== 4;
+                          return productType;
+                        },
+                      );
                       return !isExpenseCategory && hasValidProducts;
                     })
                     .map((category: Category) => (
                       <Button
                         key={category.id}
-                        variant={selectedCategory === category.id ? "default" : "outline"}
+                        variant={
+                          selectedCategory === category.id
+                            ? "default"
+                            : "outline"
+                        }
                         size="sm"
                         onClick={() => setSelectedCategory(category.id)}
                         className={`whitespace-nowrap text-base h-11 px-4 ${selectedCategory === category.id ? "bg-green-600 hover:bg-green-700" : "hover:bg-gray-100"}`}
@@ -1472,7 +1593,8 @@ export function OrderDialog({
                 <Card
                   key={product.id}
                   className={`transition-all ${
-                    product.trackInventory === false || Number(product.stock) > 0
+                    product.trackInventory === false ||
+                    Number(product.stock) > 0
                       ? "cursor-pointer hover:shadow-md hover:border-green-500"
                       : "cursor-not-allowed opacity-50"
                   } border overflow-hidden`}
@@ -1480,7 +1602,9 @@ export function OrderDialog({
                   <CardContent
                     className="p-0"
                     onClick={() =>
-                      (product.trackInventory === false || Number(product.stock) > 0) && addToCart(product)
+                      (product.trackInventory === false ||
+                        Number(product.stock) > 0) &&
+                      addToCart(product)
                     }
                   >
                     {/* Product Image */}
@@ -1491,19 +1615,26 @@ export function OrderDialog({
                           alt={product.name}
                           className="w-full h-full object-cover"
                           onError={(e) => {
-                            e.currentTarget.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="100" height="100"%3E%3Crect fill="%23f3f4f6" width="100" height="100"/%3E%3Ctext x="50%25" y="50%25" font-size="14" text-anchor="middle" dy=".3em" fill="%239ca3af"%3ENo Image%3C/text%3E%3C/svg%3E';
+                            e.currentTarget.src =
+                              'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="100" height="100"%3E%3Crect fill="%23f3f4f6" width="100" height="100"/%3E%3Ctext x="50%25" y="50%25" font-size="14" text-anchor="middle" dy=".3em" fill="%239ca3af"%3ENo Image%3C/text%3E%3C/svg%3E';
                           }}
                         />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center">
-                          <span className="text-gray-400 text-xs">No Image</span>
+                          <span className="text-gray-400 text-xs">
+                            No Image
+                          </span>
                         </div>
                       )}
                       {/* Stock badge overlay */}
                       <div className="absolute top-1 right-1">
                         {product.trackInventory !== false ? (
                           <Badge
-                            variant={Number(product.stock) > 0 ? "default" : "destructive"}
+                            variant={
+                              Number(product.stock) > 0
+                                ? "default"
+                                : "destructive"
+                            }
                             className="text-xs px-1.5 py-0.5 shadow-sm"
                           >
                             {Number(product.stock) > 0
@@ -1532,11 +1663,14 @@ export function OrderDialog({
                         </p>
                       )}
                       <div className="flex items-center justify-between">
-                        <span className={`font-bold text-base ${
-                          product.trackInventory === false || Number(product.stock) > 0
-                            ? "text-green-600"
-                            : "text-gray-400"
-                        }`}>
+                        <span
+                          className={`font-bold text-base ${
+                            product.trackInventory === false ||
+                            Number(product.stock) > 0
+                              ? "text-green-600"
+                              : "text-gray-400"
+                          }`}
+                        >
                           {Math.round(Number(product.price)).toLocaleString()} ₫
                         </span>
                         {product.taxRate && parseFloat(product.taxRate) > 0 && (
@@ -1550,202 +1684,154 @@ export function OrderDialog({
                 </Card>
               ))}
             </div>
-
-            {/* Pagination Controls */}
-            {productsResponse?.pagination && productsResponse.pagination.totalCount > 0 && (
-              <div className="flex items-center justify-between space-x-4 py-2 border-t mt-2">
-                <div className="flex items-center space-x-2">
-                  <p className="text-sm font-medium">{t("common.show")}</p>
-                  <select
-                    value={pageSize.toString()}
-                    onChange={(e) => {
-                      setPageSize(Number(e.target.value));
-                      setCurrentPage(1);
-                    }}
-                    className="h-8 w-[70px] rounded-md border border-input bg-background px-2 py-1 text-sm"
-                  >
-                    <option value="20">20</option>
-                    <option value="30">30</option>
-                    <option value="50">50</option>
-                    <option value="100">100</option>
-                  </select>
-                  <p className="text-sm font-medium">{t("common.rows")}</p>
-                </div>
-
-                <div className="flex items-center space-x-2">
-                  <p className="text-sm font-medium">
-                    {t("common.page")} {productsResponse.pagination.currentPage} / {productsResponse.pagination.totalPages}
-                  </p>
-                  <div className="flex items-center space-x-1">
-                    <button
-                      onClick={() => setCurrentPage(1)}
-                      disabled={!productsResponse.pagination.hasPrev}
-                      className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-8 w-8"
-                    >
-                      «
-                    </button>
-                    <button
-                      onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-                      disabled={!productsResponse.pagination.hasPrev}
-                      className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-8 w-8"
-                    >
-                      ‹
-                    </button>
-                    <button
-                      onClick={() => setCurrentPage((prev) => Math.min(prev + 1, productsResponse.pagination.totalPages))}
-                      disabled={!productsResponse.pagination.hasNext}
-                      className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-8 w-8"
-                    >
-                      ›
-                    </button>
-                    <button
-                      onClick={() => setCurrentPage(productsResponse.pagination.totalPages)}
-                      disabled={!productsResponse.pagination.hasNext}
-                      className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-8 w-8"
-                    >
-                      »
-                    </button>
-                  </div>
-                </div>
-              </div>
-            )}
           </div>
 
           {/* Right Panel - Order Summary */}
           <div className="flex flex-col min-h-0 bg-gradient-to-br from-green-50 to-white rounded-lg border-2 border-green-200 shadow-md">
-            
-              <div className="flex-shrink-0 p-2 bg-white border-b border-green-200">
-                <div className="flex gap-1.5">
-                  <Button
-                    variant="outline"
-                    onClick={handleClose}
-                    className="flex-1 h-8 text-xs border border-gray-300 hover:bg-gray-100 font-medium px-2"
-                  >
-                    {t("common.close")}
-                  </Button>
-                  {/* Action Buttons */}
-                  {(cart.length > 0 || (mode === "edit" && existingItems.length > 0)) && (
-                    <>
-                      <Button
-                        variant="outline"
-                        onClick={() => {
-                          console.log("🖨️ Order Dialog: In tạm tính clicked", {
-                            existingItemsCount: existingItems.length,
-                            cartItemsCount: cart.length,
-                            customerName,
-                            discount,
-                          });
+            <div className="flex-shrink-0 p-2 bg-white border-b border-green-200">
+              <div className="flex gap-1.5">
+                <Button
+                  variant="outline"
+                  onClick={handleClose}
+                  className="flex-1 h-9 text-sm border border-gray-300 hover:bg-gray-100 font-medium px-2"
+                >
+                  {t("common.close")}
+                </Button>
+                {/* Action Buttons */}
+                {(cart.length > 0 ||
+                  (mode === "edit" && existingItems.length > 0)) && (
+                  <>
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        console.log("🖨️ Order Dialog: In tạm tính clicked", {
+                          existingItemsCount: existingItems.length,
+                          cartItemsCount: cart.length,
+                          customerName,
+                          discount,
+                        });
 
-                          const previewItems = [
-                            ...existingItems.map((item) => ({
-                              id: item.id,
-                              productId: item.productId,
-                              productName: item.productName,
-                              quantity: item.quantity,
-                              price: item.unitPrice,
-                              unitPrice: item.unitPrice,
-                              total: item.total,
-                              discount: item.discount || "0",
-                              tax: item.tax || "0",
-                              sku: item.productSku || `SP${item.productId}`,
-                              taxRate: (() => {
-                                const product = products?.find(
-                                  (p: Product) => p.id === item.productId,
-                                );
-                                return product?.taxRate
-                                  ? parseFloat(product.taxRate)
-                                  : 0;
-                              })(),
-                            })),
-                            ...cart.map((item) => ({
-                              id: item.product.id,
-                              productId: item.product.id,
-                              productName: item.product.name,
-                              quantity: item.quantity,
-                              price: item.product.price,
-                              unitPrice: item.product.price,
-                              total: (
-                                parseFloat(item.product.price) * item.quantity
-                              ).toString(),
-                              discount: "0",
-                              tax: "0",
-                              sku: item.product.sku || `SP${item.product.id}`,
-                              taxRate: item.product.taxRate
-                                ? parseFloat(item.product.taxRate)
-                                : 0,
-                            })),
-                          ];
+                        const previewItems = [
+                          ...existingItems.map((item) => ({
+                            id: item.id,
+                            productId: item.productId,
+                            productName: item.productName,
+                            quantity: item.quantity,
+                            price: item.unitPrice,
+                            unitPrice: item.unitPrice,
+                            total: item.total,
+                            discount: item.discount || "0",
+                            tax: item.tax || "0",
+                            sku: item.productSku || `SP${item.productId}`,
+                            taxRate: (() => {
+                              const product = products?.find(
+                                (p: Product) => p.id === item.productId,
+                              );
+                              return product?.taxRate
+                                ? parseFloat(product.taxRate)
+                                : 0;
+                            })(),
+                          })),
+                          ...cart.map((item) => ({
+                            id: item.product.id,
+                            productId: item.product.id,
+                            productName: item.product.name,
+                            quantity: item.quantity,
+                            price: item.product.price,
+                            unitPrice: item.product.price,
+                            total: (
+                              parseFloat(item.product.price) * item.quantity
+                            ).toString(),
+                            discount: "0",
+                            tax: "0",
+                            sku: item.product.sku || `SP${item.product.id}`,
+                            taxRate: item.product.taxRate
+                              ? parseFloat(item.product.taxRate)
+                              : 0,
+                          })),
+                        ];
 
-                          const subtotalAmount = Math.floor(calculateSubtotal());
-                          const taxAmount = Math.floor(calculateTax());
-                          const totalAmount = Math.floor(calculateTotal());
+                        const subtotalAmount = Math.floor(calculateSubtotal());
+                        const taxAmount = Math.floor(calculateTax());
+                        const totalAmount = Math.floor(calculateTotal());
 
-                          const previewReceipt = {
-                            id: existingOrder?.id || 0,
-                            orderId: existingOrder?.id || 0,
-                            orderNumber:
-                              existingOrder?.orderNumber ||
-                              `ORD-PREVIEW-${Date.now()}`,
-                            tableId: table?.id,
-                            tableNumber: table?.tableNumber,
-                            customerName: customerName || "Khách hàng",
-                            customerPhone: existingOrder?.customerPhone || "",
-                            customerCount: customerCount,
-                            items: previewItems,
-                            subtotal: subtotalAmount.toString(),
-                            tax: taxAmount.toString(),
-                            discount: discount.toString(),
-                            total: totalAmount.toString(),
-                            exactSubtotal: subtotalAmount,
-                            exactTax: taxAmount,
-                            exactDiscount: Math.floor(discount),
-                            exactTotal: totalAmount,
-                            transactionId:
-                              existingOrder?.orderNumber || `PREVIEW-${Date.now()}`,
-                            createdAt: new Date().toISOString(),
-                            cashierName: "Table Service",
-                            paymentMethod: "preview",
-                            isPreview: true,
-                            priceIncludeTax: storeSettings?.priceIncludesTax || false,
-                          };
+                        const previewReceipt = {
+                          id: existingOrder?.id || 0,
+                          orderId: existingOrder?.id || 0,
+                          orderNumber:
+                            existingOrder?.orderNumber ||
+                            `ORD-PREVIEW-${Date.now()}`,
+                          tableId: table?.id,
+                          tableNumber: table?.tableNumber,
+                          customerName: customerName || "Khách hàng",
+                          customerPhone: existingOrder?.customerPhone || "",
+                          customerCount: customerCount,
+                          items: previewItems,
+                          subtotal: subtotalAmount.toString(),
+                          tax: taxAmount.toString(),
+                          discount: discount.toString(),
+                          total: totalAmount.toString(),
+                          exactSubtotal: subtotalAmount,
+                          exactTax: taxAmount,
+                          exactDiscount: Math.floor(discount),
+                          exactTotal: totalAmount,
+                          transactionId:
+                            existingOrder?.orderNumber ||
+                            `PREVIEW-${Date.now()}`,
+                          createdAt: new Date().toISOString(),
+                          cashierName: "Table Service",
+                          paymentMethod: "preview",
+                          isPreview: true,
+                          priceIncludeTax:
+                            storeSettings?.priceIncludesTax || false,
+                        };
 
-                          setPreviewReceipt(previewReceipt);
-                          setShowReceiptPreview(true);
-                        }}
-                        disabled={
-                          !table ||
-                          (mode !== "edit" && cart.length === 0) ||
-                          (mode === "edit" &&
-                            existingItems.length === 0 &&
-                            cart.length === 0)
-                        }
-                        className="flex-1 h-8 text-xs border border-blue-400 text-blue-600 hover:bg-blue-50 font-medium px-2"
-                      >
-                        📄 {t("tables.printBill")}
-                      </Button>
-                      <Button
-                        onClick={handlePlaceOrder}
-                        disabled={!table || (mode !== "edit" && cart.length === 0) || createOrderMutation.isPending}
-                        className="flex-1 bg-gradient-to-r from-green-600 to-green-500 hover:from-green-700 hover:to-green-600 text-white h-8 shadow-md hover:shadow-lg transition-all font-semibold text-xs px-2"
-                      >
-                        {createOrderMutation.isPending
-                          ? mode === "edit"
-                            ? t("orders.updating")
-                            : t("tables.placing")
-                          : mode === "edit"
-                            ? t("orders.updateOrder")
-                            : t("orders.placeOrder")}
-                      </Button>
-                    </>
-                  )}
-                </div>
+                        setPreviewReceipt(previewReceipt);
+                        setShowReceiptPreview(true);
+                      }}
+                      disabled={
+                        !table ||
+                        (mode !== "edit" && cart.length === 0) ||
+                        (mode === "edit" &&
+                          existingItems.length === 0 &&
+                          cart.length === 0)
+                      }
+                      className="flex-1 h-9 text-sm border border-blue-400 text-blue-600 hover:bg-blue-50 font-medium px-2"
+                    >
+                      📄 {t("tables.printBill")}
+                    </Button>
+                    <Button
+                      onClick={handlePlaceOrder}
+                      disabled={
+                        !table ||
+                        (mode !== "edit" && cart.length === 0) ||
+                        createOrderMutation.isPending
+                      }
+                      className="flex-1 bg-gradient-to-r from-green-600 to-green-500 hover:from-green-700 hover:to-green-600 text-white h-9 shadow-md hover:shadow-lg transition-all font-semibold text-sm px-2"
+                    >
+                      {createOrderMutation.isPending
+                        ? mode === "edit"
+                          ? t("orders.updating")
+                          : t("tables.placing")
+                        : mode === "edit"
+                          ? t("orders.updateOrder")
+                          : t("orders.placeOrder")}
+                    </Button>
+                  </>
+                )}
               </div>
+            </div>
             <div className="flex items-center justify-between p-2 border-b border-green-200 flex-shrink-0 bg-green-600">
               <h3 className="text-sm font-bold text-white flex items-center gap-1.5">
                 <ShoppingCart className="w-4 h-4" />
-                {mode === "edit" ? t("orders.itemsAndNewItems") : t("tables.orderHistory")}
+                {mode === "edit"
+                  ? t("orders.itemsAndNewItems")
+                  : t("tables.orderHistory")}
               </h3>
-              <Badge variant="secondary" className="px-2 py-0.5 text-xs font-bold bg-white text-green-700 shadow-sm">
+              <Badge
+                variant="secondary"
+                className="px-2 py-0.5 text-xs font-bold bg-white text-green-700 shadow-sm"
+              >
                 {mode === "edit"
                   ? `${existingItems.length + cart.length} ${t("common.items")}`
                   : `${cart.length} ${t("tables.itemsSelected")}`}
@@ -1774,15 +1860,43 @@ export function OrderDialog({
                                   {t("orders.alreadyOrdered")}
                                 </p>
                                 {/* Individual item discount for existing items */}
-                                {discount > 0 &&
-                                  (() => {
-                                    const originalPrice = Number(
-                                      item.unitPrice || 0,
-                                    );
-                                    const quantity = Number(item.quantity || 0);
-                                    const itemTotal = originalPrice * quantity;
+                                {(() => {
+                                  const originalPrice = Number(
+                                    item.unitPrice || 0,
+                                  );
+                                  const quantity = Number(item.quantity || 0);
+                                  const itemTotal = originalPrice * quantity;
 
-                                    // Calculate total before discount for all items
+                                  // Calculate sum of all order_item discounts
+                                  const sumOfItemDiscounts =
+                                    existingItems.reduce((sum, item) => {
+                                      return (
+                                        sum + parseFloat(item.discount || "0")
+                                      );
+                                    }, 0) +
+                                    cart.reduce((sum, item) => {
+                                      return (
+                                        sum +
+                                        parseFloat(
+                                          (item as any).itemDiscount || "0",
+                                        )
+                                      );
+                                    }, 0);
+
+                                  // Check if sum of item discounts equals order discount (with small tolerance for rounding)
+                                  const discountsMatch =
+                                    Math.abs(discount - sumOfItemDiscounts) <
+                                    0.01;
+
+                                  let itemDiscountAmount = 0;
+
+                                  if (discountsMatch) {
+                                    // Use the stored discount from order_item
+                                    itemDiscountAmount = parseFloat(
+                                      item.discount || "0",
+                                    );
+                                  } else if (discount > 0) {
+                                    // Recalculate proportional discount
                                     const totalBeforeDiscount =
                                       existingItems.reduce((sum, item) => {
                                         return (
@@ -1799,8 +1913,6 @@ export function OrderDialog({
                                         );
                                       }, 0);
 
-                                    let itemDiscountAmount = 0;
-
                                     if (totalBeforeDiscount > 0) {
                                       // Calculate proportional discount
                                       itemDiscountAmount = Math.round(
@@ -1808,22 +1920,23 @@ export function OrderDialog({
                                           totalBeforeDiscount,
                                       );
                                     }
+                                  }
 
-                                    return itemDiscountAmount > 0 ? (
-                                      <div className="flex items-center gap-1 text-xs text-red-600 mt-1 bg-red-50 px-2 py-0.5 rounded">
-                                        <span className="font-medium">
-                                          {t("common.discount")}:
-                                        </span>
-                                        <span className="font-semibold">
-                                          -
-                                          {itemDiscountAmount.toLocaleString(
-                                            "vi-VN",
-                                          )}{" "}
-                                          ₫
-                                        </span>
-                                      </div>
-                                    ) : null;
-                                  })()}
+                                  return itemDiscountAmount > 0 ? (
+                                    <div className="flex items-center gap-1 text-xs text-red-600 mt-1 bg-red-50 px-2 py-0.5 rounded">
+                                      <span className="font-medium">
+                                        {t("common.discount")}:
+                                      </span>
+                                      <span className="font-semibold">
+                                        -
+                                        {itemDiscountAmount.toLocaleString(
+                                          "vi-VN",
+                                        )}{" "}
+                                        ₫
+                                      </span>
+                                    </div>
+                                  ) : null;
+                                })()}
                               </div>
                               <div className="flex items-center gap-2 flex-shrink-0">
                                 <div className="text-right bg-gray-50 px-3 py-2 rounded-lg">
@@ -1851,7 +1964,7 @@ export function OrderDialog({
                                     {parseFloat(
                                       item.unitPrice || "0",
                                     ).toLocaleString()}{" "}
-                                    ₫ × {item.quantity}
+                                    ₫ × {parseFloat(item.quantity || "0")}
                                   </p>
                                 </div>
                                 <Button
@@ -1991,8 +2104,13 @@ export function OrderDialog({
 
                                 if (taxRate > 0 && quantity > 0) {
                                   // Calculate item discount first
-                                  let itemDiscountAmount = 0;
-                                  if (discount > 0) {
+                                  let itemDiscountAmount = parseFloat(
+                                    (item as any).itemDiscount || "0",
+                                  );
+                                  if (
+                                    itemDiscountAmount === 0 &&
+                                    discount > 0
+                                  ) {
                                     const totalBeforeDiscount =
                                       (mode === "edit" && existingItems
                                         ? existingItems.reduce((sum, item) => {
@@ -2072,30 +2190,35 @@ export function OrderDialog({
                                 const quantity = item.quantity;
                                 const itemTotal = originalPrice * quantity;
 
-                                // Calculate total before discount for all items
-                                const totalBeforeDiscount =
-                                  existingItems.reduce((sum, item) => {
-                                    return (
-                                      sum +
-                                      Number(item.unitPrice || 0) *
-                                        Number(item.quantity || 0)
-                                    );
-                                  }, 0) +
-                                  cart.reduce((sum, item) => {
-                                    return (
-                                      sum +
-                                      Number(item.product.price) * item.quantity
-                                    );
-                                  }, 0);
+                                // Get item-specific discount if exists
+                                let itemDiscountAmount = parseFloat(
+                                  (item as any).itemDiscount || "0",
+                                );
 
-                                let itemDiscountAmount = 0;
+                                // If no item-specific discount, calculate from order discount
+                                if (itemDiscountAmount === 0 && discount > 0) {
+                                  const totalBeforeDiscount =
+                                    existingItems.reduce((sum, item) => {
+                                      return (
+                                        sum +
+                                        Number(item.unitPrice || 0) *
+                                          Number(item.quantity || 0)
+                                      );
+                                    }, 0) +
+                                    cart.reduce((sum, item) => {
+                                      return (
+                                        sum +
+                                        Number(item.product.price) *
+                                          item.quantity
+                                      );
+                                    }, 0);
 
-                                if (totalBeforeDiscount > 0) {
-                                  // Calculate proportional discount
-                                  itemDiscountAmount = Math.round(
-                                    (discount * itemTotal) /
-                                      totalBeforeDiscount,
-                                  );
+                                  if (totalBeforeDiscount > 0) {
+                                    itemDiscountAmount = Math.round(
+                                      (discount * itemTotal) /
+                                        totalBeforeDiscount,
+                                    );
+                                  }
                                 }
                                 let finalTotal = itemTotal - itemDiscountAmount;
 
@@ -2109,14 +2232,183 @@ export function OrderDialog({
                             </div>
                           </div>
 
+                          {/* Individual item discount input */}
+                          <div className="flex items-center gap-1 mt-1">
+                            <span className="text-xs text-gray-500">
+                              Giảm giá SP:
+                            </span>
+                            <Input
+                              type="text"
+                              inputMode="numeric"
+                              value={
+                                (item as any).itemDiscount &&
+                                parseFloat(
+                                  (
+                                    (item as any).itemDiscount || "0"
+                                  ).toString(),
+                                ) > 0
+                                  ? Math.floor(
+                                      parseFloat(
+                                        (
+                                          (item as any).itemDiscount || "0"
+                                        ).toString(),
+                                      ),
+                                    ).toLocaleString("vi-VN")
+                                  : ""
+                              }
+                              onChange={(e) => {
+                                const value = e.target.value.replace(
+                                  /[^\d]/g,
+                                  "",
+                                );
+                                let newDiscount = value
+                                  ? Math.max(0, parseInt(value))
+                                  : 0;
+
+                                // Validate: if discount > quantity × price, set to 0
+                                const maxDiscount =
+                                  parseFloat(item.product.price) *
+                                  item.quantity;
+                                if (newDiscount > maxDiscount) {
+                                  newDiscount = 0;
+                                  toast({
+                                    title: "Giảm giá không hợp lệ",
+                                    description: `Giảm giá không được vượt quá ${Math.floor(maxDiscount).toLocaleString("vi-VN")} ₫`,
+                                    variant: "destructive",
+                                  });
+                                }
+
+                                // Update cart item with individual discount
+                                setCart((prev) =>
+                                  prev.map((cartItem) =>
+                                    cartItem.product.id === item.product.id
+                                      ? {
+                                          ...cartItem,
+                                          itemDiscount: newDiscount,
+                                        }
+                                      : cartItem,
+                                  ),
+                                );
+
+                                // Calculate new total discount from all items
+                                const newTotalItemDiscount =
+                                  existingItems.reduce((sum, existingItem) => {
+                                    return (
+                                      sum +
+                                      parseFloat(existingItem.discount || "0")
+                                    );
+                                  }, 0) +
+                                  cart.reduce((sum, cartItem) => {
+                                    if (
+                                      cartItem.product.id === item.product.id
+                                    ) {
+                                      return sum + newDiscount;
+                                    }
+                                    return (
+                                      sum +
+                                      parseFloat(
+                                        (cartItem as any).itemDiscount || "0",
+                                      )
+                                    );
+                                  }, 0);
+
+                                // Compare with current order discount
+                                const discountDifference = Math.abs(
+                                  discount - newTotalItemDiscount,
+                                );
+
+                                // If they differ, recalculate order discount to match sum of item discounts
+                                if (discountDifference >= 0.01) {
+                                  setDiscount(newTotalItemDiscount);
+                                }
+                              }}
+                              onBlur={(e) => {
+                                // Validate on blur
+                                const value = e.target.value.replace(
+                                  /[^\d]/g,
+                                  "",
+                                );
+                                let newDiscount = value
+                                  ? Math.max(0, parseInt(value))
+                                  : 0;
+
+                                const maxDiscount =
+                                  parseFloat(item.product.price) *
+                                  item.quantity;
+                                if (newDiscount > maxDiscount) {
+                                  newDiscount = 0;
+                                  toast({
+                                    title: "Giảm giá không hợp lệ",
+                                    description: `Giảm giá không được vượt quá ${Math.floor(maxDiscount).toLocaleString("vi-VN")} ₫`,
+                                    variant: "destructive",
+                                  });
+
+                                  setCart((prev) =>
+                                    prev.map((cartItem) =>
+                                      cartItem.product.id === item.product.id
+                                        ? { ...cartItem, itemDiscount: 0 }
+                                        : cartItem,
+                                    ),
+                                  );
+                                }
+                              }}
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter") {
+                                  e.preventDefault();
+                                  (e.target as HTMLInputElement).blur();
+                                }
+                              }}
+                              className="w-20 h-6 text-xs px-1 text-right bg-white border-blue-300 focus:border-blue-500"
+                              placeholder="0"
+                              title="Nhập giảm giá riêng cho sản phẩm này"
+                            />
+                            <span className="text-xs text-gray-500">₫</span>
+                          </div>
+
                           {/* Individual item discount display */}
-                          {discount > 0 &&
-                            (() => {
+                          {(() => {
+                            // Calculate sum of all order_item discounts
+                            const sumOfItemDiscounts =
+                              existingItems.reduce((sum, item) => {
+                                return sum + parseFloat(item.discount || "0");
+                              }, 0) +
+                              cart.reduce((sum, item) => {
+                                return (
+                                  sum +
+                                  parseFloat((item as any).itemDiscount || "0")
+                                );
+                              }, 0);
+
+                            // Check if sum of item discounts equals order discount (with small tolerance for rounding)
+                            const discountsMatch =
+                              Math.abs(discount - sumOfItemDiscounts) < 0.01;
+
+                            const itemDiscountAmount = parseFloat(
+                              (item as any).itemDiscount || "0",
+                            );
+
+                            // If discounts match (already fully allocated), only show if this item has discount
+                            if (discountsMatch) {
+                              return itemDiscountAmount > 0 ? (
+                                <div className="text-xs text-red-600 mt-1 bg-red-50 px-2 py-0.5 rounded">
+                                  <span className="font-medium">
+                                    {t("common.discount")}:{" "}
+                                  </span>
+                                  <span className="font-semibold">
+                                    -
+                                    {itemDiscountAmount.toLocaleString("vi-VN")}{" "}
+                                    ₫
+                                  </span>
+                                </div>
+                              ) : null;
+                            }
+
+                            // Otherwise, recalculate proportional discount from order-level discount
+                            if (discount > 0 && !discountsMatch) {
                               const originalPrice = Number(item.product.price);
                               const quantity = item.quantity;
                               const itemTotal = originalPrice * quantity;
 
-                              // Calculate total before discount for all items
                               const totalBeforeDiscount =
                                 existingItems.reduce((sum, item) => {
                                   return (
@@ -2132,24 +2424,25 @@ export function OrderDialog({
                                   );
                                 }, 0);
 
-                              let itemDiscountAmount = 0;
-
+                              let proportionalDiscount = 0;
                               if (totalBeforeDiscount > 0) {
-                                // Calculate proportional discount
-                                itemDiscountAmount = Math.round(
+                                proportionalDiscount = Math.round(
                                   (discount * itemTotal) / totalBeforeDiscount,
                                 );
                               }
 
-                              return itemDiscountAmount > 0 ? (
+                              return proportionalDiscount > 0 ? (
                                 <div className="text-xs text-red-600 mt-1 text-end">
                                   <span>{t("common.discount")} : </span>
                                   <span>
-                                    -{itemDiscountAmount.toLocaleString()} ₫
+                                    -{proportionalDiscount.toLocaleString()} ₫
                                   </span>
                                 </div>
                               ) : null;
-                            })()}
+                            }
+
+                            return null;
+                          })()}
 
                           <Textarea
                             placeholder={t("tables.specialRequests")}
@@ -2168,7 +2461,9 @@ export function OrderDialog({
             </div>
 
             {/* Summary Section - Fixed at bottom of right panel */}
-            {(cart.length > 0 || (mode === "edit" && existingItems.length > 0) || mode === "edit") && (
+            {(cart.length > 0 ||
+              (mode === "edit" && existingItems.length > 0) ||
+              mode === "edit") && (
               <div className="flex-shrink-0 border-t-2 border-green-200 bg-white p-3">
                 <div className="space-y-1.5 text-base">
                   {mode === "edit" && existingItems.length > 0 && (
@@ -2208,7 +2503,9 @@ export function OrderDialog({
                     </div>
                   )}
                   <div className="flex items-center justify-between">
-                    <span className="text-gray-600">{t("orders.subtotal")}</span>
+                    <span className="text-gray-600">
+                      {t("orders.subtotal")}
+                    </span>
                     <span className="font-medium">
                       {Math.floor(calculateSubtotal()).toLocaleString()} ₫
                     </span>
@@ -2242,8 +2539,7 @@ export function OrderDialog({
             )}
           </div>
         </div>
-
-        </DialogContent>
+      </DialogContent>
 
       {/* Receipt Preview Modal */}
       {showReceiptPreview && previewReceipt && (
@@ -2433,12 +2729,12 @@ export function OrderDialog({
                           "❌ Order Dialog: Error recalculating order total:",
                           error,
                         );
-                        // toast({
-                        //   title: "Cảnh báo",
-                        //   description:
-                        //     "Món đã được xóa nhưng có lỗi khi cập nhật tổng tiền",
-                        //   variant: "destructive",
-                        // });
+                        toast({
+                          title: "Cảnh báo",
+                          description:
+                            "Món đã được xóa nhưng có lỗi khi cập nhật tổng tiền",
+                          variant: "destructive",
+                        });
                       }
                     }
 

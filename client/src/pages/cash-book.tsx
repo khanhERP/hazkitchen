@@ -187,8 +187,7 @@ export default function CashBookPage({ onLogout }: CashBookPageProps) {
     // Add income transactions from orders (thu)
     orders
       .filter((order) => {
-        const isPaid =
-          order.status === "paid" || order.paymentStatus === "paid";
+        const isPaid = order.status === "paid";
         if (!isPaid) return false;
 
         // Apply payment method filter

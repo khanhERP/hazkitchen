@@ -23,6 +23,7 @@ import CashBookPage from "./pages/cash-book";
 import NotFoundPage from "./pages/not-found";
 import PaymentMethodsPage from "@/pages/payment-methods";
 import CustomersPage from "./pages/customers";
+import Kitchen from "@/pages/kitchen"; // Import Kitchen component
 import { useQuery } from "@tanstack/react-query";
 import { Navigate } from "wouter/use-location"; // Assuming Navigate is available or similar functionality
 
@@ -67,6 +68,7 @@ function Router({ onLogout }: { onLogout: () => void }) {
         path="/tables"
         component={() => <TablesPage onLogout={onLogout} />}
       />
+      <Route path="/kitchen" component={() => <Kitchen onLogout={onLogout} />} /> {/* Add Kitchen route */}
       <Route
         path="/inventory"
         component={() => <InventoryPage onLogout={onLogout} />}

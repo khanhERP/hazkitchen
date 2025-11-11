@@ -35,10 +35,12 @@ export function SplitOrderModal({
     queryKey: ["https://edpos-be.onrender.com/api/tables"],
   });
 
-  // Fetch products to get correct tax rates
-  const { data: productsData } = useQuery({
+  // Fetch products for tax calculation
+  const { data: productsResponse } = useQuery({
     queryKey: ["https://edpos-be.onrender.com/api/products"],
   });
+
+  const productsData = productsResponse?.products || [];
 
   const getTableNumber = () => {
     if (!order?.tableId || !tablesData) return "N/A";
@@ -47,8 +49,7 @@ export function SplitOrderModal({
   };
 
   const getProductTaxRate = (productId: number): number => {
-    if (!productsData) return 0;
-    const product = productsData.find((p: any) => p.id === productId);
+    const product = productsData?.find((p: any) => p.id === productId);
     return product?.taxRate ? parseFloat(product.taxRate) : 0;
   };
 

@@ -9,6 +9,7 @@ import {
   Trash2,
   Link,
   FileImage,
+  Printer,
 } from "lucide-react";
 import {
   Dialog,
@@ -49,6 +50,7 @@ import { BulkImportModal } from "./bulk-import-modal";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import * as XLSX from "xlsx";
+import JsBarcode from "jsbarcode";
 
 interface ProductManagerModalProps {
   isOpen: boolean;
@@ -75,10 +77,14 @@ export function ProductManagerModal({
         // Return cleaned number string
         return cleaned || "0";
       })
-      .refine((val) => {
-        const num = parseInt(val, 10);
-        return !isNaN(num) && num >= 0 && num < 10000000000;
-      }, t("tables.priceValidation") || "Price must be a valid number (0 or greater) and less than 10,000,000,000"),
+      .refine(
+        (val) => {
+          const num = parseInt(val, 10);
+          return !isNaN(num) && num >= 0 && num < 10000000000;
+        },
+        t("tables.priceValidation") ||
+          "Price must be a valid number (0 or greater) and less than 10,000,000,000",
+      ),
     sku: z.string().optional(),
     name: z.string().min(1, t("tables.productNameRequired")),
     productType: z.number().min(1, t("tables.productTypeRequired")),
@@ -110,6 +116,9 @@ export function ProductManagerModal({
     "url",
   );
   const [selectedImageFile, setSelectedImageFile] = useState<File | null>(null);
+  const [selectedProducts, setSelectedProducts] = useState<number[]>([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(20);
   const { toast } = useToast();
 
   // 파일을 Base64로 변환하는 함수
@@ -123,13 +132,35 @@ export function ProductManagerModal({
   };
 
   const {
-    data: products = [],
-    isLoading,
+    data: productsResponse,
+    isLoading: productsLoading,
     refetch,
-  } = useQuery<Product[]>({
-    queryKey: ["https://edpos-be.onrender.com/api/products"],
+  } = useQuery<any>({
+    queryKey: ["https://edpos-be.onrender.com/api/products", { 
+      page: currentPage, 
+      limit: pageSize,
+      search: searchTerm
+    }],
+    queryFn: async () => {
+      const params = new URLSearchParams({
+        page: currentPage.toString(),
+        limit: pageSize.toString(),
+        includeInactive: 'true'
+      });
+      
+      if (searchTerm && searchTerm.trim()) {
+        params.append('search', searchTerm.trim());
+      }
+      
+      const response = await fetch(`https://edpos-be.onrender.com/api/products?${params.toString()}`);
+      if (!response.ok) throw new Error("Failed to fetch products");
+      return response.json();
+    },
     enabled: isOpen,
   });
+
+  const products = productsResponse?.products || [];
+  const totalPages = productsResponse?.pagination?.totalPages || 1;
 
   const { data: categories = [] } = useQuery<Category[]>({
     queryKey: ["https://edpos-be.onrender.com/api/categories"],
@@ -301,6 +332,7 @@ export function ProductManagerModal({
       floor: "all",
       zone: "A",
       unit: "Cái",
+      isActive: true,
     },
   });
 
@@ -410,8 +442,11 @@ export function ProductManagerModal({
 
     // Price is already validated and cleaned by schema
     const priceNum = parseInt(data.price, 10);
-    
-    console.log("✅ Price validation passed:", { original: data.price, parsed: priceNum });
+
+    console.log("✅ Price validation passed:", {
+      original: data.price,
+      parsed: priceNum,
+    });
 
     // Convert tax rate for storage - handle all cases consistently
     let taxRateValue = String(data.taxRate || "0");
@@ -457,14 +492,12 @@ export function ProductManagerModal({
       taxRate: taxRateValue, // Convert KCT/KKKNT to 0
       taxRateName: taxRateName, // CRITICAL: Save the display name (KCT, KKKNT, 0%, 5%, 8%, 10%)
       priceIncludesTax: Boolean(data.priceIncludesTax),
-      afterTaxPrice:
-        data.afterTaxPrice && data.afterTaxPrice.toString().trim() !== ""
-          ? String(parseInt(data.afterTaxPrice.toString().replace(/[^0-9]/g, ""), 10) || 0)
-          : "0",
-      beforeTaxPrice: undefined, // Let server calculate this
+      afterTaxPrice: 0, // Fallback to price if not set
+      beforeTaxPrice: 0, // Let server calculate this
       floor: String(data.floor || "all"), // String as expected by schema
       zone: String(data.zone || "A"), // Add zone field to ensure it's saved
       unit: data.unit || "Cái", // Unit field - ensure it's saved
+      isActive: data.isActive !== false,
     };
 
     console.log("📦 Transformed data with unit:", {
@@ -596,6 +629,7 @@ export function ProductManagerModal({
       floor: product.floor || "all",
       zone: product.zone || "A",
       unit: product.unit || "Cái", // Load unit from product
+      isActive: product.isActive !== false,
     });
     setShowAddForm(true);
   };
@@ -627,6 +661,7 @@ export function ProductManagerModal({
       floor: "all",
       zone: "A",
       unit: "Cái",
+      isActive: true,
     });
 
     console.log("Form reset with priceIncludesTax: false");
@@ -645,13 +680,171 @@ export function ProductManagerModal({
     return types[productType as keyof typeof types] || "Unknown";
   };
 
-  const filteredProducts = products.filter((product) => {
-    const searchLower = searchTerm.toLowerCase();
-    return (
-      product.name.toLowerCase().includes(searchLower) ||
-      product.sku.toLowerCase().includes(searchLower)
+  // Products are now filtered by API, use them directly
+  const filteredProducts = products;
+
+  const printBarcodes = () => {
+    if (selectedProducts.length === 0) {
+      toast({
+        title: "Thông báo",
+        description: "Vui lòng chọn ít nhất một sản phẩm để in mã vạch",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Get selected products data
+    const selectedProductsData = products.filter((p) =>
+      selectedProducts.includes(p.id),
     );
-  });
+
+    // Create print window
+    const printWindow = window.open("", "_blank");
+    if (!printWindow) {
+      toast({
+        title: "Lỗi",
+        description: "Không thể mở cửa sổ in. Vui lòng cho phép popup.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Generate HTML content for barcode labels
+    let barcodeHTML = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="UTF-8">
+        <title>In mã vạch</title>
+        <style>
+          @page {
+            size: 50mm 30mm;
+            margin: 0;
+          }
+          
+          body {
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+          }
+          
+          .barcode-label {
+            width: 50mm;
+            height: 30mm;
+            page-break-after: always;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            align-items: center;
+            border: 1px solid #000;
+            box-sizing: border-box;
+            padding: 1mm 2mm;
+          }
+          
+          .barcode-label:last-child {
+            page-break-after: auto;
+          }
+          
+          .product-name {
+            font-size: 7pt;
+            font-weight: bold;
+            text-align: center;
+            line-height: 1.1;
+            max-height: 8mm;
+            overflow: hidden;
+            width: 100%;
+            margin: 0;
+          }
+          
+          .barcode-svg {
+            width: 100%;
+            height: auto;
+            max-height: 14mm;
+            margin: 0;
+          }
+          
+          .product-price {
+            font-size: 8pt;
+            font-weight: bold;
+            text-align: center;
+            margin: 0;
+            width: 100%;
+          }
+          
+          @media print {
+            body {
+              margin: 0;
+              padding: 0;
+            }
+            
+            .barcode-label {
+              border: none;
+            }
+          }
+        </style>
+      </head>
+      <body>
+    `;
+
+    selectedProductsData.forEach((product, index) => {
+      const sku = product.sku || `ITEM-${product.id}`;
+      const price = Math.round(parseFloat(product.price)).toLocaleString(
+        "vi-VN",
+      );
+
+      barcodeHTML += `
+        <div class="barcode-label">
+          <svg class="barcode-svg" id="barcode-${index}"></svg>
+          <div class="product-name">${product.name}</div>
+          <div class="product-price">${price} ₫</div>
+        </div>
+      `;
+    });
+
+    barcodeHTML += `
+        <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
+        <script>
+          window.onload = function() {
+            ${selectedProductsData
+              .map((product, index) => {
+                const sku = product.sku || `ITEM-${product.id}`;
+                return `
+                  try {
+                    JsBarcode("#barcode-${index}", "${sku}", {
+                      format: "CODE128",
+                      width: 2,
+                      height: 50,
+                      displayValue: true,
+                      fontSize: 10,
+                      margin: 0,
+                      marginTop: 2,
+                      marginBottom: 2
+                    });
+                  } catch(e) {
+                    console.error("Error generating barcode for ${sku}:", e);
+                  }
+                `;
+              })
+              .join("\n")}
+            
+            // Auto print after barcodes are generated
+            setTimeout(function() {
+              window.print();
+            }, 500);
+          };
+        </script>
+      </body>
+      </html>
+    `;
+
+    printWindow.document.write(barcodeHTML);
+    printWindow.document.close();
+
+    // toast({
+    //   title: "Thông báo",
+    //   description: `Đang in mã vạch cho ${selectedProducts.length} sản phẩm`,
+    // });
+  };
 
   const exportProductsToExcel = () => {
     const exportData = [
@@ -746,6 +939,7 @@ export function ProductManagerModal({
           floor: "all",
           zone: "A",
           unit: "Cái",
+          isActive: true,
         });
       } else {
         // 편집 모드에서 기존 이미지 URL이 있는지 확인
@@ -759,6 +953,11 @@ export function ProductManagerModal({
       }
     }
   }, [isOpen, refetch, editingProduct, initialSearchSKU]);
+
+  // Reset to page 1 when search term changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm]);
 
   // Add keyboard support for closing modal
   useEffect(() => {
@@ -796,6 +995,7 @@ export function ProductManagerModal({
       floor: "all",
       zone: "A",
       unit: "Cái",
+      isActive: true,
     });
     onClose();
   };
@@ -835,6 +1035,15 @@ export function ProductManagerModal({
                     <Download className="mr-2" size={16} />
                     {t("tables.export")}
                   </Button>
+                  <Button
+                    variant="outline"
+                    className="border-blue-500 text-blue-700 hover:bg-blue-100 hover:border-blue-600"
+                    onClick={printBarcodes}
+                    disabled={selectedProducts.length === 0}
+                  >
+                    <Printer className="mr-2" size={16} />
+                    In mã vạch
+                  </Button>
                 </div>
 
                 <div className="flex items-center space-x-2">
@@ -858,7 +1067,7 @@ export function ProductManagerModal({
               </div>
 
               <div className="bg-gray-50 rounded-lg overflow-hidden">
-                {isLoading ? (
+                {productsLoading ? (
                   <div className="p-8 text-center">{t("tables.loading")}</div>
                 ) : filteredProducts.length === 0 ? (
                   <div className="p-8 text-center">
@@ -869,123 +1078,257 @@ export function ProductManagerModal({
                     </p>
                   </div>
                 ) : (
-                  <table className="w-full">
-                    <thead className="bg-gray-100">
-                      <tr>
-                        <th className="text-center py-3 px-2 font-medium pos-text-primary w-16">
-                          {t("common.no")}
-                        </th>
-                        <th className="text-left py-3 px-4 font-medium pos-text-primary">
-                          {t("tables.product")}
-                        </th>
-                        <th className="text-left py-3 px-4 font-medium pos-text-primary">
-                          {t("tables.sku")}
-                        </th>
-                        <th className="text-left py-3 px-4 font-medium pos-text-primary">
-                          {t("tables.category")}
-                        </th>
-                        <th className="text-left py-3 px-4 font-medium pos-text-primary">
-                          {t("tables.productType")}
-                        </th>
-                        <th className="text-left py-3 px-4 font-medium pos-text-primary">
-                          {t("tables.price")}
-                        </th>
-                        <th className="text-left py-3 px-4 font-medium pos-text-primary">
-                          {t("tables.taxRate")}
-                        </th>
-                        <th className="text-left py-3 px-4 font-medium pos-text-primary">
-                          {t("tables.stock")}
-                        </th>
-                        <th className="text-left py-3 px-4 font-medium pos-text-primary">
-                          {t("tables.actions")}
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody className="bg-white">
-                      {filteredProducts.map((product, index) => (
-                        <tr
-                          key={product.id}
-                          className="border-b border-gray-200"
-                        >
-                          <td className="py-3 px-2 text-center text-gray-600">
-                            {index + 1}
-                          </td>
-                          <td className="py-3 px-4">
-                            <div className="flex items-center space-x-3">
-                              {product.imageUrl ? (
-                                <img
-                                  src={product.imageUrl}
-                                  alt={product.name}
-                                  className="w-10 h-10 object-cover rounded"
-                                />
-                              ) : (
-                                <div className="w-10 h-10 bg-gray-200 rounded"></div>
-                              )}
-                              <span className="font-medium">
-                                {product.name}
-                              </span>
-                            </div>
-                          </td>
-                          <td className="py-3 px-4 pos-text-secondary">
-                            {product.sku}
-                          </td>
-                          <td className="py-3 px-4 pos-text-secondary">
-                            {getCategoryName(product.categoryId)}
-                          </td>
-                          <td className="py-3 px-4 pos-text-secondary">
-                            {getProductTypeName(product.productType || 1)}
-                          </td>
-                          <td className="py-3 px-4 font-medium">
-                            {Math.round(
-                              parseFloat(product.price),
-                            ).toLocaleString("en-US", {
-                              minimumFractionDigits: 0,
-                              maximumFractionDigits: 0,
-                            })}{" "}
-                            ₫
-                          </td>
-                          <td className="py-3 px-4 pos-text-secondary">
-                            {product.taxRate || ""}%
-                          </td>
-                          <td className="py-3 px-4">
-                            <span
-                              className={`px-2 py-1 text-xs rounded-full ${
-                                product.stock > 10
-                                  ? "bg-green-600 text-white"
-                                  : product.stock > 5
-                                    ? "bg-orange-500 text-white"
-                                    : product.stock > 0
-                                      ? "bg-red-500 text-white"
-                                      : "bg-gray-400 text-white"
-                              }`}
-                            >
-                              {product.stock.toLocaleString("en-US")}
-                            </span>
-                          </td>
-                          <td className="py-3 px-4">
-                            <div className="flex space-x-2">
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                onClick={() => handleEdit(product)}
-                                className="text-blue-600 hover:text-blue-800"
-                              >
-                                <Edit size={16} />
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                onClick={() => handleDelete(product.id)}
-                                className="text-red-500 hover:text-red-700"
-                              >
-                                <Trash2 size={16} />
-                              </Button>
-                            </div>
-                          </td>
+                  <>
+                    <table className="w-full">
+                      <thead className="bg-gray-100">
+                        <tr>
+                          <th className="text-center py-3 px-2 font-medium pos-text-primary w-12">
+                            <Checkbox
+                              checked={
+                                filteredProducts.length > 0 &&
+                                filteredProducts
+                                  .slice(
+                                    (currentPage - 1) * pageSize,
+                                    currentPage * pageSize,
+                                  )
+                                  .every((p) => selectedProducts.includes(p.id))
+                              }
+                              onCheckedChange={(checked) => {
+                                const currentPageProducts =
+                                  filteredProducts.slice(
+                                    (currentPage - 1) * pageSize,
+                                    currentPage * pageSize,
+                                  );
+                                if (checked) {
+                                  setSelectedProducts([
+                                    ...selectedProducts,
+                                    ...currentPageProducts
+                                      .filter(
+                                        (p) => !selectedProducts.includes(p.id),
+                                      )
+                                      .map((p) => p.id),
+                                  ]);
+                                } else {
+                                  setSelectedProducts(
+                                    selectedProducts.filter(
+                                      (id) =>
+                                        !currentPageProducts.some(
+                                          (p) => p.id === id,
+                                        ),
+                                    ),
+                                  );
+                                }
+                              }}
+                            />
+                          </th>
+                          <th className="text-center py-3 px-2 font-medium pos-text-primary w-16">
+                            {t("common.no")}
+                          </th>
+                          <th className="text-left py-3 px-4 font-medium pos-text-primary">
+                            {t("tables.product")}
+                          </th>
+                          <th className="text-left py-3 px-4 font-medium pos-text-primary">
+                            {t("tables.sku")}
+                          </th>
+                          <th className="text-left py-3 px-4 font-medium pos-text-primary">
+                            {t("tables.category")}
+                          </th>
+                          <th className="text-left py-3 px-4 font-medium pos-text-primary">
+                            {t("tables.productType")}
+                          </th>
+                          <th className="text-left py-3 px-4 font-medium pos-text-primary">
+                            {t("tables.price")}
+                          </th>
+                          <th className="text-left py-3 px-4 font-medium pos-text-primary">
+                            {t("tables.taxRate")}
+                          </th>
+                          <th className="text-left py-3 px-4 font-medium pos-text-primary">
+                            {t("tables.stock")}
+                          </th>
+                          <th className="text-left py-3 px-4 font-medium pos-text-primary">
+                            {t("tables.actions")}
+                          </th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                      </thead>
+                      <tbody className="bg-white">
+                        {filteredProducts.map((product, index) => (
+                          <tr
+                            key={product.id}
+                            className="border-b border-gray-200"
+                          >
+                            <td className="py-3 px-2 text-center">
+                              <Checkbox
+                                checked={selectedProducts.includes(product.id)}
+                                onCheckedChange={(checked) => {
+                                  if (checked) {
+                                    setSelectedProducts([
+                                      ...selectedProducts,
+                                      product.id,
+                                    ]);
+                                  } else {
+                                    setSelectedProducts(
+                                      selectedProducts.filter(
+                                        (id) => id !== product.id,
+                                      ),
+                                    );
+                                  }
+                                }}
+                              />
+                            </td>
+                            <td className="py-3 px-2 text-center text-gray-600">
+                              {(currentPage - 1) * pageSize + index + 1}
+                            </td>
+                            <td className="py-3 px-4">
+                              <div className="flex items-center space-x-3">
+                                {product.imageUrl ? (
+                                  <img
+                                    src={product.imageUrl}
+                                    alt={product.name}
+                                    className="w-10 h-10 object-cover rounded"
+                                  />
+                                ) : (
+                                  <div className="w-10 h-10 bg-gray-200 rounded"></div>
+                                )}
+                                <span className="font-medium">
+                                  {product.name}
+                                </span>
+                              </div>
+                            </td>
+                            <td className="py-3 px-4 pos-text-secondary">
+                              {product.sku}
+                            </td>
+                            <td className="py-3 px-4 pos-text-secondary">
+                              {getCategoryName(product.categoryId)}
+                            </td>
+                            <td className="py-3 px-4 pos-text-secondary">
+                              {getProductTypeName(product.productType || 1)}
+                            </td>
+                            <td className="py-3 px-4 font-medium">
+                              {Math.round(
+                                parseFloat(product.price),
+                              ).toLocaleString("en-US", {
+                                minimumFractionDigits: 0,
+                                maximumFractionDigits: 0,
+                              })}{" "}
+                              ₫
+                            </td>
+                            <td className="py-3 px-4 pos-text-secondary">
+                              {product.taxRate || ""}%
+                            </td>
+                            <td className="py-3 px-4">
+                              <span
+                                className={`px-2 py-1 text-xs rounded-full ${
+                                  product.stock > 10
+                                    ? "bg-green-600 text-white"
+                                    : product.stock > 5
+                                      ? "bg-orange-500 text-white"
+                                      : product.stock > 0
+                                        ? "bg-red-500 text-white"
+                                        : "bg-gray-400 text-white"
+                                }`}
+                              >
+                                {product.stock.toLocaleString("en-US")}
+                              </span>
+                            </td>
+                            <td className="py-3 px-4">
+                              <div className="flex space-x-2">
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => handleEdit(product)}
+                                  className="text-blue-600 hover:text-blue-800"
+                                >
+                                  <Edit size={16} />
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => handleDelete(product.id)}
+                                  className="text-red-500 hover:text-red-700"
+                                >
+                                  <Trash2 size={16} />
+                                </Button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+
+                    {/* Pagination Controls */}
+                    {filteredProducts.length > 0 && (
+                      <div className="flex items-center justify-between space-x-6 py-4 px-4 border-t border-gray-200">
+                        <div className="flex items-center space-x-2">
+                          <p className="text-sm font-medium">
+                            {t("common.show")}
+                          </p>
+                          <Select
+                            value={pageSize.toString()}
+                            onValueChange={(value) => {
+                              setPageSize(Number(value));
+                              setCurrentPage(1);
+                            }}
+                          >
+                            <SelectTrigger className="h-8 w-[70px]">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent side="top">
+                              <SelectItem value="10">10</SelectItem>
+                              <SelectItem value="20">20</SelectItem>
+                              <SelectItem value="30">30</SelectItem>
+                              <SelectItem value="50">50</SelectItem>
+                              <SelectItem value="100">100</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <p className="text-sm font-medium">
+                            {t("common.rows")}
+                          </p>
+                        </div>
+
+                        <div className="flex items-center space-x-2">
+                          <p className="text-sm font-medium">
+                            {t("common.page")} {currentPage} / {totalPages}
+                          </p>
+                          <div className="flex items-center space-x-1">
+                            <button
+                              onClick={() => setCurrentPage(1)}
+                              disabled={currentPage === 1}
+                              className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-8 w-8"
+                            >
+                              «
+                            </button>
+                            <button
+                              onClick={() =>
+                                setCurrentPage((prev) => Math.max(prev - 1, 1))
+                              }
+                              disabled={currentPage === 1}
+                              className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-8 w-8"
+                            >
+                              ‹
+                            </button>
+                            <button
+                              onClick={() =>
+                                setCurrentPage((prev) =>
+                                  Math.min(prev + 1, totalPages),
+                                )
+                              }
+                              disabled={currentPage === totalPages}
+                              className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-8 w-8"
+                            >
+                              ›
+                            </button>
+                            <button
+                              onClick={() => setCurrentPage(totalPages)}
+                              disabled={currentPage === totalPages}
+                              className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-8 w-8"
+                            >
+                              »
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
             </>
@@ -1031,9 +1374,7 @@ export function ProductManagerModal({
                       name="sku"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>
-                            {t("tables.skuAutoGenerate")}
-                          </FormLabel>
+                          <FormLabel>{t("tables.skuAutoGenerate")}</FormLabel>
                           <div className="flex gap-2">
                             <FormControl>
                               <Input
@@ -1150,7 +1491,9 @@ export function ProductManagerModal({
                                 "common.comboValues.pricePlaceholder",
                               )}
                               value={
-                                field.value !== undefined && field.value !== null && field.value !== ""
+                                field.value !== undefined &&
+                                field.value !== null &&
+                                field.value !== ""
                                   ? parseInt(
                                       field.value
                                         .toString()
@@ -1167,7 +1510,9 @@ export function ProductManagerModal({
                                 field.onChange(sanitized || "0");
 
                                 // Calculate after tax price from base price
-                                const basePrice = sanitized ? parseInt(sanitized) : 0;
+                                const basePrice = sanitized
+                                  ? parseInt(sanitized)
+                                  : 0;
                                 const taxRateValue =
                                   form.getValues("taxRate") || "0";
 
@@ -1187,7 +1532,7 @@ export function ProductManagerModal({
                                   basePrice + (basePrice * taxRateNum) / 100,
                                 );
 
-                                // Update the after tax price field
+                                // Update the after tax price field - keep it as the calculated value
                                 form.setValue(
                                   "afterTaxPrice",
                                   afterTaxPrice.toString(),
@@ -1229,7 +1574,7 @@ export function ProductManagerModal({
                                     (basePriceNum * taxRateNum) / 100,
                                 );
 
-                                // Update the after tax price field
+                                // Update the after tax price field - keep it as the calculated value
                                 form.setValue(
                                   "afterTaxPrice",
                                   afterTaxPrice.toString(),
@@ -1273,20 +1618,42 @@ export function ProductManagerModal({
                           >
                             <FormControl>
                               <SelectTrigger>
-                                <SelectValue placeholder={t("tables.unitPlaceholder")} />
+                                <SelectValue
+                                  placeholder={t("tables.unitPlaceholder")}
+                                />
                               </SelectTrigger>
                             </FormControl>
                             <SelectContent>
-                              <SelectItem value="Cái">{t("common.units.piece")}</SelectItem>
-                              <SelectItem value="Ly">{t("common.units.cup")}</SelectItem>
-                              <SelectItem value="Chai">{t("common.units.bottle")}</SelectItem>
-                              <SelectItem value="Lon">{t("common.units.can")}</SelectItem>
-                              <SelectItem value="Phần">{t("common.units.portion")}</SelectItem>
-                              <SelectItem value="Đĩa">{t("common.units.plate")}</SelectItem>
-                              <SelectItem value="Tô">{t("common.units.bowl")}</SelectItem>
-                              <SelectItem value="Kg">{t("common.units.kg")}</SelectItem>
-                              <SelectItem value="Gói">{t("common.units.package")}</SelectItem>
-                              <SelectItem value="Hộp">{t("common.units.box")}</SelectItem>
+                              <SelectItem value="Cái">
+                                {t("common.units.piece")}
+                              </SelectItem>
+                              <SelectItem value="Ly">
+                                {t("common.units.cup")}
+                              </SelectItem>
+                              <SelectItem value="Chai">
+                                {t("common.units.bottle")}
+                              </SelectItem>
+                              <SelectItem value="Lon">
+                                {t("common.units.can")}
+                              </SelectItem>
+                              <SelectItem value="Phần">
+                                {t("common.units.portion")}
+                              </SelectItem>
+                              <SelectItem value="Đĩa">
+                                {t("common.units.plate")}
+                              </SelectItem>
+                              <SelectItem value="Tô">
+                                {t("common.units.bowl")}
+                              </SelectItem>
+                              <SelectItem value="Kg">
+                                {t("common.units.kg")}
+                              </SelectItem>
+                              <SelectItem value="Gói">
+                                {t("common.units.package")}
+                              </SelectItem>
+                              <SelectItem value="Hộp">
+                                {t("common.units.box")}
+                              </SelectItem>
                             </SelectContent>
                           </Select>
                           <FormMessage />
@@ -1580,6 +1947,24 @@ export function ProductManagerModal({
                             <FormLabel>
                               {t("inventory.trackInventory")}
                             </FormLabel>
+                          </div>
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="isActive"
+                      render={({ field }) => (
+                        <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                          <FormControl>
+                            <Checkbox
+                              checked={field.value !== false}
+                              onCheckedChange={field.onChange}
+                            />
+                          </FormControl>
+                          <div className="space-y-1 leading-none">
+                            <FormLabel>Sử dụng</FormLabel>
                           </div>
                         </FormItem>
                       )}

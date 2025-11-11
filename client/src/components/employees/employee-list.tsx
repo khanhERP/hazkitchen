@@ -32,10 +32,6 @@ export function EmployeeList() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['https://edpos-be.onrender.com/api/employees'] });
-      // toast({
-      //   title: t('common.success'),
-      //   description: t('employees.deleteSuccess'),
-      // });
     },
     onError: () => {
       toast({
