@@ -423,7 +423,7 @@ export default function SalesOrders() {
   const orders = ordersResponse?.orders || [];
 
   // Query all products to get tax rates
-  const { data: products = [] } = useQuery({
+  const { data: productsPaging = [] } = useQuery({
     queryKey: ["https://edpos-be.onrender.com/api/products"],
     queryFn: async () => {
       try {
@@ -441,6 +441,8 @@ export default function SalesOrders() {
     staleTime: 0,
     gcTime: 0,
   });
+
+  const products = productsPaging?.products || [];
 
   // Query tables to map tableId to table number
   const { data: tables = [] } = useQuery({

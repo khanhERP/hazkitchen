@@ -44,9 +44,6 @@ interface CartItem {
   product: Product;
   quantity: number;
   notes?: string;
-  itemDiscount?: number; // Individual item discount
-  itemDiscountType?: "percent" | "amount"; // Type of discount
-  itemDiscountPercent?: number; // Percentage value if type is percent
 }
 
 // Helper function for currency formatting
@@ -70,6 +67,8 @@ export function OrderDialog({
   const [customerName, setCustomerName] = useState("");
   const [customerCount, setCustomerCount] = useState(1);
   const [discount, setDiscount] = useState(0);
+  const [discountType, setDiscountType] = useState<"amount" | "percent">("amount");
+  const [discountPercent, setDiscountPercent] = useState(0);
   const [selectedCategory, setSelectedCategory] = useState<number | null>(null);
   const [existingItems, setExistingItems] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState(""); // State for search input
@@ -133,16 +132,7 @@ export function OrderDialog({
       );
       const data = await response.json();
       console.log("Existing order items response:", data);
-
-      // Initialize itemDiscount and itemDiscountType for existing items
-      const processedData = data.map((item: any) => ({
-        ...item,
-        itemDiscount: parseFloat(item.discount || "0"), // Use stored discount as initial item discount
-        itemDiscountType: "amount", // Default to amount type
-        itemDiscountPercent: parseFloat(item.discount || "0") / (parseFloat(item.unitPrice || "1") * parseFloat(item.quantity || "1")) * 100, // Calculate percentage if possible
-      }));
-
-      return processedData;
+      return data;
     },
   });
 
@@ -488,15 +478,7 @@ export function OrderDialog({
               );
               const data = await response.json();
               console.log("🔄 Fresh order items fetched:", data);
-
-              // Initialize itemDiscount and itemDiscountType for existing items
-              const processedData = data.map((item: any) => ({
-                ...item,
-                itemDiscount: parseFloat(item.discount || "0"), // Use stored discount as initial item discount
-                itemDiscountType: "amount", // Default to amount type
-                itemDiscountPercent: parseFloat(item.discount || "0") / (parseFloat(item.unitPrice || "1") * parseFloat(item.quantity || "1")) * 100, // Calculate percentage if possible
-              }));
-              return processedData;
+              return data;
             },
             staleTime: 0, // Force fresh data
             gcTime: 0, // Don't cache
@@ -667,7 +649,7 @@ export function OrderDialog({
       // Add new product with itemDiscount = 0 if discount already fully allocated
       return [
         ...prev,
-        { product, quantity: 1, itemDiscount: discountsMatch ? 0 : undefined, itemDiscountType: "amount" },
+        { product, quantity: 1, itemDiscount: discountsMatch ? 0 : undefined },
       ];
     });
   };
@@ -896,7 +878,9 @@ export function OrderDialog({
           } else {
             // Regular calculation for non-last items
             const itemTotal = originalPrice * quantity;
-            itemDiscountAmount = (orderDiscount * itemTotal) / totalBeforeDiscount;
+            itemDiscountAmount = Math.round(
+              (orderDiscount * itemTotal) / totalBeforeDiscount,
+            );
             allocatedDiscount += itemDiscountAmount;
           }
         }
@@ -997,10 +981,10 @@ export function OrderDialog({
       // Calculate pre-allocated discounts for new items
       let totalBeforeDiscount =
         existingItems.reduce((sum, item) => {
-          return Number(item.unitPrice || 0) * Number(item.quantity || 0);
+          return sum + Number(item.unitPrice || 0) * Number(item.quantity || 0);
         }, 0) +
         cart.reduce((sum, item) => {
-          return parseFloat(item.product.price) * item.quantity;
+          return sum + parseFloat(item.product.price) * item.quantity;
         }, 0);
 
       let allocatedDiscountForExisting = 0;
@@ -1399,9 +1383,13 @@ export function OrderDialog({
         setCustomerName(existingOrder.customerName || "");
         setCustomerCount(existingOrder.customerCount || 1);
         setDiscount(parseFloat(existingOrder.discount || "0"));
+        setDiscountType("amount");
+        setDiscountPercent(0);
       } else {
         setCustomerCount(Math.min(table.capacity, 1));
         setDiscount(0);
+        setDiscountType("amount");
+        setDiscountPercent(0);
       }
     }
   }, [table, open, mode, existingOrder]);
@@ -1517,50 +1505,134 @@ export function OrderDialog({
                     htmlFor="discount"
                     className="text-base font-medium text-gray-600 whitespace-nowrap"
                   >
-                    {t("reports.discount")} (₫)
+                    {t("reports.discount")}
                   </Label>
-                  <Input
-                    id="discount"
-                    type="text"
-                    value={discount > 0 ? discount.toLocaleString("vi-VN") : ""}
-                    onChange={(e) => {
-                      const value = e.target.value.replace(/[^\d]/g, "");
-                      const newDiscount = parseFloat(value) || 0;
+                  <div className="flex items-center gap-1 flex-1">
+                    <Input
+                      id="discount"
+                      type="text"
+                      inputMode="numeric"
+                      value={(() => {
+                        if (discountType === "percent") {
+                          return discountPercent > 0
+                            ? discountPercent.toString()
+                            : "";
+                        }
+                        return discount > 0 ? Math.floor(discount).toLocaleString("vi-VN") : "";
+                      })()}
+                      onChange={(e) => {
+                        const value = e.target.value.replace(/[^\d]/g, "");
+                        const inputValue = value ? Math.max(0, parseInt(value)) : 0;
 
-                      // Calculate total of individual item discounts
-                      const sumOfItemDiscounts =
-                        existingItems.reduce((sum, item) => {
-                          return sum + parseFloat(item.discount || "0");
-                        }, 0) +
-                        cart.reduce((sum, item) => {
-                          return sum + parseFloat((item as any).itemDiscount || "0");
-                        }, 0);
+                        let newDiscount = 0;
+                        let newPercent = 0;
 
-                      // Check if new discount equals sum of item discounts
-                      const discountsMatch =
-                        Math.abs(newDiscount - sumOfItemDiscounts) < 0.01;
+                        // Calculate total before discount for percentage calculation
+                        const totalBeforeDiscount =
+                          (mode === "edit" && existingItems
+                            ? existingItems.reduce((sum, item) => {
+                                return (
+                                  sum +
+                                  parseFloat(item.unitPrice || "0") *
+                                    parseInt(item.quantity || "0")
+                                );
+                              }, 0)
+                            : 0) +
+                          cart.reduce((sum, item) => {
+                            return (
+                              sum +
+                              parseFloat(item.product.price) * item.quantity
+                            );
+                          }, 0);
 
-                      // Only clear item-level discounts and recalculate if they don't match
-                      if (newDiscount > 0 && !discountsMatch) {
-                        setCart((prev) =>
-                          prev.map((cartItem) => ({
-                            ...cartItem,
-                            itemDiscount: 0,
-                          })),
-                        );
-                        setExistingItems((prev) =>
-                          prev.map((item) => ({
-                            ...item,
-                            discount: "0",
-                          })),
-                        );
+                        if (discountType === "percent") {
+                          // Validate percentage (0-100)
+                          newPercent = Math.min(100, inputValue);
+                          newDiscount = Math.floor(
+                            (totalBeforeDiscount * newPercent) / 100
+                          );
+                        } else {
+                          // Validate amount
+                          newDiscount = inputValue;
+                          if (newDiscount > totalBeforeDiscount) {
+                            newDiscount = 0;
+                            toast({
+                              title: "Giảm giá không hợp lệ",
+                              description: `Giảm giá không được vượt quá ${Math.floor(totalBeforeDiscount).toLocaleString("vi-VN")} ₫`,
+                              variant: "destructive",
+                            });
+                          }
+                          newPercent =
+                            totalBeforeDiscount > 0
+                              ? Math.floor((newDiscount / totalBeforeDiscount) * 100)
+                              : 0;
+                        }
+
+                        // Calculate total of individual item discounts
+                        const sumOfItemDiscounts = 
+                          existingItems.reduce((sum, item) => {
+                            return sum + parseFloat(item.discount || "0");
+                          }, 0) +
+                          cart.reduce((sum, item) => {
+                            return (
+                              sum + parseFloat((item as any).itemDiscount || "0")
+                            );
+                          }, 0);
+
+                        // Check if new discount equals sum of item discounts
+                        const discountsMatch =
+                          Math.abs(newDiscount - sumOfItemDiscounts) < 0.01;
+
+                        // Only clear item-level discounts and recalculate if they don't match
+                        if (newDiscount > 0 && !discountsMatch) {
+                          setCart((prev) =>
+                            prev.map((cartItem) => ({
+                              ...cartItem,
+                              itemDiscount: 0,
+                            }))
+                          );
+                        }
+
+                        setDiscount(newDiscount);
+                        setDiscountPercent(newPercent);
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          (e.target as HTMLInputElement).blur();
+                        }
+                      }}
+                      className="flex-1 h-11 text-lg border-gray-300 focus:border-green-500 focus:ring-1 focus:ring-green-500 px-3 text-right"
+                      placeholder="0"
+                      title={
+                        discountType === "percent"
+                          ? "Nhập % giảm giá (0-100)"
+                          : "Nhập số tiền giảm giá"
                       }
-
-                      setDiscount(newDiscount);
-                    }}
-                    className="h-11 text-lg border-gray-300 focus:border-green-500 focus:ring-1 focus:ring-green-500 px-3"
-                    placeholder="0"
-                  />
+                    />
+                    <Button
+                      type="button"
+                      variant={discountType === "percent" ? "default" : "outline"}
+                      size="sm"
+                      className="h-11 w-12 text-sm px-2"
+                      onClick={() => {
+                        setDiscountType("percent");
+                      }}
+                    >
+                      %
+                    </Button>
+                    <Button
+                      type="button"
+                      variant={discountType === "amount" ? "default" : "outline"}
+                      size="sm"
+                      className="h-11 w-12 text-sm px-2"
+                      onClick={() => {
+                        setDiscountType("amount");
+                      }}
+                    >
+                      ₫
+                    </Button>
+                  </div>
                 </div>
               </div>
 
@@ -1815,7 +1887,7 @@ export function OrderDialog({
                           paymentMethod: "preview",
                           isPreview: true,
                           priceIncludeTax:
-                            storeSettings?.priceIncludeTax || false,
+                            storeSettings?.priceIncludesTax || false,
                         };
 
                         setPreviewReceipt(previewReceipt);
