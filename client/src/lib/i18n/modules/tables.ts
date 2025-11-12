@@ -4,6 +4,7 @@ export const tablesTranslations: { [key: string]: TablesTranslations } = {
   ko: {
     title: "테이블 관리",
     ordersActive: "개 주문 활성화",
+    people: "명",
     orderList: "주문 목록",
     addItems: "메뉴 추가",
     splitOrder: "주문 분할",
@@ -119,10 +120,12 @@ export const tablesTranslations: { [key: string]: TablesTranslations } = {
     deleteorder: "주문 삭제",
     // Split Order Modal
     splitOrderTitle: "주문 분할",
-    splitOrderInstruction: "오른쪽 대상 주문을 선택한 후 버튼을 클릭하여 항목을 이동하세요",
+    splitOrderInstruction:
+      "오른쪽 대상 주문을 선택한 후 버튼을 클릭하여 항목을 이동하세요",
     transferOne: "1개 이동 →",
     splitIntoOrders: "개 주문으로",
-    clickToSelectDestination: "주문을 클릭하여 대상을 선택한 후 → 버튼을 눌러 항목을 이동하세요",
+    clickToSelectDestination:
+      "주문을 클릭하여 대상을 선택한 후 → 버튼을 눌러 항목을 이동하세요",
     addOrder: "주문 추가",
     currentlySelected: "현재 선택됨",
     dishName: "메뉴명",
@@ -146,6 +149,7 @@ export const tablesTranslations: { [key: string]: TablesTranslations } = {
   },
   en: {
     title: "Table Management",
+    people: "People",
     orderList: "Order List",
     ordersActive: "orders active",
     description: "Check table status and manage orders",
@@ -154,10 +158,11 @@ export const tablesTranslations: { [key: string]: TablesTranslations } = {
     splitOrder: "Split Order",
     printBill: "Print Bill",
     payWithPoints: "Pay with Points",
+    transferTable: "Transfer Table",
+    tableSettings: "Table Settings",
     tableStatus: "Table Status",
     expensesType: "Expense Type",
     orderManagement: "Order Management",
-    tableSettings: "Table Settings",
     tableSettingsDesc: "Add, edit, and delete tables",
     tableNumber: "Table Number",
     tableCapacity: "Table Capacity",
@@ -265,10 +270,12 @@ export const tablesTranslations: { [key: string]: TablesTranslations } = {
     deleteorder: "Delete Order",
     // Split Order Modal
     splitOrderTitle: "Split Order",
-    splitOrderInstruction: "Select the destination order on the right, then click the button to move items",
+    splitOrderInstruction:
+      "Select the destination order on the right, then click the button to move items",
     transferOne: "Transfer 1 →",
     splitIntoOrders: " orders",
-    clickToSelectDestination: "Click on the order to select destination, then press → to move items",
+    clickToSelectDestination:
+      "Click on the order to select destination, then press → to move items",
     addOrder: "Add Order",
     currentlySelected: "Currently Selected",
     dishName: "Dish Name",
@@ -293,6 +300,7 @@ export const tablesTranslations: { [key: string]: TablesTranslations } = {
   },
   vi: {
     title: "Quản lý bàn",
+    people: "Người",
     orderList: "Danh sách đơn hàng",
     ordersActive: " đơn hàng đang hoạt động",
     description: "Kiểm tra trạng thái bàn và quản lý đơn hàng",
@@ -448,10 +456,12 @@ export const tablesTranslations: { [key: string]: TablesTranslations } = {
     startDate: "Ngày bắt đầu",
     endDate: "Ngày kết thúc",
     splitOrderTitle: "Tách order",
-    splitOrderInstruction: "Chọn đơn đích bên phải, sau đó click nút để chuyển món",
+    splitOrderInstruction:
+      "Chọn đơn đích bên phải, sau đó click nút để chuyển món",
     transferOne: "Chuyển 1 →",
     splitIntoOrders: " order",
-    clickToSelectDestination: "Click vào đơn để chọn đích, sau đó bấm → để đẩy món",
+    clickToSelectDestination:
+      "Click vào đơn để chọn đích, sau đó bấm → để đẩy món",
     addOrder: "Thêm order",
     currentlySelected: "Đang chọn",
     dishName: "Tên món",

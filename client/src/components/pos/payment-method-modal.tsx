@@ -192,13 +192,12 @@ export function PaymentMethodModal({
     console.log("All payment methods from API:", paymentMethods);
 
     // Filter to only return enabled payment methods and map to modal format
-    const enabledMethods = paymentMethods
-      .map((method: any) => ({
-        id: method.nameKey,
-        name: getPaymentMethodName(method.nameKey),
-        icon: getIconComponent(method.type),
-        description: getMethodDescription(method.nameKey),
-      }));
+    const enabledMethods = paymentMethods.map((method: any) => ({
+      id: method.nameKey,
+      name: getPaymentMethodName(method.nameKey),
+      icon: getIconComponent(method.type),
+      description: getMethodDescription(method.nameKey),
+    }));
 
     console.log("Enabled payment methods:", enabledMethods);
     return enabledMethods;

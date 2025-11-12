@@ -178,6 +178,9 @@ export interface POSTranslations {
   customerPhonePlaceholder: string;
   showingAllProducts: string;
   bestsellersEmptyState: string;
+  noData: string;
+  noDataDescription: string;
+  productNotFoundWithCode: string;
 }
 
 export const posTranslations: { [key: string]: POSTranslations } = {
@@ -224,7 +227,7 @@ export const posTranslations: { [key: string]: POSTranslations } = {
     scanBarcode: "바코드 스캔",
     productScanned: "상품 스캔됨",
     scanFailed: "스캔 실패",
-    productNotFound: "상품을 찾을 수 없습니다",
+    productNotFound: "제품을 찾을 수 없습니다",
     addItemsToCart: "상품을 장바구니에 추가하여 시작하세요",
     emptyCart: "장바구니가 비어있습니다",
     clearCart: "장바구니 비우기",
@@ -324,8 +327,8 @@ export const posTranslations: { [key: string]: POSTranslations } = {
     tax: "세금:",
     total: "총계:",
     totalAmount: "금액:",
-    paymentMethod: "결제 방법",
-    amountReceived: "받은 금액",
+    paymentMethodLabel: "결제 방법:",
+    amountReceivedLabel: "받은 금액:",
     phone: "전화:",
 
     // Printer configuration
@@ -363,11 +366,18 @@ export const posTranslations: { [key: string]: POSTranslations } = {
     posLocation: "POS 위치",
     floor: "층",
     zone: "구역",
+    numberOfCopies: "인쇄 매수",
+    enterNumberOfCopies: "인쇄 매수 입력",
+    all: "전체",
     customerRequired: "고객을 선택해야 주문할 수 있습니다.",
     orderPlacedSuccess: "주문이 성공적으로 접수되었습니다.",
     orderPlacedSuccessDesc: "주문이 '주문됨' 상태로 저장되었습니다.",
     showingAllProducts: "모든 {{count}}개 제품 표시 중",
     bestsellersEmptyState: "매출이 발생하면 '베스트셀러' 데이터가 자동으로 업데이트됩니다.",
+    noData: "데이터 없음",
+    noDataDescription: "표시할 데이터가 없습니다",
+    productNotFound: "제품을 찾을 수 없습니다",
+    productNotFoundWithCode: "'{code}' 제품을 찾을 수 없습니다",
   },
   en: {
     title: "POS System",
@@ -549,11 +559,18 @@ export const posTranslations: { [key: string]: POSTranslations } = {
     posLocation: "POS Location",
     floor: "Floor",
     zone: "Zone",
+    numberOfCopies: "Number of Copies",
+    enterNumberOfCopies: "Enter number of copies",
+    all: "All",
     customerRequired: "Customer selection is required before placing an order.",
     orderPlacedSuccess: "Order successfully placed.",
     orderPlacedSuccessDesc: "The order has been saved with a 'placed' status.",
     showingAllProducts: "Showing all {{count}} products",
     bestsellersEmptyState: "Bestseller data will be automatically updated when the store generates sales.",
+    noData: "No data",
+    noDataDescription: "No data to display",
+    productNotFound: "Product not found",
+    productNotFoundWithCode: "No product found with code '{code}'",
   },
   vi: {
     title: "Hệ thống POS",
@@ -735,10 +752,17 @@ export const posTranslations: { [key: string]: POSTranslations } = {
     posLocation: "Vị trí POS",
     floor: "Tầng",
     zone: "Khu vực",
+    numberOfCopies: "Số lần in",
+    enterNumberOfCopies: "Nhập số lần in",
+    all: "Tất cả",
     customerRequired: "Vui lòng chọn khách hàng trước khi đặt hàng.",
     orderPlacedSuccess: "Đặt hàng thành công",
     orderPlacedSuccessDesc: "Đơn hàng đã được lưu với trạng thái đặt hàng",
     showingAllProducts: "Hiển thị tất cả {{count}} sản phẩm",
     bestsellersEmptyState: "Dữ liệu \"Sản phẩm bán chạy\" sẽ được cập nhật tự động khi cửa hàng phát sinh doanh số.",
+    noData: "Không có dữ liệu",
+    noDataDescription: "Không có dữ liệu để hiển thị",
+    productNotFound: "Không tìm thấy sản phẩm",
+    productNotFoundWithCode: "Không có sản phẩm nào với mã '{code}'",
   },
 };

@@ -21,6 +21,15 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+  PaginationEllipsis,
+} from "@/components/ui/pagination";
 import { Badge } from "@/components/ui/badge";
 import { POSHeader } from "@/components/pos/header";
 import { RightSidebar } from "@/components/ui/right-sidebar";
@@ -75,6 +84,10 @@ export default function CashBookPage({ onLogout }: CashBookPageProps) {
   const [endDate, setEndDate] = useState(() => {
     return new Date().toISOString().split("T")[0];
   });
+
+  // Pagination
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(20);
 
   // Query orders (thu - income from sales)
   const { data: orders = [] } = useQuery({
@@ -543,6 +556,20 @@ export default function CashBookPage({ onLogout }: CashBookPageProps) {
     filterType,
     voucherTypeFilter,
   ]);
+
+  // Paginated data
+  const paginatedData = useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    return filteredData.transactions.slice(startIndex, endIndex);
+  }, [filteredData.transactions, currentPage, itemsPerPage]);
+
+  const totalPages = Math.ceil(filteredData.transactions.length / itemsPerPage);
+
+  // Reset to page 1 when filters change
+  useMemo(() => {
+    setCurrentPage(1);
+  }, [filterType, voucherTypeFilter, paymentMethodFilter, startDate, endDate]);
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat("vi-VN", {
@@ -1127,7 +1154,7 @@ export default function CashBookPage({ onLogout }: CashBookPageProps) {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {filteredData.transactions.map((transaction) => (
+                      {paginatedData.map((transaction) => (
                         <TableRow
                           key={transaction.id}
                           className={
@@ -1211,6 +1238,86 @@ export default function CashBookPage({ onLogout }: CashBookPageProps) {
               )}
             </CardContent>
           </Card>
+
+          {/* Pagination Controls */}
+          {filteredData.transactions.length > 0 && (
+            <div className="flex items-center justify-between space-x-6 py-4">
+              <div className="flex items-center space-x-2">
+                <p className="text-sm font-medium">{t("common.show")}</p>
+                <Select
+                  value={itemsPerPage.toString()}
+                  onValueChange={(value) => {
+                    setItemsPerPage(Number(value));
+                    setCurrentPage(1);
+                  }}
+                >
+                  <SelectTrigger className="h-8 w-[70px]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent side="top">
+                    <SelectItem value="10">10</SelectItem>
+                    <SelectItem value="20">20</SelectItem>
+                    <SelectItem value="30">30</SelectItem>
+                    <SelectItem value="50">50</SelectItem>
+                    <SelectItem value="100">100</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-sm font-medium">{t("common.rows")}</p>
+              </div>
+
+              <div className="flex items-center space-x-2">
+                <p className="text-sm text-muted-foreground">
+                  {t("common.showing")}{" "}
+                  {(currentPage - 1) * itemsPerPage + 1} -{" "}
+                  {Math.min(
+                    currentPage * itemsPerPage,
+                    filteredData.transactions.length
+                  )}{" "}
+                  {t("common.of")} {filteredData.transactions.length}
+                </p>
+                <div className="flex items-center space-x-1">
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={() => setCurrentPage(1)}
+                    disabled={currentPage === 1}
+                    className="h-8 w-8"
+                  >
+                    «
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                    disabled={currentPage === 1}
+                    className="h-8 w-8"
+                  >
+                    ‹
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={() =>
+                      setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+                    }
+                    disabled={currentPage === totalPages}
+                    className="h-8 w-8"
+                  >
+                    ›
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={() => setCurrentPage(totalPages)}
+                    disabled={currentPage === totalPages}
+                    className="h-8 w-8"
+                  >
+                    »
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 

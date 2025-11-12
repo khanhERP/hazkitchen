@@ -423,7 +423,7 @@ export default function SalesOrders() {
   const orders = ordersResponse?.orders || [];
 
   // Query all products to get tax rates
-  const { data: productsPaging = [] } = useQuery({
+  const { data: productsPaging } = useQuery({
     queryKey: ["https://edpos-be.onrender.com/api/products"],
     queryFn: async () => {
       try {
@@ -1575,7 +1575,7 @@ export default function SalesOrders() {
           continue;
         }
 
-        const product = products.find((p: any) => p.id === item.productId);
+        const product = products?.find((p: any) => p.id === item.productId);
         const taxRate = product?.taxRate
           ? parseFloat(product.taxRate) / 100
           : 0;
@@ -2295,7 +2295,7 @@ export default function SalesOrders() {
           editedItem.productId !== undefined
             ? editedItem.productId
             : item.productId;
-        const product = products.find((p: any) => p.id === productId);
+        const product = products?.find((p: any) => p.id === productId);
         const taxRate = product?.taxRate
           ? parseFloat(product.taxRate) / 100
           : 0;
@@ -2382,7 +2382,7 @@ export default function SalesOrders() {
 
   const exportSelectedOrdersToExcel = () => {
     if (selectedOrderIds.size === 0) {
-      alert("Vui lòng chọn ít nhất một đơn hàng để xuất Excel");
+      alert("Vui lòng chọn ít nhất một đ �n hàng để xuất Excel");
       return;
     }
 

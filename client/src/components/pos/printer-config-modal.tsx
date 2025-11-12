@@ -438,7 +438,7 @@ export function PrinterConfigModal({
                         <SelectValue placeholder={t("tables.floorPlaceholder")} />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="all">Tất cả</SelectItem>
+                        <SelectItem value="all">{t("pos.all")}</SelectItem>
                         <SelectItem value="1">{t("common.floor")} 1</SelectItem>
                         <SelectItem value="2">{t("common.floor")} 2</SelectItem>
                         <SelectItem value="3">{t("common.floor")} 3</SelectItem>
@@ -504,7 +504,7 @@ export function PrinterConfigModal({
                 </div>
 
                 <div>
-                  <Label htmlFor="copies">Số lần in</Label>
+                  <Label htmlFor="copies">{t("pos.numberOfCopies")}</Label>
                   <Input
                     id="copies"
                     type="number"
@@ -516,7 +516,7 @@ export function PrinterConfigModal({
                         copies: parseInt(e.target.value) || 0,
                       })
                     }
-                    placeholder="Nhập số lần in"
+                    placeholder={t("pos.enterNumberOfCopies")}
                   />
                 </div>
 
@@ -600,7 +600,7 @@ export function PrinterConfigModal({
                                   )}
                                 <br />
                                 <span className="text-xs text-blue-600">
-                                  Số lần in: {config.copies || 0}
+                                  {t("pos.numberOfCopies")}: {config.copies || 0}
                                 </span>
                                 {config.floor && config.zone && (
                                   <>

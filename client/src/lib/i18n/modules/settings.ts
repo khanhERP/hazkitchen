@@ -139,6 +139,8 @@ export const settingsTranslations: { [key: string]: SettingsTranslations } = {
     paymentUpdateSuccessTitle: "성공",
     paymentUpdateSuccessDesc: "결제 방법이 성공적으로 업데이트되었습니다",
     einvoiceShort: "HĐĐT",
+    autoPublish: "자동 발행",
+    autoPublishDesc: "주문 생성 후 자동으로 전자세금계산서 발행",
     employeeDeleteSuccessTitle: "성공",
     employeeDeleteSuccessDesc: "직원이 성공적으로 삭제되었습니다",
     genericErrorTitle: "오류",
@@ -523,6 +525,8 @@ export const settingsTranslations: { [key: string]: SettingsTranslations } = {
     paymentUpdateSuccessTitle: "Success",
     paymentUpdateSuccessDesc: "Payment method has been updated successfully",
     einvoiceShort: "E-Invoice",
+    autoPublish: "Auto Publish",
+    autoPublishDesc: "Automatically publish invoice after order creation",
     employeeDeleteSuccessTitle: "Success",
     employeeDeleteSuccessDesc: "Employee has been deleted successfully",
     genericErrorTitle: "Error",
@@ -924,6 +928,8 @@ export const settingsTranslations: { [key: string]: SettingsTranslations } = {
     paymentUpdateSuccessDesc:
       "Phương thức thanh toán đã được cập nhật thành công",
     einvoiceShort: "HĐĐT",
+    autoPublish: "Phát hành tự động",
+    autoPublishDesc: "Tự động phát hành hóa đơn sau khi tạo",
     employeeDeleteSuccessTitle: "Thành công",
     employeeDeleteSuccessDesc: "Nhân viên đã được xóa thành công",
     genericErrorTitle: "Lỗi",
@@ -983,8 +989,8 @@ export const settingsTranslations: { [key: string]: SettingsTranslations } = {
     loadingEmployeeData: "Đang tải dữ liệu nhân viên...",
     // Sign methods
     signMethodServer: "Ký server",
-    signMethodUsb: "USB Token",
-    signMethodHsm: "HSM",
+    signMethodUsb: "Ký USB Token",
+    signMethodHsm: "Ký HSM",
     // CQT codes
     cqtCodeLevel1: "Cấp nhật",
     cqtCodeLevel2: "Cấp hai",

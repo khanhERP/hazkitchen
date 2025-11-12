@@ -238,9 +238,9 @@ export function CustomerFormModal({ isOpen, onClose, customer, initialPhone }: C
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="info">Thông tin chính</TabsTrigger>
+            <TabsTrigger value="info">{t('customers.mainInfo')}</TabsTrigger>
             <TabsTrigger value="orders" disabled={!customer?.id}>
-              Lịch sử đơn hàng
+              {t('customers.orderHistory')}
               {orderHistory && orderHistory.length > 0 && (
                 <Badge variant="secondary" className="ml-2">{orderHistory.length}</Badge>
               )}

@@ -1385,7 +1385,13 @@ export function TableGrid({ onTableSelect, selectedTableId }: TableGridProps) {
   });
 
   const transferTableMutation = useMutation({
-    mutationFn: async ({ orderId, newTableId }: { orderId: number; newTableId: number }) => {
+    mutationFn: async ({
+      orderId,
+      newTableId,
+    }: {
+      orderId: number;
+      newTableId: number;
+    }) => {
       const order = orders?.find((o: any) => o.id === orderId);
       if (!order) throw new Error("Order not found");
 
@@ -1399,12 +1405,19 @@ export function TableGrid({ onTableSelect, selectedTableId }: TableGridProps) {
       });
 
       // Step 1: Update order's table ID - this will transfer all order items automatically
-      const orderUpdateResponse = await apiRequest("PUT", `https://edpos-be.onrender.com/api/orders/${orderId}`, {
-        tableId: newTableId,
-      });
+      const orderUpdateResponse = await apiRequest(
+        "PUT",
+        `https://edpos-be.onrender.com/api/orders/${orderId}`,
+        {
+          tableId: newTableId,
+        },
+      );
 
       const updatedOrder = await orderUpdateResponse.json();
-      console.log(`✅ Order ${orderId} transferred to table ${newTableId}:`, updatedOrder);
+      console.log(
+        `✅ Order ${orderId} transferred to table ${newTableId}:`,
+        updatedOrder,
+      );
 
       // Step 2: Update new table status to occupied
       try {
@@ -1440,10 +1453,15 @@ export function TableGrid({ onTableSelect, selectedTableId }: TableGridProps) {
             });
             console.log(`✅ Old table ${oldTableId} set to available`);
           } else {
-            console.log(`⏳ Old table ${oldTableId} still has ${otherActiveOrders.length} active orders`);
+            console.log(
+              `⏳ Old table ${oldTableId} still has ${otherActiveOrders.length} active orders`,
+            );
           }
         } catch (oldTableError) {
-          console.error(`❌ Error updating old table ${oldTableId}:`, oldTableError);
+          console.error(
+            `❌ Error updating old table ${oldTableId}:`,
+            oldTableError,
+          );
         }
       }
 
@@ -3579,10 +3597,20 @@ export function TableGrid({ onTableSelect, selectedTableId }: TableGridProps) {
                                   }}
                                   className="text-xs bg-indigo-50 border-indigo-300 text-indigo-700 hover:bg-indigo-100 hover:border-indigo-400"
                                 >
-                                  <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+                                  <svg
+                                    className="w-3 h-3 mr-1"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
+                                  >
+                                    <path
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                      strokeWidth={2}
+                                      d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"
+                                    />
                                   </svg>
-                                  Chuyển bàn
+                                  {t("tables.transferTable")}
                                 </Button>
 
                                 {/* 7. Hủy đơn */}
@@ -4394,7 +4422,10 @@ export function TableGrid({ onTableSelect, selectedTableId }: TableGridProps) {
       </Dialog>
 
       {/* Transfer Table Dialog */}
-      <Dialog open={showTransferTableDialog} onOpenChange={setShowTransferTableDialog}>
+      <Dialog
+        open={showTransferTableDialog}
+        onOpenChange={setShowTransferTableDialog}
+      >
         <DialogContent className="max-w-4xl max-h-[90vh]">
           <DialogHeader>
             <DialogTitle>Chuyển bàn</DialogTitle>
@@ -4425,38 +4456,44 @@ export function TableGrid({ onTableSelect, selectedTableId }: TableGridProps) {
             {sortedFloors.map((floor) => (
               <TabsContent key={floor} value={floor} className="mt-0">
                 <div className="grid grid-cols-3 gap-4 max-h-96 overflow-y-auto p-4">
-                  {Array.isArray(tables) && tablesByFloor[floor]
-                    .filter((table: Table) => 
-                      table.id !== orderToTransfer?.tableId && 
-                      table.status === "available"
-                    )
-                    .map((table: Table) => (
-                      <Card
-                        key={table.id}
-                        className={`cursor-pointer transition-all ${
-                          targetTableId === table.id
-                            ? "ring-2 ring-blue-500 bg-blue-50"
-                            : "hover:bg-gray-50"
-                        }`}
-                        onClick={() => setTargetTableId(table.id)}
-                      >
-                        <CardContent className="p-4 text-center">
-                          <div className="font-bold text-lg mb-2">
-                            {table.tableNumber}
-                          </div>
-                          <div className="text-sm text-gray-600">
-                            <Users className="w-3 h-3 inline mr-1" />
-                            {table.capacity} {t("orders.people")}
-                          </div>
-                          <Badge variant="default" className="mt-2 text-xs bg-green-500">
-                            {t("tables.available")}
-                          </Badge>
-                        </CardContent>
-                      </Card>
-                    ))}
-                  {tablesByFloor[floor].filter((table: Table) => 
-                    table.id !== orderToTransfer?.tableId && 
-                    table.status === "available"
+                  {Array.isArray(tables) &&
+                    tablesByFloor[floor]
+                      .filter(
+                        (table: Table) =>
+                          table.id !== orderToTransfer?.tableId &&
+                          table.status === "available",
+                      )
+                      .map((table: Table) => (
+                        <Card
+                          key={table.id}
+                          className={`cursor-pointer transition-all ${
+                            targetTableId === table.id
+                              ? "ring-2 ring-blue-500 bg-blue-50"
+                              : "hover:bg-gray-50"
+                          }`}
+                          onClick={() => setTargetTableId(table.id)}
+                        >
+                          <CardContent className="p-4 text-center">
+                            <div className="font-bold text-lg mb-2">
+                              {table.tableNumber}
+                            </div>
+                            <div className="text-sm text-gray-600">
+                              <Users className="w-3 h-3 inline mr-1" />
+                              {table.capacity} {t("orders.people")}
+                            </div>
+                            <Badge
+                              variant="default"
+                              className="mt-2 text-xs bg-green-500"
+                            >
+                              {t("tables.available")}
+                            </Badge>
+                          </CardContent>
+                        </Card>
+                      ))}
+                  {tablesByFloor[floor].filter(
+                    (table: Table) =>
+                      table.id !== orderToTransfer?.tableId &&
+                      table.status === "available",
                   ).length === 0 && (
                     <div className="col-span-3 text-center py-8 text-gray-500">
                       Không có bàn trống trên tầng này
@@ -4490,7 +4527,9 @@ export function TableGrid({ onTableSelect, selectedTableId }: TableGridProps) {
               disabled={!targetTableId || transferTableMutation.isPending}
               className="bg-blue-600 hover:bg-blue-700"
             >
-              {transferTableMutation.isPending ? "Đang chuyển..." : "Xác nhận chuyển"}
+              {transferTableMutation.isPending
+                ? "Đang chuyển..."
+                : "Xác nhận chuyển"}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -4510,10 +4549,12 @@ export function TableGrid({ onTableSelect, selectedTableId }: TableGridProps) {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => {
-              setShowCancelOrderDialog(false);
-              setOrderToCancel(null);
-            }}>
+            <AlertDialogCancel
+              onClick={() => {
+                setShowCancelOrderDialog(false);
+                setOrderToCancel(null);
+              }}
+            >
               {t("common.cancel")}
             </AlertDialogCancel>
             <AlertDialogAction

@@ -263,7 +263,7 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
     trackInventory: true, // Default to true
     isActive: true, // Default to true
     // Added fields for product type, tax rate, and unit
-    productType: 1, // Default to Goods Type
+    productType: 1,
     taxRate: "0", // Default to 8%
     unit: "Cái", // Default to Cái
   });
@@ -3056,8 +3056,7 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
                                           ? "bg-purple-500"
                                           : customer.membershipLevel === "GOLD"
                                             ? "bg-yellow-500"
-                                            : customer.membershipLevel ===
-                                                "SILVER"
+                                            : customer.membershipLevel === "SILVER"
                                               ? "bg-gray-300 text-black"
                                               : "bg-gray-400"
                                       } text-white`}
@@ -5207,8 +5206,7 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
                         ...prev,
                         password: e.target.value,
                       }))
-                    }
-                    className={`col-span-3 ${
+                    }                    className={`col-span-3 ${
                       eInvoiceFormErrors.password ? "border-red-500" : ""
                     }`}
                     placeholder={t("settings.passwordLabel")}
@@ -5291,19 +5289,22 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
                         signMethod: value,
                       }))
                     }
-                    disabled={true}
                   >
                     <SelectTrigger className="col-span-3">
-                      <SelectValue />
+                      <SelectValue
+                        placeholder={t(
+                          "settings.signMethodLabel",
+                        )}
+                      />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="Ký server">
                         {t("settings.signMethodServer")}
                       </SelectItem>
-                      <SelectItem value="USB Token">
-                        {t("settings.signMethodUsbToken")}
+                      <SelectItem value="Ký USB Token">
+                        {t("settings.signMethodUsb")}
                       </SelectItem>
-                      <SelectItem value="HSM">
+                      <SelectItem value="Ký HSM">
                         {t("settings.signMethodHsm")}
                       </SelectItem>
                     </SelectContent>
@@ -5376,7 +5377,7 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
                 </div>
                 <div className="grid grid-cols-4 items-center gap-4">
                   <Label htmlFor="autoPublish" className="text-right">
-                    Phát hành tự động
+                    {t("settings.autoPublish")}
                   </Label>
                   <div className="col-span-3 flex items-center space-x-2">
                     <Switch
@@ -5385,14 +5386,20 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
                       onCheckedChange={(checked) =>
                         setEInvoiceForm((prev) => ({
                           ...prev,
-                          autoPublish: checked,
+                          autoPublish: Boolean(checked),
                         }))
                       }
                     />
-                    <Label htmlFor="autoPublish" className="text-sm">
-                      Tự động phát hành hóa đơn sau khi tạo
+                    <Label
+                      htmlFor="autoPublish"
+                      className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                    >
+                      {t("settings.autoPublish")}
                     </Label>
                   </div>
+                  <p className="text-xs text-gray-500">
+                    {t("settings.autoPublishDesc")}
+                  </p>
                 </div>
               </div>
               <DialogFooter>

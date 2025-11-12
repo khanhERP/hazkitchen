@@ -258,9 +258,11 @@ export function OrderManagement() {
     queryKey: ["https://edpos-be.onrender.com/api/tables"],
   });
 
-  const { data: products } = useQuery({
+  const { data: productsPaging } = useQuery({
     queryKey: ["https://edpos-be.onrender.com/api/products"],
   });
+
+  const products = productsPaging?.products || [];
 
   const { data: customers } = useQuery({
     queryKey: ["https://edpos-be.onrender.com/api/customers"],
@@ -2022,7 +2024,9 @@ export function OrderManagement() {
                       {/* Order Summary - Match table-grid format */}
                       <div className="space-y-1 border-t pt-2">
                         <div className="flex justify-between">
-                          <span className="text-gray-600">{t("orders.orderNumberLabel")}</span>
+                          <span className="text-gray-600">
+                            {t("orders.orderNumberLabel")}
+                          </span>
                           <span className="font-medium">
                             {order.orderNumber}
                           </span>
@@ -3298,7 +3302,6 @@ export function OrderManagement() {
             itemsCount: orderForPayment?.processedItems?.length || 0,
           });
           setShowEInvoiceModal(true);
-
         }}
         total={orderForPayment?.total ? Math.round(orderForPayment.total) : 0}
         cartItems={

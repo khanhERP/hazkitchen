@@ -101,6 +101,7 @@ export function ShoppingCart({
   const [selectedSkuIndex, setSelectedSkuIndex] = useState(0);
   const [isAddingProduct, setIsAddingProduct] = useState(false);
   const skuSearchDebounceTimer = useRef<NodeJS.Timeout | null>(null);
+  const skuInputRef = useRef<HTMLInputElement>(null);
 
   // Fetch store settings to check price_include_tax setting
   const { data: storeSettings } = useQuery({
@@ -113,6 +114,16 @@ export function ShoppingCart({
       return response.json();
     },
   });
+
+  // Auto-focus SKU search input on mount
+  useEffect(() => {
+    if (storeSettings?.businessType === "retail" && skuInputRef.current) {
+      // Small delay to ensure component is fully rendered
+      setTimeout(() => {
+        skuInputRef.current?.focus();
+      }, 100);
+    }
+  }, [storeSettings?.businessType]);
 
   // Get priceIncludesTax setting from store settings
   const priceIncludesTax = storeSettings?.priceIncludesTax === true;
@@ -1198,6 +1209,7 @@ export function ShoppingCart({
         const isLastItem = currentIndex === cart.length - 1;
 
         if (isLastItem) {
+          // Last item: total discount - sum of all previous discounts
           let previousDiscounts = 0;
           for (let i = 0; i < cart.length - 1; i++) {
             const prevItem = cart[i];
@@ -1213,10 +1225,13 @@ export function ShoppingCart({
           }
           itemDiscountAmount = Math.max(0, orderDiscount - previousDiscounts);
         } else {
-          const itemTotal = unitPrice * quantity;
+          // Regular calculation for non-last items
+          const totalBeforeDiscount = cart.reduce((total, cartItem) => {
+            return total + parseFloat(cartItem.price) * cartItem.quantity;
+          }, 0);
           itemDiscountAmount =
             totalBeforeDiscount > 0
-              ? Math.round((orderDiscount * itemTotal) / totalBeforeDiscount)
+              ? Math.round((orderDiscount * (unitPrice * quantity)) / totalBeforeDiscount)
               : 0;
         }
       }
@@ -1847,6 +1862,7 @@ export function ShoppingCart({
         <div className="p-4 border-b pos-border bg-gradient-to-r from-green-50 to-emerald-50 mt-3">
           <div className="relative">
             <Input
+              ref={skuInputRef}
               type="text"
               value={skuSearch}
               onChange={(e) => {
@@ -1854,14 +1870,23 @@ export function ShoppingCart({
                 setSkuSearch(e.target.value);
               }}
               onKeyDown={(e) => {
-                if (e.key === "Enter" && skuSearchResults.length > 0) {
+                if (e.key === "Enter") {
                   e.preventDefault();
-                  // Chỉ thêm nếu có nhiều hơn 1 kết quả (vì 1 kết quả đã tự động thêm)
-                  if (skuSearchResults.length > 1 && !isAddingProduct) {
-                    const productToAdd = skuSearchResults[selectedSkuIndex];
-                    if (productToAdd) {
-                      handleAddProductFromSku(productToAdd);
+                  if (skuSearchResults.length > 0) {
+                    // Chỉ thêm nếu có nhiều hơn 1 kết quả (vì 1 kết quả đã tự động thêm)
+                    if (skuSearchResults.length > 1 && !isAddingProduct) {
+                      const productToAdd = skuSearchResults[selectedSkuIndex];
+                      if (productToAdd) {
+                        handleAddProductFromSku(productToAdd);
+                      }
                     }
+                  } else if (skuSearch.trim().length > 0) {
+                    // Show notification when no products found
+                    toast({
+                      title: t("pos.productNotFound"),
+                      description: t("pos.productNotFoundWithCode").replace('{code}', skuSearch),
+                      variant: "destructive",
+                    });
                   }
                 } else if (
                   e.key === "ArrowDown" &&
