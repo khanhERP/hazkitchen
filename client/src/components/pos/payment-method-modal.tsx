@@ -177,9 +177,9 @@ export function PaymentMethodModal({
 
   // Query payment methods from API
   const { data: paymentMethodsData } = useQuery({
-    queryKey: ["https://edpos-be.onrender.com/api/payment-methods"],
+    queryKey: ["https://edpos-be.onrender.com/api/payment-methods/active"],
     queryFn: async () => {
-      const response = await apiRequest("GET", "https://edpos-be.onrender.com/api/payment-methods");
+      const response = await apiRequest("GET", "https://edpos-be.onrender.com/api/payment-methods/active");
       return response.json();
     },
     enabled: isOpen, // Only fetch when modal is open
@@ -193,7 +193,6 @@ export function PaymentMethodModal({
 
     // Filter to only return enabled payment methods and map to modal format
     const enabledMethods = paymentMethods
-      .filter((method: any) => method.enabled === true)
       .map((method: any) => ({
         id: method.nameKey,
         name: getPaymentMethodName(method.nameKey),
