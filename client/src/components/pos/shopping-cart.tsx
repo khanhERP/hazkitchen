@@ -2135,7 +2135,7 @@ export function ShoppingCart({
                       </p>
                     )}
 
-                    {/* Individual item discount input */}
+                    {/* Individual item discount input with type toggle */}
                     <div className="flex items-center gap-1 mt-1">
                       <span className="text-xs text-gray-500">
                         Giảm giá SP:
@@ -2144,33 +2144,53 @@ export function ShoppingCart({
                         type="text"
                         inputMode="numeric"
                         value={
-                          item.discount &&
-                          parseFloat(item.discount.toString()) > 0
-                            ? Math.floor(
-                                parseFloat(item.discount.toString()),
-                              ).toLocaleString("vi-VN")
-                            : ""
+                          (item as any).itemDiscountType === "percent"
+                            ? (item as any).itemDiscountPercent || ""
+                            : item.discount &&
+                              parseFloat(item.discount.toString()) > 0
+                              ? Math.floor(
+                                  parseFloat(item.discount.toString()),
+                                ).toLocaleString("vi-VN")
+                              : ""
                         }
                         onChange={(e) => {
-                          // Chỉ update giá trị hiển thị - KHÔNG tính toán
                           const value = e.target.value.replace(/[^\d]/g, "");
-                          let newDiscount = value
+                          const inputValue = value
                             ? Math.max(0, parseInt(value))
                             : 0;
 
-                          // Validate: nếu giảm giá > số lượng × đơn giá thì set = 0
-                          const maxDiscount =
+                          const itemTotal =
                             parseFloat(item.price) * item.quantity;
-                          if (newDiscount > maxDiscount) {
-                            newDiscount = 0;
-                            toast({
-                              title: "Giảm giá không hợp lệ",
-                              description: `Giảm giá không được vượt quá ${Math.floor(maxDiscount).toLocaleString("vi-VN")} ₫`,
-                              variant: "destructive",
-                            });
+
+                          let newDiscount = 0;
+                          let newPercent = 0;
+
+                          if ((item as any).itemDiscountType === "percent") {
+                            // Validate percentage (0-100)
+                            newPercent = Math.min(100, inputValue);
+                            newDiscount = Math.floor(
+                              (itemTotal * newPercent) / 100,
+                            );
+                          } else {
+                            // Validate amount
+                            newDiscount = inputValue;
+                            if (newDiscount > itemTotal) {
+                              newDiscount = 0;
+                              toast({
+                                title: "Giảm giá không hợp lệ",
+                                description: `Giảm giá không được vượt quá ${Math.floor(itemTotal).toLocaleString("vi-VN")} ₫`,
+                                variant: "destructive",
+                              });
+                            }
+                            newPercent =
+                              itemTotal > 0
+                                ? Math.floor((newDiscount / itemTotal) * 100)
+                                : 0;
                           }
 
+                          // Update item with new discount values
                           item.discount = newDiscount;
+                          (item as any).itemDiscountPercent = newPercent;
 
                           // Reset order-level discount to 0 when entering product discount
                           if (newDiscount > 0) {
@@ -2194,23 +2214,39 @@ export function ShoppingCart({
                         onBlur={(e) => {
                           // Khi blur: Validate và tính toán lại
                           const value = e.target.value.replace(/[^\d]/g, "");
-                          let newDiscount = value
+                          const inputValue = value
                             ? Math.max(0, parseInt(value))
                             : 0;
 
-                          // Validate: nếu giảm giá > số lượng × đơn giá thì set = 0
-                          const maxDiscount =
+                          const itemTotal =
                             parseFloat(item.price) * item.quantity;
-                          if (newDiscount > maxDiscount) {
-                            newDiscount = 0;
-                            toast({
-                              title: "Giảm giá không hợp lệ",
-                              description: `Giảm giá không được vượt quá ${Math.floor(maxDiscount).toLocaleString("vi-VN")} ₫`,
-                              variant: "destructive",
-                            });
+
+                          let newDiscount = 0;
+                          let newPercent = 0;
+
+                          if ((item as any).itemDiscountType === "percent") {
+                            newPercent = Math.min(100, inputValue);
+                            newDiscount = Math.floor(
+                              (itemTotal * newPercent) / 100,
+                            );
+                          } else {
+                            newDiscount = inputValue;
+                            if (newDiscount > itemTotal) {
+                              newDiscount = 0;
+                              toast({
+                                title: "Giảm giá không hợp lệ",
+                                description: `Giảm giá không được vượt quá ${Math.floor(itemTotal).toLocaleString("vi-VN")} ₫`,
+                                variant: "destructive",
+                              });
+                            }
+                            newPercent =
+                              itemTotal > 0
+                                ? Math.floor((newDiscount / itemTotal) * 100)
+                                : 0;
                           }
 
                           item.discount = newDiscount;
+                          (item as any).itemDiscountPercent = newPercent;
 
                           // Tính toán lại
                           const productId =
@@ -2268,9 +2304,44 @@ export function ShoppingCart({
                         }}
                         className="w-20 h-6 text-xs px-1 text-right bg-white border-blue-300 focus:border-blue-500"
                         placeholder="0"
-                        title="Nhập giảm giá riêng cho sản phẩm này"
+                        title={
+                          (item as any).itemDiscountType === "percent"
+                            ? "Nhập % giảm giá (0-100)"
+                            : "Nhập số tiền giảm giá"
+                        }
                       />
-                      <span className="text-xs text-gray-500">₫</span>
+                      <Button
+                        type="button"
+                        variant={(item as any).itemDiscountType === "percent" ? "default" : "outline"}
+                        size="sm"
+                        className="h-6 w-8 text-xs px-1"
+                        onClick={() => {
+                          (item as any).itemDiscountType = "percent";
+                          const productId =
+                            typeof item.id === "string"
+                              ? parseInt(item.id)
+                              : item.id;
+                          onUpdateQuantity(productId, item.quantity);
+                        }}
+                      >
+                        %
+                      </Button>
+                      <Button
+                        type="button"
+                        variant={(item as any).itemDiscountType === "amount" || !(item as any).itemDiscountType ? "default" : "outline"}
+                        size="sm"
+                        className="h-6 w-8 text-xs px-1"
+                        onClick={() => {
+                          (item as any).itemDiscountType = "amount";
+                          const productId =
+                            typeof item.id === "string"
+                              ? parseInt(item.id)
+                              : item.id;
+                          onUpdateQuantity(productId, item.quantity);
+                        }}
+                      >
+                        ₫
+                      </Button>
                     </div>
 
                     {/* Individual item discount display */}
