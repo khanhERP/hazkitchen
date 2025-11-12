@@ -2238,7 +2238,7 @@ export function OrderDialog({
                             </div>
                           </div>
 
-                          {/* Individual item discount input */}
+                          {/* Individual item discount input with type toggle */}
                           <div className="flex items-center gap-1 mt-1">
                             <span className="text-xs text-gray-500">
                               Giảm giá SP:
@@ -2247,41 +2247,64 @@ export function OrderDialog({
                               type="text"
                               inputMode="numeric"
                               value={
-                                (item as any).itemDiscount &&
-                                parseFloat(
-                                  (
-                                    (item as any).itemDiscount || "0"
-                                  ).toString(),
-                                ) > 0
-                                  ? Math.floor(
-                                      parseFloat(
-                                        (
-                                          (item as any).itemDiscount || "0"
-                                        ).toString(),
-                                      ),
-                                    ).toLocaleString("vi-VN")
-                                  : ""
+                                (item as any).itemDiscountType === "percent"
+                                  ? (item as any).itemDiscountPercent || ""
+                                  : (item as any).itemDiscount &&
+                                    parseFloat(
+                                      (
+                                        (item as any).itemDiscount || "0"
+                                      ).toString(),
+                                    ) > 0
+                                    ? Math.floor(
+                                        parseFloat(
+                                          (
+                                            (item as any).itemDiscount || "0"
+                                          ).toString(),
+                                        ),
+                                      ).toLocaleString("vi-VN")
+                                    : ""
                               }
                               onChange={(e) => {
                                 const value = e.target.value.replace(
                                   /[^\d]/g,
                                   "",
                                 );
-                                let newDiscount = value
+                                const inputValue = value
                                   ? Math.max(0, parseInt(value))
                                   : 0;
 
-                                // Validate: if discount > quantity × price, set to 0
-                                const maxDiscount =
+                                const itemTotal =
                                   parseFloat(item.product.price) *
                                   item.quantity;
-                                if (newDiscount > maxDiscount) {
-                                  newDiscount = 0;
-                                  toast({
-                                    title: "Giảm giá không hợp lệ",
-                                    description: `Giảm giá không được vượt quá ${Math.floor(maxDiscount).toLocaleString("vi-VN")} ₫`,
-                                    variant: "destructive",
-                                  });
+
+                                let newDiscount = 0;
+                                let newPercent = 0;
+
+                                if (
+                                  (item as any).itemDiscountType === "percent"
+                                ) {
+                                  // Validate percentage (0-100)
+                                  newPercent = Math.min(100, inputValue);
+                                  newDiscount = Math.floor(
+                                    (itemTotal * newPercent) / 100,
+                                  );
+                                } else {
+                                  // Validate amount
+                                  newDiscount = inputValue;
+                                  if (newDiscount > itemTotal) {
+                                    newDiscount = 0;
+                                    toast({
+                                      title: "Giảm giá không hợp lệ",
+                                      description: `Giảm giá không được vượt quá ${Math.floor(itemTotal).toLocaleString("vi-VN")} ₫`,
+                                      variant: "destructive",
+                                    });
+                                  }
+                                  newPercent =
+                                    itemTotal > 0
+                                      ? Math.floor(
+                                          (newDiscount / itemTotal) * 100,
+                                        )
+                                      : 0;
                                 }
 
                                 // Update cart item with individual discount
@@ -2291,6 +2314,7 @@ export function OrderDialog({
                                       ? {
                                           ...cartItem,
                                           itemDiscount: newDiscount,
+                                          itemDiscountPercent: newPercent,
                                         }
                                       : cartItem,
                                   ),
@@ -2318,44 +2342,12 @@ export function OrderDialog({
                                     );
                                   }, 0);
 
-                                // Compare with current order discount
+                                // If they differ, recalculate order discount to match sum of item discounts
                                 const discountDifference = Math.abs(
                                   discount - newTotalItemDiscount,
                                 );
-
-                                // If they differ, recalculate order discount to match sum of item discounts
                                 if (discountDifference >= 0.01) {
                                   setDiscount(newTotalItemDiscount);
-                                }
-                              }}
-                              onBlur={(e) => {
-                                // Validate on blur
-                                const value = e.target.value.replace(
-                                  /[^\d]/g,
-                                  "",
-                                );
-                                let newDiscount = value
-                                  ? Math.max(0, parseInt(value))
-                                  : 0;
-
-                                const maxDiscount =
-                                  parseFloat(item.product.price) *
-                                  item.quantity;
-                                if (newDiscount > maxDiscount) {
-                                  newDiscount = 0;
-                                  toast({
-                                    title: "Giảm giá không hợp lệ",
-                                    description: `Giảm giá không được vượt quá ${Math.floor(maxDiscount).toLocaleString("vi-VN")} ₫`,
-                                    variant: "destructive",
-                                  });
-
-                                  setCart((prev) =>
-                                    prev.map((cartItem) =>
-                                      cartItem.product.id === item.product.id
-                                        ? { ...cartItem, itemDiscount: 0 }
-                                        : cartItem,
-                                    ),
-                                  );
                                 }
                               }}
                               onKeyDown={(e) => {
@@ -2366,9 +2358,41 @@ export function OrderDialog({
                               }}
                               className="w-20 h-6 text-xs px-1 text-right bg-white border-blue-300 focus:border-blue-500"
                               placeholder="0"
-                              title="Nhập giảm giá riêng cho sản phẩm này"
+                              title={
+                                (item as any).itemDiscountType === "percent"
+                                  ? "Nhập % giảm giá (0-100)"
+                                  : "Nhập số tiền giảm giá"
+                              }
                             />
-                            <span className="text-xs text-gray-500">₫</span>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              className="h-6 w-12 text-xs px-1 border-blue-300 hover:bg-blue-50"
+                              onClick={() => {
+                                const currentType =
+                                  (item as any).itemDiscountType || "amount";
+                                const newType =
+                                  currentType === "percent"
+                                    ? "amount"
+                                    : "percent";
+
+                                setCart((prev) =>
+                                  prev.map((cartItem) =>
+                                    cartItem.product.id === item.product.id
+                                      ? {
+                                          ...cartItem,
+                                          itemDiscountType: newType,
+                                        }
+                                      : cartItem,
+                                  ),
+                                );
+                              }}
+                            >
+                              {(item as any).itemDiscountType === "percent"
+                                ? "%"
+                                : "₫"}
+                            </Button>
                           </div>
 
                           {/* Individual item discount display */}
