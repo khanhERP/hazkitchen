@@ -226,7 +226,7 @@ export function EInvoiceModal({
 
   // Query all products to get tax rates
   const { data: productsPaging } = useQuery({
-    queryKey: ["https://edpos-be.onrender.com/api/products"],
+    queryKey: ["https://edpos-be.onrender.com/api/products", { limit: 50000, includeInactive: false }],
     queryFn: async () => {
       try {
         const params = new URLSearchParams();
@@ -240,16 +240,22 @@ export function EInvoiceModal({
           throw new Error(`HTTP error! status: ${response.status}`);
         }
         const data = await response.json();
-        return Array.isArray(data) ? data : [];
+        console.log("📦 E-Invoice: Fetched products data:", data);
+        return data;
       } catch (error) {
-        console.error("Error fetching products:", error);
-        return [];
+        console.error("❌ E-Invoice: Error fetching products:", error);
+        return { products: [] };
       }
     },
+    enabled: isOpen,
     staleTime: 300000, // Cache for 5 minutes
   });
 
-  const products = productsPaging?.products || [];
+  const products = Array.isArray(productsPaging?.products)
+    ? productsPaging.products
+    : Array.isArray(productsPaging)
+      ? productsPaging
+      : [];
 
   // Query order data to get priceIncludeTax setting
   const { data: orderData } = useQuery({
@@ -508,7 +514,7 @@ export function EInvoiceModal({
 
     try {
       console.log(
-        "🟡 PHÁT HÀNH SAU - Lưu thông tin hóa đơn vào bảng invoices và invoice_items",
+        "🟡 PHÁT HÀNH SAU - Lưu thông tin hóa đơn vd�o bảng invoices và invoice_items",
       );
       console.log("🟡 Source:", source, "OrderId:", orderId);
 
