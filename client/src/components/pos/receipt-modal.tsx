@@ -729,6 +729,7 @@ export function ReceiptModal({
             padding: 0;
             background: #ffffff;
             color: #000000;
+            font-weight: bold;
           }
 
           table {
