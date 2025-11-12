@@ -857,8 +857,14 @@ export function OrderDialog({
         const orderDiscount = discount;
 
         // Calculate discount for this item using same logic as calculateSubtotal
-        let itemDiscountAmount = parseFloat(item.discount || "0");
-        if (orderDiscount > 0 && totalBeforeDiscount > 0) {
+        let itemDiscountAmount =
+          parseFloat(item.itemDiscount || "0") ||
+          parseFloat(item.discount || "0");
+        if (
+          orderDiscount > 0 &&
+          totalBeforeDiscount > 0 &&
+          itemDiscountAmount == 0
+        ) {
           const isLastItem = index === cartOrder.length - 1;
 
           if (isLastItem) {
