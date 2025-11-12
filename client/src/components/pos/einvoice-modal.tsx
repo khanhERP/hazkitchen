@@ -172,12 +172,6 @@ export function EInvoiceModal({
       queryClient.invalidateQueries({ queryKey: ["https://edpos-be.onrender.com/api/orders"] });
       queryClient.invalidateQueries({ queryKey: ["https://edpos-be.onrender.com/api/tables"] });
 
-      toast({
-        title: `${t("common.success")}`,
-        description:
-          "Hóa đơn điện tử đã được phát hành và đơn hàng đã được thanh toán",
-      });
-
       console.log("✅ E-invoice modal: Payment completed, queries invalidated");
     },
     onError: (error, variables) => {
@@ -231,11 +225,17 @@ export function EInvoiceModal({
   });
 
   // Query all products to get tax rates
-  const { data: products = [] } = useQuery({
+  const { data: productsPaging } = useQuery({
     queryKey: ["https://edpos-be.onrender.com/api/products"],
     queryFn: async () => {
       try {
-        const response = await apiRequest("GET", "https://edpos-be.onrender.com/api/products");
+        const params = new URLSearchParams();
+        // Load all products without pagination limit
+        params.append("limit", "50000");
+
+        // Only show active products in order dialog
+        params.append("includeInactive", "false");
+        const response = await apiRequest("GET", `https://edpos-be.onrender.com/api/products?${params}`);
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
@@ -248,6 +248,8 @@ export function EInvoiceModal({
     },
     staleTime: 300000, // Cache for 5 minutes
   });
+
+  const products = productsPaging?.products || [];
 
   // Query order data to get priceIncludeTax setting
   const { data: orderData } = useQuery({
@@ -569,7 +571,9 @@ export function EInvoiceModal({
           typeof item.quantity === "string"
             ? parseInt(item.quantity)
             : item.quantity;
-        const product = products?.find((p: any) => p.id === item.id);
+        const product = Array.isArray(products)
+          ? products.find((p: any) => p.id === item.id)
+          : null;
         const itemTaxRate = product?.taxRate ? parseFloat(product.taxRate) : 0;
 
         // Calculate discount for this item (same logic as main publish)
@@ -732,7 +736,9 @@ export function EInvoiceModal({
             typeof item.quantity === "string"
               ? parseInt(item.quantity)
               : item.quantity;
-          const product = products?.find((p: any) => p.id === item.id);
+          const product = Array.isArray(products)
+            ? products.find((p: any) => p.id === item.id)
+            : null;
           const itemTaxRate = product?.taxRate
             ? parseFloat(product.taxRate)
             : 0;
