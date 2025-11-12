@@ -294,7 +294,7 @@ export function POSHeader({ onLogout }: POSHeaderProps) {
                   )}
 
                   {/* Màn hình Bếp */}
-                  {storeSettings?.businessType === "restaurant" && (
+                  {/* {storeSettings?.businessType === "restaurant" && (
                     <Link href="/kitchen">
                       <button
                         className={`w-full flex items-center px-4 py-2 text-left hover:bg-green-50 transition-colors ${
@@ -309,7 +309,7 @@ export function POSHeader({ onLogout }: POSHeaderProps) {
                         {t("kitchen.title")}
                       </button>
                     </Link>
-                  )}
+                  )} */}
 
                   {/* Màn hình khách hàng - Hidden */}
                   {/* <a
