@@ -67,7 +67,9 @@ export function OrderDialog({
   const [customerName, setCustomerName] = useState("");
   const [customerCount, setCustomerCount] = useState(1);
   const [discount, setDiscount] = useState(0);
-  const [discountType, setDiscountType] = useState<"amount" | "percent">("amount");
+  const [discountType, setDiscountType] = useState<"amount" | "percent">(
+    "amount",
+  );
   const [discountPercent, setDiscountPercent] = useState(0);
   const [selectedCategory, setSelectedCategory] = useState<number | null>(null);
   const [existingItems, setExistingItems] = useState<any[]>([]);
@@ -851,6 +853,14 @@ export function OrderDialog({
 
     let allocatedDiscount = 0;
 
+    const sumDiscountItems = cartOrder.reduce((sum: number, item: any) => {
+      return (
+        sum +
+        (parseFloat(item.itemDiscount || "0") ||
+          parseFloat(item.discount || "0"))
+      );
+    }, 0);
+
     return cartOrder.reduce((sum, item, index) => {
       if (item?.product?.taxRate && parseFloat(item?.product?.taxRate) > 0) {
         const originalPrice = parseFloat(item.product.price);
@@ -863,9 +873,9 @@ export function OrderDialog({
           parseFloat(item.itemDiscount || "0") ||
           parseFloat(item.discount || "0");
         if (
-          orderDiscount > 0 &&
+          orderDiscount >= 0 &&
           totalBeforeDiscount > 0 &&
-          itemDiscountAmount == 0
+          (itemDiscountAmount == 0 || sumDiscountItems != orderDiscount)
         ) {
           const isLastItem = index === cartOrder.length - 1;
 
@@ -1518,11 +1528,15 @@ export function OrderDialog({
                             ? discountPercent.toString()
                             : "";
                         }
-                        return discount > 0 ? Math.floor(discount).toLocaleString("vi-VN") : "";
+                        return discount > 0
+                          ? Math.floor(discount).toLocaleString("vi-VN")
+                          : "";
                       })()}
                       onChange={(e) => {
                         const value = e.target.value.replace(/[^\d]/g, "");
-                        const inputValue = value ? Math.max(0, parseInt(value)) : 0;
+                        const inputValue = value
+                          ? Math.max(0, parseInt(value))
+                          : 0;
 
                         let newDiscount = 0;
                         let newPercent = 0;
@@ -1549,7 +1563,7 @@ export function OrderDialog({
                           // Validate percentage (0-100)
                           newPercent = Math.min(100, inputValue);
                           newDiscount = Math.floor(
-                            (totalBeforeDiscount * newPercent) / 100
+                            (totalBeforeDiscount * newPercent) / 100,
                           );
                         } else {
                           // Validate amount
@@ -1564,18 +1578,21 @@ export function OrderDialog({
                           }
                           newPercent =
                             totalBeforeDiscount > 0
-                              ? Math.floor((newDiscount / totalBeforeDiscount) * 100)
+                              ? Math.floor(
+                                  (newDiscount / totalBeforeDiscount) * 100,
+                                )
                               : 0;
                         }
 
                         // Calculate total of individual item discounts
-                        const sumOfItemDiscounts = 
+                        const sumOfItemDiscounts =
                           existingItems.reduce((sum, item) => {
                             return sum + parseFloat(item.discount || "0");
                           }, 0) +
                           cart.reduce((sum, item) => {
                             return (
-                              sum + parseFloat((item as any).itemDiscount || "0")
+                              sum +
+                              parseFloat((item as any).itemDiscount || "0")
                             );
                           }, 0);
 
@@ -1589,7 +1606,7 @@ export function OrderDialog({
                             prev.map((cartItem) => ({
                               ...cartItem,
                               itemDiscount: 0,
-                            }))
+                            })),
                           );
                         }
 
@@ -1612,7 +1629,9 @@ export function OrderDialog({
                     />
                     <Button
                       type="button"
-                      variant={discountType === "percent" ? "default" : "outline"}
+                      variant={
+                        discountType === "percent" ? "default" : "outline"
+                      }
                       size="sm"
                       className="h-11 w-12 text-sm px-2"
                       onClick={() => {
@@ -1623,7 +1642,9 @@ export function OrderDialog({
                     </Button>
                     <Button
                       type="button"
-                      variant={discountType === "amount" ? "default" : "outline"}
+                      variant={
+                        discountType === "amount" ? "default" : "outline"
+                      }
                       size="sm"
                       className="h-11 w-12 text-sm px-2"
                       onClick={() => {
@@ -2035,13 +2056,15 @@ export function OrderDialog({
                                         type="text"
                                         inputMode="numeric"
                                         value={
-                                          (item as any).itemDiscountType === "percent"
-                                            ? (item as any).itemDiscountPercent || ""
+                                          (item as any).itemDiscountType ===
+                                          "percent"
+                                            ? (item as any)
+                                                .itemDiscountPercent || ""
                                             : itemDiscountAmount > 0
-                                            ? Math.floor(
-                                                itemDiscountAmount,
-                                              ).toLocaleString("vi-VN")
-                                            : ""
+                                              ? Math.floor(
+                                                  itemDiscountAmount,
+                                                ).toLocaleString("vi-VN")
+                                              : ""
                                         }
                                         onChange={(e) => {
                                           const value = e.target.value.replace(
@@ -2055,9 +2078,15 @@ export function OrderDialog({
                                           let newDiscount = 0;
                                           let newPercent = 0;
 
-                                          if ((item as any).itemDiscountType === "percent") {
+                                          if (
+                                            (item as any).itemDiscountType ===
+                                            "percent"
+                                          ) {
                                             // Validate percentage (0-100)
-                                            newPercent = Math.min(100, inputValue);
+                                            newPercent = Math.min(
+                                              100,
+                                              inputValue,
+                                            );
                                             newDiscount = Math.floor(
                                               (itemTotal * newPercent) / 100,
                                             );
@@ -2075,7 +2104,8 @@ export function OrderDialog({
                                             newPercent =
                                               itemTotal > 0
                                                 ? Math.floor(
-                                                    (newDiscount / itemTotal) * 100,
+                                                    (newDiscount / itemTotal) *
+                                                      100,
                                                   )
                                                 : 0;
                                           }
@@ -2086,8 +2116,10 @@ export function OrderDialog({
                                               existingItem.id === item.id
                                                 ? {
                                                     ...existingItem,
-                                                    discount: newDiscount.toString(),
-                                                    itemDiscountPercent: newPercent,
+                                                    discount:
+                                                      newDiscount.toString(),
+                                                    itemDiscountPercent:
+                                                      newPercent,
                                                   }
                                                 : existingItem,
                                             ),
@@ -2095,20 +2127,29 @@ export function OrderDialog({
 
                                           // Calculate new total discount from all items
                                           const newTotalItemDiscount =
-                                            existingItems.reduce((sum, existingItem) => {
-                                              if (existingItem.id === item.id) {
-                                                return sum + newDiscount;
-                                              }
-                                              return (
-                                                sum +
-                                                parseFloat(existingItem.discount || "0")
-                                              );
-                                            }, 0) +
+                                            existingItems.reduce(
+                                              (sum, existingItem) => {
+                                                if (
+                                                  existingItem.id === item.id
+                                                ) {
+                                                  return sum + newDiscount;
+                                                }
+                                                return (
+                                                  sum +
+                                                  parseFloat(
+                                                    existingItem.discount ||
+                                                      "0",
+                                                  )
+                                                );
+                                              },
+                                              0,
+                                            ) +
                                             cart.reduce((sum, cartItem) => {
                                               return (
                                                 sum +
                                                 parseFloat(
-                                                  (cartItem as any).itemDiscount || "0",
+                                                  (cartItem as any)
+                                                    .itemDiscount || "0",
                                                 )
                                               );
                                             }, 0);
@@ -2119,20 +2160,28 @@ export function OrderDialog({
                                         onKeyDown={(e) => {
                                           if (e.key === "Enter") {
                                             e.preventDefault();
-                                            (e.target as HTMLInputElement).blur();
+                                            (
+                                              e.target as HTMLInputElement
+                                            ).blur();
                                           }
                                         }}
                                         className="w-20 h-6 text-xs px-1 text-right bg-white border-blue-300 focus:border-blue-500"
                                         placeholder="0"
                                         title={
-                                          (item as any).itemDiscountType === "percent"
+                                          (item as any).itemDiscountType ===
+                                          "percent"
                                             ? "Nhập % giảm giá (0-100)"
                                             : "Nhập số tiền giảm giá"
                                         }
                                       />
                                       <Button
                                         type="button"
-                                        variant={(item as any).itemDiscountType === "percent" ? "default" : "outline"}
+                                        variant={
+                                          (item as any).itemDiscountType ===
+                                          "percent"
+                                            ? "default"
+                                            : "outline"
+                                        }
                                         size="sm"
                                         className="h-6 w-8 text-xs px-1"
                                         onClick={() => {
@@ -2152,7 +2201,13 @@ export function OrderDialog({
                                       </Button>
                                       <Button
                                         type="button"
-                                        variant={(item as any).itemDiscountType === "amount" || !(item as any).itemDiscountType ? "default" : "outline"}
+                                        variant={
+                                          (item as any).itemDiscountType ===
+                                            "amount" ||
+                                          !(item as any).itemDiscountType
+                                            ? "default"
+                                            : "outline"
+                                        }
                                         size="sm"
                                         className="h-6 w-8 text-xs px-1"
                                         onClick={() => {
@@ -2480,11 +2535,11 @@ export function OrderDialog({
                                 (item as any).itemDiscountType === "percent"
                                   ? (item as any).itemDiscountPercent || ""
                                   : (item as any).itemDiscount &&
-                                    parseFloat(
-                                      (
-                                        (item as any).itemDiscount || "0"
-                                      ).toString(),
-                                    ) > 0
+                                      parseFloat(
+                                        (
+                                          (item as any).itemDiscount || "0"
+                                        ).toString(),
+                                      ) > 0
                                     ? Math.floor(
                                         parseFloat(
                                           (
@@ -2596,7 +2651,11 @@ export function OrderDialog({
                             />
                             <Button
                               type="button"
-                              variant={(item as any).itemDiscountType === "percent" ? "default" : "outline"}
+                              variant={
+                                (item as any).itemDiscountType === "percent"
+                                  ? "default"
+                                  : "outline"
+                              }
                               size="sm"
                               className="h-6 w-8 text-xs px-1"
                               onClick={() => {
@@ -2616,7 +2675,12 @@ export function OrderDialog({
                             </Button>
                             <Button
                               type="button"
-                              variant={(item as any).itemDiscountType === "amount" || !(item as any).itemDiscountType ? "default" : "outline"}
+                              variant={
+                                (item as any).itemDiscountType === "amount" ||
+                                !(item as any).itemDiscountType
+                                  ? "default"
+                                  : "outline"
+                              }
                               size="sm"
                               className="h-6 w-8 text-xs px-1"
                               onClick={() => {
