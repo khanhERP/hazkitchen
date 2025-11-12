@@ -44,6 +44,9 @@ interface CartItem {
   product: Product;
   quantity: number;
   notes?: string;
+  itemDiscount?: number; // Individual item discount
+  itemDiscountType?: "percent" | "amount"; // Type of discount
+  itemDiscountPercent?: number; // Percentage value if type is percent
 }
 
 // Helper function for currency formatting
@@ -130,7 +133,16 @@ export function OrderDialog({
       );
       const data = await response.json();
       console.log("Existing order items response:", data);
-      return data;
+
+      // Initialize itemDiscount and itemDiscountType for existing items
+      const processedData = data.map((item: any) => ({
+        ...item,
+        itemDiscount: parseFloat(item.discount || "0"), // Use stored discount as initial item discount
+        itemDiscountType: "amount", // Default to amount type
+        itemDiscountPercent: parseFloat(item.discount || "0") / (parseFloat(item.unitPrice || "1") * parseFloat(item.quantity || "1")) * 100, // Calculate percentage if possible
+      }));
+
+      return processedData;
     },
   });
 
@@ -476,7 +488,15 @@ export function OrderDialog({
               );
               const data = await response.json();
               console.log("🔄 Fresh order items fetched:", data);
-              return data;
+
+              // Initialize itemDiscount and itemDiscountType for existing items
+              const processedData = data.map((item: any) => ({
+                ...item,
+                itemDiscount: parseFloat(item.discount || "0"), // Use stored discount as initial item discount
+                itemDiscountType: "amount", // Default to amount type
+                itemDiscountPercent: parseFloat(item.discount || "0") / (parseFloat(item.unitPrice || "1") * parseFloat(item.quantity || "1")) * 100, // Calculate percentage if possible
+              }));
+              return processedData;
             },
             staleTime: 0, // Force fresh data
             gcTime: 0, // Don't cache
@@ -647,7 +667,7 @@ export function OrderDialog({
       // Add new product with itemDiscount = 0 if discount already fully allocated
       return [
         ...prev,
-        { product, quantity: 1, itemDiscount: discountsMatch ? 0 : undefined },
+        { product, quantity: 1, itemDiscount: discountsMatch ? 0 : undefined, itemDiscountType: "amount" },
       ];
     });
   };
@@ -876,9 +896,7 @@ export function OrderDialog({
           } else {
             // Regular calculation for non-last items
             const itemTotal = originalPrice * quantity;
-            itemDiscountAmount = Math.round(
-              (orderDiscount * itemTotal) / totalBeforeDiscount,
-            );
+            itemDiscountAmount = (orderDiscount * itemTotal) / totalBeforeDiscount;
             allocatedDiscount += itemDiscountAmount;
           }
         }
@@ -979,10 +997,10 @@ export function OrderDialog({
       // Calculate pre-allocated discounts for new items
       let totalBeforeDiscount =
         existingItems.reduce((sum, item) => {
-          return sum + Number(item.unitPrice || 0) * Number(item.quantity || 0);
+          return Number(item.unitPrice || 0) * Number(item.quantity || 0);
         }, 0) +
         cart.reduce((sum, item) => {
-          return sum + parseFloat(item.product.price) * item.quantity;
+          return parseFloat(item.product.price) * item.quantity;
         }, 0);
 
       let allocatedDiscountForExisting = 0;
@@ -1510,11 +1528,13 @@ export function OrderDialog({
                       const newDiscount = parseFloat(value) || 0;
 
                       // Calculate total of individual item discounts
-                      const sumOfItemDiscounts = cart.reduce((sum, item) => {
-                        return (
-                          sum + parseFloat((item as any).itemDiscount || "0")
-                        );
-                      }, 0);
+                      const sumOfItemDiscounts =
+                        existingItems.reduce((sum, item) => {
+                          return sum + parseFloat(item.discount || "0");
+                        }, 0) +
+                        cart.reduce((sum, item) => {
+                          return sum + parseFloat((item as any).itemDiscount || "0");
+                        }, 0);
 
                       // Check if new discount equals sum of item discounts
                       const discountsMatch =
@@ -1526,6 +1546,12 @@ export function OrderDialog({
                           prev.map((cartItem) => ({
                             ...cartItem,
                             itemDiscount: 0,
+                          })),
+                        );
+                        setExistingItems((prev) =>
+                          prev.map((item) => ({
+                            ...item,
+                            discount: "0",
                           })),
                         );
                       }
@@ -1789,7 +1815,7 @@ export function OrderDialog({
                           paymentMethod: "preview",
                           isPreview: true,
                           priceIncludeTax:
-                            storeSettings?.priceIncludesTax || false,
+                            storeSettings?.priceIncludeTax || false,
                         };
 
                         setPreviewReceipt(previewReceipt);
