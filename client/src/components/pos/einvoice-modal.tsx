@@ -246,7 +246,7 @@ export function EInvoiceModal({
         return [];
       }
     },
-    staleTime: 300000, // Cache for 5 minutes
+    staleTime: 0, // Cache for 5 minutes
   });
 
   const products = productsPaging?.products || [];
