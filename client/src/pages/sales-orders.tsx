@@ -411,12 +411,12 @@ export default function SalesOrders() {
       }
     },
     retry: 1,
-    retryDelay: 500,
+    retryDelay: 0,
     staleTime: 0,
     gcTime: 0,
     refetchOnMount: true,
     refetchOnWindowFocus: true,
-    refetchInterval: 2000, // Poll every 2 seconds for real-time updates
+    refetchInterval: 0, // Poll every 2 seconds for real-time updates
     refetchIntervalInBackground: true, // Continue polling in background
   });
 
