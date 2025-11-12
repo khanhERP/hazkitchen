@@ -2366,32 +2366,43 @@ export function OrderDialog({
                             />
                             <Button
                               type="button"
-                              variant="outline"
+                              variant={(item as any).itemDiscountType === "percent" ? "default" : "outline"}
                               size="sm"
-                              className="h-6 w-12 text-xs px-1 border-blue-300 hover:bg-blue-50"
+                              className="h-6 w-8 text-xs px-1"
                               onClick={() => {
-                                const currentType =
-                                  (item as any).itemDiscountType || "amount";
-                                const newType =
-                                  currentType === "percent"
-                                    ? "amount"
-                                    : "percent";
-
                                 setCart((prev) =>
                                   prev.map((cartItem) =>
                                     cartItem.product.id === item.product.id
                                       ? {
                                           ...cartItem,
-                                          itemDiscountType: newType,
+                                          itemDiscountType: "percent",
                                         }
                                       : cartItem,
                                   ),
                                 );
                               }}
                             >
-                              {(item as any).itemDiscountType === "percent"
-                                ? "%"
-                                : "₫"}
+                              %
+                            </Button>
+                            <Button
+                              type="button"
+                              variant={(item as any).itemDiscountType === "amount" || !(item as any).itemDiscountType ? "default" : "outline"}
+                              size="sm"
+                              className="h-6 w-8 text-xs px-1"
+                              onClick={() => {
+                                setCart((prev) =>
+                                  prev.map((cartItem) =>
+                                    cartItem.product.id === item.product.id
+                                      ? {
+                                          ...cartItem,
+                                          itemDiscountType: "amount",
+                                        }
+                                      : cartItem,
+                                  ),
+                                );
+                              }}
+                            >
+                              ₫
                             </Button>
                           </div>
 
