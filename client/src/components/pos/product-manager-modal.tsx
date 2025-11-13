@@ -119,6 +119,7 @@ export function ProductManagerModal({
   const [selectedProducts, setSelectedProducts] = useState<number[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(20);
+  const [barcodeDuplicateCount, setBarcodeDuplicateCount] = useState(1);
   const { toast } = useToast();
 
   // 파일을 Base64로 변환하는 함수
@@ -786,19 +787,23 @@ export function ProductManagerModal({
       <body>
     `;
 
-    selectedProductsData.forEach((product, index) => {
+    selectedProductsData.forEach((product, productIndex) => {
       const sku = product.sku || `ITEM-${product.id}`;
       const price = Math.round(parseFloat(product.price)).toLocaleString(
         "vi-VN",
       );
 
-      barcodeHTML += `
-        <div class="barcode-label">
-          <svg class="barcode-svg" id="barcode-${index}"></svg>
-          <div class="product-name">${product.name}</div>
-          <div class="product-price">${price} ₫</div>
-        </div>
-      `;
+      // Print duplicate copies based on barcodeDuplicateCount
+      for (let copyIndex = 0; copyIndex < barcodeDuplicateCount; copyIndex++) {
+        const uniqueIndex = productIndex * barcodeDuplicateCount + copyIndex;
+        barcodeHTML += `
+          <div class="barcode-label">
+            <svg class="barcode-svg" id="barcode-${uniqueIndex}"></svg>
+            <div class="product-name">${product.name}</div>
+            <div class="product-price">${price} ₫</div>
+          </div>
+        `;
+      }
     });
 
     barcodeHTML += `
@@ -806,24 +811,29 @@ export function ProductManagerModal({
         <script>
           window.onload = function() {
             ${selectedProductsData
-              .map((product, index) => {
+              .map((product, productIndex) => {
                 const sku = product.sku || `ITEM-${product.id}`;
-                return `
-                  try {
-                    JsBarcode("#barcode-${index}", "${sku}", {
-                      format: "CODE128",
-                      width: 2,
-                      height: 50,
-                      displayValue: true,
-                      fontSize: 10,
-                      margin: 0,
-                      marginTop: 2,
-                      marginBottom: 2
-                    });
-                  } catch(e) {
-                    console.error("Error generating barcode for ${sku}:", e);
-                  }
-                `;
+                return Array.from({ length: barcodeDuplicateCount })
+                  .map((_, copyIndex) => {
+                    const uniqueIndex = productIndex * barcodeDuplicateCount + copyIndex;
+                    return `
+                      try {
+                        JsBarcode("#barcode-${uniqueIndex}", "${sku}", {
+                          format: "CODE128",
+                          width: 2,
+                          height: 50,
+                          displayValue: true,
+                          fontSize: 10,
+                          margin: 0,
+                          marginTop: 2,
+                          marginBottom: 2
+                        });
+                      } catch(e) {
+                        console.error("Error generating barcode for ${sku}:", e);
+                      }
+                    `;
+                  })
+                  .join("\n");
               })
               .join("\n")}
             
@@ -1035,15 +1045,26 @@ export function ProductManagerModal({
                     <Download className="mr-2" size={16} />
                     {t("tables.export")}
                   </Button>
-                  <Button
-                    variant="outline"
-                    className="border-blue-500 text-blue-700 hover:bg-blue-100 hover:border-blue-600"
-                    onClick={printBarcodes}
-                    disabled={selectedProducts.length === 0}
-                  >
-                    <Printer className="mr-2" size={16} />
-                    In mã vạch
-                  </Button>
+                  <div className="flex items-center gap-2">
+                    <Input
+                      type="number"
+                      min="1"
+                      max="100"
+                      value={barcodeDuplicateCount}
+                      onChange={(e) => setBarcodeDuplicateCount(Math.max(1, Math.min(100, parseInt(e.target.value) || 1)))}
+                      className="w-20 h-9"
+                      placeholder="Số lần"
+                    />
+                    <Button
+                      variant="outline"
+                      className="border-blue-500 text-blue-700 hover:bg-blue-100 hover:border-blue-600"
+                      onClick={printBarcodes}
+                      disabled={selectedProducts.length === 0}
+                    >
+                      <Printer className="mr-2" size={16} />
+                      In mã vạch
+                    </Button>
+                  </div>
                 </div>
 
                 <div className="flex items-center space-x-2">

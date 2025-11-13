@@ -4,6 +4,7 @@ export const tablesTranslations: { [key: string]: TablesTranslations } = {
   ko: {
     title: "테이블 관리",
     ordersActive: "개 주문 활성화",
+    transferTable: "테이블 이전",
     people: "명",
     orderList: "주문 목록",
     addItems: "메뉴 추가",
@@ -150,6 +151,7 @@ export const tablesTranslations: { [key: string]: TablesTranslations } = {
   en: {
     title: "Table Management",
     people: "People",
+    transferTable: "Transfer Table",
     orderList: "Order List",
     ordersActive: "orders active",
     description: "Check table status and manage orders",
@@ -301,6 +303,7 @@ export const tablesTranslations: { [key: string]: TablesTranslations } = {
   vi: {
     title: "Quản lý bàn",
     people: "Người",
+    transferTable: "Chuyển bàn",
     orderList: "Danh sách đơn hàng",
     ordersActive: " đơn hàng đang hoạt động",
     description: "Kiểm tra trạng thái bàn và quản lý đơn hàng",
