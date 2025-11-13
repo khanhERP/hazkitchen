@@ -945,7 +945,7 @@ export function OrderDialog({
           itemTax = Math.round(priceBeforeTax * taxRate);
         }
 
-        return sum + Math.max(0, itemTax);
+        return sum + Math.round(itemTax);
       }
       return sum;
     }, 0);
