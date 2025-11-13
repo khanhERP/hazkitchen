@@ -706,6 +706,9 @@ export function OrderDialog({
 
     let allocatedDiscount = 0;
 
+    const sumOfItemDiscounts = existingItems?.reduce((sum, item) => {
+      return sum + parseFloat(item.discount || "0");
+    }, 0);
     // Add existing order items if in edit mode
     if (mode === "edit" && existingItems && Array.isArray(existingItems)) {
       existingItems.forEach((item, index) => {
@@ -717,7 +720,11 @@ export function OrderDialog({
         let itemDiscountAmount = parseFloat(item.discount || "0");
 
         // Calculate proportional discount for this item
-        if (discount > 0 && totalBeforeDiscount > 0) {
+        if (
+          discount >= 0 &&
+          totalBeforeDiscount > 0 &&
+          discount != sumOfItemDiscounts
+        ) {
           const isLastItem =
             index === existingItems.length - 1 && cart.length === 0;
 
@@ -729,6 +736,8 @@ export function OrderDialog({
             itemDiscountAmount = (discount * itemTotal) / totalBeforeDiscount;
             allocatedDiscount += itemDiscountAmount;
           }
+        } else {
+          allocatedDiscount += itemDiscountAmount;
         }
 
         if (priceIncludesTax) {
@@ -761,6 +770,14 @@ export function OrderDialog({
     }
 
     // Add new cart items
+    const sumDiscountItems = cart.reduce((sum: number, item: any) => {
+      return (
+        sum +
+        (parseFloat(item.itemDiscount || "0") ||
+          parseFloat(item.discount || "0"))
+      );
+    }, 0);
+
     cart.forEach((item, index) => {
       const quantity = item.quantity;
       const originalPrice = parseFloat(item.product.price);
@@ -770,7 +787,11 @@ export function OrderDialog({
       let itemDiscountAmount = parseFloat(item.itemDiscount || "0");
 
       // Calculate proportional discount for this item
-      if (discount > 0 && totalBeforeDiscount > 0) {
+      if (
+        discount >= 0 &&
+        totalBeforeDiscount > 0 &&
+        discount != sumOfItemDiscounts + sumDiscountItems
+      ) {
         const isLastItem = index === cart.length - 1;
 
         if (isLastItem) {
@@ -781,6 +802,8 @@ export function OrderDialog({
           itemDiscountAmount = (discount * itemTotal) / totalBeforeDiscount;
           allocatedDiscount += itemDiscountAmount;
         }
+      } else {
+        allocatedDiscount += itemDiscountAmount;
       }
 
       // Calculate item subtotal (price before tax)
@@ -893,6 +916,8 @@ export function OrderDialog({
             );
             allocatedDiscount += itemDiscountAmount;
           }
+        } else {
+          allocatedDiscount += itemDiscountAmount;
         }
 
         let itemTax = 0;
@@ -2393,6 +2418,21 @@ export function OrderDialog({
 
                                 let taxAmount = 0;
 
+                                const sumOfItemDiscounts =
+                                  existingItems.reduce((sum, item) => {
+                                    return (
+                                      sum + parseFloat(item.discount || "0")
+                                    );
+                                  }, 0) +
+                                  cart.reduce((sum, item) => {
+                                    return (
+                                      sum +
+                                      parseFloat(
+                                        (item as any).itemDiscount || "0",
+                                      )
+                                    );
+                                  }, 0);
+
                                 if (taxRate > 0 && quantity > 0) {
                                   // Calculate item discount first
                                   let itemDiscountAmount = parseFloat(
@@ -2400,7 +2440,8 @@ export function OrderDialog({
                                   );
                                   if (
                                     itemDiscountAmount === 0 &&
-                                    discount > 0
+                                    discount > 0 &&
+                                    discount != sumOfItemDiscounts
                                   ) {
                                     const totalBeforeDiscount =
                                       (mode === "edit" && existingItems
@@ -2481,13 +2522,32 @@ export function OrderDialog({
                                 const quantity = item.quantity;
                                 const itemTotal = originalPrice * quantity;
 
+                                const sumOfItemDiscounts =
+                                  existingItems.reduce((sum, item) => {
+                                    return (
+                                      sum + parseFloat(item.discount || "0")
+                                    );
+                                  }, 0) +
+                                  cart.reduce((sum, item) => {
+                                    return (
+                                      sum +
+                                      parseFloat(
+                                        (item as any).itemDiscount || "0",
+                                      )
+                                    );
+                                  }, 0);
+
                                 // Get item-specific discount if exists
                                 let itemDiscountAmount = parseFloat(
                                   (item as any).itemDiscount || "0",
                                 );
 
                                 // If no item-specific discount, calculate from order discount
-                                if (itemDiscountAmount === 0 && discount > 0) {
+                                if (
+                                  itemDiscountAmount === 0 &&
+                                  discount > 0 &&
+                                  discount != sumOfItemDiscounts
+                                ) {
                                   const totalBeforeDiscount =
                                     existingItems.reduce((sum, item) => {
                                       return (
