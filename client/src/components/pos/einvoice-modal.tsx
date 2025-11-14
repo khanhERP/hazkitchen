@@ -225,37 +225,10 @@ export function EInvoiceModal({
   });
 
   // Query all products to get tax rates
-  const { data: productsPaging } = useQuery({
-    queryKey: ["https://edpos-be.onrender.com/api/products", { limit: 50000, includeInactive: false }],
-    queryFn: async () => {
-      try {
-        const params = new URLSearchParams();
-        // Load all products without pagination limit
-        params.append("limit", "50000");
-
-        // Only show active products in order dialog
-        params.append("includeInactive", "false");
-        const response = await apiRequest("GET", `https://edpos-be.onrender.com/api/products?${params}`);
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        const data = await response.json();
-        console.log("📦 E-Invoice: Fetched products data:", data);
-        return data;
-      } catch (error) {
-        console.error("❌ E-Invoice: Error fetching products:", error);
-        return { products: [] };
-      }
-    },
+  const { data: products } = useQuery<any[]>({
+    queryKey: [`https://edpos-be.onrender.com/api/products/getByOrderId/${orderId}`],
     enabled: isOpen,
-    staleTime: 300000, // Cache for 5 minutes
   });
-
-  const products = Array.isArray(productsPaging?.products)
-    ? productsPaging.products
-    : Array.isArray(productsPaging)
-      ? productsPaging
-      : [];
 
   // Query order data to get priceIncludeTax setting
   const { data: orderData } = useQuery({
