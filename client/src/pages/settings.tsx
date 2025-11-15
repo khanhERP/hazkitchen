@@ -187,7 +187,7 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
     if (!employeeToDelete) return;
 
     try {
-      const response = await fetch(`https://edpos-be.onrender.com/api/employees/${employeeToDelete.id}`, {
+      const response = await fetch(`https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/employees/${employeeToDelete.id}`, {
         method: "DELETE",
       });
 
@@ -227,7 +227,7 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
       }
 
       await queryClient.refetchQueries({
-        queryKey: ["https://edpos-be.onrender.com/api/employees"],
+        queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/employees"],
       });
 
       setShowEmployeeDeleteDialog(false);
@@ -270,21 +270,21 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
 
   // Fetch store settings
   const { data: storeData, isLoading } = useQuery<StoreSettings>({
-    queryKey: ["https://edpos-be.onrender.com/api/store-settings"],
+    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/store-settings"],
   });
 
   // Fetch customers
   const { data: customersData, isLoading: customersLoading } = useQuery<
     Customer[]
   >({
-    queryKey: ["https://edpos-be.onrender.com/api/customers"],
+    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/customers"],
   });
 
   // Fetch employees
   const { data: employeesRawData, isLoading: employeesLoading } = useQuery<
     any[]
   >({
-    queryKey: ["https://edpos-be.onrender.com/api/employees"],
+    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/employees"],
   });
 
   // Sort employees by ID descending (newest first)
@@ -328,7 +328,7 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
   const { data: categoriesData, isLoading: categoriesLoading } = useQuery<
     any[]
   >({
-    queryKey: ["https://edpos-be.onrender.com/api/categories"],
+    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/categories"],
   });
 
   // Fetch products (include inactive products in settings) - with pagination and search
@@ -336,7 +336,7 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
     data: productsResponse,
     isLoading: productsLoading
   } = useQuery({
-    queryKey: ["https://edpos-be.onrender.com/api/products", {
+    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products", {
       page: productsCurrentPage,
       limit: productsPageSize,
       category: selectedCategoryFilter,
@@ -357,7 +357,7 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
         params.append('search', productSearchTerm.trim());
       }
 
-      const response = await fetch(`https://edpos-be.onrender.com/api/products?${params.toString()}`);
+      const response = await fetch(`https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products?${params.toString()}`);
       if (!response.ok) throw new Error("Failed to fetch products");
       return response.json();
     },
@@ -374,9 +374,9 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
 
   // Fetch all products for counting by category (no pagination)
   const { data: allProductsForCount } = useQuery({
-    queryKey: ["https://edpos-be.onrender.com/api/products/all-for-count"],
+    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products/all-for-count"],
     queryFn: async () => {
-      const response = await fetch(`https://edpos-be.onrender.com/api/products?limit=100000&includeInactive=true`);
+      const response = await fetch(`https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products?limit=100000&includeInactive=true`);
       if (!response.ok) throw new Error("Failed to fetch all products");
       const data = await response.json();
       return data.products || [];
@@ -433,7 +433,7 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
   // Fetch payment methods from API
   const { data: paymentMethodsData, isLoading: paymentMethodsLoading } =
     useQuery<any[]>({
-      queryKey: ["https://edpos-be.onrender.com/api/payment-methods"],
+      queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/payment-methods"],
     });
 
   // Update local state when data is loaded
@@ -446,11 +446,11 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
   // Mutation to update store settings
   const updateStoreSettingsMutation = useMutation({
     mutationFn: async (settings: Partial<InsertStoreSettings>) => {
-      const response = await apiRequest("PUT", "https://edpos-be.onrender.com/api/store-settings", settings);
+      const response = await apiRequest("PUT", "https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/store-settings", settings);
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["https://edpos-be.onrender.com/api/store-settings"] });
+      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/store-settings"] });
     },
     onError: () => {
       toast({
@@ -552,11 +552,11 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
   // Mutation to create payment method
   const createPaymentMethodMutation = useMutation({
     mutationFn: async (data: any) => {
-      const response = await apiRequest("POST", "https://edpos-be.onrender.com/api/payment-methods", data);
+      const response = await apiRequest("POST", "https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/payment-methods", data);
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["https://edpos-be.onrender.com/api/payment-methods"] });
+      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/payment-methods"] });
     },
     onError: () => {
       toast({
@@ -572,13 +572,13 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
     mutationFn: async ({ id, data }: { id: number; data: any }) => {
       const response = await apiRequest(
         "PUT",
-        `https://edpos-be.onrender.com/api/payment-methods/${id}`,
+        `https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/payment-methods/${id}`,
         data,
       );
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["https://edpos-be.onrender.com/api/payment-methods"] });
+      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/payment-methods"] });
     },
     onError: () => {
       toast({
@@ -592,11 +592,11 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
   // Mutation to delete payment method
   const deletePaymentMethodMutation = useMutation({
     mutationFn: async (id: number) => {
-      const response = await apiRequest("DELETE", `https://edpos-be.onrender.com/api/payment-methods/${id}`);
+      const response = await apiRequest("DELETE", `https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/payment-methods/${id}`);
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["https://edpos-be.onrender.com/api/payment-methods"] });
+      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/payment-methods"] });
     },
     onError: () => {
       toast({
@@ -677,7 +677,7 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
     if (!customerToDelete) return;
 
     try {
-      const response = await fetch(`https://edpos-be.onrender.com/api/customers/${customerToDelete.id}`, {
+      const response = await fetch(`https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/customers/${customerToDelete.id}`, {
         method: "DELETE",
       });
 
@@ -685,7 +685,7 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
-      await queryClient.refetchQueries({ queryKey: ["https://edpos-be.onrender.com/api/customers"] });
+      await queryClient.refetchQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/customers"] });
 
       setShowCustomerDeleteDialog(false);
       setCustomerToDelete(null);
@@ -761,7 +761,7 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
     }
 
     try {
-      const response = await fetch("https://edpos-be.onrender.com/api/categories", {
+      const response = await fetch("https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/categories", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -776,8 +776,8 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
       const result = await response.json();
 
       // Refetch data immediately
-      await queryClient.refetchQueries({ queryKey: ["https://edpos-be.onrender.com/api/categories"] });
-      await queryClient.refetchQueries({ queryKey: ["https://edpos-be.onrender.com/api/products"] });
+      await queryClient.refetchQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/categories"] });
+      await queryClient.refetchQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products"] });
       setShowCategoryForm(false);
       resetCategoryForm();
     } catch (error) {
@@ -810,7 +810,7 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
     }
 
     try {
-      const response = await fetch(`https://edpos-be.onrender.com/api/categories/${editingCategory.id}`, {
+      const response = await fetch(`https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/categories/${editingCategory.id}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -829,8 +829,8 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
       resetCategoryForm();
 
       // Refetch data immediately
-      await queryClient.refetchQueries({ queryKey: ["https://edpos-be.onrender.com/api/categories"] });
-      await queryClient.refetchQueries({ queryKey: ["https://edpos-be.onrender.com/api/products"] });
+      await queryClient.refetchQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/categories"] });
+      await queryClient.refetchQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products"] });
     } catch (error) {
       console.error("Category update error:", error);
       toast({
@@ -868,7 +868,7 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
     if (!categoryToDelete) return;
 
     try {
-      const response = await fetch(`https://edpos-be.onrender.com/api/categories/${categoryToDelete.id}`, {
+      const response = await fetch(`https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/categories/${categoryToDelete.id}`, {
         method: "DELETE",
       });
 
@@ -880,8 +880,8 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
       }
 
       // Refetch data immediately
-      await queryClient.refetchQueries({ queryKey: ["https://edpos-be.onrender.com/api/categories"] });
-      await queryClient.refetchQueries({ queryKey: ["https://edpos-be.onrender.com/api/products"] });
+      await queryClient.refetchQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/categories"] });
+      await queryClient.refetchQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products"] });
 
       setShowDeleteDialog(false);
       setCategoryToDelete(null);
@@ -984,7 +984,7 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
         finalProductData.imageUrl = productForm.imageUrl;
       }
 
-      const response = await fetch("https://edpos-be.onrender.com/api/products", {
+      const response = await fetch("https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(finalProductData),
@@ -997,7 +997,7 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
         throw new Error(errorData.message || "Failed to create product");
       }
 
-      await queryClient.refetchQueries({ queryKey: ["https://edpos-be.onrender.com/api/products", { page: productsCurrentPage, limit: productsPageSize }] });
+      await queryClient.refetchQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products", { page: productsCurrentPage, limit: productsPageSize }] });
       setShowProductForm(false);
       resetProductForm();
     } catch (error) {
@@ -1072,7 +1072,7 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
         finalProductData.imageUrl = productForm.imageUrl;
       }
 
-      const response = await fetch(`https://edpos-be.onrender.com/api/products/${editingProduct.id}`, {
+      const response = await fetch(`https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products/${editingProduct.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(finalProductData),
@@ -1085,7 +1085,7 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
         throw new Error(errorData.message || "Failed to update product");
       }
 
-      await queryClient.refetchQueries({ queryKey: ["https://edpos-be.onrender.com/api/products", { page: productsCurrentPage, limit: productsPageSize }] });
+      await queryClient.refetchQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products", { page: productsCurrentPage, limit: productsPageSize }] });
       setShowProductForm(false);
       setEditingProduct(null);
       resetProductForm();
@@ -1179,9 +1179,9 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
     if (!productToDelete) return;
 
     try {
-      await apiRequest("DELETE", `https://edpos-be.onrender.com/api/products/${productToDelete.id}`);
+      await apiRequest("DELETE", `https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products/${productToDelete.id}`);
 
-      await queryClient.refetchQueries({ queryKey: ["https://edpos-be.onrender.com/api/products", { page: productsCurrentPage, limit: productsPageSize }] });
+      await queryClient.refetchQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products", { page: productsCurrentPage, limit: productsPageSize }] });
 
       setShowProductDeleteDialog(false);
       setProductToDelete(null);
@@ -1211,7 +1211,7 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
   // Fetch E-invoice connections
   const { data: eInvoiceConnections = [], isLoading: eInvoiceLoading } =
     useQuery<any[]>({
-      queryKey: ["https://edpos-be.onrender.com/api/einvoice-connections"],
+      queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/einvoice-connections"],
     });
 
   // E-invoice mutations
@@ -1219,14 +1219,14 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
     mutationFn: async (data: any) => {
       const response = await apiRequest(
         "POST",
-        "https://edpos-be.onrender.com/api/einvoice-connections",
+        "https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/einvoice-connections",
         data,
       );
       return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: ["https://edpos-be.onrender.com/api/einvoice-connections"],
+        queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/einvoice-connections"],
       });
       setShowEInvoiceForm(false);
       resetEInvoiceForm();
@@ -1244,14 +1244,14 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
     mutationFn: async ({ id, data }: { id: number; data: any }) => {
       const response = await apiRequest(
         "PUT",
-        `https://edpos-be.onrender.com/api/einvoice-connections/${id}`,
+        `https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/einvoice-connections/${id}`,
         data,
       );
       return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: ["https://edpos-be.onrender.com/api/einvoice-connections"],
+        queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/einvoice-connections"],
       });
       setShowEInvoiceForm(false);
       resetEInvoiceForm();
@@ -1269,13 +1269,13 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
     mutationFn: async (id: number) => {
       const response = await apiRequest(
         "DELETE",
-        `https://edpos-be.onrender.com/api/einvoice-connections/${id}`,
+        `https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/einvoice-connections/${id}`,
       );
       return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: ["https://edpos-be.onrender.com/api/einvoice-connections"],
+        queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/einvoice-connections"],
       });
       setShowEInvoiceDeleteDialog(false);
       setEInvoiceToDelete(null);
@@ -1462,17 +1462,17 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
   const { data: invoiceTemplates = [], isLoading: templatesLoading } = useQuery<
     any[]
   >({
-    queryKey: ["https://edpos-be.onrender.com/api/invoice-templates"],
+    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/invoice-templates"],
   });
 
   // Invoice template mutations
   const createTemplateMutation = useMutation({
     mutationFn: async (data: any) => {
-      const response = await apiRequest("POST", "https://edpos-be.onrender.com/api/invoice-templates", data);
+      const response = await apiRequest("POST", "https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/invoice-templates", data);
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["https://edpos-be.onrender.com/api/invoice-templates"] });
+      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/invoice-templates"] });
       setShowTemplateForm(false);
       resetTemplateForm();
     },
@@ -1489,13 +1489,13 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
     mutationFn: async ({ id, data }: { id: number; data: any }) => {
       const response = await apiRequest(
         "PUT",
-        `https://edpos-be.onrender.com/api/invoice-templates/${id}`,
+        `https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/invoice-templates/${id}`,
         data,
       );
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["https://edpos-be.onrender.com/api/invoice-templates"] });
+      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/invoice-templates"] });
       setShowTemplateForm(false);
       resetTemplateForm();
     },
@@ -1512,12 +1512,12 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
     mutationFn: async (id: number) => {
       const response = await apiRequest(
         "DELETE",
-        `https://edpos-be.onrender.com/api/invoice-templates/${id}`,
+        `https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/invoice-templates/${id}`,
       );
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["https://edpos-be.onrender.com/api/invoice-templates"] });
+      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/invoice-templates"] });
       setShowTemplateDeleteDialog(false);
       setTemplateToDelete(null);
     },
@@ -1617,7 +1617,7 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
   };
 
   const refetchProducts = () => {
-    queryClient.invalidateQueries({ queryKey: ["https://edpos-be.onrender.com/api/products", { page: productsCurrentPage, limit: productsPageSize }] });
+    queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products", { page: productsCurrentPage, limit: productsPageSize }] });
   };
 
   const handleOpenCategoryDialog = () => {
@@ -3255,7 +3255,7 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
                                   onKeyPress={(e) => {
                                     if (e.key === "Enter") {
                                       queryClient.invalidateQueries({ 
-                                        queryKey: ["https://edpos-be.onrender.com/api/products", { 
+                                        queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products", { 
                                           page: productsCurrentPage, 
                                           limit: productsPageSize,
                                           category: selectedCategoryFilter,
@@ -3263,7 +3263,7 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
                                         }] 
                                       });
                                       queryClient.invalidateQueries({ 
-                                        queryKey: ["https://edpos-be.onrender.com/api/products/all-for-count"] 
+                                        queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products/all-for-count"] 
                                       });
                                     }
                                   }}
@@ -3273,7 +3273,7 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
                                   onValueChange={(value) => {
                                     setSelectedCategoryFilter(value);
                                     queryClient.invalidateQueries({ 
-                                      queryKey: ["https://edpos-be.onrender.com/api/products", { 
+                                      queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products", { 
                                         page: productsCurrentPage, 
                                         limit: productsPageSize,
                                         category: value,
@@ -3281,7 +3281,7 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
                                       }] 
                                     });
                                     queryClient.invalidateQueries({ 
-                                      queryKey: ["https://edpos-be.onrender.com/api/products/all-for-count"] 
+                                      queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products/all-for-count"] 
                                     });
                                   }}
                                 >
@@ -3309,7 +3309,7 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
                                   size="sm"
                                   onClick={() => {
                                     queryClient.invalidateQueries({ 
-                                      queryKey: ["https://edpos-be.onrender.com/api/products", { 
+                                      queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products", { 
                                         page: productsCurrentPage, 
                                         limit: productsPageSize,
                                         category: selectedCategoryFilter,
@@ -3317,10 +3317,10 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
                                       }] 
                                     });
                                     queryClient.invalidateQueries({ 
-                                      queryKey: ["https://edpos-be.onrender.com/api/products/all-for-count"] 
+                                      queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products/all-for-count"] 
                                     });
                                     queryClient.invalidateQueries({ 
-                                      queryKey: ["https://edpos-be.onrender.com/api/categories"] 
+                                      queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/categories"] 
                                     });
                                   }}
                                 >
@@ -3700,10 +3700,10 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
                                   onKeyPress={(e) => {
                                     if (e.key === "Enter") {
                                       queryClient.invalidateQueries({ 
-                                        queryKey: ["https://edpos-be.onrender.com/api/categories"] 
+                                        queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/categories"] 
                                       });
                                       queryClient.invalidateQueries({ 
-                                        queryKey: ["https://edpos-be.onrender.com/api/products/all-for-count"] 
+                                        queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products/all-for-count"] 
                                       });
                                     }
                                   }}
@@ -3713,10 +3713,10 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
                                   onValueChange={(value) => {
                                     setSelectedCategoryFilter(value);
                                     queryClient.invalidateQueries({ 
-                                      queryKey: ["https://edpos-be.onrender.com/api/categories"] 
+                                      queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/categories"] 
                                     });
                                     queryClient.invalidateQueries({ 
-                                      queryKey: ["https://edpos-be.onrender.com/api/products/all-for-count"] 
+                                      queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products/all-for-count"] 
                                     });
                                   }}
                                 >
@@ -3744,10 +3744,10 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
                                   size="sm"
                                   onClick={() => {
                                     queryClient.invalidateQueries({ 
-                                      queryKey: ["https://edpos-be.onrender.com/api/categories"] 
+                                      queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/categories"] 
                                     });
                                     queryClient.invalidateQueries({ 
-                                      queryKey: ["https://edpos-be.onrender.com/api/products/all-for-count"] 
+                                      queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products/all-for-count"] 
                                     });
                                   }}
                                 >

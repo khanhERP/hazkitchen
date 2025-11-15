@@ -83,9 +83,9 @@ export function PrinterConfigModal({
 
   // Fetch printer configurations
   const { data: printerConfigs = [], isLoading } = useQuery({
-    queryKey: ["https://edpos-be.onrender.com/api/printer-configs"],
+    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/printer-configs"],
     queryFn: async () => {
-      const response = await apiRequest("GET", "https://edpos-be.onrender.com/api/printer-configs");
+      const response = await apiRequest("GET", "https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/printer-configs");
       return response.json();
     },
     enabled: isOpen,
@@ -98,15 +98,15 @@ export function PrinterConfigModal({
     mutationFn: async (configData: any) => {
       const response = await apiRequest(
         "POST",
-        "https://edpos-be.onrender.com/api/printer-configs",
+        "https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/printer-configs",
         configData,
       );
       return response.json();
     },
     onSuccess: () => {
       // Force refetch data
-      queryClient.invalidateQueries({ queryKey: ["https://edpos-be.onrender.com/api/printer-configs"] });
-      queryClient.refetchQueries({ queryKey: ["https://edpos-be.onrender.com/api/printer-configs"] });
+      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/printer-configs"] });
+      queryClient.refetchQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/printer-configs"] });
       resetForm();
     },
     onError: () => {
@@ -123,15 +123,15 @@ export function PrinterConfigModal({
     mutationFn: async ({ id, data }: { id: number; data: any }) => {
       const response = await apiRequest(
         "PUT",
-        `https://edpos-be.onrender.com/api/printer-configs/${id}`,
+        `https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/printer-configs/${id}`,
         data,
       );
       return response.json();
     },
     onSuccess: () => {
       // Force refetch data
-      queryClient.invalidateQueries({ queryKey: ["https://edpos-be.onrender.com/api/printer-configs"] });
-      queryClient.refetchQueries({ queryKey: ["https://edpos-be.onrender.com/api/printer-configs"] });
+      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/printer-configs"] });
+      queryClient.refetchQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/printer-configs"] });
       resetForm();
     },
     onError: () => {
@@ -146,12 +146,12 @@ export function PrinterConfigModal({
   // Delete printer config mutation
   const deleteConfigMutation = useMutation({
     mutationFn: async (id: number) => {
-      await apiRequest("DELETE", `https://edpos-be.onrender.com/api/printer-configs/${id}`);
+      await apiRequest("DELETE", `https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/printer-configs/${id}`);
     },
     onSuccess: () => {
       // Force refetch data
-      queryClient.invalidateQueries({ queryKey: ["https://edpos-be.onrender.com/api/printer-configs"] });
-      queryClient.refetchQueries({ queryKey: ["https://edpos-be.onrender.com/api/printer-configs"] });
+      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/printer-configs"] });
+      queryClient.refetchQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/printer-configs"] });
     },
     onError: () => {
       toast({
@@ -167,7 +167,7 @@ export function PrinterConfigModal({
     mutationFn: async (id: number) => {
       const response = await apiRequest(
         "POST",
-        `https://edpos-be.onrender.com/api/printer-configs/${id}/test`,
+        `https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/printer-configs/${id}/test`,
       );
       return response.json();
     },

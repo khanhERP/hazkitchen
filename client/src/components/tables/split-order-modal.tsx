@@ -32,12 +32,12 @@ export function SplitOrderModal({
 
   // Fetch table info to get correct table number
   const { data: tablesData } = useQuery({
-    queryKey: ["https://edpos-be.onrender.com/api/tables"],
+    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/tables"],
   });
 
   // Fetch products for tax calculation
   const { data: productsResponse } = useQuery({
-    queryKey: ["https://edpos-be.onrender.com/api/products"],
+    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products"],
   });
 
   const productsData = productsResponse?.products || [];

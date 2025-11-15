@@ -29,10 +29,10 @@ export function PinAuth({ onAuthSuccess }: PinAuthProps) {
 
   // Fetch store settings để lấy PIN
   const { data: storeData } = useQuery({
-    queryKey: ["https://edpos-be.onrender.com/api/store-settings"],
+    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/store-settings"],
     queryFn: async () => {
       try {
-        const response = await apiRequest("GET", "https://edpos-be.onrender.com/api/store-settings");
+        const response = await apiRequest("GET", "https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/store-settings");
         if (!response.ok) {
           throw new Error('Network response was not ok');
         }
