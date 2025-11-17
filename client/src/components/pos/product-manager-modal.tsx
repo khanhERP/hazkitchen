@@ -1752,6 +1752,9 @@ export function ProductManagerModal({
                               <SelectItem value="8">
                                 {t("common.floor")} 8
                               </SelectItem>
+                              <SelectItem value="takeaway">
+                                {t("tables.takeaway")}
+                              </SelectItem>
                               <SelectItem value="9">
                                 {t("common.floor")} 9
                               </SelectItem>

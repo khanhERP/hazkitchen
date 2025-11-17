@@ -444,6 +444,7 @@ export function PrinterConfigModal({
                         <SelectItem value="3">{t("common.floor")} 3</SelectItem>
                         <SelectItem value="4">{t("common.floor")} 4</SelectItem>
                         <SelectItem value="5">{t("common.floor")} 5</SelectItem>
+                        <SelectItem value="takeaway">{t("tables.takeaway")}</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>

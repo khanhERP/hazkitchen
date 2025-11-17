@@ -438,6 +438,7 @@ export function TableManagement() {
                         <SelectItem value="10">
                           {t("common.floor")} 10
                         </SelectItem>
+                        <SelectItem value="takeaway">{t("tables.takeaway")}</SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage />

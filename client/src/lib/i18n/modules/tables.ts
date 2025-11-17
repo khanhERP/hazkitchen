@@ -79,6 +79,7 @@ export const tablesTranslations: { [key: string]: TablesTranslations } = {
     qrCodeLabel: "QR 코드",
     createdDate: "생성일",
     none: "없음",
+    takeaway: "테이크아웃",
     // Payment related
     subtotal: "소계",
     tax: "세금",
@@ -227,6 +228,7 @@ export const tablesTranslations: { [key: string]: TablesTranslations } = {
     qrCodeLabel: "QR Code",
     createdDate: "Created Date",
     none: "None",
+    takeaway: "Takeaway",
     // Payment related
     subtotal: "Subtotal",
     tax: "Tax",
@@ -376,6 +378,7 @@ export const tablesTranslations: { [key: string]: TablesTranslations } = {
     qrCodeLabel: "Mã QR",
     createdDate: "Ngày tạo",
     none: "Không có",
+    takeaway: "Mang về",
     // Payment related
     subtotal: "Tạm tính",
     tax: "Thuế",

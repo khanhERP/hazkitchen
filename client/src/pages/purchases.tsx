@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { useTranslation } from "@/lib/i18n";
@@ -71,6 +71,10 @@ export default function PurchasesPage({ onLogout }: PurchasesPageProps) {
 
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
+
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(20);
 
   // State for selected purchase orders
   const [selectedOrders, setSelectedOrders] = useState<Set<number>>(new Set());
@@ -197,8 +201,16 @@ export default function PurchasesPage({ onLogout }: PurchasesPageProps) {
     };
   }, [purchaseOrders]);
 
-  // Use server-filtered orders directly
-  const filteredOrders = purchaseOrders;
+  // Apply pagination to filtered orders
+  const totalPages = Math.ceil(purchaseOrders.length / pageSize);
+  const startIndex = (currentPage - 1) * pageSize;
+  const endIndex = startIndex + pageSize;
+  const filteredOrders = purchaseOrders.slice(startIndex, endIndex);
+
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [startDate, endDate, supplierFilter, poNumberFilter]);
 
   const getStatusBadge = (status: string) => {
     const variants = {
@@ -673,6 +685,70 @@ export default function PurchasesPage({ onLogout }: PurchasesPageProps) {
                       })}
                     </TableBody>
                   </Table>
+                </div>
+              )}
+
+              {/* Pagination Controls */}
+              {purchaseOrders.length > 0 && (
+                <div className="flex items-center justify-between space-x-6 py-4 border-t border-gray-200 mt-4">
+                  <div className="flex items-center space-x-2">
+                    <p className="text-sm font-medium">{t("common.show")}</p>
+                    <Select
+                      value={pageSize.toString()}
+                      onValueChange={(value) => {
+                        setPageSize(Number(value));
+                        setCurrentPage(1);
+                      }}
+                    >
+                      <SelectTrigger className="h-8 w-[70px]">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent side="top">
+                        <SelectItem value="10">10</SelectItem>
+                        <SelectItem value="20">20</SelectItem>
+                        <SelectItem value="30">30</SelectItem>
+                        <SelectItem value="50">50</SelectItem>
+                        <SelectItem value="100">100</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <p className="text-sm font-medium">{t("common.rows")}</p>
+                  </div>
+
+                  <div className="flex items-center space-x-2">
+                    <p className="text-sm font-medium">
+                      {t("common.page")} {currentPage} / {totalPages}
+                    </p>
+                    <div className="flex items-center space-x-1">
+                      <button
+                        onClick={() => setCurrentPage(1)}
+                        disabled={currentPage === 1}
+                        className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-8 w-8"
+                      >
+                        «
+                      </button>
+                      <button
+                        onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                        disabled={currentPage === 1}
+                        className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-8 w-8"
+                      >
+                        ‹
+                      </button>
+                      <button
+                        onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+                        disabled={currentPage === totalPages}
+                        className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-8 w-8"
+                      >
+                        ›
+                      </button>
+                      <button
+                        onClick={() => setCurrentPage(totalPages)}
+                        disabled={currentPage === totalPages}
+                        className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-8 w-8"
+                      >
+                        »
+                      </button>
+                    </div>
+                  </div>
                 </div>
               )}
             </CardContent>

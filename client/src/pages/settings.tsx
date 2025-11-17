@@ -423,10 +423,10 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/store-settings"] });
-      toast({
-        title: t("common.success"),
-        description: t("settings.storeUpdated"),
-      });
+      // toast({
+      //   title: t("common.success"),
+      //   description: t("settings.storeUpdated"),
+      // });
     },
     onError: () => {
       toast({
@@ -533,10 +533,10 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/payment-methods"] });
-      toast({
-        title: t("common.success"),
-        description: "Đã thêm phương thức thanh toán mới",
-      });
+      // toast({
+      //   title: t("common.success"),
+      //   description: "Đã thêm phương thức thanh toán mới",
+      // });
     },
     onError: () => {
       toast({
@@ -559,10 +559,10 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/payment-methods"] });
-      toast({
-        title: t("common.success"),
-        description: t("settings.paymentUpdateSuccessDesc"),
-      });
+      // toast({
+      //   title: t("common.success"),
+      //   description: t("settings.paymentUpdateSuccessDesc"),
+      // });
     },
     onError: () => {
       toast({
@@ -581,10 +581,10 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/payment-methods"] });
-      toast({
-        title: t("common.success"),
-        description: "Đã xóa phương thức thanh toán",
-      });
+      // toast({
+      //   title: t("common.success"),
+      //   description: "Đã xóa phương thức thanh toán",
+      // });
     },
     onError: () => {
       toast({
@@ -675,10 +675,10 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
 
       await queryClient.refetchQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/customers"] });
 
-      toast({
-        title: t("common.success"),
-        description: t("settings.customerDeleteSuccess"),
-      });
+      // toast({
+      //   title: t("common.success"),
+      //   description: t("settings.customerDeleteSuccess"),
+      // });
 
       setShowCustomerDeleteDialog(false);
       setCustomerToDelete(null);
@@ -772,10 +772,10 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
       await queryClient.refetchQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/categories"] });
       await queryClient.refetchQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products"] });
 
-      toast({
-        title: t("common.success"),
-        description: t("settings.categoryCreateSuccess"),
-      });
+      // toast({
+      //   title: t("common.success"),
+      //   description: t("settings.categoryCreateSuccess"),
+      // });
       setShowCategoryForm(false);
       resetCategoryForm();
     } catch (error) {
@@ -830,10 +830,10 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
       await queryClient.refetchQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/categories"] });
       await queryClient.refetchQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products"] });
 
-      toast({
-        title: t("common.success"),
-        description: t("settings.categoryUpdateSuccess"),
-      });
+      // toast({
+      //   title: t("common.success"),
+      //   description: t("settings.categoryUpdateSuccess"),
+      // });
     } catch (error) {
       console.error("Category update error:", error);
       toast({
@@ -886,10 +886,10 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
       await queryClient.refetchQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/categories"] });
       await queryClient.refetchQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products"] });
 
-      toast({
-        title: t("common.success"),
-        description: t("settings.categoryDeleteSuccess"),
-      });
+      // toast({
+      //   title: t("common.success"),
+      //   description: t("settings.categoryDeleteSuccess"),
+      // });
 
       setShowDeleteDialog(false);
       setCategoryToDelete(null);
@@ -1008,10 +1008,10 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
       await queryClient.refetchQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products", { page: productsCurrentPage, limit: productsPageSize }] });
       setShowProductForm(false);
       resetProductForm();
-      toast({
-        title: t("common.success"),
-        description: t("settings.productCreatedSuccess"),
-      });
+      // toast({
+      //   title: t("common.success"),
+      //   description: t("settings.productCreatedSuccess"),
+      // });
     } catch (error) {
       console.error("Product creation error:", error);
       toast({
@@ -1101,10 +1101,10 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
       setShowProductForm(false);
       setEditingProduct(null);
       resetProductForm();
-      toast({
-        title: t("common.success"),
-        description: t("settings.productUpdatedSuccess"),
-      });
+      // toast({
+      //   title: t("common.success"),
+      //   description: t("settings.productUpdatedSuccess"),
+      // });
     } catch (error) {
       console.error("Product update error:", error);
       toast({
@@ -1199,10 +1199,10 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
 
       await queryClient.refetchQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products", { page: productsCurrentPage, limit: productsPageSize }] });
 
-      toast({
-        title: t("common.success"),
-        description: t("settings.productDeleteSuccess"),
-      });
+      // toast({
+      //   title: t("common.success"),
+      //   description: t("settings.productDeleteSuccess"),
+      // });
 
       setShowProductDeleteDialog(false);
       setProductToDelete(null);
@@ -1267,10 +1267,10 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
       queryClient.invalidateQueries({
         queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/einvoice-connections"],
       });
-      toast({
-        title: t("common.success"),
-        description: t("settings.einvoiceConnectionCreateSuccess"),
-      });
+      // toast({
+      //   title: t("common.success"),
+      //   description: t("settings.einvoiceConnectionCreateSuccess"),
+      // });
       setShowEInvoiceForm(false);
       resetEInvoiceForm();
     },
@@ -1296,10 +1296,10 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
       queryClient.invalidateQueries({
         queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/einvoice-connections"],
       });
-      toast({
-        title: t("common.success"),
-        description: t("settings.einvoiceConnectionUpdateSuccess"),
-      });
+      // toast({
+      //   title: t("common.success"),
+      //   description: t("settings.einvoiceConnectionUpdateSuccess"),
+      // });
       setShowEInvoiceForm(false);
       resetEInvoiceForm();
     },
@@ -1324,10 +1324,10 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
       queryClient.invalidateQueries({
         queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/einvoice-connections"],
       });
-      toast({
-        title: t("common.success"),
-        description: t("settings.einvoiceConnectionDeleteSuccess"),
-      });
+      // toast({
+      //   title: t("common.success"),
+      //   description: t("settings.einvoiceConnectionDeleteSuccess"),
+      // });
       setShowEInvoiceDeleteDialog(false);
       setEInvoiceToDelete(null);
     },
@@ -1524,10 +1524,10 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/invoice-templates"] });
-      toast({
-        title: t("common.success"),
-        description: t("settings.einvoiceTemplateCreateSuccess"),
-      });
+      // toast({
+      //   title: t("common.success"),
+      //   description: t("settings.einvoiceTemplateCreateSuccess"),
+      // });
       setShowTemplateForm(false);
       resetTemplateForm();
     },
@@ -1551,10 +1551,10 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/invoice-templates"] });
-      toast({
-        title: t("common.success"),
-        description: t("settings.einvoiceTemplateUpdateSuccess"),
-      });
+      // toast({
+      //   title: t("common.success"),
+      //   description: t("settings.einvoiceTemplateUpdateSuccess"),
+      // });
       setShowTemplateForm(false);
       resetTemplateForm();
     },
@@ -1577,10 +1577,10 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/invoice-templates"] });
-      toast({
-        title: t("common.success"),
-        description: t("settings.einvoiceTemplateDeleteSuccess"),
-      });
+      // toast({
+      //   title: t("common.success"),
+      //   description: t("settings.einvoiceTemplateDeleteSuccess"),
+      // });
       setShowTemplateDeleteDialog(false);
       setTemplateToDelete(null);
     },
