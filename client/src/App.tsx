@@ -26,6 +26,7 @@ import CustomersPage from "./pages/customers";
 import Kitchen from "@/pages/kitchen"; // Import Kitchen component
 import { useQuery } from "@tanstack/react-query";
 import { Navigate } from "wouter/use-location"; // Assuming Navigate is available or similar functionality
+import OrderHistoryPage from "./pages/order-history"; // Import OrderHistoryPage
 
 // Define StoreSettings interface if not already defined elsewhere
 interface StoreSettings {
@@ -128,6 +129,8 @@ function Router({ onLogout }: { onLogout: () => void }) {
       />
       {/* New route for customers */}
       <Route path="/customers" component={() => <CustomersPage onLogout={onLogout} />} />
+      {/* New route for order history */}
+      <Route path="/order-history" component={() => <OrderHistoryPage onLogout={onLogout} />} />
       <Route path="*" component={NotFoundPage} />
     </Switch>
   );

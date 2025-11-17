@@ -334,34 +334,15 @@ export function ProductGrid({
     return stock <= 5 && stock > 0;
   };
 
-  if (isLoading) {
+  // Chỉ hiển thị loading khi đang loading page 1 và chưa có dữ liệu
+  const isInitialLoading = isLoading && currentPage === 1 && products.length === 0;
+  
+  if (isInitialLoading) {
     return (
-      <main className="flex-1 flex flex-col">
-        <div className="bg-white p-4 border-b pos-border">
-          <div className="animate-pulse">
-            <div className="h-6 bg-gray-200 rounded w-32 mb-2"></div>
-            <div className="h-4 bg-gray-200 rounded w-24"></div>
-          </div>
-        </div>
-        <div className="flex-1 overflow-y-auto p-4">
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-            {Array.from({ length: 8 }).map((_, i) => (
-              <div
-                key={i}
-                className="bg-white rounded-lg shadow-material animate-pulse"
-              >
-                <div className="w-full h-32 bg-gray-200 rounded-t-lg"></div>
-                <div className="p-3">
-                  <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
-                  <div className="h-3 bg-gray-200 rounded w-1/2 mb-2"></div>
-                  <div className="flex justify-between">
-                    <div className="h-4 bg-gray-200 rounded w-1/3"></div>
-                    <div className="h-3 bg-gray-200 rounded w-1/4"></div>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
+      <main className="flex-1 flex flex-col items-center justify-center">
+        <div className="flex flex-col items-center gap-3">
+          <div className="animate-spin rounded-full h-10 w-10 border-b-3 border-green-600"></div>
+          <span className="text-sm text-gray-600 font-medium">Đang tải sản phẩm...</span>
         </div>
       </main>
     );

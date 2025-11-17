@@ -394,6 +394,11 @@ export default function KitchenDisplay() {
                                         <div className="font-bold text-base text-gray-800 truncate">
                                           {item.productName || "Unknown"}
                                         </div>
+                                        {item.notes && (
+                                          <div className="text-sm text-orange-600 italic mt-1">
+                                            📝 {item.notes}
+                                          </div>
+                                        )}
                                         <div className="text-xs text-gray-500 flex items-center gap-2 mt-1">
                                           <span className="px-2 py-0.5 bg-gray-100 rounded">
                                             {item.orderNumber}
@@ -481,6 +486,11 @@ export default function KitchenDisplay() {
                                         <div className="font-semibold">
                                           Bàn {item.tableNumber || "N/A"}
                                         </div>
+                                        {item.notes && (
+                                          <div className="text-sm text-orange-600 italic">
+                                            📝 {item.notes}
+                                          </div>
+                                        )}
                                         <div className="text-sm text-gray-500">
                                           {item.orderNumber} -{" "}
                                           {item.orderedAt
@@ -632,6 +642,11 @@ export default function KitchenDisplay() {
                                             <div className="font-semibold text-base">
                                               {item.productName || "Unknown"}
                                             </div>
+                                            {item.notes && (
+                                              <div className="text-sm text-orange-600 italic">
+                                                📝 {item.notes}
+                                              </div>
+                                            )}
                                             <div className="text-sm text-gray-500">
                                               {item.orderNumber} -{" "}
                                               {item.orderedAt
@@ -747,6 +762,11 @@ export default function KitchenDisplay() {
                                               <div className="font-semibold">
                                                 Bàn {item.tableNumber || "N/A"}
                                               </div>
+                                              {item.notes && (
+                                                <div className="text-sm text-orange-600 italic">
+                                                  📝 {item.notes}
+                                                </div>
+                                              )}
                                               <div className="text-sm text-gray-500">
                                                 {item.orderNumber} -{" "}
                                                 {item.orderedAt
@@ -918,6 +938,11 @@ export default function KitchenDisplay() {
                                             <div className="font-semibold text-base">
                                               {item.productName || "Unknown"}
                                             </div>
+                                            {item.notes && (
+                                              <div className="text-sm text-orange-600 italic">
+                                                📝 {item.notes}
+                                              </div>
+                                            )}
                                             <div className="text-sm text-gray-500">
                                               {item.orderNumber} -{" "}
                                               {item.orderedAt
@@ -1020,6 +1045,11 @@ export default function KitchenDisplay() {
                                                 {t("kitchen.table")}{" "}
                                                 {item.tableNumber || "N/A"}
                                               </div>
+                                              {item.notes && (
+                                                <div className="text-sm text-orange-600 italic">
+                                                  📝 {item.notes}
+                                                </div>
+                                              )}
                                               <div className="text-sm text-gray-500">
                                                 {item.orderNumber} -{" "}
                                                 {item.orderedAt

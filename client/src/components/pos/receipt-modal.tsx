@@ -1524,16 +1524,43 @@ export function ReceiptModal({
                           const unitPrice = parseFloat(
                             item.unitPrice || item.price || "0",
                           );
-                          const quantity = item.quantity || 1;
+                          const quantity = parseFloat(item.quantity || "1");
                           const itemDiscount = parseFloat(item.discount || "0");
                           const itemSubtotal = unitPrice * quantity;
                           const priceAfterDiscount =
                             itemSubtotal - itemDiscount;
 
-                          const itemTax = priceIncludeTax
-                            ? priceAfterDiscount * (taxRate / (100 + taxRate))
-                            : priceAfterDiscount * (taxRate / 100);
-                          groups[taxRate] += Math.round(itemTax);
+                          if (priceIncludeTax) {
+                            // When price includes tax:
+                            // giá bao gồm thuế = (price - (discount/quantity)) * quantity
+                            const discountPerUnit = itemDiscount / quantity;
+                            const adjustedPrice = Math.max(
+                              0,
+                              unitPrice - discountPerUnit,
+                            );
+                            const giaGomThue = adjustedPrice * quantity;
+                            // subtotal = giá bao gồm thuế / (1 + (taxRate / 100)) (làm tròn)
+                            const tamTinh = Math.round(
+                              giaGomThue / (1 + taxRate / 100),
+                            );
+                            // tax = giá bao gồm thuế - subtotal
+                            const taxAmount = giaGomThue - tamTinh;
+                            groups[taxRate] += Math.round(taxAmount);
+                          } else {
+                            // When price doesn't include tax:
+                            // subtotal = (price - (discount/quantity)) * quantity
+                            const discountPerUnit = itemDiscount / quantity;
+                            const adjustedPrice = Math.max(
+                              0,
+                              unitPrice - discountPerUnit,
+                            );
+                            const tamTinh = adjustedPrice * quantity;
+                            // tax = subtotal * (taxRate / 100) (làm tròn)
+                            const taxAmount = Math.round(
+                              tamTinh * (taxRate / 100),
+                            );
+                            groups[taxRate] += Math.round(taxAmount);
+                          }
                         }
                       }
                       return groups;

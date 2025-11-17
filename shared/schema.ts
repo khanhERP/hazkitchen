@@ -1,4 +1,3 @@
-// @ts-nocheck
 import {
   pgTable,
   text,
@@ -1029,6 +1028,7 @@ export const orderChangeHistory = pgTable("order_change_history", {
   orderId: integer("order_id")
     .notNull()
     .references(() => orders.id, { onDelete: "cascade" }),
+  orderNumber: varchar("order_number", { length: 100 }),
   changedAt: timestamp("changed_at", { withTimezone: true })
     .defaultNow()
     .notNull(),
@@ -1038,6 +1038,7 @@ export const orderChangeHistory = pgTable("order_change_history", {
   action: varchar("action", { length: 50 }).notNull().default("edit"), // 'edit', 'create', 'delete', 'cancel'
   detailedDescription: text("detailed_description").notNull(), // JSON string with change details
   storeCode: varchar("store_code", { length: 50 }),
+  storeName: varchar("store_name", { length: 255 }),
   createdAt: timestamp("created_at", { withTimezone: true })
     .defaultNow()
     .notNull(),

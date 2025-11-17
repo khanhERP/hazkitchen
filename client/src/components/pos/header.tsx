@@ -571,6 +571,25 @@ export function POSHeader({ onLogout }: POSHeaderProps) {
                             </span>
                           </button>
                         </Link>
+                        <Link href="/order-history">
+                          <button
+                            className={`w-full flex items-center px-2 py-1.5 text-xs sm:text-sm rounded transition-colors ${
+                              location === "/order-history"
+                                ? "text-blue-600 bg-blue-50"
+                                : "text-gray-700 hover:text-blue-600 hover:bg-gray-50"
+                            }`}
+                            onClick={() => {
+                              setActiveDropdown(null);
+                              setPosMenuOpen(false);
+                              setReportsSubmenuOpen(false);
+                            }}
+                          >
+                            <FileText className="w-3 h-3 sm:w-4 sm:h-4 mr-2 sm:mr-3 flex-shrink-0" />
+                            <span className="truncate">
+                              {t("nav.orderHistory")}
+                            </span>
+                          </button>
+                        </Link>
                       </div>
                     )}
                   </div>

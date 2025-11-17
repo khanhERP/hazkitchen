@@ -109,8 +109,8 @@ export function TableManagement() {
       tableNumber: "",
       capacity: 1,
       status: "available",
-      floor: "1",
-      zone: "A",
+      floor: "all",
+      zone: "all",
       qrCode: "",
     },
   });
@@ -182,8 +182,8 @@ export function TableManagement() {
         tableNumber: "",
         capacity: 1,
         status: "available",
-        floor: "1",
-        zone: "A",
+        floor: "all",
+        zone: "all",
         qrCode: "",
       });
     }
@@ -284,12 +284,12 @@ export function TableManagement() {
                       </TableCell>
                       <TableCell>
                         <span className="text-sm font-medium text-blue-600">
-                          {table.floor || "1층"}
+                          {table.floor === "all" ? t("common.all") : (table.floor || "1층")}
                         </span>
                       </TableCell>
                       <TableCell>
                         <span className="text-sm font-medium text-green-600">
-                          {(table as any).zone || "A구역"}
+                          {(table as any).zone === "all" ? t("common.all") : ((table as any).zone || "A구역")}
                         </span>
                       </TableCell>
                       <TableCell>
@@ -425,6 +425,7 @@ export function TableManagement() {
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
+                        <SelectItem value="all">{t("common.all")}</SelectItem>
                         <SelectItem value="1">{t("common.floor")} 1</SelectItem>
                         <SelectItem value="2">{t("common.floor")} 2</SelectItem>
                         <SelectItem value="3">{t("common.floor")} 3</SelectItem>
@@ -459,6 +460,7 @@ export function TableManagement() {
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
+                        <SelectItem value="all">{t("common.all")}</SelectItem>
                         <SelectItem value="A">{t("common.zone")} A</SelectItem>
                         <SelectItem value="B">{t("common.zone")} B</SelectItem>
                         <SelectItem value="C">{t("common.zone")} C</SelectItem>
@@ -468,7 +470,6 @@ export function TableManagement() {
                         <SelectItem value="Vip">
                           {t("common.zone")} VIP
                         </SelectItem>
-                        <SelectItem value="All">{t("common.all")}</SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage />

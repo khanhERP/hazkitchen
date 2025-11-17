@@ -41,8 +41,13 @@ export function Toaster() {
         let translatedDescription = description;
         if (description) {
           if (typeof description === 'string') {
+            // Filter out quantity change notifications (e.g., "Tăng số lượng ... từ ... lên ...")
+            if (description.includes('Tăng số lượng') || description.includes('Giảm số lượng')) {
+              // Skip this toast by setting description to null
+              translatedDescription = null;
+            }
             // Check if it's a translation key (contains dot notation like "settings.productCreatedSuccess")
-            if (description.includes('.') && !description.includes(' ')) {
+            else if (description.includes('.') && !description.includes(' ')) {
               // It's a translation key (no spaces, has dots)
               try {
                 const translated = t(description as any);
@@ -68,6 +73,11 @@ export function Toaster() {
               translatedDescription = t('common.productUpdateSuccessDesc');
             }
           }
+        }
+        
+        // Skip rendering this toast if description was filtered out
+        if (translatedDescription === null) {
+          return null;
         }
 
         return (

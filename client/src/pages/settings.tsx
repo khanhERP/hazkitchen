@@ -230,6 +230,11 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
         queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/employees"],
       });
 
+      toast({
+        title: t("settings.employeeDeleteSuccessTitle"),
+        description: t("settings.employeeDeleteSuccessDesc"),
+      });
+
       setShowEmployeeDeleteDialog(false);
       setEmployeeToDelete(null);
     } catch (error) {
@@ -263,7 +268,7 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
     trackInventory: true, // Default to true
     isActive: true, // Default to true
     // Added fields for product type, tax rate, and unit
-    productType: 1,
+    productType: 1, // Default to Goods Type
     taxRate: "0", // Default to 8%
     unit: "Cái", // Default to Cái
   });
@@ -331,33 +336,16 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
     queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/categories"],
   });
 
-  // Fetch products (include inactive products in settings) - with pagination and search
+  // Fetch products (include inactive products in settings) - with pagination
   const {
     data: productsResponse,
     isLoading: productsLoading
   } = useQuery({
-    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products", {
-      page: productsCurrentPage,
-      limit: productsPageSize,
-      category: selectedCategoryFilter,
-      search: productSearchTerm
-    }],
+    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products", { page: productsCurrentPage, limit: productsPageSize }],
     queryFn: async () => {
-      const params = new URLSearchParams({
-        page: productsCurrentPage.toString(),
-        limit: productsPageSize.toString(),
-        includeInactive: 'true'
-      });
-
-      if (selectedCategoryFilter && selectedCategoryFilter !== 'all') {
-        params.append('category', selectedCategoryFilter);
-      }
-
-      if (productSearchTerm && productSearchTerm.trim()) {
-        params.append('search', productSearchTerm.trim());
-      }
-
-      const response = await fetch(`https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products?${params.toString()}`);
+      const response = await fetch(
+        `https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products?page=${productsCurrentPage}&limit=${productsPageSize}&includeInactive=true`
+      );
       if (!response.ok) throw new Error("Failed to fetch products");
       return response.json();
     },
@@ -371,17 +359,6 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
     hasNext: false,
     hasPrev: false,
   };
-
-  // Fetch all products for counting by category (no pagination)
-  const { data: allProductsForCount } = useQuery({
-    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products/all-for-count"],
-    queryFn: async () => {
-      const response = await fetch(`https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products?limit=100000&includeInactive=true`);
-      if (!response.ok) throw new Error("Failed to fetch all products");
-      const data = await response.json();
-      return data.products || [];
-    },
-  });
 
   // Store settings state
   const [storeSettings, setStoreSettings] = useState({
@@ -425,11 +402,6 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
     }
   }, [storeData]);
 
-  // Reset to page 1 when search term or category filter changes
-  useEffect(() => {
-    setProductsCurrentPage(1);
-  }, [productSearchTerm, selectedCategoryFilter]);
-
   // Fetch payment methods from API
   const { data: paymentMethodsData, isLoading: paymentMethodsLoading } =
     useQuery<any[]>({
@@ -451,6 +423,10 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/store-settings"] });
+      toast({
+        title: t("common.success"),
+        description: t("settings.storeUpdated"),
+      });
     },
     onError: () => {
       toast({
@@ -557,6 +533,10 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/payment-methods"] });
+      toast({
+        title: t("common.success"),
+        description: "Đã thêm phương thức thanh toán mới",
+      });
     },
     onError: () => {
       toast({
@@ -579,6 +559,10 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/payment-methods"] });
+      toast({
+        title: t("common.success"),
+        description: t("settings.paymentUpdateSuccessDesc"),
+      });
     },
     onError: () => {
       toast({
@@ -597,6 +581,10 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/payment-methods"] });
+      toast({
+        title: t("common.success"),
+        description: "Đã xóa phương thức thanh toán",
+      });
     },
     onError: () => {
       toast({
@@ -687,6 +675,11 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
 
       await queryClient.refetchQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/customers"] });
 
+      toast({
+        title: t("common.success"),
+        description: t("settings.customerDeleteSuccess"),
+      });
+
       setShowCustomerDeleteDialog(false);
       setCustomerToDelete(null);
     } catch (error) {
@@ -737,7 +730,7 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
       stock: 0,
       categoryId: "",
       imageUrl: "",
-      floor: "1",
+      floor: "all",
       zone: "A",
       imageInputMethod: "url",
       selectedImageFile: null,
@@ -778,6 +771,11 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
       // Refetch data immediately
       await queryClient.refetchQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/categories"] });
       await queryClient.refetchQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products"] });
+
+      toast({
+        title: t("common.success"),
+        description: t("settings.categoryCreateSuccess"),
+      });
       setShowCategoryForm(false);
       resetCategoryForm();
     } catch (error) {
@@ -831,6 +829,11 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
       // Refetch data immediately
       await queryClient.refetchQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/categories"] });
       await queryClient.refetchQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products"] });
+
+      toast({
+        title: t("common.success"),
+        description: t("settings.categoryUpdateSuccess"),
+      });
     } catch (error) {
       console.error("Category update error:", error);
       toast({
@@ -882,6 +885,11 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
       // Refetch data immediately
       await queryClient.refetchQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/categories"] });
       await queryClient.refetchQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products"] });
+
+      toast({
+        title: t("common.success"),
+        description: t("settings.categoryDeleteSuccess"),
+      });
 
       setShowDeleteDialog(false);
       setCategoryToDelete(null);
@@ -1000,6 +1008,10 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
       await queryClient.refetchQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products", { page: productsCurrentPage, limit: productsPageSize }] });
       setShowProductForm(false);
       resetProductForm();
+      toast({
+        title: t("common.success"),
+        description: t("settings.productCreatedSuccess"),
+      });
     } catch (error) {
       console.error("Product creation error:", error);
       toast({
@@ -1089,6 +1101,10 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
       setShowProductForm(false);
       setEditingProduct(null);
       resetProductForm();
+      toast({
+        title: t("common.success"),
+        description: t("settings.productUpdatedSuccess"),
+      });
     } catch (error) {
       console.error("Product update error:", error);
       toast({
@@ -1183,6 +1199,11 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
 
       await queryClient.refetchQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products", { page: productsCurrentPage, limit: productsPageSize }] });
 
+      toast({
+        title: t("common.success"),
+        description: t("settings.productDeleteSuccess"),
+      });
+
       setShowProductDeleteDialog(false);
       setProductToDelete(null);
     } catch (error) {
@@ -1205,8 +1226,26 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
     setShowCategoryForm(true);
   };
 
-  // Products are now filtered by API, so we use them directly
-  const filteredProducts = products;
+  // Filter products based on category and search term
+  const filteredProducts = products
+    ? products.filter((product: any) => {
+        if (!product) return false;
+
+        const matchesCategory =
+          selectedCategoryFilter === "all" ||
+          product.categoryId?.toString() === selectedCategoryFilter;
+
+        const productName = product.name || "";
+        const productSku = product.sku || "";
+        const searchTerm = productSearchTerm.toLowerCase();
+
+        const matchesSearch =
+          productName.toLowerCase().includes(searchTerm) ||
+          productSku.toLowerCase().includes(searchTerm);
+
+        return matchesCategory && matchesSearch;
+      })
+    : [];
 
   // Fetch E-invoice connections
   const { data: eInvoiceConnections = [], isLoading: eInvoiceLoading } =
@@ -1227,6 +1266,10 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/einvoice-connections"],
+      });
+      toast({
+        title: t("common.success"),
+        description: t("settings.einvoiceConnectionCreateSuccess"),
       });
       setShowEInvoiceForm(false);
       resetEInvoiceForm();
@@ -1253,6 +1296,10 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
       queryClient.invalidateQueries({
         queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/einvoice-connections"],
       });
+      toast({
+        title: t("common.success"),
+        description: t("settings.einvoiceConnectionUpdateSuccess"),
+      });
       setShowEInvoiceForm(false);
       resetEInvoiceForm();
     },
@@ -1276,6 +1323,10 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/einvoice-connections"],
+      });
+      toast({
+        title: t("common.success"),
+        description: t("settings.einvoiceConnectionDeleteSuccess"),
       });
       setShowEInvoiceDeleteDialog(false);
       setEInvoiceToDelete(null);
@@ -1473,6 +1524,10 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/invoice-templates"] });
+      toast({
+        title: t("common.success"),
+        description: t("settings.einvoiceTemplateCreateSuccess"),
+      });
       setShowTemplateForm(false);
       resetTemplateForm();
     },
@@ -1496,6 +1551,10 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/invoice-templates"] });
+      toast({
+        title: t("common.success"),
+        description: t("settings.einvoiceTemplateUpdateSuccess"),
+      });
       setShowTemplateForm(false);
       resetTemplateForm();
     },
@@ -1518,6 +1577,10 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/invoice-templates"] });
+      toast({
+        title: t("common.success"),
+        description: t("settings.einvoiceTemplateDeleteSuccess"),
+      });
       setShowTemplateDeleteDialog(false);
       setTemplateToDelete(null);
     },
@@ -1782,6 +1845,11 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
 
     printWindow.document.write(barcodeHTML);
     printWindow.document.close();
+
+    toast({
+      title: "Thông báo",
+      description: `Đang in mã vạch cho ${selectedProducts.length} sản phẩm`,
+    });
   };
 
   return (
@@ -3056,7 +3124,8 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
                                           ? "bg-purple-500"
                                           : customer.membershipLevel === "GOLD"
                                             ? "bg-yellow-500"
-                                            : customer.membershipLevel === "SILVER"
+                                            : customer.membershipLevel ===
+                                                "SILVER"
                                               ? "bg-gray-300 text-black"
                                               : "bg-gray-400"
                                       } text-white`}
@@ -3252,38 +3321,10 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
                                   onChange={(e) =>
                                     setProductSearchTerm(e.target.value)
                                   }
-                                  onKeyPress={(e) => {
-                                    if (e.key === "Enter") {
-                                      queryClient.invalidateQueries({ 
-                                        queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products", { 
-                                          page: productsCurrentPage, 
-                                          limit: productsPageSize,
-                                          category: selectedCategoryFilter,
-                                          search: productSearchTerm
-                                        }] 
-                                      });
-                                      queryClient.invalidateQueries({ 
-                                        queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products/all-for-count"] 
-                                      });
-                                    }
-                                  }}
                                 />
                                 <Select
                                   value={selectedCategoryFilter}
-                                  onValueChange={(value) => {
-                                    setSelectedCategoryFilter(value);
-                                    queryClient.invalidateQueries({ 
-                                      queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products", { 
-                                        page: productsCurrentPage, 
-                                        limit: productsPageSize,
-                                        category: value,
-                                        search: productSearchTerm
-                                      }] 
-                                    });
-                                    queryClient.invalidateQueries({ 
-                                      queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products/all-for-count"] 
-                                    });
-                                  }}
+                                  onValueChange={setSelectedCategoryFilter}
                                 >
                                   <SelectTrigger className="w-48">
                                     <SelectValue
@@ -3304,26 +3345,7 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
                                     ))}
                                   </SelectContent>
                                 </Select>
-                                <Button 
-                                  variant="outline" 
-                                  size="sm"
-                                  onClick={() => {
-                                    queryClient.invalidateQueries({ 
-                                      queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products", { 
-                                        page: productsCurrentPage, 
-                                        limit: productsPageSize,
-                                        category: selectedCategoryFilter,
-                                        search: productSearchTerm
-                                      }] 
-                                    });
-                                    queryClient.invalidateQueries({ 
-                                      queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products/all-for-count"] 
-                                    });
-                                    queryClient.invalidateQueries({ 
-                                      queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/categories"] 
-                                    });
-                                  }}
-                                >
+                                <Button variant="outline" size="sm">
                                   <Search className="w-4 h-4 mr-2" />
                                   {t("common.search")}
                                 </Button>
@@ -3340,7 +3362,6 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
                                 <Button
                                   className="bg-green-600 hover:bg-green-700"
                                   onClick={() => {
-                                    setEditingProduct(null);
                                     resetProductForm();
                                     setShowProductForm(true);
                                   }}
@@ -3556,13 +3577,13 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
                                                   product.isActive === true ||
                                                   product.isActive === 1
                                                     ? "bg-blue-100 text-blue-800"
-                                                    : "bg-red-100 text-red-800"
+                                                    : "bg-gray-100 text-gray-800"
                                                 }`}
                                               >
                                                 {product.isActive === true ||
                                                 product.isActive === 1
-                                                  ? "Đang sử dụng"
-                                                  : "Không sử dụng"}
+                                                  ? t("settings.yes")
+                                                  : t("common.no")}
                                               </Badge>
                                             </td>
                                             <td className="px-4 py-3">
@@ -3697,28 +3718,10 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
                                   onChange={(e) =>
                                     setProductSearchTerm(e.target.value)
                                   }
-                                  onKeyPress={(e) => {
-                                    if (e.key === "Enter") {
-                                      queryClient.invalidateQueries({ 
-                                        queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/categories"] 
-                                      });
-                                      queryClient.invalidateQueries({ 
-                                        queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products/all-for-count"] 
-                                      });
-                                    }
-                                  }}
                                 />
                                 <Select
                                   value={selectedCategoryFilter}
-                                  onValueChange={(value) => {
-                                    setSelectedCategoryFilter(value);
-                                    queryClient.invalidateQueries({ 
-                                      queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/categories"] 
-                                    });
-                                    queryClient.invalidateQueries({ 
-                                      queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products/all-for-count"] 
-                                    });
-                                  }}
+                                  onValueChange={setSelectedCategoryFilter}
                                 >
                                   <SelectTrigger className="w-48">
                                     <SelectValue
@@ -3739,18 +3742,7 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
                                     ))}
                                   </SelectContent>
                                 </Select>
-                                <Button 
-                                  variant="outline" 
-                                  size="sm"
-                                  onClick={() => {
-                                    queryClient.invalidateQueries({ 
-                                      queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/categories"] 
-                                    });
-                                    queryClient.invalidateQueries({ 
-                                      queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products/all-for-count"] 
-                                    });
-                                  }}
-                                >
+                                <Button variant="outline" size="sm">
                                   <Search className="w-4 h-4 mr-2" />
                                   {t("common.search")}
                                 </Button>
@@ -3837,8 +3829,8 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
                                         );
                                       })
                                       .map((category: any, index) => {
-                                        const productCount = allProductsForCount
-                                          ? allProductsForCount.filter(
+                                        const productCount = products
+                                          ? products.filter(
                                               (p: any) =>
                                                 p.categoryId === category.id,
                                             ).length
@@ -4294,7 +4286,7 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
           />
 
           {/* Category Form Modal */}
-          <Dialog open={showCategoryForm} onOpenChange={setShowCategoryForm}>
+          <Dialog open={showCategoryForm} onOpenOpenChange={setShowCategoryForm}>
             <DialogContent className="sm:max-w-[425px]">
               <DialogHeader>
                 <DialogTitle>
@@ -4563,6 +4555,7 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
                       <SelectValue placeholder={t("tables.floorPlaceholder")} />
                     </SelectTrigger>
                     <SelectContent>
+                      <SelectItem value="all">{t("common.all")}</SelectItem>
                       <SelectItem value="1">{t("common.floor")} 1</SelectItem>
                       <SelectItem value="2">{t("common.floor")} 2</SelectItem>
                       <SelectItem value="3">{t("common.floor")} 3</SelectItem>
@@ -5206,7 +5199,8 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
                         ...prev,
                         password: e.target.value,
                       }))
-                    }                    className={`col-span-3 ${
+                    }
+                    className={`col-span-3 ${
                       eInvoiceFormErrors.password ? "border-red-500" : ""
                     }`}
                     placeholder={t("settings.passwordLabel")}
@@ -5289,22 +5283,19 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
                         signMethod: value,
                       }))
                     }
+                    disabled={true}
                   >
                     <SelectTrigger className="col-span-3">
-                      <SelectValue
-                        placeholder={t(
-                          "settings.signMethodLabel",
-                        )}
-                      />
+                      <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="Ký server">
                         {t("settings.signMethodServer")}
                       </SelectItem>
-                      <SelectItem value="Ký USB Token">
-                        {t("settings.signMethodUsb")}
+                      <SelectItem value="USB Token">
+                        {t("settings.signMethodUsbToken")}
                       </SelectItem>
-                      <SelectItem value="Ký HSM">
+                      <SelectItem value="HSM">
                         {t("settings.signMethodHsm")}
                       </SelectItem>
                     </SelectContent>
@@ -5377,7 +5368,7 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
                 </div>
                 <div className="grid grid-cols-4 items-center gap-4">
                   <Label htmlFor="autoPublish" className="text-right">
-                    {t("settings.autoPublish")}
+                    Phát hành tự động
                   </Label>
                   <div className="col-span-3 flex items-center space-x-2">
                     <Switch
@@ -5386,20 +5377,14 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
                       onCheckedChange={(checked) =>
                         setEInvoiceForm((prev) => ({
                           ...prev,
-                          autoPublish: Boolean(checked),
+                          autoPublish: checked,
                         }))
                       }
                     />
-                    <Label
-                      htmlFor="autoPublish"
-                      className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                    >
-                      {t("settings.autoPublish")}
+                    <Label htmlFor="autoPublish" className="text-sm">
+                      Tự động phát hành hóa đơn sau khi tạo
                     </Label>
                   </div>
-                  <p className="text-xs text-gray-500">
-                    {t("settings.autoPublishDesc")}
-                  </p>
                 </div>
               </div>
               <DialogFooter>

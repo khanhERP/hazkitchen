@@ -218,6 +218,10 @@ export default function SalesOrders() {
   useEffect(() => {
     const handleNewOrder = () => {
       console.log("📱 Sales Orders: New order detected, refreshing data...");
+      // Close order details when list is refreshed
+      setSelectedInvoice(null);
+      setIsEditing(false);
+      setEditableInvoice(null);
       // Force immediate refresh with all date ranges
       queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] });
       queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/invoices"] });
@@ -228,6 +232,10 @@ export default function SalesOrders() {
 
     const handleOrderUpdate = () => {
       console.log("🔄 Sales Orders: Order updated, refreshing data...");
+      // Close order details when list is refreshed
+      setSelectedInvoice(null);
+      setIsEditing(false);
+      setEditableInvoice(null);
       queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] });
       queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/invoices"] });
       queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/transactions"] });
@@ -237,6 +245,10 @@ export default function SalesOrders() {
 
     const handleRefreshOrders = () => {
       console.log("🔄 Sales Orders: Manual refresh triggered...");
+      // Close order details when list is refreshed
+      setSelectedInvoice(null);
+      setIsEditing(false);
+      setEditableInvoice(null);
       queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] });
       queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/invoices"] });
       queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/transactions"] });
@@ -410,14 +422,8 @@ export default function SalesOrders() {
         return { orders: [], pagination: {} };
       }
     },
-    retry: 1,
-    retryDelay: 0,
     staleTime: 0,
     gcTime: 0,
-    refetchOnMount: true,
-    refetchOnWindowFocus: true,
-    refetchInterval: 0, // Poll every 2 seconds for real-time updates
-    refetchIntervalInBackground: true, // Continue polling in background
   });
 
   const orders = ordersResponse?.orders || [];
@@ -757,14 +763,45 @@ export default function SalesOrders() {
           setPrintReceiptData(receiptData);
           setShowPrintDialog(true);
 
-          queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] });
-
           setShowPublishDialog(false);
           setSelectedInvoice(null);
 
-          alert(
-            `Hóa đơn đã phát hành thành công!\nSố hóa đơn: ${invoiceNo || "N/A"}\n\nMàn hình in hóa đơn sẽ hiển thị.`,
-          );
+          // Clear ALL cache completely to force fresh fetch from database
+          console.log("🔄 Clearing all order-related cache after publish...");
+          queryClient.removeQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] });
+          queryClient.removeQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders/list"] });
+          queryClient.removeQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/order-items"] });
+          queryClient.removeQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/invoices"] });
+
+          // Force immediate refetch with fresh data from server
+          console.log("📥 Forcing fresh data fetch from server...");
+          await Promise.all([
+            queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] }),
+            queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders/list"] }),
+            queryClient.refetchQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] }),
+            queryClient.refetchQueries({
+              queryKey: [
+                "https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders/list",
+                startDate,
+                endDate,
+                customerSearch,
+                orderNumberSearch,
+                customerCodeSearch,
+                salesChannelFilter,
+                orderStatusFilter,
+                einvoiceStatusFilter,
+                currentPage,
+                itemsPerPage,
+              ],
+            }),
+          ]);
+
+          console.log("✅ Data refreshed successfully after publish");
+
+          toast({
+            title: "Thành công",
+            description: `Hóa đơn ${invoiceNo || "N/A"} đã phát hành thành công`,
+          });
         } catch (updateError) {
           console.error("❌ Error updating order after publish:", {
             error: updateError,
@@ -776,17 +813,27 @@ export default function SalesOrders() {
             (updateError as Error)?.message ||
             (updateError as Error)?.toString() ||
             "Lỗi không xác định";
-          alert(
-            `Hóa đơn đã phát hành nhưng không thể cập nhật trạng thái: ${errorMessage}`,
-          );
+          toast({
+            title: "Lỗi",
+            description: `Hóa đơn đã phát hành nhưng không thể cập nhật trạng thái: ${errorMessage}`,
+            variant: "destructive",
+          });
         }
       } else {
-        alert(`Lỗi phát hành hóa đơn: ${result.message || "Không xác định"}`);
+        toast({
+          title: "Lỗi phát hành hóa đơn",
+          description: result.message || "Không xác định",
+          variant: "destructive",
+        });
       }
     },
     onError: (error) => {
       console.error("❌ Error publishing invoice:", error);
-      alert(`Lỗi phát hành hóa đơn: ${(error as Error).message}`);
+      toast({
+        title: "Lỗi phát hành hóa đơn",
+        description: (error as Error).message,
+        variant: "destructive",
+      });
     },
   });
 
@@ -2382,7 +2429,7 @@ export default function SalesOrders() {
 
   const exportSelectedOrdersToExcel = () => {
     if (selectedOrderIds.size === 0) {
-      alert("Vui lòng chọn ít nhất một đ �n hàng để xuất Excel");
+      alert("Vui lòng chọn ít nhất một đơn hàng để xuất Excel");
       return;
     }
 
@@ -2833,22 +2880,69 @@ export default function SalesOrders() {
 
         console.log("✅ Order updated successfully after publish.");
 
-        // Trigger refresh after successful update
-        queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] });
-        queryClient.invalidateQueries({
-          queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/order-items", selectedInvoice.id],
-        });
-
+        // Close modal first
         setShowEInvoiceModal(false);
         setSelectedInvoice(null);
+
+        // Helper function to refetch the orders list
+        const refetchOrdersList = async () => {
+          console.log(
+            "🔄 Refetching orders list with current filters and pagination...",
+          );
+          await queryClient.refetchQueries({
+            queryKey: [
+              "https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders/list",
+              startDate,
+              endDate,
+              customerSearch,
+              orderNumberSearch,
+              customerCodeSearch,
+              salesChannelFilter,
+              orderStatusFilter,
+              einvoiceStatusFilter,
+              currentPage,
+              itemsPerPage,
+            ],
+          });
+        };
+
+        // Clear ALL cache completely to force fresh fetch from database
+        console.log("🔄 Clearing all order-related cache...");
+        queryClient.removeQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] });
+        queryClient.removeQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders/list"] });
+        queryClient.removeQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/order-items"] });
+        queryClient.removeQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/invoices"] });
+        queryClient.removeQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/tables"] });
+
+        // Force immediate refetch with fresh data from server
+        console.log("📥 Forcing fresh data fetch after publish...");
+        await Promise.all([
+          queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] }),
+          queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders/list"] }),
+          queryClient.refetchQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] }),
+          refetchOrdersList(), // Force immediate refetch of orders list
+        ]);
+
+        console.log("✅ Data refreshed successfully after publish");
+
+        toast({
+          title: "Thành công",
+          description: `Hóa đơn ${invoiceNo || "N/A"} đã được phát hành thành công`,
+        });
       } catch (error) {
         console.error("❌ Error updating order after publish:", error);
-        alert(
-          `Hóa đơn đã phát hành nhưng không thể cập nhật trạng thái đơn hàng: ${(error as Error).message}`,
-        );
+        toast({
+          title: "Lỗi",
+          description: `Hóa đơn đã phát hành nhưng không thể cập nhật trạng thái: ${(error as Error).message}`,
+          variant: "destructive",
+        });
       }
     } else {
-      alert(`Lỗi phát hành hóa đơn: ${result.message || "Không xác định"}`);
+      toast({
+        title: "Lỗi phát hành hóa đơn",
+        description: result.message || "Không xác định",
+        variant: "destructive",
+      });
     }
   };
 

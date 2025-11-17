@@ -44,6 +44,9 @@ interface CartItem {
   product: Product;
   quantity: number;
   notes?: string;
+  itemDiscount?: number; // Individual item discount
+  itemDiscountPercent?: number; // Individual item discount percentage
+  itemDiscountType?: "amount" | "percent"; // Type of individual item discount
 }
 
 // Helper function for currency formatting
@@ -83,36 +86,17 @@ export function OrderDialog({
   const [showReceiptPreview, setShowReceiptPreview] = useState(false);
   const [showDeleteItemDialog, setShowDeleteItemDialog] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<any>(null);
+  const [showReduceQtyDialog, setShowReduceQtyDialog] = useState(false);
+  const [itemToReduce, setItemToReduce] = useState<any>(null);
+  const [deleteNote, setDeleteNote] = useState("");
+  const [reduceNote, setReduceNote] = useState("");
+  const [showIncreaseQtyDialog, setShowIncreaseQtyDialog] = useState(false);
+  const [itemToIncrease, setItemToIncrease] = useState<any>(null);
+  const [increaseNote, setIncreaseNote] = useState("");
 
-  const { data: productsResponse } = useQuery({
-    queryKey: [
-      "https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products",
-      { category: selectedCategory, search: searchQuery },
-    ],
-    queryFn: async () => {
-      const params = new URLSearchParams();
-
-      if (searchQuery) {
-        params.append("search", searchQuery);
-      }
-
-      if (selectedCategory !== null) {
-        params.append("category", selectedCategory.toString());
-      }
-
-      // Load all products without pagination limit
-      params.append("limit", "50000");
-
-      // Only show active products in order dialog
-      params.append("includeInactive", "false");
-
-      const response = await fetch(`https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products?${params}`);
-      if (!response.ok) throw new Error("Failed to fetch products");
-      return await response.json();
-    },
+  const { data: products } = useQuery({
+    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products/active"],
   });
-
-  const products = productsResponse?.products || [];
 
   const { data: categories, isLoading: categoriesLoading } = useQuery({
     queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/categories"],
@@ -338,6 +322,8 @@ export function OrderDialog({
                   priceBeforeTax: parseFloat(
                     Math.round(priceBeforeTax).toFixed(2),
                   ),
+                  quantity: quantity.toString(),
+                  unitPrice: unitPrice.toString(), // Also update unitPrice if changed
                 };
 
                 console.log(
@@ -357,6 +343,7 @@ export function OrderDialog({
                     discount: updatedItem.discount,
                     tax: updatedItem.tax,
                     priceBeforeTax: updatedItem.priceBeforeTax,
+                    unitPrice: updatedItem.unitPrice,
                   });
                 } else {
                   const errorText = await updateResponse.text();
@@ -651,23 +638,160 @@ export function OrderDialog({
       // Add new product with itemDiscount = 0 if discount already fully allocated
       return [
         ...prev,
-        { product, quantity: 1, itemDiscount: discountsMatch ? 0 : undefined },
+        {
+          product,
+          quantity: 1,
+          itemDiscount: discountsMatch ? 0 : undefined,
+          itemDiscountType: "amount",
+        },
       ];
     });
   };
 
   const removeFromCart = (productId: number) => {
-    setCart((prev) => {
-      const existing = prev.find((item) => item.product.id === productId);
-      if (existing && existing.quantity > 1) {
-        return prev.map((item) =>
-          item.product.id === productId
-            ? { ...item, quantity: item.quantity - 1 }
-            : item,
-        );
+    // First, check if this product exists in the NEW cart items
+    const cartItem = cart.find((item) => item.product.id === productId);
+
+    // If found in cart, handle cart item removal (new items)
+    if (cartItem) {
+      setCart((prev) => {
+        const existing = prev.find((item) => item.product.id === productId);
+        if (existing && existing.quantity > 1) {
+          return prev.map((item) =>
+            item.product.id === productId
+              ? { ...item, quantity: item.quantity - 1 }
+              : item,
+          );
+        }
+        return prev.filter((item) => item.product.id !== productId);
+      });
+      return;
+    }
+
+    // Only if NOT found in cart, then check existing order items
+    const existingItem = existingItems.find(
+      (item) => item.productId === productId,
+    );
+    if (mode === "edit" && existingItem) {
+      // Check if status is empty or null - if so, reduce directly without confirmation
+      const itemStatus = existingItem.status || "";
+      const shouldSkipConfirmation = itemStatus === "" || itemStatus === null;
+
+      if (shouldSkipConfirmation) {
+        // Reduce quantity directly without showing confirmation dialog
+        const oldQuantity = parseInt(existingItem.quantity);
+        const newQuantity = oldQuantity - 1;
+
+        if (newQuantity <= 0) {
+          // Remove item if quantity becomes 0
+          const itemIndex = existingItems.findIndex(
+            (item) => item.productId === productId,
+          );
+
+          // Calculate discount to subtract from order discount
+          const itemDiscount = parseFloat(existingItem.discount || "0");
+
+          setExistingItems((prev) => prev.filter((_, i) => i !== itemIndex));
+
+          // Subtract item discount from order discount
+          setDiscount((prevDiscount) =>
+            Math.max(0, prevDiscount - itemDiscount),
+          );
+
+          // Delete from database
+          apiRequest("DELETE", `https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/order-items/${existingItem.id}`)
+            .then(async () => {
+              console.log(
+                `✅ Order item ${existingItem.id} deleted (status was empty/null)`,
+              );
+
+              // Invalidate queries to refresh data
+              queryClient.invalidateQueries({
+                queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/order-items"],
+              });
+              queryClient.invalidateQueries({
+                queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"],
+              });
+            })
+            .catch((error) => {
+              console.error("Error deleting order item:", error);
+              // Restore the item if deletion failed
+              setExistingItems((prev) => [
+                ...prev.slice(0, itemIndex),
+                existingItem,
+                ...prev.slice(itemIndex),
+              ]);
+              // Restore discount
+              setDiscount((prevDiscount) => prevDiscount + itemDiscount);
+              toast({
+                title: "Lỗi xóa món",
+                description: "Không thể xóa món khỏi đơn hàng",
+                variant: "destructive",
+              });
+            });
+        } else {
+          // Calculate new discount proportionally based on new quantity
+          const oldItemDiscount = parseFloat(existingItem.discount || "0");
+          const newItemDiscount = Math.round(
+            (oldItemDiscount * newQuantity) / oldQuantity,
+          );
+          const discountReduction = oldItemDiscount - newItemDiscount;
+
+          // Update quantity and discount in database
+          apiRequest("PUT", `https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/order-items/${existingItem.id}`, {
+            quantity: newQuantity.toString(),
+            discount: newItemDiscount.toString(),
+          })
+            .then(() => {
+              console.log(
+                `✅ Order item ${existingItem.id} quantity reduced to ${newQuantity}, discount reduced to ${newItemDiscount} (status was empty/null)`,
+              );
+
+              // Update existing items state with new quantity and discount
+              setExistingItems((prev) =>
+                prev.map((item) =>
+                  item.id === existingItem.id
+                    ? {
+                        ...item,
+                        quantity: newQuantity.toString(),
+                        discount: newItemDiscount.toString(),
+                      }
+                    : item,
+                ),
+              );
+
+              // Reduce order discount by the amount removed from this item
+              setDiscount((prevDiscount) =>
+                Math.max(0, prevDiscount - discountReduction),
+              );
+            })
+            .catch((error) => {
+              console.error("Error updating order item:", error);
+              toast({
+                title: "Lỗi",
+                description: "Không thể cập nhật số lượng",
+                variant: "destructive",
+              });
+            });
+        }
+        return;
       }
-      return prev.filter((item) => item.product.id !== productId);
-    });
+
+      // Status is not empty/null - show confirmation dialog as before
+      if (existingItem.quantity > 1) {
+        setItemToReduce({ item: existingItem, productId });
+        setShowReduceQtyDialog(true);
+      } else {
+        setItemToDelete({
+          item: existingItem,
+          index: existingItems.findIndex(
+            (item) => item.productId === productId,
+          ),
+        });
+        setShowDeleteItemDialog(true);
+      }
+      return;
+    }
   };
 
   const updateItemNotes = (productId: number, notes: string) => {
@@ -696,7 +820,8 @@ export function OrderDialog({
         ? existingItems.reduce((sum, item) => {
             return (
               sum +
-              parseFloat(item.unitPrice || "0") * parseInt(item.quantity || "0")
+              parseFloat(item.unitPrice || "0") *
+                parseInt(item.quantity || "0")
             );
           }, 0)
         : 0) +
@@ -713,7 +838,7 @@ export function OrderDialog({
     if (mode === "edit" && existingItems && Array.isArray(existingItems)) {
       existingItems.forEach((item, index) => {
         const quantity = parseInt(item.quantity);
-        const originalPrice = parseFloat(item.unitPrice);
+        const originalPrice = parseFloat(item.unitPrice); // Use editable unitPrice
         const product = products?.find((p: Product) => p.id === item.productId);
 
         let itemSubtotal = 0;
@@ -732,8 +857,10 @@ export function OrderDialog({
             // Last item gets remaining discount
             itemDiscountAmount = Math.max(0, discount - allocatedDiscount);
           } else {
+            // Proportional discount
             const itemTotal = originalPrice * quantity;
-            itemDiscountAmount = (discount * itemTotal) / totalBeforeDiscount;
+            itemDiscountAmount =
+              (discount * itemSubtotal) / totalBeforeDiscount;
             allocatedDiscount += itemDiscountAmount;
           }
         } else {
@@ -780,7 +907,7 @@ export function OrderDialog({
 
     cart.forEach((item, index) => {
       const quantity = item.quantity;
-      const originalPrice = parseFloat(item.product.price);
+      const originalPrice = parseFloat(item.product.price); // Use editable price from cart item
       const product = products?.find((p: Product) => p.id === item.product.id);
 
       let itemSubtotal = 0;
@@ -859,19 +986,19 @@ export function OrderDialog({
     const existingItemsOld = existingItems.map((item) => {
       return {
         ...item,
-        product: products?.find((p: Product) => p.id === item.productId),
+        product: products.find((p: Product) => p.id === item.productId),
       };
     });
 
     let cartOrder = [...cart, ...existingItemsOld];
 
     // Calculate total before discount for proportional distribution
-    const totalBeforeDiscount = cartOrder.reduce((total, cartItem) => {
-      return (
-        total +
-        parseFloat(cartItem.product.price) *
-          parseFloat(cartItem.quantity || "1")
-      );
+    const totalBeforeDiscount = cartOrder.reduce((total: number, cartItem) => {
+      // Use unitPrice for existing items, product.price for cart items
+      const price = cartItem.unitPrice 
+        ? parseFloat(cartItem.unitPrice)
+        : parseFloat(cartItem?.product?.price || "0");
+      return total + price * parseFloat(cartItem.quantity || "1");
     }, 0);
 
     let allocatedDiscount = 0;
@@ -886,7 +1013,10 @@ export function OrderDialog({
 
     return cartOrder.reduce((sum, item, index) => {
       if (item?.product?.taxRate && parseFloat(item?.product?.taxRate) > 0) {
-        const originalPrice = parseFloat(item.product.price);
+        // Use unitPrice for existing items (editable), product.price for cart items
+        const originalPrice = item.unitPrice 
+          ? parseFloat(item.unitPrice)
+          : parseFloat(item.product.price);
         const quantity = item.quantity;
         let taxRate = parseFloat(item.product.taxRate) / 100;
         const orderDiscount = discount;
@@ -911,9 +1041,8 @@ export function OrderDialog({
           } else {
             // Regular calculation for non-last items
             const itemTotal = originalPrice * quantity;
-            itemDiscountAmount = Math.round(
-              (orderDiscount * itemTotal) / totalBeforeDiscount,
-            );
+            itemDiscountAmount =
+              (orderDiscount * itemTotal) / totalBeforeDiscount;
             allocatedDiscount += itemDiscountAmount;
           }
         } else {
@@ -1016,7 +1145,7 @@ export function OrderDialog({
       // Calculate pre-allocated discounts for new items
       let totalBeforeDiscount =
         existingItems.reduce((sum, item) => {
-          return sum + Number(item.unitPrice || 0) * Number(item.quantity || 0);
+          return Number(item.unitPrice || 0) * Number(item.quantity || 0);
         }, 0) +
         cart.reduce((sum, item) => {
           return sum + parseFloat(item.product.price) * item.quantity;
@@ -1135,7 +1264,7 @@ export function OrderDialog({
         return {
           productId: item.product.id,
           quantity: item.quantity,
-          unitPrice: basePrice.toString(),
+          unitPrice: basePrice.toString(), // Store the potentially edited base price
           total: itemTotalAmount.toString(),
           discount: Math.round(itemDiscountAmount).toString(),
           tax: Math.round(itemTax).toString(),
@@ -1203,7 +1332,7 @@ export function OrderDialog({
 
         let itemTax = 0;
         let priceBeforeTax = 0;
-        const unitPrice = parseFloat(item.unitPrice || "0");
+        const unitPrice = parseFloat(item.unitPrice || "0"); // Use editable unitPrice
         const quantity = item.quantity;
 
         if (product?.taxRate && parseFloat(product.taxRate) > 0) {
@@ -1219,7 +1348,7 @@ export function OrderDialog({
           } else {
             // When price doesn't include tax: tax = subtotal * taxRate
             priceBeforeTax = unitPrice * quantity - itemDiscountAmount;
-            itemTax = Math.round(priceBeforeTax * taxRate);
+            itemTax = taxRate > 0 ? Math.round(priceBeforeTax * taxRate) : 0;
           }
         } else {
           // No tax rate
@@ -1232,8 +1361,194 @@ export function OrderDialog({
           discount: itemDiscountAmount.toString(),
           tax: Math.round(itemTax).toString(),
           priceBeforeTax: Math.round(priceBeforeTax).toString(),
+          unitPrice: unitPrice.toString(), // Ensure unitPrice is updated
         };
       });
+
+      // Save changes to order_change_history AND update order items in database
+      if (existingOrder?.id) {
+        // Track changes in existing items (quantity or discount changes)
+        for (let i = 0; i < existingItems.length; i++) {
+          const currentItem = existingItems[i];
+          const originalItem = existingOrderItems?.find(
+            (item: any) => item.id === currentItem.id,
+          );
+
+          if (originalItem) {
+            const quantityChanged =
+              parseInt(currentItem.quantity) !==
+              parseInt(originalItem.quantity);
+            const discountChanged =
+              parseFloat(currentItem.discount || "0") !==
+              parseFloat(originalItem.discount || "0");
+            const unitPriceChanged =
+              parseFloat(currentItem.unitPrice) !==
+              parseFloat(originalItem.unitPrice);
+
+            // Update order item in database if quantity, discount, or unitPrice changed
+            if (quantityChanged || discountChanged || unitPriceChanged) {
+              try {
+                const updatePayload: any = {};
+
+                if (quantityChanged) {
+                  updatePayload.quantity = currentItem.quantity;
+                }
+
+                if (discountChanged) {
+                  updatePayload.discount = currentItem.discount;
+                }
+
+                if (unitPriceChanged) {
+                  updatePayload.unitPrice = currentItem.unitPrice;
+                }
+
+                // Recalculate tax and priceBeforeTax based on updated values
+                const quantity = parseInt(currentItem.quantity);
+                const unitPrice = parseFloat(currentItem.unitPrice);
+                const itemDiscount = parseFloat(currentItem.discount || "0");
+
+                // Get product for tax calculation
+                const product = products?.find(
+                  (p: Product) => p.id === currentItem.productId,
+                );
+                const taxRate = product?.taxRate
+                  ? parseFloat(product.taxRate) / 100
+                  : 0;
+
+                let priceBeforeTax = 0;
+                let itemTax = 0;
+
+                if (priceIncludesTax && taxRate > 0) {
+                  const discountPerUnit = itemDiscount / quantity;
+                  const adjustedPrice = Math.max(0, unitPrice - discountPerUnit);
+                  const giaGomThue = adjustedPrice * quantity;
+                  priceBeforeTax = Math.round(giaGomThue / (1 + taxRate));
+                  itemTax = giaGomThue - priceBeforeTax;
+                } else {
+                  priceBeforeTax = unitPrice * quantity - itemDiscount;
+                  itemTax =
+                    taxRate > 0 ? Math.round(priceBeforeTax * taxRate) : 0;
+                }
+
+                const total = priceBeforeTax + itemTax;
+
+                updatePayload.total = total.toString();
+                updatePayload.tax = Math.round(itemTax).toString();
+                updatePayload.priceBeforeTax =
+                  Math.round(priceBeforeTax).toString();
+
+                console.log(
+                  `📝 Updating order item ${currentItem.id}:`,
+                  updatePayload,
+                );
+
+                await apiRequest(
+                  "PUT",
+                  `https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/order-items/${currentItem.id}`,
+                  updatePayload,
+                );
+
+                console.log(
+                  `✅ Order item ${currentItem.id} updated in database`,
+                );
+              } catch (error) {
+                console.error(
+                  `❌ Error updating order item ${currentItem.id}:`,
+                  error,
+                );
+              }
+            }
+
+            // Log quantity change to history
+            if (quantityChanged) {
+              try {
+                await apiRequest("POST", "https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/order-change-history", {
+                  orderId: existingOrder.id,
+                  orderNumber: existingOrder.orderNumber,
+                  ipAddress: window.location.hostname || "unknown",
+                  userName: "Nhân viên",
+                  action: "update_quantity",
+                  detailedDescription: JSON.stringify({
+                    productName: currentItem.productName,
+                    oldQuantity: parseInt(originalItem.quantity),
+                    newQuantity: parseInt(currentItem.quantity),
+                    unitPrice: currentItem.unitPrice,
+                    note: "Cập nhật số lượng sản phẩm",
+                  }),
+                  storeCode: existingOrder.storeCode || null,
+                });
+                console.log(
+                  `✅ Quantity change saved to order_change_history for ${currentItem.productName}`,
+                );
+              } catch (error) {
+                console.error(
+                  `❌ Error saving quantity change to order_change_history:`,
+                  error,
+                );
+              }
+            }
+
+            // Log discount change to history
+            if (discountChanged) {
+              try {
+                await apiRequest("POST", "https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/order-change-history", {
+                  orderId: existingOrder.id,
+                  orderNumber: existingOrder.orderNumber,
+                  ipAddress: window.location.hostname || "unknown",
+                  userName: "Nhân viên",
+                  action: "update_discount",
+                  detailedDescription: JSON.stringify({
+                    productName: currentItem.productName,
+                    oldDiscount: parseFloat(originalItem.discount || "0"),
+                    newDiscount: parseFloat(currentItem.discount || "0"),
+                    quantity: parseInt(currentItem.quantity),
+                    unitPrice: currentItem.unitPrice,
+                    note: "Cập nhật giảm giá sản phẩm",
+                  }),
+                  storeCode: existingOrder.storeCode || null,
+                });
+                console.log(
+                  `✅ Discount change saved to order_change_history for ${currentItem.productName}`,
+                );
+              } catch (error) {
+                console.error(
+                  `❌ Error saving discount change to order_change_history:`,
+                  error,
+                );
+              }
+            }
+
+            // Log unit price change to history
+            if (unitPriceChanged) {
+              try {
+                await apiRequest("POST", "https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/order-change-history", {
+                  orderId: existingOrder.id,
+                  orderNumber: existingOrder.orderNumber,
+                  ipAddress: window.location.hostname || "unknown",
+                  userName: "Nhân viên",
+                  action: "update_unit_price",
+                  detailedDescription: JSON.stringify({
+                    productName: currentItem.productName,
+                    oldUnitPrice: parseFloat(originalItem.unitPrice),
+                    newUnitPrice: parseFloat(currentItem.unitPrice),
+                    quantity: parseInt(currentItem.quantity),
+                    note: "Cập nhật đơn giá sản phẩm",
+                  }),
+                  storeCode: existingOrder.storeCode || null,
+                });
+                console.log(
+                  `✅ Unit price change saved to order_change_history for ${currentItem.productName}`,
+                );
+              } catch (error) {
+                console.error(
+                  `❌ Error saving unit price change to order_change_history:`,
+                  error,
+                );
+              }
+            }
+          }
+        }
+      }
 
       // Always proceed with mutation - adding new items and updating order totals/info
       console.log(
@@ -1305,8 +1620,10 @@ export function OrderDialog({
         const itemTotal = itemSubtotal + itemTax;
 
         return {
-          productId: item.product.id,
-          quantity: item.quantity,
+          productId: item.product.id, // Ensure productId is set
+          productName: item.product.name, // Add productName field
+          product: item.product, // Preserve full product object
+          quantity: item.quantity.toString(),
           unitPrice: basePrice.toString(),
           total: itemTotal.toString(),
           discount: item.itemDiscount.toString(), // Will be calculated below
@@ -1374,9 +1691,10 @@ export function OrderDialog({
 
       // Clean up the items array for API
       const items = cartItemsWithDiscount.map((item) => ({
-        productId: item.productId,
+        productId: item.productId || item.product?.id, // Get from productId or product object
+        productName: item.productName || item.product?.name, // Ensure productName is included
         quantity: item.quantity.toString(),
-        unitPrice: item.basePrice.toString(),
+        unitPrice: item.unitPrice, // Use the potentially edited unit price
         total: item.total,
         discount: item.discount,
         tax: item.tax,
@@ -1384,6 +1702,7 @@ export function OrderDialog({
         notes: item.notes,
       }));
 
+      // Ensure order discount reflects the sum of item discounts if order discount is zero
       if (parseFloat(order.discount || "0") === 0) {
         order.discount = items
           .reduce((sum, item) => sum + parseFloat(item.discount || "0"), 0)
@@ -1436,7 +1755,19 @@ export function OrderDialog({
       Array.isArray(existingOrderItems)
     ) {
       console.log("Setting existing items:", existingOrderItems);
-      setExistingItems(existingOrderItems);
+      // Map existing items to include temporary properties for discount type and percentage
+      const mappedExistingItems = existingOrderItems.map((item: any) => {
+        // Default to amount type if discount is present
+        const itemDiscountType =
+          item.discount && parseFloat(item.discount) > 0 ? "amount" : undefined;
+        return {
+          ...item,
+          itemDiscountType: itemDiscountType,
+          itemDiscountPercent: 0, // Initialize percent to 0
+          unitPrice: item.unitPrice || item.product?.price || "0", // Ensure unitPrice is set
+        };
+      });
+      setExistingItems(mappedExistingItems);
     } else if (mode === "edit" && open && existingOrder?.id) {
       // Clear existing items when dialog opens in edit mode but no data yet
       setExistingItems([]);
@@ -1444,6 +1775,188 @@ export function OrderDialog({
   }, [mode, existingOrderItems, open, existingOrder?.id]);
 
   if (!table) return null;
+
+  const handleConfirmReduceQty = async () => {
+    if (!itemToReduce) return;
+
+    const { item, index } = itemToReduce; // Use index for state update
+    const newQuantity = parseInt(item.quantity) - 1;
+
+    if (newQuantity <= 0) {
+      // If quantity becomes 0, delete the item instead
+      setItemToDelete({
+        item,
+        index: existingItems.findIndex((i) => i.id === item.id),
+      });
+      setShowDeleteItemDialog(true);
+      setShowReduceQtyDialog(false);
+      return;
+    }
+
+    // Prepare the note to save (new note or keep existing)
+    const noteToSave =
+      reduceNote.trim() ||
+      item.notes ||
+      "Giảm số lượng sản phẩm xuống " + newQuantity;
+
+    // Update order_items in database with notes
+    try {
+      await apiRequest("PUT", `https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/order-items/${item.id}`, {
+        quantity: newQuantity.toString(),
+        notes: noteToSave,
+      });
+      console.log(
+        `✅ Order item ${item.id} updated with new quantity and notes:`,
+        noteToSave,
+      );
+    } catch (error) {
+      console.error(`❌ Error updating order item:`, error);
+      toast({
+        title: "Lỗi",
+        description: "Không thể cập nhật số lượng",
+        variant: "destructive",
+      });
+      setShowReduceQtyDialog(false);
+      setItemToReduce(null);
+      setReduceNote("");
+      return;
+    }
+
+    // Update existing items state
+    setExistingItems((prev) =>
+      prev.map((existingItem) =>
+        existingItem.id === item.id
+          ? {
+              ...existingItem,
+              quantity: newQuantity.toString(),
+              notes: noteToSave,
+            }
+          : existingItem,
+      ),
+    );
+
+    // Save to order_change_history
+    if (existingOrder?.id) {
+      try {
+        await apiRequest("POST", "https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/order-change-history", {
+          orderId: existingOrder.id,
+          orderNumber: existingOrder.orderNumber,
+          ipAddress: window.location.hostname || "unknown",
+          userName: "Nhân viên",
+          action: "reduce_quantity",
+          detailedDescription: JSON.stringify({
+            productName: item.productName,
+            oldQuantity: parseInt(item.quantity),
+            newQuantity: newQuantity,
+            unitPrice: item.unitPrice,
+            note: noteToSave || "Giảm số lượng sản phẩm",
+          }),
+          storeCode: existingOrder.storeCode || null,
+        });
+        console.log(
+          `✅ Quantity reduction saved to order_change_history for ${item.productName} with note:`,
+          noteToSave || "Giảm số lượng sản phẩm",
+        );
+      } catch (error) {
+        console.error(
+          `❌ Error saving quantity reduction to order_change_history:`,
+          error,
+        );
+      }
+    }
+
+    setShowReduceQtyDialog(false);
+    setItemToReduce(null);
+    setReduceNote("");
+  };
+
+  const handleConfirmIncreaseQty = async () => {
+    if (!itemToIncrease) return;
+
+    const { item, index } = itemToIncrease; // Use index for state update
+    const newQuantity = parseInt(item.quantity) + 1;
+
+    // Prepare the note to save (new note or keep existing)
+    const noteToSave =
+      increaseNote.trim() ||
+      item.notes ||
+      "Tăng số lượng sản phẩm lên " + newQuantity;
+
+    // Update order_items in database with notes
+    try {
+      await apiRequest("PUT", `https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/order-items/${item.id}`, {
+        quantity: newQuantity.toString(),
+        notes: noteToSave,
+      });
+      console.log(
+        `✅ Order item ${item.id} updated with new quantity and notes:`,
+        noteToSave,
+      );
+    } catch (error) {
+      console.error(`❌ Error updating order item:`, error);
+      toast({
+        title: "Lỗi",
+        description: "Không thể cập nhật số lượng",
+        variant: "destructive",
+      });
+      setShowIncreaseQtyDialog(false);
+      setItemToIncrease(null);
+      setIncreaseNote("");
+      return;
+    }
+
+    // Update existing items state
+    setExistingItems((prev) =>
+      prev.map((existingItem) =>
+        existingItem.id === item.id
+          ? {
+              ...existingItem,
+              quantity: newQuantity.toString(),
+              notes: noteToSave,
+            }
+          : existingItem,
+      ),
+    );
+
+    // Save to order_change_history
+    if (existingOrder?.id) {
+      try {
+        await apiRequest("POST", "https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/order-change-history", {
+          orderId: existingOrder.id,
+          orderNumber: existingOrder.orderNumber,
+          ipAddress: window.location.hostname || "unknown",
+          userName: "Nhân viên",
+          action: "increase_quantity",
+          detailedDescription: JSON.stringify({
+            productName: item.productName,
+            oldQuantity: parseInt(item.quantity),
+            newQuantity: newQuantity,
+            unitPrice: item.unitPrice,
+            note: noteToSave || "Tăng số lượng sản phẩm",
+          }),
+          storeCode: existingOrder.storeCode || null,
+        });
+        console.log(
+          `✅ Quantity increase saved to order_change_history for ${item.productName} with note:`,
+          noteToSave || "Tăng số lượng sản phẩm",
+        );
+      } catch (error) {
+        console.error(
+          `❌ Error saving quantity increase to order_change_history:`,
+          error,
+        );
+      }
+    }
+
+    toast({
+      title: "Đã cập nhật",
+      description: `Tăng số lượng "${item.productName}" từ ${item.quantity} lên ${newQuantity}`,
+    });
+
+    setShowIncreaseQtyDialog(false);
+    setItemToIncrease(null);
+    setIncreaseNote("");
+  };
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
@@ -1609,24 +2122,124 @@ export function OrderDialog({
                               : 0;
                         }
 
-                        // Calculate total of individual item discounts
-                        const sumOfItemDiscounts =
-                          existingItems.reduce((sum, item) => {
-                            return sum + parseFloat(item.discount || "0");
-                          }, 0) +
-                          cart.reduce((sum, item) => {
-                            return (
-                              sum +
-                              parseFloat((item as any).itemDiscount || "0")
+                        // Recalculate and redistribute discount to all items proportionally
+                        if (newDiscount > 0 && totalBeforeDiscount > 0) {
+                          // Redistribute to existing items
+                          if (mode === "edit" && existingItems.length > 0) {
+                            let allocatedDiscount = 0;
+                            const hasNewItems = cart.length > 0;
+
+                            setExistingItems((prev) =>
+                              prev.map((item, index) => {
+                                const itemSubtotal =
+                                  parseFloat(item.unitPrice || "0") *
+                                  parseInt(item.quantity || "0");
+
+                                let itemDiscount = 0;
+                                const isLastExistingItem =
+                                  index === prev.length - 1;
+
+                                if (isLastExistingItem && !hasNewItems) {
+                                  // Last item gets remaining discount
+                                  itemDiscount = Math.max(
+                                    0,
+                                    newDiscount - allocatedDiscount,
+                                  );
+                                } else {
+                                  // Proportional discount
+                                  itemDiscount = Math.floor(
+                                    (newDiscount * itemSubtotal) /
+                                      totalBeforeDiscount,
+                                  );
+                                  allocatedDiscount += itemDiscount;
+                                }
+
+                                return {
+                                  ...item,
+                                  discount: itemDiscount.toString(),
+                                };
+                              }),
                             );
-                          }, 0);
+                          }
 
-                        // Check if new discount equals sum of item discounts
-                        const discountsMatch =
-                          Math.abs(newDiscount - sumOfItemDiscounts) < 0.01;
+                          // Redistribute to cart items
+                          if (cart.length > 0) {
+                            let allocatedForExisting = 0;
 
-                        // Only clear item-level discounts and recalculate if they don't match
-                        if (newDiscount > 0 && !discountsMatch) {
+                            // Calculate discount already allocated to existing items
+                            if (mode === "edit" && existingItems.length > 0) {
+                              allocatedForExisting = existingItems.reduce(
+                                (sum, item, index) => {
+                                  const itemSubtotal =
+                                    parseFloat(item.unitPrice || "0") *
+                                    parseInt(item.quantity || "0");
+
+                                  if (
+                                    index === existingItems.length - 1 &&
+                                    cart.length === 0
+                                  ) {
+                                    return newDiscount;
+                                  }
+
+                                  return (
+                                    sum +
+                                    Math.floor(
+                                      (newDiscount * itemSubtotal) /
+                                        totalBeforeDiscount,
+                                    )
+                                  );
+                                },
+                                0,
+                              );
+                            }
+
+                            let allocatedForCart = 0;
+
+                            setCart((prev) =>
+                              prev.map((cartItem, index) => {
+                                const itemSubtotal =
+                                  parseFloat(cartItem.product.price) *
+                                  cartItem.quantity;
+
+                                let itemDiscount = 0;
+                                const isLastCartItem =
+                                  index === prev.length - 1;
+
+                                if (isLastCartItem) {
+                                  // Last cart item gets remaining discount
+                                  itemDiscount = Math.max(
+                                    0,
+                                    newDiscount -
+                                      allocatedForExisting -
+                                      allocatedForCart,
+                                  );
+                                } else {
+                                  // Proportional discount
+                                  itemDiscount = Math.floor(
+                                    (newDiscount * itemSubtotal) /
+                                      totalBeforeDiscount,
+                                  );
+                                  allocatedForCart += itemDiscount;
+                                }
+
+                                return {
+                                  ...cartItem,
+                                  itemDiscount: itemDiscount,
+                                };
+                              }),
+                            );
+                          }
+                        } else if (newDiscount === 0) {
+                          // Clear all item discounts if order discount is 0
+                          if (mode === "edit" && existingItems.length > 0) {
+                            setExistingItems((prev) =>
+                              prev.map((item) => ({
+                                ...item,
+                                discount: "0",
+                              })),
+                            );
+                          }
+
                           setCart((prev) =>
                             prev.map((cartItem) => ({
                               ...cartItem,
@@ -1658,7 +2271,7 @@ export function OrderDialog({
                         discountType === "percent" ? "default" : "outline"
                       }
                       size="sm"
-                      className="h-11 w-12 text-sm px-2"
+                      className="h-9 w-11 text-sm px-2"
                       onClick={() => {
                         setDiscountType("percent");
                       }}
@@ -1671,7 +2284,7 @@ export function OrderDialog({
                         discountType === "amount" ? "default" : "outline"
                       }
                       size="sm"
-                      className="h-11 w-12 text-sm px-2"
+                      className="h-9 w-11 text-sm px-2"
                       onClick={() => {
                         setDiscountType("amount");
                       }}
@@ -1821,7 +2434,10 @@ export function OrderDialog({
                               : "text-gray-400"
                           }`}
                         >
-                          {Math.round(Number(product.price)).toLocaleString()} ₫
+                          {Math.round(
+                            parseFloat(product.price),
+                          ).toLocaleString("vi-VN")}{" "}
+                          ₫
                         </span>
                         {product.taxRate && parseFloat(product.taxRate) > 0 && (
                           <span className="text-xs text-gray-500">
@@ -1847,9 +2463,10 @@ export function OrderDialog({
                 >
                   {t("common.close")}
                 </Button>
-                {/* Action Buttons */}
+                {/* Print Bill Button */}
                 {(cart.length > 0 ||
-                  (mode === "edit" && existingItems.length > 0)) && (
+                  (mode === "edit" && existingItems.length > 0) ||
+                  mode === "edit") && (
                   <>
                     <Button
                       variant="outline"
@@ -1867,9 +2484,12 @@ export function OrderDialog({
                             productId: item.productId,
                             productName: item.productName,
                             quantity: item.quantity,
-                            price: item.unitPrice,
-                            unitPrice: item.unitPrice,
-                            total: item.total,
+                            price: item.unitPrice, // Use editable unitPrice
+                            unitPrice: item.unitPrice, // Use editable unitPrice
+                            total: (
+                              parseFloat(item.unitPrice) *
+                              parseInt(item.quantity)
+                            ).toString(),
                             discount: item.discount || "0",
                             tax: item.tax || "0",
                             sku: item.productSku || `SP${item.productId}`,
@@ -1887,8 +2507,8 @@ export function OrderDialog({
                             productId: item.product.id,
                             productName: item.product.name,
                             quantity: item.quantity,
-                            price: item.product.price,
-                            unitPrice: item.product.price,
+                            price: item.product.price, // Use editable price from cart
+                            unitPrice: item.product.price, // Use editable price from cart
                             total: (
                               parseFloat(item.product.price) * item.quantity
                             ).toString(),
@@ -1933,7 +2553,7 @@ export function OrderDialog({
                           paymentMethod: "preview",
                           isPreview: true,
                           priceIncludeTax:
-                            storeSettings?.priceIncludesTax || false,
+                            storeSettings?.priceIncludeTax || false,
                         };
 
                         setPreviewReceipt(previewReceipt);
@@ -2003,263 +2623,114 @@ export function OrderDialog({
                           <CardContent className="p-3">
                             <div className="flex justify-between items-start">
                               <div className="flex-1">
-                                <h4 className="font-medium text-sm">
-                                  {item.productName}
-                                </h4>
-                                <p className="text-xs text-gray-500">
-                                  {t("orders.alreadyOrdered")}
-                                </p>
-                                {/* Individual item discount for existing items */}
-                                {(() => {
-                                  const originalPrice = Number(
-                                    item.unitPrice || 0,
-                                  );
-                                  const quantity = Number(item.quantity || 0);
-                                  const itemTotal = originalPrice * quantity;
+                                <div className="mb-2">
+                                  <h4 className="font-medium text-sm">
+                                    {item.productName}
+                                  </h4>
+                                  <p className="text-xs text-gray-500">
+                                    {t("orders.alreadyOrdered")}
+                                  </p>
+                                  <div className="text-xs text-gray-600 mt-1">
+                                    {t("tables.unitPrice")}:{" "}
+                                    <span className="font-semibold">
+                                      {parseFloat(
+                                        item.unitPrice || "0",
+                                      ).toLocaleString()}{" "}
+                                      ₫
+                                    </span>
+                                  </div>
+                                </div>
 
-                                  // Calculate sum of all order_item discounts
-                                  const sumOfItemDiscounts =
-                                    existingItems.reduce((sum, item) => {
-                                      return (
-                                        sum + parseFloat(item.discount || "0")
-                                      );
-                                    }, 0) +
-                                    cart.reduce((sum, item) => {
-                                      return (
-                                        sum +
-                                        parseFloat(
-                                          (item as any).itemDiscount || "0",
-                                        )
-                                      );
-                                    }, 0);
-
-                                  // Check if sum of item discounts equals order discount (with small tolerance for rounding)
-                                  const discountsMatch =
-                                    Math.abs(discount - sumOfItemDiscounts) <
-                                    0.01;
-
-                                  let itemDiscountAmount = 0;
-
-                                  if (discountsMatch) {
-                                    // Use the stored discount from order_item
-                                    itemDiscountAmount = parseFloat(
-                                      item.discount || "0",
-                                    );
-                                  } else if (discount > 0) {
-                                    // Recalculate proportional discount
-                                    const totalBeforeDiscount =
-                                      existingItems.reduce((sum, item) => {
-                                        return (
-                                          sum +
-                                          Number(item.unitPrice || 0) *
-                                            Number(item.quantity || 0)
-                                        );
-                                      }, 0) +
-                                      cart.reduce((sum, item) => {
-                                        return (
-                                          sum +
-                                          Number(item.product.price) *
-                                            item.quantity
-                                        );
-                                      }, 0);
-
-                                    if (totalBeforeDiscount > 0) {
-                                      // Calculate proportional discount
-                                      itemDiscountAmount = Math.round(
-                                        (discount * itemTotal) /
-                                          totalBeforeDiscount,
-                                      );
+                                {/* Quantity controls for existing items */}
+                                <div className="flex items-center gap-2">
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => {
+                                      setItemToReduce({ item, index });
+                                      setShowReduceQtyDialog(true);
+                                    }}
+                                    className="h-7 w-7 p-0"
+                                    disabled={
+                                      parseInt(item.quantity || "1") <= 1
                                     }
-                                  }
-
-                                  return (
-                                    <div className="flex items-center gap-1 mt-1">
-                                      <span className="text-xs text-gray-500">
-                                        Giảm giá SP:
-                                      </span>
-                                      <Input
-                                        type="text"
-                                        inputMode="numeric"
-                                        value={
-                                          (item as any).itemDiscountType ===
-                                          "percent"
-                                            ? (item as any)
-                                                .itemDiscountPercent || ""
-                                            : itemDiscountAmount > 0
-                                              ? Math.floor(
-                                                  itemDiscountAmount,
-                                                ).toLocaleString("vi-VN")
-                                              : ""
-                                        }
-                                        onChange={(e) => {
-                                          const value = e.target.value.replace(
-                                            /[^\d]/g,
-                                            "",
-                                          );
-                                          const inputValue = value
-                                            ? Math.max(0, parseInt(value))
-                                            : 0;
-
-                                          let newDiscount = 0;
-                                          let newPercent = 0;
-
-                                          if (
-                                            (item as any).itemDiscountType ===
-                                            "percent"
-                                          ) {
-                                            // Validate percentage (0-100)
-                                            newPercent = Math.min(
-                                              100,
-                                              inputValue,
-                                            );
-                                            newDiscount = Math.floor(
-                                              (itemTotal * newPercent) / 100,
-                                            );
-                                          } else {
-                                            // Validate amount
-                                            newDiscount = inputValue;
-                                            if (newDiscount > itemTotal) {
-                                              newDiscount = 0;
-                                              toast({
-                                                title: "Giảm giá không hợp lệ",
-                                                description: `Giảm giá không được vượt quá ${Math.floor(itemTotal).toLocaleString("vi-VN")} ₫`,
-                                                variant: "destructive",
-                                              });
-                                            }
-                                            newPercent =
-                                              itemTotal > 0
-                                                ? Math.floor(
-                                                    (newDiscount / itemTotal) *
-                                                      100,
-                                                  )
-                                                : 0;
-                                          }
-
-                                          // Update existing item discount
-                                          setExistingItems((prev) =>
-                                            prev.map((existingItem) =>
-                                              existingItem.id === item.id
-                                                ? {
-                                                    ...existingItem,
-                                                    discount:
-                                                      newDiscount.toString(),
-                                                    itemDiscountPercent:
-                                                      newPercent,
-                                                  }
-                                                : existingItem,
-                                            ),
-                                          );
-
-                                          // Calculate new total discount from all items
-                                          const newTotalItemDiscount =
-                                            existingItems.reduce(
-                                              (sum, existingItem) => {
-                                                if (
-                                                  existingItem.id === item.id
-                                                ) {
-                                                  return sum + newDiscount;
+                                  >
+                                    <Minus className="w-3 h-3" />
+                                  </Button>
+                                  <Input
+                                    type="number"
+                                    min="1"
+                                    value={parseInt(item.quantity || "1")}
+                                    onChange={(e) => {
+                                      const newQuantity =
+                                        parseInt(e.target.value) || 1;
+                                      if (newQuantity >= 1) {
+                                        setExistingItems((prev) =>
+                                          prev.map((existingItem) =>
+                                            existingItem.id === item.id
+                                              ? {
+                                                  ...existingItem,
+                                                  quantity:
+                                                    newQuantity.toString(),
                                                 }
-                                                return (
-                                                  sum +
-                                                  parseFloat(
-                                                    existingItem.discount ||
-                                                      "0",
-                                                  )
-                                                );
-                                              },
-                                              0,
-                                            ) +
-                                            cart.reduce((sum, cartItem) => {
-                                              return (
-                                                sum +
-                                                parseFloat(
-                                                  (cartItem as any)
-                                                    .itemDiscount || "0",
-                                                )
-                                              );
-                                            }, 0);
+                                              : existingItem,
+                                          ),
+                                        );
+                                      }
+                                    }}
+                                    className="w-14 h-7 text-center text-sm p-1 border rounded font-semibold"
+                                  />
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => {
+                                      setItemToIncrease({ item, index });
+                                      setShowIncreaseQtyDialog(true);
+                                    }}
+                                    className="h-7 w-7 p-0"
+                                  >
+                                    <Plus className="w-3 h-3" />
+                                  </Button>
+                                </div>
 
-                                          // Update order discount to match sum of item discounts
-                                          setDiscount(newTotalItemDiscount);
-                                        }}
-                                        onKeyDown={(e) => {
-                                          if (e.key === "Enter") {
-                                            e.preventDefault();
-                                            (
-                                              e.target as HTMLInputElement
-                                            ).blur();
-                                          }
-                                        }}
-                                        className="w-20 h-6 text-xs px-1 text-right bg-white border-blue-300 focus:border-blue-500"
-                                        placeholder="0"
-                                        title={
-                                          (item as any).itemDiscountType ===
-                                          "percent"
-                                            ? "Nhập % giảm giá (0-100)"
-                                            : "Nhập số tiền giảm giá"
-                                        }
-                                      />
-                                      <Button
-                                        type="button"
-                                        variant={
-                                          (item as any).itemDiscountType ===
-                                          "percent"
-                                            ? "default"
-                                            : "outline"
-                                        }
-                                        size="sm"
-                                        className="h-6 w-8 text-xs px-1"
-                                        onClick={() => {
-                                          setExistingItems((prev) =>
-                                            prev.map((existingItem) =>
-                                              existingItem.id === item.id
-                                                ? {
-                                                    ...existingItem,
-                                                    itemDiscountType: "percent",
-                                                  }
-                                                : existingItem,
-                                            ),
-                                          );
-                                        }}
-                                      >
-                                        %
-                                      </Button>
-                                      <Button
-                                        type="button"
-                                        variant={
-                                          (item as any).itemDiscountType ===
-                                            "amount" ||
-                                          !(item as any).itemDiscountType
-                                            ? "default"
-                                            : "outline"
-                                        }
-                                        size="sm"
-                                        className="h-6 w-8 text-xs px-1"
-                                        onClick={() => {
-                                          setExistingItems((prev) =>
-                                            prev.map((existingItem) =>
-                                              existingItem.id === item.id
-                                                ? {
-                                                    ...existingItem,
-                                                    itemDiscountType: "amount",
-                                                  }
-                                                : existingItem,
-                                            ),
-                                          );
-                                        }}
-                                      >
-                                        ₫
-                                      </Button>
-                                    </div>
-                                  );
-                                })()}
+                                {/* Unit Price Input for existing items */}
+                                <div className="mt-2">
+                                  <Label className="text-xs text-gray-600">Đơn giá:</Label>
+                                  <Input
+                                    type="text"
+                                    inputMode="numeric"
+                                    value={Math.floor(parseFloat(item.unitPrice || "0")).toLocaleString("vi-VN")}
+                                    onChange={(e) => {
+                                      const value = e.target.value.replace(/[^\d]/g, "");
+                                      const newPrice = value ? parseInt(value) : 0;
+
+                                      setExistingItems((prev) =>
+                                        prev.map((existingItem) =>
+                                          existingItem.id === item.id
+                                            ? {
+                                                ...existingItem,
+                                                unitPrice: newPrice.toString(),
+                                              }
+                                            : existingItem,
+                                        ),
+                                      );
+                                    }}
+                                    onKeyDown={(e) => {
+                                      if (e.key === "Enter") {
+                                        e.preventDefault();
+                                        (e.target as HTMLInputElement).blur();
+                                      }
+                                    }}
+                                    className="w-full h-8 text-sm px-2 text-right"
+                                  />
+                                </div>
                               </div>
                               <div className="flex items-center gap-2 flex-shrink-0">
-                                <div className="text-right bg-gray-50 px-3 py-2 rounded-lg">
-                                  <div className="text-xs text-gray-500 mb-0.5">
+                                <div className="text-right">
+                                  <div className="text-xs text-gray-500">
                                     {t("orders.itemTotal")}
                                   </div>
-                                  <span className="text-sm font-bold text-blue-600">
+                                  <div className="text-base font-bold text-blue-600">
                                     {(() => {
                                       // Calculate display total based on priceIncludesTax
                                       const unitPrice = parseFloat(
@@ -2275,13 +2746,7 @@ export function OrderDialog({
                                       ).toLocaleString();
                                     })()}{" "}
                                     ₫
-                                  </span>
-                                  <p className="text-xs text-gray-500 mt-0.5">
-                                    {parseFloat(
-                                      item.unitPrice || "0",
-                                    ).toLocaleString()}{" "}
-                                    ₫ × {parseFloat(item.quantity || "0")}
-                                  </p>
+                                  </div>
                                 </div>
                                 <Button
                                   size="sm"
@@ -2290,12 +2755,201 @@ export function OrderDialog({
                                     setItemToDelete({ item, index });
                                     setShowDeleteItemDialog(true);
                                   }}
-                                  className="h-6 w-6 p-0"
+                                  className="h-7 w-7 p-0"
                                 >
                                   <Minus className="w-3 h-3" />
                                 </Button>
                               </div>
                             </div>
+                            {/* Individual item discount for existing items */}
+                            {(() => {
+                              const originalPrice = Number(item.unitPrice || 0);
+                              const quantity = Number(item.quantity || 0);
+                              const itemTotal = originalPrice * quantity;
+
+                              // Always use the stored discount value from the item
+                              const itemDiscountAmount = parseFloat(
+                                item.discount || "0",
+                              );
+
+                              return (
+                                <div className="space-y-1 mt-1.5">
+                                  <span className="text-xs text-gray-600 font-medium block">
+                                    Giảm giá SP:
+                                  </span>
+                                  <div className="flex items-center gap-1.5 w-full">
+                                    <Input
+                                      type="text"
+                                      inputMode="numeric"
+                                      value={
+                                        (item as any).itemDiscountType ===
+                                        "percent"
+                                          ? (item as any).itemDiscountPercent ||
+                                            ""
+                                          : itemDiscountAmount > 0
+                                            ? Math.floor(
+                                                itemDiscountAmount,
+                                              ).toLocaleString("vi-VN")
+                                            : ""
+                                      }
+                                      onChange={(e) => {
+                                        const value = e.target.value.replace(
+                                          /[^\d]/g,
+                                          "",
+                                        );
+                                        const inputValue = value
+                                          ? Math.max(0, parseInt(value))
+                                          : 0;
+
+                                        let newDiscount = 0;
+                                        let newPercent = 0;
+
+                                        if (
+                                          (item as any).itemDiscountType ===
+                                          "percent"
+                                        ) {
+                                          // Validate percentage (0-100)
+                                          newPercent = Math.min(
+                                            100,
+                                            inputValue,
+                                          );
+                                          newDiscount = Math.floor(
+                                            (itemTotal * newPercent) / 100,
+                                          );
+                                        } else {
+                                          // Validate amount
+                                          newDiscount = inputValue;
+                                          if (newDiscount > itemTotal) {
+                                            newDiscount = 0;
+                                            toast({
+                                              title: "Giảm giá không hợp lệ",
+                                              description: `Giảm giá không được vượt quá ${Math.floor(itemTotal).toLocaleString("vi-VN")} ₫`,
+                                              variant: "destructive",
+                                            });
+                                          }
+                                          newPercent =
+                                            itemTotal > 0
+                                              ? Math.floor(
+                                                  (newDiscount / itemTotal) *
+                                                    100,
+                                                )
+                                              : 0;
+                                        }
+
+                                        // Update existing item discount
+                                        setExistingItems((prev) =>
+                                          prev.map((existingItem) =>
+                                            existingItem.id === item.id
+                                              ? {
+                                                  ...existingItem,
+                                                  discount:
+                                                    newDiscount.toString(),
+                                                  itemDiscountPercent:
+                                                    newPercent,
+                                                }
+                                              : existingItem,
+                                          ),
+                                        );
+
+                                        // Calculate new total discount from all items
+                                        const newTotalItemDiscount =
+                                          existingItems.reduce(
+                                            (sum, existingItem) => {
+                                              if (existingItem.id === item.id) {
+                                                return sum + newDiscount;
+                                              }
+                                              return (
+                                                sum +
+                                                parseFloat(
+                                                  existingItem.discount || "0",
+                                                )
+                                              );
+                                            },
+                                            0,
+                                          ) +
+                                          cart.reduce((sum, cartItem) => {
+                                            return (
+                                              sum +
+                                              parseFloat(
+                                                (cartItem as any)
+                                                  .itemDiscount || "0",
+                                              )
+                                            );
+                                          }, 0);
+
+                                        // Update order discount to match sum of item discounts
+                                        setDiscount(newTotalItemDiscount);
+                                      }}
+                                      onKeyDown={(e) => {
+                                        if (e.key === "Enter") {
+                                          e.preventDefault();
+                                          (e.target as HTMLInputElement).blur();
+                                        }
+                                      }}
+                                      className="flex-1 h-8 text-sm px-2.5 text-right bg-white border-gray-300 focus:border-blue-500"
+                                      placeholder="0"
+                                      title={
+                                        (item as any).itemDiscountType ===
+                                        "percent"
+                                          ? "Nhập % giảm giá (0-100)"
+                                          : "Nhập số tiền giảm giá"
+                                      }
+                                    />
+                                    <Button
+                                      type="button"
+                                      variant={
+                                        (item as any).itemDiscountType ===
+                                        "percent"
+                                          ? "default"
+                                          : "outline"
+                                      }
+                                      size="sm"
+                                      className="h-9 w-11 text-sm px-2"
+                                      onClick={() => {
+                                        setExistingItems((prev) =>
+                                          prev.map((existingItem) =>
+                                            existingItem.id === item.id
+                                              ? {
+                                                  ...existingItem,
+                                                  itemDiscountType: "percent",
+                                                }
+                                              : existingItem,
+                                          ),
+                                        );
+                                      }}
+                                    >
+                                      %
+                                    </Button>
+                                    <Button
+                                      type="button"
+                                      variant={
+                                        (item as any).itemDiscountType ===
+                                          "amount" ||
+                                        !(item as any).itemDiscountType
+                                          ? "default"
+                                          : "outline"
+                                      }
+                                      size="sm"
+                                      className="h-9 w-11 text-sm px-2"
+                                      onClick={() => {
+                                        setExistingItems((prev) =>
+                                          prev.map((existingItem) =>
+                                            existingItem.id === item.id
+                                              ? {
+                                                  ...existingItem,
+                                                  itemDiscountType: "amount",
+                                                }
+                                              : existingItem,
+                                          ),
+                                        );
+                                      }}
+                                    >
+                                      ₫
+                                    </Button>
+                                  </div>
+                                </div>
+                              );
+                            })()}
                           </CardContent>
                         </Card>
                       ))}
@@ -2388,130 +3042,91 @@ export function OrderDialog({
                               >
                                 <Plus className="w-3 h-3" />
                               </Button>
+                              <Button
+                                size="sm"
+                                variant="destructive"
+                                onClick={() => {
+                                  setCart((prev) =>
+                                    prev.filter(
+                                      (cartItem) =>
+                                        cartItem.product.id !== item.product.id
+                                    )
+                                  );
+                                }}
+                                className="h-6 w-6 p-0 ml-2"
+                                title={t("common.delete")}
+                              >
+                                <Minus className="w-3 h-3" />
+                              </Button>
                             </div>
                             <div className="text-xs text-gray-500 space-y-1">
-                              <div>
-                                {t("tables.unitPrice")}:{" "}
-                                {(() => {
-                                  const priceIncludesTax =
-                                    storeSettings?.priceIncludesTax || false;
-                                  const basePrice = Number(item.product.price);
-                                  const taxRate = Number(
-                                    item.product.taxRate || 0,
-                                  );
+                              <div className="flex items-center gap-1">
+                                <span>{t("tables.unitPrice")}:</span>
+                                <Input
+                                  type="text"
+                                  inputMode="numeric"
+                                  value={Math.round(Number(item.product.price)).toLocaleString("vi-VN")}
+                                  onChange={(e) => {
+                                    const value = e.target.value.replace(/[^\d]/g, "");
+                                    const newPrice = value ? parseInt(value) : 0;
 
-                                  return Math.round(basePrice).toLocaleString();
-                                })()}{" "}
-                                ₫
+                                    setCart((prev) =>
+                                      prev.map((cartItem) =>
+                                        cartItem.product.id === item.product.id
+                                          ? {
+                                              ...cartItem,
+                                              product: {
+                                                ...cartItem.product,
+                                                price: newPrice.toString(),
+                                              },
+                                            }
+                                          : cartItem,
+                                      ),
+                                    );
+                                  }}
+                                  onKeyDown={(e) => {
+                                    if (e.key === "Enter") {
+                                      e.preventDefault();
+                                      (e.target as HTMLInputElement).blur();
+                                    }
+                                  }}
+                                  className="w-24 h-6 text-xs px-1 text-right inline-block"
+                                />
+                                <span>₫</span>
                               </div>
                               {(() => {
-                                const basePrice = Number(item.product.price);
-                                const quantity = item.quantity;
+                                // Use edited unitPrice for calculation
+                                const unitPrice = parseFloat(item.product.price || "0");
+                                const quantity = parseInt(item.quantity || "0");
                                 const product = products?.find(
-                                  (p: Product) => p.id === item.product.id,
+                                  (p: Product) => p.id === item.productId,
                                 );
                                 const priceIncludesTax =
                                   storeSettings?.priceIncludesTax || false;
-                                const taxRate = product?.taxRate
-                                  ? parseFloat(product.taxRate)
-                                  : 0;
 
-                                let taxAmount = 0;
+                                let itemTax = 0;
 
-                                const sumOfItemDiscounts =
-                                  existingItems.reduce((sum, item) => {
-                                    return (
-                                      sum + parseFloat(item.discount || "0")
-                                    );
-                                  }, 0) +
-                                  cart.reduce((sum, item) => {
-                                    return (
-                                      sum +
-                                      parseFloat(
-                                        (item as any).itemDiscount || "0",
-                                      )
-                                    );
-                                  }, 0);
-
-                                if (taxRate > 0 && quantity > 0) {
-                                  // Calculate item discount first
-                                  let itemDiscountAmount = parseFloat(
-                                    (item as any).itemDiscount || "0",
-                                  );
-                                  if (
-                                    itemDiscountAmount === 0 &&
-                                    discount > 0 &&
-                                    discount != sumOfItemDiscounts
-                                  ) {
-                                    const totalBeforeDiscount =
-                                      (mode === "edit" && existingItems
-                                        ? existingItems.reduce((sum, item) => {
-                                            return (
-                                              sum +
-                                              parseFloat(
-                                                item.unitPrice || "0",
-                                              ) *
-                                                parseInt(item.quantity || "0")
-                                            );
-                                          }, 0)
-                                        : 0) +
-                                      cart.reduce((sum, item) => {
-                                        return (
-                                          sum +
-                                          parseFloat(item.product.price) *
-                                            item.quantity
-                                        );
-                                      }, 0);
-
-                                    if (totalBeforeDiscount > 0) {
-                                      const itemTotal = basePrice * quantity;
-                                      itemDiscountAmount = Math.floor(
-                                        (discount * itemTotal) /
-                                          totalBeforeDiscount,
-                                      );
-                                    }
-                                  }
+                                if (product?.taxRate && parseFloat(product.taxRate) > 0) {
+                                  const taxRate = parseFloat(product.taxRate) / 100;
+                                  const itemDiscountAmount = parseFloat(item.itemDiscount || "0");
 
                                   if (priceIncludesTax) {
                                     // When price includes tax:
-                                    // giá bao gồm thuế = (price - (discount/quantity)) * quantity
-                                    const discountPerUnit =
-                                      itemDiscountAmount / quantity;
-                                    const adjustedPrice = Math.max(
-                                      0,
-                                      basePrice - discountPerUnit,
-                                    );
+                                    const discountPerUnit = itemDiscountAmount / quantity;
+                                    const adjustedPrice = Math.max(0, unitPrice - discountPerUnit);
                                     const giaGomThue = adjustedPrice * quantity;
-                                    // subtotal = giá bao gồm thuế / (1 + (taxRate / 100)) (làm tròn)
-                                    const tamTinh = Math.round(
-                                      giaGomThue / (1 + taxRate / 100),
-                                    );
-                                    // tax = giá bao gồm thuế - subtotal
-                                    taxAmount = giaGomThue - tamTinh;
+                                    const priceBeforeTax = Math.round(giaGomThue / (1 + taxRate));
+                                    itemTax = giaGomThue - priceBeforeTax;
                                   } else {
                                     // When price doesn't include tax:
-                                    // subtotal = (price - (discount/quantity)) * quantity
-                                    const discountPerUnit =
-                                      itemDiscountAmount / quantity;
-                                    const adjustedPrice = Math.max(
-                                      0,
-                                      basePrice - discountPerUnit,
-                                    );
-                                    const tamTinh = adjustedPrice * quantity;
-                                    // tax = subtotal * (taxRate / 100) (làm tròn)
-                                    taxAmount = Math.round(
-                                      tamTinh * (taxRate / 100),
-                                    );
+                                    const priceBeforeTax = unitPrice * quantity - itemDiscountAmount;
+                                    itemTax = Math.round(priceBeforeTax * taxRate);
                                   }
                                 }
 
-                                return taxAmount > 0 ? (
+                                return itemTax > 0 ? (
                                   <div>
-                                    {t("reports.tax")}:{" "}
-                                    {Math.max(0, taxAmount).toLocaleString(
-                                      "vi-VN",
-                                    )}{" "}
-                                    ₫
+                                    {t("reports.tax")}: {Math.round(itemTax).toLocaleString("vi-VN")} ₫
                                   </div>
                                 ) : null;
                               })()}
@@ -2525,7 +3140,8 @@ export function OrderDialog({
                                 const sumOfItemDiscounts =
                                   existingItems.reduce((sum, item) => {
                                     return (
-                                      sum + parseFloat(item.discount || "0")
+                                      sum +
+                                      parseFloat(item.discount || "0")
                                     );
                                   }, 0) +
                                   cart.reduce((sum, item) => {
@@ -2584,180 +3200,188 @@ export function OrderDialog({
                           </div>
 
                           {/* Individual item discount input with type toggle */}
-                          <div className="flex items-center gap-1 mt-1">
-                            <span className="text-xs text-gray-500">
+                          <div className="space-y-1 mt-1.5">
+                            <span className="text-xs text-gray-600 font-medium block">
                               Giảm giá SP:
                             </span>
-                            <Input
-                              type="text"
-                              inputMode="numeric"
-                              value={
-                                (item as any).itemDiscountType === "percent"
-                                  ? (item as any).itemDiscountPercent || ""
-                                  : (item as any).itemDiscount &&
-                                      parseFloat(
-                                        (
-                                          (item as any).itemDiscount || "0"
-                                        ).toString(),
-                                      ) > 0
-                                    ? Math.floor(
-                                        parseFloat(
-                                          (
-                                            (item as any).itemDiscount || "0"
-                                          ).toString(),
-                                        ),
-                                      ).toLocaleString("vi-VN")
-                                    : ""
-                              }
-                              onChange={(e) => {
-                                const value = e.target.value.replace(
-                                  /[^\d]/g,
-                                  "",
-                                );
-                                const inputValue = value
-                                  ? Math.max(0, parseInt(value))
-                                  : 0;
-
-                                const itemTotal =
-                                  parseFloat(item.product.price) *
-                                  item.quantity;
-
-                                let newDiscount = 0;
-                                let newPercent = 0;
-
-                                if (
-                                  (item as any).itemDiscountType === "percent"
-                                ) {
-                                  // Validate percentage (0-100)
-                                  newPercent = Math.min(100, inputValue);
-                                  newDiscount = Math.floor(
-                                    (itemTotal * newPercent) / 100,
+                            <div className="flex items-center gap-1.5 w-full">
+                              <Input
+                                type="text"
+                                inputMode="numeric"
+                                value={(() => {
+                                  const itemDiscountValue = parseFloat(
+                                    (item as any).itemDiscount || "0",
                                   );
-                                } else {
-                                  // Validate amount
-                                  newDiscount = inputValue;
-                                  if (newDiscount > itemTotal) {
-                                    newDiscount = 0;
-                                    toast({
-                                      title: "Giảm giá không hợp lệ",
-                                      description: `Giảm giá không được vượt quá ${Math.floor(itemTotal).toLocaleString("vi-VN")} ₫`,
-                                      variant: "destructive",
-                                    });
+
+                                  if (
+                                    (item as any).itemDiscountType === "percent"
+                                  ) {
+                                    return (
+                                      (item as any).itemDiscountPercent || ""
+                                    );
                                   }
-                                  newPercent =
-                                    itemTotal > 0
-                                      ? Math.floor(
-                                          (newDiscount / itemTotal) * 100,
-                                        )
-                                      : 0;
-                                }
 
-                                // Update cart item with individual discount
-                                setCart((prev) =>
-                                  prev.map((cartItem) =>
-                                    cartItem.product.id === item.product.id
-                                      ? {
-                                          ...cartItem,
-                                          itemDiscount: newDiscount,
-                                          itemDiscountPercent: newPercent,
-                                        }
-                                      : cartItem,
-                                  ),
-                                );
+                                  return itemDiscountValue > 0
+                                    ? Math.floor(
+                                        itemDiscountValue,
+                                      ).toLocaleString("vi-VN")
+                                    : "";
+                                })()}
+                                onChange={(e) => {
+                                  const value = e.target.value.replace(
+                                    /[^\d]/g,
+                                    "",
+                                  );
+                                  const inputValue = value
+                                    ? Math.max(0, parseInt(value))
+                                    : 0;
 
-                                // Calculate new total discount from all items
-                                const newTotalItemDiscount =
-                                  existingItems.reduce((sum, existingItem) => {
-                                    return (
-                                      sum +
-                                      parseFloat(existingItem.discount || "0")
+                                  const itemTotal =
+                                    parseFloat(item.product.price) *
+                                    item.quantity;
+
+                                  let newDiscount = 0;
+                                  let newPercent = 0;
+
+                                  if (
+                                    (item as any).itemDiscountType === "percent"
+                                  ) {
+                                    // Validate percentage (0-100)
+                                    newPercent = Math.min(100, inputValue);
+                                    newDiscount = Math.floor(
+                                      (itemTotal * newPercent) / 100,
                                     );
-                                  }, 0) +
-                                  cart.reduce((sum, cartItem) => {
-                                    if (
-                                      cartItem.product.id === item.product.id
-                                    ) {
-                                      return sum + newDiscount;
+                                  } else {
+                                    // Validate amount
+                                    newDiscount = inputValue;
+                                    if (newDiscount > itemTotal) {
+                                      newDiscount = 0;
+                                      toast({
+                                        title: "Giảm giá không hợp lệ",
+                                        description: `Giảm giá không được vượt quá ${Math.floor(itemTotal).toLocaleString("vi-VN")} ₫`,
+                                        variant: "destructive",
+                                      });
                                     }
-                                    return (
-                                      sum +
-                                      parseFloat(
-                                        (cartItem as any).itemDiscount || "0",
-                                      )
-                                    );
-                                  }, 0);
+                                    newPercent =
+                                      itemTotal > 0
+                                        ? Math.floor(
+                                            (newDiscount / itemTotal) * 100,
+                                          )
+                                        : 0;
+                                  }
 
-                                // If they differ, recalculate order discount to match sum of item discounts
-                                const discountDifference = Math.abs(
-                                  discount - newTotalItemDiscount,
-                                );
-                                if (discountDifference >= 0.01) {
-                                  setDiscount(newTotalItemDiscount);
+                                  // Update cart item with individual discount
+                                  setCart((prev) =>
+                                    prev.map((cartItem) =>
+                                      cartItem.product.id === item.product.id
+                                        ? {
+                                            ...cartItem,
+                                            itemDiscount: newDiscount,
+                                            itemDiscountPercent: newPercent,
+                                          }
+                                        : cartItem,
+                                    ),
+                                  );
+
+                                  // Calculate new total discount from all items
+                                  const newTotalItemDiscount =
+                                    existingItems.reduce(
+                                      (sum, existingItem) => {
+                                        return (
+                                          sum +
+                                          parseFloat(
+                                            existingItem.discount || "0",
+                                          )
+                                        );
+                                      },
+                                      0,
+                                    ) +
+                                    cart.reduce((sum, cartItem) => {
+                                      if (
+                                        cartItem.product.id === item.product.id
+                                      ) {
+                                        return sum + newDiscount;
+                                      }
+                                      return (
+                                        sum +
+                                        parseFloat(
+                                          (cartItem as any).itemDiscount || "0",
+                                        )
+                                      );
+                                    }, 0);
+
+                                  // If they differ, recalculate order discount to match sum of item discounts
+                                  const discountDifference = Math.abs(
+                                    discount - newTotalItemDiscount,
+                                  );
+                                  if (discountDifference >= 0.01) {
+                                    setDiscount(newTotalItemDiscount);
+                                  }
+                                }}
+                                onKeyDown={(e) => {
+                                  if (e.key === "Enter") {
+                                    e.preventDefault();
+                                    (e.target as HTMLInputElement).blur();
+                                  }
+                                }}
+                                className="flex-1 h-8 text-sm px-2.5 text-right bg-white border-gray-300 focus:border-blue-500"
+                                placeholder="0"
+                                title={
+                                  (item as any).itemDiscountType === "percent"
+                                    ? "Nhập % giảm giá (0-100)"
+                                    : "Nhập số tiền giảm giá"
                                 }
-                              }}
-                              onKeyDown={(e) => {
-                                if (e.key === "Enter") {
-                                  e.preventDefault();
-                                  (e.target as HTMLInputElement).blur();
+                              />
+                              <Button
+                                type="button"
+                                variant={
+                                  (item as any).itemDiscountType === "percent"
+                                    ? "default"
+                                    : "outline"
                                 }
-                              }}
-                              className="w-20 h-6 text-xs px-1 text-right bg-white border-blue-300 focus:border-blue-500"
-                              placeholder="0"
-                              title={
-                                (item as any).itemDiscountType === "percent"
-                                  ? "Nhập % giảm giá (0-100)"
-                                  : "Nhập số tiền giảm giá"
-                              }
-                            />
-                            <Button
-                              type="button"
-                              variant={
-                                (item as any).itemDiscountType === "percent"
-                                  ? "default"
-                                  : "outline"
-                              }
-                              size="sm"
-                              className="h-6 w-8 text-xs px-1"
-                              onClick={() => {
-                                setCart((prev) =>
-                                  prev.map((cartItem) =>
-                                    cartItem.product.id === item.product.id
-                                      ? {
-                                          ...cartItem,
-                                          itemDiscountType: "percent",
-                                        }
-                                      : cartItem,
-                                  ),
-                                );
-                              }}
-                            >
-                              %
-                            </Button>
-                            <Button
-                              type="button"
-                              variant={
-                                (item as any).itemDiscountType === "amount" ||
-                                !(item as any).itemDiscountType
-                                  ? "default"
-                                  : "outline"
-                              }
-                              size="sm"
-                              className="h-6 w-8 text-xs px-1"
-                              onClick={() => {
-                                setCart((prev) =>
-                                  prev.map((cartItem) =>
-                                    cartItem.product.id === item.product.id
-                                      ? {
-                                          ...cartItem,
-                                          itemDiscountType: "amount",
-                                        }
-                                      : cartItem,
-                                  ),
-                                );
-                              }}
-                            >
-                              ₫
-                            </Button>
+                                size="sm"
+                                className="h-9 w-11 text-sm px-2"
+                                onClick={() => {
+                                  setCart((prev) =>
+                                    prev.map((cartItem) =>
+                                      cartItem.product.id === item.product.id
+                                        ? {
+                                            ...cartItem,
+                                            itemDiscountType: "percent",
+                                          }
+                                        : cartItem,
+                                    ),
+                                  );
+                                }}
+                              >
+                                %
+                              </Button>
+                              <Button
+                                type="button"
+                                variant={
+                                  (item as any).itemDiscountType === "amount" ||
+                                  !(item as any).itemDiscountType
+                                    ? "default"
+                                    : "outline"
+                                }
+                                size="sm"
+                                className="h-9 w-11 text-sm px-2"
+                                onClick={() => {
+                                  setCart((prev) =>
+                                    prev.map((cartItem) =>
+                                      cartItem.product.id === item.product.id
+                                        ? {
+                                            ...cartItem,
+                                            itemDiscountType: "amount",
+                                          }
+                                        : cartItem,
+                                    ),
+                                  );
+                                }}
+                              >
+                                ₫
+                              </Button>
+                            </div>
                           </div>
 
                           {/* Individual item discount display */}
@@ -2956,7 +3580,12 @@ export function OrderDialog({
       {/* Delete Item Confirmation Dialog */}
       <AlertDialog
         open={showDeleteItemDialog}
-        onOpenChange={setShowDeleteItemDialog}
+        onOpenChange={(open) => {
+          setShowDeleteItemDialog(open);
+          if (!open) {
+            setDeleteNote("");
+          }
+        }}
       >
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -2974,11 +3603,25 @@ export function OrderDialog({
               })()}
             </AlertDialogDescription>
           </AlertDialogHeader>
+          <div className="px-6 py-4">
+            <Label htmlFor="deleteNote" className="text-sm font-medium">
+              Lý do xóa
+            </Label>
+            <Textarea
+              id="deleteNote"
+              value={deleteNote}
+              onChange={(e) => setDeleteNote(e.target.value)}
+              placeholder="Nhập lý do xóa sản phẩm..."
+              className="mt-2"
+              rows={3}
+            />
+          </div>
           <AlertDialogFooter>
             <AlertDialogCancel
               onClick={() => {
                 setShowDeleteItemDialog(false);
                 setItemToDelete(null);
+                setDeleteNote("");
               }}
             >
               {t("common.cancel")}
@@ -2999,6 +3642,35 @@ export function OrderDialog({
                       "🗑️ Order Dialog: Successfully deleted item:",
                       item.productName,
                     );
+
+                    // Save delete note to order change history
+                    if (existingOrder?.id) {
+                      try {
+                        await apiRequest("POST", "https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/order-change-history", {
+                          orderId: existingOrder.id,
+                          orderNumber: existingOrder.orderNumber,
+                          ipAddress: window.location.hostname || "unknown",
+                          userName: "Nhân viên",
+                          action: "delete",
+                          detailedDescription: JSON.stringify({
+                            productName: item.productName,
+                            quantity: parseFloat(item.quantity),
+                            unitPrice: item.unitPrice,
+                            total: item.total,
+                            note: deleteNote || "Không có ghi chú",
+                          }),
+                          storeCode: existingOrder.storeCode || null,
+                        });
+                        console.log(
+                          "✅ Delete note saved to order change history",
+                        );
+                      } catch (error) {
+                        console.error(
+                          "❌ Error saving delete note to order change history:",
+                          error,
+                        );
+                      }
+                    }
 
                     // toast({
                     //   title: "Xóa món thành công",
@@ -3057,7 +3729,7 @@ export function OrderDialog({
                                 product.afterTaxPrice,
                               );
                               const taxPerUnit = afterTaxPrice - basePrice;
-                              newTax += Math.floor(taxPerUnit * quantity);
+                              newTax += Math.max(0, taxPerUnit * quantity);
                             }
                           });
                         }
@@ -3158,10 +3830,117 @@ export function OrderDialog({
 
                 setShowDeleteItemDialog(false);
                 setItemToDelete(null);
+                setDeleteNote("");
               }}
               className="bg-red-600 hover:bg-red-700"
             >
               {t("common.delete")}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Reduce Quantity Confirmation Dialog */}
+      <AlertDialog
+        open={showReduceQtyDialog}
+        onOpenChange={(open) => {
+          setShowReduceQtyDialog(open);
+          if (!open) {
+            setReduceNote("");
+          }
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Xác nhận giảm số lượng</AlertDialogTitle>
+            <AlertDialogDescription>
+              Bạn có chắc chắn muốn giảm số lượng "
+              {itemToReduce?.item?.productName || ""}" từ{" "}
+              {parseFloat(itemToReduce?.item?.quantity || 0)} xuống{" "}
+              {parseFloat(itemToReduce?.item?.quantity || "0") - 1} không?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="px-6 py-4">
+            <Label htmlFor="reduceNote" className="text-sm font-medium">
+              Lý do giảm số lượng
+            </Label>
+            <Textarea
+              id="reduceNote"
+              value={reduceNote}
+              onChange={(e) => setReduceNote(e.target.value)}
+              placeholder="Nhập lý do giảm số lượng..."
+              className="mt-2"
+              rows={3}
+            />
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel
+              onClick={() => {
+                setShowReduceQtyDialog(false);
+                setItemToReduce(null);
+                setReduceNote("");
+              }}
+            >
+              {t("common.cancel")}
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleConfirmReduceQty}
+              className="bg-blue-600 hover:bg-blue-700"
+            >
+              Xác nhận
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Increase Quantity Confirmation Dialog */}
+      <AlertDialog
+        open={showIncreaseQtyDialog}
+        onOpenChange={(open) => {
+          setShowIncreaseQtyDialog(open);
+          if (!open) {
+            setIncreaseNote("");
+          }
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Xác nhận tăng số lượng</AlertDialogTitle>
+            <AlertDialogDescription>
+              Bạn có chắc chắn muốn tăng số lượng "
+              {itemToIncrease?.item?.productName || ""}" từ{" "}
+              {parseFloat(itemToIncrease?.item?.quantity || 0)} lên{" "}
+              {parseFloat(itemToIncrease?.item?.quantity || "0") + 1} không?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="px-6 py-4">
+            <Label htmlFor="increaseNote" className="text-sm font-medium">
+              Lý do tăng số lượng
+            </Label>
+            <Textarea
+              id="increaseNote"
+              value={increaseNote}
+              onChange={(e) => setIncreaseNote(e.target.value)}
+              placeholder="Nhập lý do tăng số lượng..."
+              className="mt-2"
+              rows={3}
+            />
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel
+              onClick={() => {
+                setShowIncreaseQtyDialog(false);
+                setItemToIncrease(null);
+                setIncreaseNote("");
+              }}
+            >
+              {t("common.cancel")}
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleConfirmIncreaseQty}
+              className="bg-blue-600 hover:bg-blue-700"
+            >
+              Xác nhận
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

@@ -100,6 +100,11 @@ export function RightSidebar() {
       href: "/reports",
     },
     {
+      icon: FileText,
+      label: t("nav.orderHistory"),
+      href: "/order-history",
+    },
+    {
       icon: Settings,
       label: t("settings.title"),
       href: "/settings",
@@ -223,7 +228,7 @@ export function RightSidebar() {
         <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-green-200 bg-green-50">
           <div className="text-sm text-gray-500 text-center">
             <div className="font-medium">EDPOS System</div>
-            <div className="text-xs opacity-75">12/11/2025</div>
+            <div className="text-xs opacity-75">16/11/2025</div>
           </div>
         </div>
       )}

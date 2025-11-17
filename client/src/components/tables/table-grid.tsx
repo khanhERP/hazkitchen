@@ -159,21 +159,21 @@ export function TableGrid({ onTableSelect, selectedTableId }: TableGridProps) {
     refetch: refetchTables,
   } = useQuery({
     queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/tables"],
-    staleTime: 60 * 1000, // Cache 1 phút
-    gcTime: 5 * 60 * 1000, // Giữ cache 5 phút
+    staleTime: 0, // Cache 1 phút
+    gcTime: 0, // Giữ cache 5 phút
     refetchOnWindowFocus: false,
-    refetchOnMount: false,
-    refetchInterval: false,
+    refetchOnMount: true,
+    refetchInterval: 4000,
     retry: 2,
   });
 
   const { data: orders, refetch: refetchOrders } = useQuery({
     queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"],
-    staleTime: 30 * 1000, // Cache 30 giây cho orders
-    gcTime: 2 * 60 * 1000, // Giữ cache 2 phút
+    staleTime: 0, // Cache 30 giây cho orders
+    gcTime: 0, // Giữ cache 2 phút
     refetchOnWindowFocus: false,
     refetchOnMount: false,
-    refetchInterval: false,
+    refetchInterval: 4000,
     retry: 2,
   });
 
@@ -1397,7 +1397,7 @@ export function TableGrid({ onTableSelect, selectedTableId }: TableGridProps) {
 
       const oldTableId = order.tableId;
 
-      console.log(`🔄 Starting table transfer:`, {
+      console.log(`   � Starting table transfer:`, {
         orderId,
         oldTableId,
         newTableId,
