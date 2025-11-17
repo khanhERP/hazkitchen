@@ -82,12 +82,7 @@ export function ReceiptModal({
 
   // Query products to get tax rates
   const { data: products } = useQuery({
-    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products"],
-    queryFn: async () => {
-      const response = await apiRequest("GET", "https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products");
-      return response.json();
-    },
-    enabled: isOpen,
+    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products/active"],
   });
 
   // Query to get table info based on orderId
@@ -1494,9 +1489,9 @@ export function ReceiptModal({
                       let taxRate = 0;
 
                       // Priority 3: Lookup from products array by productId
-                      if (products && Array.isArray(products.products)) {
+                      if (products && Array.isArray(products)) {
                         const productId = item.productId || item.id;
-                        const product = products.products.find(
+                        const product = products.find(
                           (p: any) => p.id === productId,
                         );
                         if (
