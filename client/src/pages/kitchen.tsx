@@ -468,7 +468,7 @@ export default function KitchenDisplay() {
                         Object.entries(groupedByDish).map(
                           ([dishName, items]) => {
                             const totalQuantity = items.reduce(
-                              (sum, item) => sum + (item.quantity || 0),
+                              (sum, item) => sum + parseFloat(item.quantity || 0),
                               0,
                             );
                             return (
@@ -743,7 +743,7 @@ export default function KitchenDisplay() {
                               Object.entries(groupedByDish).map(
                                 ([dishName, items]) => {
                                   const totalQuantity = items.reduce(
-                                    (sum, item) => sum + (item.quantity || 0),
+                                    (sum, item) => sum + parseFloat(item.quantity || 0),
                                     0,
                                   );
                                   return (
@@ -1025,7 +1025,7 @@ export default function KitchenDisplay() {
                               Object.entries(groupedByDish).map(
                                 ([dishName, items]) => {
                                   const totalQuantity = items.reduce(
-                                    (sum, item) => sum + (item.quantity || 0),
+                                    (sum, item) => sum + parseFloat(item.quantity || 0),
                                     0,
                                   );
                                   return (
