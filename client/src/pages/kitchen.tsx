@@ -42,9 +42,9 @@ export default function KitchenDisplay() {
   const { data: pendingItems, refetch: refetchPendingItems } = useQuery<
     PendingOrderItem[]
   >({
-    queryKey: ["http://42.118.102.26:4500/api/order-items/pending"],
+    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/order-items/pending"],
     queryFn: async () => {
-      const response = await fetch("http://42.118.102.26:4500/api/order-items/pending");
+      const response = await fetch("https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/order-items/pending");
       if (!response.ok) {
         throw new Error("Failed to fetch pending order items");
       }
@@ -61,9 +61,9 @@ export default function KitchenDisplay() {
   const { data: progressItems, refetch: refetchProgressItems } = useQuery<
     PendingOrderItem[]
   >({
-    queryKey: ["http://42.118.102.26:4500/api/order-items/progress"],
+    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/order-items/progress"],
     queryFn: async () => {
-      const response = await fetch("http://42.118.102.26:4500/api/order-items/progress");
+      const response = await fetch("https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/order-items/progress");
       if (!response.ok) {
         throw new Error("Failed to fetch progress order items");
       }
@@ -80,9 +80,9 @@ export default function KitchenDisplay() {
   const { data: completedItems, refetch: refetchCompletedItems } = useQuery<
     PendingOrderItem[]
   >({
-    queryKey: ["http://42.118.102.26:4500/api/order-items/completed"],
+    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/order-items/completed"],
     queryFn: async () => {
-      const response = await fetch("http://42.118.102.26:4500/api/order-items/completed");
+      const response = await fetch("https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/order-items/completed");
       if (!response.ok) {
         throw new Error("Failed to fetch completed order items");
       }
@@ -97,9 +97,9 @@ export default function KitchenDisplay() {
 
   // Fetch pending orders - orders that are NOT paid, completed, or cancelled
   const { data: orders, refetch } = useQuery<KitchenOrder[]>({
-    queryKey: ["http://42.118.102.26:4500/api/orders"],
+    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"],
     queryFn: async () => {
-      const response = await fetch("http://42.118.102.26:4500/api/orders");
+      const response = await fetch("https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders");
       if (!response.ok) {
         throw new Error("Failed to fetch kitchen orders");
       }
@@ -115,10 +115,10 @@ export default function KitchenDisplay() {
 
   // Fetch products for item details
   const { data: products } = useQuery<Product[]>({
-    queryKey: ["http://42.118.102.26:4500/api/products"],
+    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products"],
     queryFn: async () => {
       const response = await fetch(
-        "http://42.118.102.26:4500/api/products?limit=50000&includeInactive=false",
+        "https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products?limit=50000&includeInactive=false",
       );
       if (!response.ok) {
         throw new Error("Failed to fetch products");
@@ -131,7 +131,7 @@ export default function KitchenDisplay() {
   // WebSocket connection for real-time updates
   useEffect(() => {
     const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-    const wsUrl = `http://42.118.102.26:4500/ws`;
+    const wsUrl = `https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/ws`;
     const socket = new WebSocket(wsUrl);
 
     socket.onopen = () => {
@@ -164,7 +164,7 @@ export default function KitchenDisplay() {
 
   const updateOrderStatus = async (orderId: number, status: string) => {
     try {
-      const response = await fetch(`http://42.118.102.26:4500/api/orders/${orderId}/kitchen-status`, {
+      const response = await fetch(`https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders/${orderId}/kitchen-status`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status }),
@@ -185,7 +185,7 @@ export default function KitchenDisplay() {
 
   const updateOrderItemStatus = async (itemId: number, status: string) => {
     try {
-      const response = await fetch(`http://42.118.102.26:4500/api/order-items/${itemId}/status`, {
+      const response = await fetch(`https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/order-items/${itemId}/status`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status }),
