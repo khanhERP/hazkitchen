@@ -90,9 +90,9 @@ export default function InventoryPage({ onLogout }: InventoryPageProps) {
   const queryClient = useQueryClient();
 
   const { data: productsResponse, isLoading: productsLoading } = useQuery({
-    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products", { page: 1, limit: 1000 }],
+    queryKey: ["http://42.118.102.26:4500/api/products", { page: 1, limit: 1000 }],
     queryFn: async () => {
-      const response = await fetch("https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products?page=1&limit=1000");
+      const response = await fetch("http://42.118.102.26:4500/api/products?page=1&limit=1000");
       return response.json();
     },
   });
@@ -103,7 +103,7 @@ export default function InventoryPage({ onLogout }: InventoryPageProps) {
   }, [productsResponse]);
 
   const { data: categories = [] } = useQuery<Category[]>({
-    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/categories"],
+    queryKey: ["http://42.118.102.26:4500/api/categories"],
   });
 
   const stockUpdateForm = useForm<StockUpdateForm>({
@@ -117,7 +117,7 @@ export default function InventoryPage({ onLogout }: InventoryPageProps) {
   const updateStockMutation = useMutation({
     mutationFn: async (data: StockUpdateForm) => {
       console.log("Updating stock:", data);
-      const response = await fetch("https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/inventory/update-stock", {
+      const response = await fetch("http://42.118.102.26:4500/api/inventory/update-stock", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -131,8 +131,8 @@ export default function InventoryPage({ onLogout }: InventoryPageProps) {
     },
     onSuccess: () => {
       // Force refresh products data
-      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products"] });
-      queryClient.refetchQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products"] });
+      queryClient.invalidateQueries({ queryKey: ["http://42.118.102.26:4500/api/products"] });
+      queryClient.refetchQueries({ queryKey: ["http://42.118.102.26:4500/api/products"] });
       setShowStockDialog(false);
       stockUpdateForm.reset();
     },
@@ -156,7 +156,7 @@ export default function InventoryPage({ onLogout }: InventoryPageProps) {
       id: number;
       trackInventory: boolean;
     }) => {
-      const response = await fetch(`https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products/${id}/track-inventory`, {
+      const response = await fetch(`http://42.118.102.26:4500/api/products/${id}/track-inventory`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
@@ -169,7 +169,7 @@ export default function InventoryPage({ onLogout }: InventoryPageProps) {
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products"] });
+      queryClient.invalidateQueries({ queryKey: ["http://42.118.102.26:4500/api/products"] });
     },
     onError: () => {
       toast({
@@ -183,7 +183,7 @@ export default function InventoryPage({ onLogout }: InventoryPageProps) {
   const createProductMutation = useMutation({
     mutationFn: async (data: any) => {
       console.log("Sending product data:", data);
-      const response = await fetch("https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products", {
+      const response = await fetch("http://42.118.102.26:4500/api/products", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -196,7 +196,7 @@ export default function InventoryPage({ onLogout }: InventoryPageProps) {
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products"] });
+      queryClient.invalidateQueries({ queryKey: ["http://42.118.102.26:4500/api/products"] });
       setShowStockDialog(false);
       stockUpdateForm.reset();
     },
@@ -229,7 +229,7 @@ export default function InventoryPage({ onLogout }: InventoryPageProps) {
 
   const deleteProductMutation = useMutation({
     mutationFn: async (productId: number) => {
-      const response = await fetch(`https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products/${productId}`, {
+      const response = await fetch(`http://42.118.102.26:4500/api/products/${productId}`, {
         method: "DELETE",
       });
       if (!response.ok) {
@@ -239,7 +239,7 @@ export default function InventoryPage({ onLogout }: InventoryPageProps) {
       return response;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products"] });
+      queryClient.invalidateQueries({ queryKey: ["http://42.118.102.26:4500/api/products"] });
     },
     onError: (error) => {
       console.error("Delete product error:", error);
@@ -271,7 +271,7 @@ export default function InventoryPage({ onLogout }: InventoryPageProps) {
 
   const cleanupMutation = useMutation({
     mutationFn: async () => {
-      const response = await fetch("https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products/cleanup/inactive", {
+      const response = await fetch("http://42.118.102.26:4500/api/products/cleanup/inactive", {
         method: "DELETE",
       });
       if (!response.ok) {
@@ -280,7 +280,7 @@ export default function InventoryPage({ onLogout }: InventoryPageProps) {
       return response.json();
     },
     onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products"] });
+      queryClient.invalidateQueries({ queryKey: ["http://42.118.102.26:4500/api/products"] });
     },
     onError: (error) => {
       console.error("Cleanup error:", error);

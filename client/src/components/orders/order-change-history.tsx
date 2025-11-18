@@ -55,7 +55,7 @@ export function OrderChangeHistory() {
   // Query order change history
   const { data: historyResponse, isLoading } = useQuery({
     queryKey: [
-      "https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/order-change-history",
+      "http://42.118.102.26:4500/api/order-change-history",
       currentPage,
       itemsPerPage,
       searchTerm,
@@ -78,7 +78,7 @@ export function OrderChangeHistory() {
 
       const response = await apiRequest(
         "GET",
-        `https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/order-change-history?${params.toString()}`
+        `http://42.118.102.26:4500/api/order-change-history?${params.toString()}`
       );
       if (!response.ok) throw new Error("Failed to fetch history");
       return response.json();

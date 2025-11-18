@@ -39,9 +39,9 @@ export default function PaymentMethodsPage({ onLogout }: PaymentMethodsPageProps
 
   // Query payment methods from API
   const { data: paymentMethodsFromAPI } = useQuery({
-    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/payment-methods"],
+    queryKey: ["http://42.118.102.26:4500/api/payment-methods"],
     queryFn: async () => {
-      const response = await fetch("https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/payment-methods");
+      const response = await fetch("http://42.118.102.26:4500/api/payment-methods");
       return response.json();
     },
   });
@@ -72,7 +72,7 @@ export default function PaymentMethodsPage({ onLogout }: PaymentMethodsPageProps
   // Mutation to update payment method
   const updatePaymentMethodMutation = useMutation({
     mutationFn: async ({ id, data }: { id: number; data: any }) => {
-      const response = await fetch(`https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/payment-methods/${id}`, {
+      const response = await fetch(`http://42.118.102.26:4500/api/payment-methods/${id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
@@ -80,7 +80,7 @@ export default function PaymentMethodsPage({ onLogout }: PaymentMethodsPageProps
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/payment-methods"] });
+      queryClient.invalidateQueries({ queryKey: ["http://42.118.102.26:4500/api/payment-methods"] });
     },
   });
 
@@ -119,13 +119,13 @@ export default function PaymentMethodsPage({ onLogout }: PaymentMethodsPageProps
   // Mutation to delete payment method
   const deletePaymentMethodMutation = useMutation({
     mutationFn: async (id: number) => {
-      const response = await fetch(`https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/payment-methods/${id}`, {
+      const response = await fetch(`http://42.118.102.26:4500/api/payment-methods/${id}`, {
         method: "DELETE",
       });
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/payment-methods"] });
+      queryClient.invalidateQueries({ queryKey: ["http://42.118.102.26:4500/api/payment-methods"] });
     },
     onError: () => {
       toast({

@@ -168,26 +168,26 @@ export default function SalesOrders() {
       setPrintReceiptData(null);
 
       // Refresh data
-      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] });
-      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/tables"] });
+      queryClient.invalidateQueries({ queryKey: ["http://42.118.102.26:4500/api/orders"] });
+      queryClient.invalidateQueries({ queryKey: ["http://42.118.102.26:4500/api/tables"] });
     };
 
     const handleEInvoiceModalClosed = async (event: CustomEvent) => {
       console.log("📧 Sales Orders: E-invoice modal closed, refreshing data");
 
       // Clear cache completely and force fresh fetch
-      queryClient.removeQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] });
-      queryClient.removeQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/order-items"] });
-      queryClient.removeQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/invoices"] });
+      queryClient.removeQueries({ queryKey: ["http://42.118.102.26:4500/api/orders"] });
+      queryClient.removeQueries({ queryKey: ["http://42.118.102.26:4500/api/order-items"] });
+      queryClient.removeQueries({ queryKey: ["http://42.118.102.26:4500/api/invoices"] });
 
       // Force immediate refetch with fresh data
       await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] }),
-        queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/order-items"] }),
-        queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/invoices"] }),
-        queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/tables"] }),
-        queryClient.refetchQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] }),
-        queryClient.refetchQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/invoices"] }),
+        queryClient.invalidateQueries({ queryKey: ["http://42.118.102.26:4500/api/orders"] }),
+        queryClient.invalidateQueries({ queryKey: ["http://42.118.102.26:4500/api/order-items"] }),
+        queryClient.invalidateQueries({ queryKey: ["http://42.118.102.26:4500/api/invoices"] }),
+        queryClient.invalidateQueries({ queryKey: ["http://42.118.102.26:4500/api/tables"] }),
+        queryClient.refetchQueries({ queryKey: ["http://42.118.102.26:4500/api/orders"] }),
+        queryClient.refetchQueries({ queryKey: ["http://42.118.102.26:4500/api/invoices"] }),
       ]);
 
       console.log("✅ Sales Orders: Data refreshed successfully from database");
@@ -223,11 +223,11 @@ export default function SalesOrders() {
       setIsEditing(false);
       setEditableInvoice(null);
       // Force immediate refresh with all date ranges
-      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] });
-      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/invoices"] });
-      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/transactions"] });
-      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders/date-range"] });
-      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/invoices/date-range"] });
+      queryClient.invalidateQueries({ queryKey: ["http://42.118.102.26:4500/api/orders"] });
+      queryClient.invalidateQueries({ queryKey: ["http://42.118.102.26:4500/api/invoices"] });
+      queryClient.invalidateQueries({ queryKey: ["http://42.118.102.26:4500/api/transactions"] });
+      queryClient.invalidateQueries({ queryKey: ["http://42.118.102.26:4500/api/orders/date-range"] });
+      queryClient.invalidateQueries({ queryKey: ["http://42.118.102.26:4500/api/invoices/date-range"] });
     };
 
     const handleOrderUpdate = () => {
@@ -236,11 +236,11 @@ export default function SalesOrders() {
       setSelectedInvoice(null);
       setIsEditing(false);
       setEditableInvoice(null);
-      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] });
-      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/invoices"] });
-      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/transactions"] });
-      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders/date-range"] });
-      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/invoices/date-range"] });
+      queryClient.invalidateQueries({ queryKey: ["http://42.118.102.26:4500/api/orders"] });
+      queryClient.invalidateQueries({ queryKey: ["http://42.118.102.26:4500/api/invoices"] });
+      queryClient.invalidateQueries({ queryKey: ["http://42.118.102.26:4500/api/transactions"] });
+      queryClient.invalidateQueries({ queryKey: ["http://42.118.102.26:4500/api/orders/date-range"] });
+      queryClient.invalidateQueries({ queryKey: ["http://42.118.102.26:4500/api/invoices/date-range"] });
     };
 
     const handleRefreshOrders = () => {
@@ -249,11 +249,11 @@ export default function SalesOrders() {
       setSelectedInvoice(null);
       setIsEditing(false);
       setEditableInvoice(null);
-      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] });
-      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/invoices"] });
-      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/transactions"] });
-      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders/date-range"] });
-      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/invoices/date-range"] });
+      queryClient.invalidateQueries({ queryKey: ["http://42.118.102.26:4500/api/orders"] });
+      queryClient.invalidateQueries({ queryKey: ["http://42.118.102.26:4500/api/invoices"] });
+      queryClient.invalidateQueries({ queryKey: ["http://42.118.102.26:4500/api/transactions"] });
+      queryClient.invalidateQueries({ queryKey: ["http://42.118.102.26:4500/api/orders/date-range"] });
+      queryClient.invalidateQueries({ queryKey: ["http://42.118.102.26:4500/api/invoices/date-range"] });
     };
 
     // Listen for order creation and update events
@@ -326,7 +326,7 @@ export default function SalesOrders() {
   useEffect(() => {
     const fetchSettings = async () => {
       try {
-        const response = await apiRequest("GET", "https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/store-settings");
+        const response = await apiRequest("GET", "http://42.118.102.26:4500/api/store-settings");
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
@@ -341,10 +341,10 @@ export default function SalesOrders() {
 
   // Query customers for datalist
   const { data: customers = [] } = useQuery({
-    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/customers"],
+    queryKey: ["http://42.118.102.26:4500/api/customers"],
     queryFn: async () => {
       try {
-        const response = await apiRequest("GET", "https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/customers");
+        const response = await apiRequest("GET", "http://42.118.102.26:4500/api/customers");
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
@@ -366,7 +366,7 @@ export default function SalesOrders() {
     error: ordersError,
   } = useQuery({
     queryKey: [
-      "https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders/list",
+      "http://42.118.102.26:4500/api/orders/list",
       startDate,
       endDate,
       customerSearch,
@@ -402,7 +402,7 @@ export default function SalesOrders() {
           params.append("limit", itemsPerPage.toString());
         }
 
-        const url = `https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders/list?${params.toString()}`;
+        const url = `http://42.118.102.26:4500/api/orders/list?${params.toString()}`;
         const response = await apiRequest("GET", url);
 
         if (!response.ok) {
@@ -430,10 +430,10 @@ export default function SalesOrders() {
 
   // Query all products to get tax rates
   const { data: productsPaging } = useQuery({
-    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products"],
+    queryKey: ["http://42.118.102.26:4500/api/products"],
     queryFn: async () => {
       try {
-        const response = await apiRequest("GET", "https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products");
+        const response = await apiRequest("GET", "http://42.118.102.26:4500/api/products");
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
@@ -452,10 +452,10 @@ export default function SalesOrders() {
 
   // Query tables to map tableId to table number
   const { data: tables = [] } = useQuery({
-    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/tables"],
+    queryKey: ["http://42.118.102.26:4500/api/tables"],
     queryFn: async () => {
       try {
-        const response = await apiRequest("GET", "https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/tables");
+        const response = await apiRequest("GET", "http://42.118.102.26:4500/api/tables");
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
@@ -497,7 +497,7 @@ export default function SalesOrders() {
     isLoading: orderItemsLoading,
     error: orderItemsError,
   } = useQuery({
-    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/order-items", selectedInvoice?.id],
+    queryKey: ["http://42.118.102.26:4500/api/order-items", selectedInvoice?.id],
     queryFn: async () => {
       if (!selectedInvoice?.id) {
         console.log("❌ No selected invoice ID");
@@ -509,7 +509,7 @@ export default function SalesOrders() {
       try {
         const response = await apiRequest(
           "GET",
-          `https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/order-items/${selectedInvoice.id}`,
+          `http://42.118.102.26:4500/api/order-items/${selectedInvoice.id}`,
         );
 
         if (!response.ok) {
@@ -564,7 +564,7 @@ export default function SalesOrders() {
 
       const response = await apiRequest(
         "PUT",
-        `https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders/${updatedOrder.id}`,
+        `http://42.118.102.26:4500/api/orders/${updatedOrder.id}`,
         updatePayload,
       );
 
@@ -579,20 +579,20 @@ export default function SalesOrders() {
       console.log("✅ Order updated successfully:", data);
 
       // Clear cache completely
-      queryClient.removeQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] });
+      queryClient.removeQueries({ queryKey: ["http://42.118.102.26:4500/api/orders"] });
       queryClient.removeQueries({
-        queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/order-items", updatedOrder.id],
+        queryKey: ["http://42.118.102.26:4500/api/order-items", updatedOrder.id],
       });
 
       // Force fresh fetch from server
       await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] }),
+        queryClient.invalidateQueries({ queryKey: ["http://42.118.102.26:4500/api/orders"] }),
         queryClient.invalidateQueries({
-          queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/order-items", updatedOrder.id],
+          queryKey: ["http://42.118.102.26:4500/api/order-items", updatedOrder.id],
         }),
-        queryClient.refetchQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] }),
+        queryClient.refetchQueries({ queryKey: ["http://42.118.102.26:4500/api/orders"] }),
         queryClient.refetchQueries({
-          queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/order-items", updatedOrder.id],
+          queryKey: ["http://42.118.102.26:4500/api/order-items", updatedOrder.id],
         }),
       ]);
 
@@ -624,7 +624,7 @@ export default function SalesOrders() {
           // For orders, update status to 'cancelled'
           const response = await apiRequest(
             "PUT",
-            `https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders/${orderId}/status`,
+            `http://42.118.102.26:4500/api/orders/${orderId}/status`,
             {
               status: "cancelled",
             },
@@ -656,7 +656,7 @@ export default function SalesOrders() {
       setShowBulkCancelDialog(false);
       setSelectedOrderIds(new Set());
 
-      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] });
+      queryClient.invalidateQueries({ queryKey: ["http://42.118.102.26:4500/api/orders"] });
 
       // Update selected order if it was cancelled
       if (selectedInvoice) {
@@ -693,7 +693,7 @@ export default function SalesOrders() {
     mutationFn: async (invoiceData: any) => {
       const response = await apiRequest(
         "POST",
-        "https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/einvoice/publish",
+        "http://42.118.102.26:4500/api/einvoice/publish",
         invoiceData,
       );
       return response.json();
@@ -725,7 +725,7 @@ export default function SalesOrders() {
 
           const updateResponse = await apiRequest(
             "PUT",
-            `https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders/${selectedInvoice.id}`,
+            `http://42.118.102.26:4500/api/orders/${selectedInvoice.id}`,
             updateData,
           );
           console.log(
@@ -768,20 +768,20 @@ export default function SalesOrders() {
 
           // Clear ALL cache completely to force fresh fetch from database
           console.log("🔄 Clearing all order-related cache after publish...");
-          queryClient.removeQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] });
-          queryClient.removeQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders/list"] });
-          queryClient.removeQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/order-items"] });
-          queryClient.removeQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/invoices"] });
+          queryClient.removeQueries({ queryKey: ["http://42.118.102.26:4500/api/orders"] });
+          queryClient.removeQueries({ queryKey: ["http://42.118.102.26:4500/api/orders/list"] });
+          queryClient.removeQueries({ queryKey: ["http://42.118.102.26:4500/api/order-items"] });
+          queryClient.removeQueries({ queryKey: ["http://42.118.102.26:4500/api/invoices"] });
 
           // Force immediate refetch with fresh data from server
           console.log("📥 Forcing fresh data fetch from server...");
           await Promise.all([
-            queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] }),
-            queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders/list"] }),
-            queryClient.refetchQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] }),
+            queryClient.invalidateQueries({ queryKey: ["http://42.118.102.26:4500/api/orders"] }),
+            queryClient.invalidateQueries({ queryKey: ["http://42.118.102.26:4500/api/orders/list"] }),
+            queryClient.refetchQueries({ queryKey: ["http://42.118.102.26:4500/api/orders"] }),
             queryClient.refetchQueries({
               queryKey: [
-                "https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders/list",
+                "http://42.118.102.26:4500/api/orders/list",
                 startDate,
                 endDate,
                 customerSearch,
@@ -843,7 +843,7 @@ export default function SalesOrders() {
       // Changed to accept orderId
       const response = await apiRequest(
         "PUT",
-        `https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders/${orderId}/status`,
+        `http://42.118.102.26:4500/api/orders/${orderId}/status`,
         {
           status: "cancelled",
         },
@@ -896,7 +896,7 @@ export default function SalesOrders() {
             );
             await apiRequest(
               "PUT",
-              `https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/tables/${selectedInvoice.tableId}/status`,
+              `http://42.118.102.26:4500/api/tables/${selectedInvoice.tableId}/status`,
               {
                 status: "available",
               },
@@ -914,26 +914,26 @@ export default function SalesOrders() {
       setShowCancelDialog(false);
 
       // Clear cache completely and force fresh fetch
-      queryClient.removeQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] });
-      queryClient.removeQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders/date-range"] });
-      queryClient.removeQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/tables"] });
+      queryClient.removeQueries({ queryKey: ["http://42.118.102.26:4500/api/orders"] });
+      queryClient.removeQueries({ queryKey: ["http://42.118.102.26:4500/api/orders/date-range"] });
+      queryClient.removeQueries({ queryKey: ["http://42.118.102.26:4500/api/tables"] });
 
       // Force immediate refetch with fresh data
       await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] }),
-        queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders/date-range"] }),
-        queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/tables"] }),
-        queryClient.refetchQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] }),
+        queryClient.invalidateQueries({ queryKey: ["http://42.118.102.26:4500/api/orders"] }),
+        queryClient.invalidateQueries({ queryKey: ["http://42.118.102.26:4500/api/orders/date-range"] }),
+        queryClient.invalidateQueries({ queryKey: ["http://42.118.102.26:4500/api/tables"] }),
+        queryClient.refetchQueries({ queryKey: ["http://42.118.102.26:4500/api/orders"] }),
         queryClient.refetchQueries({
           queryKey: [
-            "https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/order-range",
+            "http://42.118.102.26:4500/api/order-range",
             startDate,
             endDate,
             currentPage,
             itemsPerPage,
           ],
         }),
-        queryClient.refetchQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/tables"] }),
+        queryClient.refetchQueries({ queryKey: ["http://42.118.102.26:4500/api/tables"] }),
       ]);
 
       // Update selected order if it was cancelled
@@ -1477,7 +1477,7 @@ export default function SalesOrders() {
 
     // Add to the orderItems query data temporarily for display
     queryClient.setQueryData(
-      ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/order-items", selectedInvoice.id],
+      ["http://42.118.102.26:4500/api/order-items", selectedInvoice.id],
       (oldData: any) => {
         const currentItems = Array.isArray(oldData) ? oldData : [];
         return [...currentItems, newEmptyItem];
@@ -1595,7 +1595,7 @@ export default function SalesOrders() {
         console.log(`🗑️ Deleting order item ${item.id}`);
         const response = await apiRequest(
           "DELETE",
-          `https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/order-items/${item.id}`,
+          `http://42.118.102.26:4500/api/order-items/${item.id}`,
         );
         if (!response.ok) {
           throw new Error(`Failed to delete order item ${item.id}`);
@@ -1680,7 +1680,7 @@ export default function SalesOrders() {
 
         const response = await apiRequest(
           "POST",
-          `https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/order-items/${editableInvoice.id}`,
+          `http://42.118.102.26:4500/api/order-items/${editableInvoice.id}`,
           payload,
         );
 
@@ -1786,7 +1786,7 @@ export default function SalesOrders() {
         // Update the item
         const response = await apiRequest(
           "PATCH",
-          `https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/order-items/${item.id}`,
+          `http://42.118.102.26:4500/api/order-items/${item.id}`,
           payload,
         );
 
@@ -1801,7 +1801,7 @@ export default function SalesOrders() {
       // Step 5: Recalculate order totals from fresh data
       const allCurrentItemsResponse = await apiRequest(
         "GET",
-        `https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/order-items/${editableInvoice.id}`,
+        `http://42.118.102.26:4500/api/order-items/${editableInvoice.id}`,
       );
       const allCurrentItems = await allCurrentItemsResponse.json();
 
@@ -1876,27 +1876,27 @@ export default function SalesOrders() {
       await updateOrderMutation.mutateAsync(orderData as Order);
 
       // Clear and refresh all related queries
-      queryClient.removeQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] });
-      queryClient.removeQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/order-items"] });
+      queryClient.removeQueries({ queryKey: ["http://42.118.102.26:4500/api/orders"] });
+      queryClient.removeQueries({ queryKey: ["http://42.118.102.26:4500/api/order-items"] });
       queryClient.removeQueries({
-        queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders/date-range"],
+        queryKey: ["http://42.118.102.26:4500/api/orders/date-range"],
       });
 
       await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] }),
+        queryClient.invalidateQueries({ queryKey: ["http://42.118.102.26:4500/api/orders"] }),
         queryClient.invalidateQueries({
-          queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/order-items", editableInvoice.id],
+          queryKey: ["http://42.118.102.26:4500/api/order-items", editableInvoice.id],
         }),
         queryClient.invalidateQueries({
-          queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders/date-range"],
+          queryKey: ["http://42.118.102.26:4500/api/orders/date-range"],
         }),
-        queryClient.refetchQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] }),
+        queryClient.refetchQueries({ queryKey: ["http://42.118.102.26:4500/api/orders"] }),
         queryClient.refetchQueries({
-          queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/order-items", editableInvoice.id],
+          queryKey: ["http://42.118.102.26:4500/api/order-items", editableInvoice.id],
         }),
         queryClient.refetchQueries({
           queryKey: [
-            "https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/order-range",
+            "http://42.118.102.26:4500/api/order-range",
             startDate,
             endDate,
             currentPage,
@@ -1928,7 +1928,7 @@ export default function SalesOrders() {
     setEditedOrderItems({}); // Clear local edits
     // Invalidate order items to reset them if any changes were made but not saved
     queryClient.invalidateQueries({
-      queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/order-items", selectedInvoice?.id],
+      queryKey: ["http://42.118.102.26:4500/api/order-items", selectedInvoice?.id],
     });
   };
 
@@ -2653,7 +2653,7 @@ export default function SalesOrders() {
     try {
       const updateResponse = await apiRequest(
         "PUT",
-        `https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders/${order.id}`,
+        `http://42.118.102.26:4500/api/orders/${order.id}`,
         {
           paymentStatus: "paid",
           status: "paid",
@@ -2665,8 +2665,8 @@ export default function SalesOrders() {
         console.log("✅ Order payment status updated successfully");
 
         // Refresh orders list
-        queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] });
-        queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/tables"] });
+        queryClient.invalidateQueries({ queryKey: ["http://42.118.102.26:4500/api/orders"] });
+        queryClient.invalidateQueries({ queryKey: ["http://42.118.102.26:4500/api/tables"] });
 
         // For laundry business, show receipt modal after payment
         if (storeSettings?.businessType === "laundry") {
@@ -2675,7 +2675,7 @@ export default function SalesOrders() {
           // Fetch fresh order items
           const itemsResponse = await apiRequest(
             "GET",
-            `https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/order-items/${order.id}`,
+            `http://42.118.102.26:4500/api/order-items/${order.id}`,
           );
           const items = await itemsResponse.json();
 
@@ -2747,10 +2747,10 @@ export default function SalesOrders() {
 
       // Refresh orders list after a delay to avoid interfering with receipt modal
       setTimeout(() => {
-        queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] });
+        queryClient.invalidateQueries({ queryKey: ["http://42.118.102.26:4500/api/orders"] });
         queryClient.invalidateQueries({
           queryKey: [
-            "https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders/date-range",
+            "http://42.118.102.26:4500/api/orders/date-range",
             startDate,
             endDate,
             currentPage,
@@ -2767,7 +2767,7 @@ export default function SalesOrders() {
       console.log("📄 Sales Orders: Preparing receipt for order:", order.id);
 
       // Fetch order items with tax information
-      const response = await apiRequest("GET", `https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/order-items/${order.id}`);
+      const response = await apiRequest("GET", `http://42.118.102.26:4500/api/order-items/${order.id}`);
       const items = await response.json();
 
       // Enrich items with product information including tax rates
@@ -2869,7 +2869,7 @@ export default function SalesOrders() {
 
         const updateResponse = await apiRequest(
           "PUT",
-          `https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders/${selectedInvoice.id}`,
+          `http://42.118.102.26:4500/api/orders/${selectedInvoice.id}`,
           updateData,
         );
 
@@ -2891,7 +2891,7 @@ export default function SalesOrders() {
           );
           await queryClient.refetchQueries({
             queryKey: [
-              "https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders/list",
+              "http://42.118.102.26:4500/api/orders/list",
               startDate,
               endDate,
               customerSearch,
@@ -2908,18 +2908,18 @@ export default function SalesOrders() {
 
         // Clear ALL cache completely to force fresh fetch from database
         console.log("🔄 Clearing all order-related cache...");
-        queryClient.removeQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] });
-        queryClient.removeQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders/list"] });
-        queryClient.removeQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/order-items"] });
-        queryClient.removeQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/invoices"] });
-        queryClient.removeQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/tables"] });
+        queryClient.removeQueries({ queryKey: ["http://42.118.102.26:4500/api/orders"] });
+        queryClient.removeQueries({ queryKey: ["http://42.118.102.26:4500/api/orders/list"] });
+        queryClient.removeQueries({ queryKey: ["http://42.118.102.26:4500/api/order-items"] });
+        queryClient.removeQueries({ queryKey: ["http://42.118.102.26:4500/api/invoices"] });
+        queryClient.removeQueries({ queryKey: ["http://42.118.102.26:4500/api/tables"] });
 
         // Force immediate refetch with fresh data from server
         console.log("📥 Forcing fresh data fetch after publish...");
         await Promise.all([
-          queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] }),
-          queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders/list"] }),
-          queryClient.refetchQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] }),
+          queryClient.invalidateQueries({ queryKey: ["http://42.118.102.26:4500/api/orders"] }),
+          queryClient.invalidateQueries({ queryKey: ["http://42.118.102.26:4500/api/orders/list"] }),
+          queryClient.refetchQueries({ queryKey: ["http://42.118.102.26:4500/api/orders"] }),
           refetchOrdersList(), // Force immediate refetch of orders list
         ]);
 
@@ -3135,7 +3135,7 @@ export default function SalesOrders() {
                   <Button
                     onClick={() => {
                       queryClient.invalidateQueries({
-                        queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"],
+                        queryKey: ["http://42.118.102.26:4500/api/orders"],
                       });
                     }}
                   >
@@ -4281,7 +4281,7 @@ export default function SalesOrders() {
                                                         queryClient.invalidateQueries(
                                                           {
                                                             queryKey: [
-                                                              "https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/order-items",
+                                                              "http://42.118.102.26:4500/api/order-items",
                                                               selectedInvoice?.id,
                                                             ],
                                                           },
@@ -5541,7 +5541,7 @@ export default function SalesOrders() {
                                                               const itemsResponse =
                                                                 await apiRequest(
                                                                   "GET",
-                                                                  `https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/order-items/${selectedInvoice.id}`,
+                                                                  `http://42.118.102.26:4500/api/order-items/${selectedInvoice.id}`,
                                                                 );
                                                               const items =
                                                                 await itemsResponse.json();
@@ -6021,7 +6021,7 @@ export default function SalesOrders() {
             setOrderForPayment(null);
 
             // Refresh data after closing
-            // queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] });
+            // queryClient.invalidateQueries({ queryKey: ["http://42.118.102.26:4500/api/orders"] });
           }}
           onSelectMethod={handlePaymentComplete}
           total={
@@ -6101,7 +6101,7 @@ export default function SalesOrders() {
             setShowReceiptModal(false);
             setSelectedReceipt(null);
 
-            queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] });
+            queryClient.invalidateQueries({ queryKey: ["http://42.118.102.26:4500/api/orders"] });
           }}
           receipt={selectedReceipt}
           isPreview={false}

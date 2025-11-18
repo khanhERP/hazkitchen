@@ -58,9 +58,9 @@ export function ProductGrid({
 
   // Fetch store settings to check price inclusion of tax
   const { data: storeSettings } = useQuery({
-    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/store-settings"],
+    queryKey: ["http://42.118.102.26:4500/api/store-settings"],
     queryFn: async () => {
-      const response = await fetch("https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/store-settings");
+      const response = await fetch("http://42.118.102.26:4500/api/store-settings");
       if (!response.ok) throw new Error("Failed to fetch store settings");
       return response.json();
     },
@@ -82,7 +82,7 @@ export function ProductGrid({
     isFetching,
   } = useQuery({
     queryKey: [
-      "https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products",
+      "http://42.118.102.26:4500/api/products",
       {
         category: selectedCategory,
         search: searchQuery,
@@ -111,7 +111,7 @@ export function ProductGrid({
       // Only show active products in POS
       params.append("includeInactive", "false");
 
-      const response = await fetch(`https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products?${params}`);
+      const response = await fetch(`http://42.118.102.26:4500/api/products?${params}`);
       if (!response.ok) throw new Error("Failed to fetch products");
       const data = await response.json();
 
