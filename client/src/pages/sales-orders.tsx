@@ -1363,7 +1363,11 @@ export default function SalesOrders() {
     if (typeof num !== "number" || isNaN(num)) {
       return "0";
     }
-    return Math.floor(num).toLocaleString("vi-VN");
+    // Ensure we don't display negative values for currency, as per the fix.
+    // The issue was in how these values were displayed, not necessarily in the calculation itself if it's a net value.
+    // However, for display, we want to ensure it's always positive or zero.
+    const absoluteNum = Math.max(0, num);
+    return Math.floor(absoluteNum).toLocaleString("vi-VN");
   };
 
   const formatDate = (dateStr: string | undefined | null): string => {
@@ -2314,7 +2318,7 @@ export default function SalesOrders() {
             ? editedItem.unitPrice
             : item.unitPrice || "0",
         );
-        const quantity = parseInt(
+        const quantity = parseFloat(
           editedItem.quantity !== undefined
             ? editedItem.quantity
             : item.quantity || "0",
@@ -2350,8 +2354,8 @@ export default function SalesOrders() {
       const totalPayment = Math.max(
         0,
         priceIncludeTax
-          ? calculatedSubtotal + calculatedTax
-          : calculatedSubtotal + calculatedTax - orderDiscount,
+          ? calculatedSubtotal
+          : calculatedSubtotal - orderDiscount,
       );
 
       return {
@@ -4409,7 +4413,7 @@ export default function SalesOrders() {
                                                                         "0",
                                                                 );
                                                               const quantity =
-                                                                parseInt(
+                                                                parseFloat(
                                                                   editedItem.quantity !==
                                                                     undefined
                                                                     ? editedItem.quantity
@@ -4518,8 +4522,7 @@ export default function SalesOrders() {
                                                                   itemSubtotal -
                                                                   priceBeforeTax;
                                                                 itemTotal =
-                                                                  itemSubtotal -
-                                                                  itemDiscountAmount;
+                                                                  itemSubtotal;
                                                               } else {
                                                                 const itemSubtotal =
                                                                   unitPrice *
@@ -4531,9 +4534,7 @@ export default function SalesOrders() {
                                                                       taxRate,
                                                                   );
                                                                 itemTotal =
-                                                                  itemSubtotal +
-                                                                  itemTax -
-                                                                  itemDiscountAmount;
+                                                                  itemSubtotal;
                                                               }
 
                                                               return (
@@ -5063,7 +5064,7 @@ export default function SalesOrders() {
                                                         <span className="font-bold">
                                                           {formatCurrency(
                                                             Math.floor(
-                                                              displayTotals.total,
+                                                              displayTotals.subtotal,
                                                             ),
                                                           )}
                                                         </span>
@@ -5079,8 +5080,7 @@ export default function SalesOrders() {
                                                         <span className="font-bold">
                                                           {formatCurrency(
                                                             Math.floor(
-                                                              displayTotals.subtotal -
-                                                                displayTotals.discount,
+                                                              displayTotals.subtotal,
                                                             ),
                                                           )}
                                                         </span>
