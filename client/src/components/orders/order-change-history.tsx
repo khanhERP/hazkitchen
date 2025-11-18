@@ -339,7 +339,16 @@ export function OrderChangeHistory() {
                         {formatDate(record.changedAt)}
                       </TableCell>
                       <TableCell className="font-mono text-sm">
-                        {record.orderNumber || `#${record.orderId}`}
+                        <button
+                          onClick={() => {
+                            const orderNumber = record.orderNumber || `ORD-${record.orderId}`;
+                            window.location.href = `/sales-orders?order=${orderNumber}`;
+                          }}
+                          className="text-blue-600 hover:text-blue-800 hover:underline font-medium cursor-pointer bg-transparent border-none p-0"
+                          title="Click to view order details"
+                        >
+                          {record.orderNumber || `#${record.orderId}`}
+                        </button>
                       </TableCell>
                       <TableCell>{record.userName}</TableCell>
                       <TableCell>{getActionBadge(record.action)}</TableCell>
