@@ -429,26 +429,9 @@ export default function SalesOrders() {
   const orders = ordersResponse?.orders || [];
 
   // Query all products to get tax rates
-  const { data: productsPaging } = useQuery({
-    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products"],
-    queryFn: async () => {
-      try {
-        const response = await apiRequest("GET", "https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products");
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        const data = await response.json();
-        return Array.isArray(data) ? data : [];
-      } catch (error) {
-        console.error("Error fetching products:", error);
-        return [];
-      }
-    },
-    staleTime: 0,
-    gcTime: 0,
+  const { data: products } = useQuery({
+    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products/active"],
   });
-
-  const products = productsPaging?.products || [];
 
   // Query tables to map tableId to table number
   const { data: tables = [] } = useQuery({
