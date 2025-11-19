@@ -1288,7 +1288,7 @@ export function EInvoiceModal({
       invVatAmount: totalTaxAmount,
       invDiscAmount: Math.floor(orderDiscountValue), // Total discount from all items, rounded down
       invTotalAmount: totalAmount,
-      paidTp: "TM/CK", // Cash payment
+      paidTp: "TM/CK", // payment
       note: "",
       hdNo: "",
       createdDate: new Date().toISOString(),
