@@ -2355,7 +2355,7 @@ export default function SalesOrders() {
         0,
         priceIncludeTax
           ? calculatedSubtotal
-          : calculatedSubtotal - orderDiscount,
+          : calculatedSubtotal + calculatedTax - orderDiscount,
       );
 
       return {
@@ -5064,7 +5064,7 @@ export default function SalesOrders() {
                                                         <span className="font-bold">
                                                           {formatCurrency(
                                                             Math.floor(
-                                                              displayTotals.subtotal,
+                                                              displayTotals.total,
                                                             ),
                                                           )}
                                                         </span>
@@ -5328,21 +5328,18 @@ export default function SalesOrders() {
 
                                                     {/* Cột phải - Khách hàng trả và Phương thức thanh toán */}
                                                     <div className="space-y-2 text-sm">
-                                                      {storeSettings?.businessType ===
-                                                        "laundry" && (
-                                                        <div className="flex justify-between items-center">
-                                                          <span className="font-semibold text-gray-700">
-                                                            Khách hàng trả:
-                                                          </span>
-                                                          <span className="font-bold text-green-600">
-                                                            {formatCurrency(
-                                                              Math.floor(
-                                                                displayTotals.total,
-                                                              ),
-                                                            )}
-                                                          </span>
-                                                        </div>
-                                                      )}
+                                                      <div className="flex justify-between items-center">
+                                                        <span className="font-semibold text-gray-700">
+                                                          Khách hàng trả:
+                                                        </span>
+                                                        <span className="font-bold text-green-600">
+                                                          {formatCurrency(
+                                                            Math.floor(
+                                                              displayTotals.total,
+                                                            ),
+                                                          )}
+                                                        </span>
+                                                      </div>
                                                       <div className="flex justify-between items-center">
                                                         <span className="font-semibold text-gray-700">
                                                           {t(
