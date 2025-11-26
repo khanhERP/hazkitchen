@@ -2120,23 +2120,6 @@ export function EInvoiceModal({
                 </>
               )}
             </Button>
-            {/* <Button
-              type="button"
-              variant="outline"
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                setLastActionTime(0); // Reset debounce timer
-                handleCancel();
-              }}
-              className="flex-1"
-              disabled={
-                isProcessingPublish || isProcessingPublishLater || isPublishing
-              } // Disable if ANY processing is happening
-            >
-              <span className="mr-2">❌</span>
-              {t("einvoice.cancel")}
-            </Button> */}
           </div>
         </div>
       </DialogContent>

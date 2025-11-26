@@ -197,6 +197,7 @@ export default function KitchenDisplay() {
 
       refetchPendingItems();
       refetchProgressItems();
+      refetchCompletedItems(); // Also refetch completed items
     } catch (error) {
       console.error("Error updating order item status:", error);
     }
@@ -233,8 +234,8 @@ export default function KitchenDisplay() {
   const preparingOrders = orders?.filter((o) => o.status === "preparing") || [];
   const readyOrders = orders?.filter((o) => o.status === "ready") || [];
 
-  // Group pending items by table
-  const groupedByTable = (pendingItems || []).reduce(
+  // Group pending items by table and sort by earliest order time
+  const groupedByTablePending = (pendingItems || []).reduce(
     (acc, item) => {
       const tableKey = item.tableNumber || "N/A";
       if (!acc[tableKey]) {
@@ -246,8 +247,28 @@ export default function KitchenDisplay() {
     {} as Record<string, PendingOrderItem[]>,
   );
 
+  // Sort tables by earliest order time (oldest first)
+  const sortedTablesPending = Object.entries(groupedByTablePending).sort((a, b) => {
+    const earliestA = a[1].reduce((earliest, item) => {
+      if (!item.orderedAt) return earliest;
+      if (!earliest) return item;
+      return new Date(item.orderedAt) < new Date(earliest.orderedAt) ? item : earliest;
+    }, null as PendingOrderItem | null);
+    
+    const earliestB = b[1].reduce((earliest, item) => {
+      if (!item.orderedAt) return earliest;
+      if (!earliest) return item;
+      return new Date(item.orderedAt) < new Date(earliest.orderedAt) ? item : earliest;
+    }, null as PendingOrderItem | null);
+
+    const timeA = earliestA?.orderedAt ? new Date(earliestA.orderedAt).getTime() : Date.now();
+    const timeB = earliestB?.orderedAt ? new Date(earliestB.orderedAt).getTime() : Date.now();
+    
+    return timeA - timeB;
+  });
+
   // Group pending items by dish
-  const groupedByDish = (pendingItems || []).reduce(
+  const groupedByDishPending = (pendingItems || []).reduce(
     (acc, item) => {
       const dishKey = item.productName || "Unknown";
       if (!acc[dishKey]) {
@@ -373,8 +394,8 @@ export default function KitchenDisplay() {
                     <div className="space-y-4">
                       {viewMode === "table" ? (
                         // Display by table
-                        Object.keys(groupedByTable).length > 0 ? (
-                          Object.entries(groupedByTable).map(
+                        sortedTablesPending.length > 0 ? (
+                          sortedTablesPending.map(
                             ([tableNumber, items]) => (
                               <Card
                                 key={tableNumber}
@@ -464,8 +485,8 @@ export default function KitchenDisplay() {
                           </div>
                         )
                       ) : // Display by dish
-                      Object.keys(groupedByDish).length > 0 ? (
-                        Object.entries(groupedByDish).map(
+                      Object.keys(groupedByDishPending).length > 0 ? (
+                        Object.entries(groupedByDishPending).map(
                           ([dishName, items]) => {
                             const totalQuantity = items.reduce(
                               (sum, item) => sum + parseFloat(item.quantity || 0),
@@ -623,8 +644,29 @@ export default function KitchenDisplay() {
                               {} as Record<string, PendingOrderItem[]>,
                             );
 
-                            return Object.keys(groupedByTable).length > 0 ? (
-                              Object.entries(groupedByTable).map(
+                            // Sort tables by EARLIEST order time (oldest first - largest minutes ago)
+                            const sortedProgressTableEntries = Object.entries(groupedByTable).sort((a, b) => {
+                              // Find the earliest (oldest) order in each table
+                              const earliestA = a[1].reduce((earliest, item) => {
+                                if (!item.orderedAt) return earliest;
+                                if (!earliest) return item;
+                                return new Date(item.orderedAt) < new Date(earliest.orderedAt) ? item : earliest;
+                              }, null as PendingOrderItem | null);
+                              
+                              const earliestB = b[1].reduce((earliest, item) => {
+                                if (!item.orderedAt) return earliest;
+                                if (!earliest) return item;
+                                return new Date(item.orderedAt) < new Date(earliest.orderedAt) ? item : earliest;
+                              }, null as PendingOrderItem | null);
+
+                              const timeA = earliestA?.orderedAt ? new Date(earliestA.orderedAt).getTime() : Date.now();
+                              const timeB = earliestB?.orderedAt ? new Date(earliestB.orderedAt).getTime() : Date.now();
+                              
+                              return timeA - timeB; // Smallest timestamp = earliest time = largest minutes ago = show first
+                            });
+
+                            return sortedProgressTableEntries.length > 0 ? (
+                              sortedProgressTableEntries.map(
                                 ([tableNumber, items]) => (
                                   <Card
                                     key={tableNumber}
@@ -919,8 +961,29 @@ export default function KitchenDisplay() {
                               {} as Record<string, PendingOrderItem[]>,
                             );
 
-                            return Object.keys(groupedByTable).length > 0 ? (
-                              Object.entries(groupedByTable).map(
+                            // Sort tables by EARLIEST order time (oldest first - largest minutes ago)
+                            const sortedCompletedTableEntries = Object.entries(groupedByTable).sort((a, b) => {
+                              // Find the earliest (oldest) order in each table
+                              const earliestA = a[1].reduce((earliest, item) => {
+                                if (!item.orderedAt) return earliest;
+                                if (!earliest) return item;
+                                return new Date(item.orderedAt) < new Date(earliest.orderedAt) ? item : earliest;
+                              }, null as PendingOrderItem | null);
+                              
+                              const earliestB = b[1].reduce((earliest, item) => {
+                                if (!item.orderedAt) return earliest;
+                                if (!earliest) return item;
+                                return new Date(item.orderedAt) < new Date(earliest.orderedAt) ? item : earliest;
+                              }, null as PendingOrderItem | null);
+
+                              const timeA = earliestA?.orderedAt ? new Date(earliestA.orderedAt).getTime() : Date.now();
+                              const timeB = earliestB?.orderedAt ? new Date(earliestB.orderedAt).getTime() : Date.now();
+                              
+                              return timeA - timeB; // Smallest timestamp = earliest time = largest minutes ago = show first
+                            });
+
+                            return sortedCompletedTableEntries.length > 0 ? (
+                              sortedCompletedTableEntries.map(
                                 ([tableNumber, items]) => (
                                   <Card
                                     key={tableNumber}

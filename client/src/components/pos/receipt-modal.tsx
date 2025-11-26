@@ -169,6 +169,12 @@ export function ReceiptModal({
           "✅ Receipt Modal: Valid receipt data found - modal will display",
         );
       }
+    } else {
+      // Clear window global data when modal closes to prevent reopening
+      if (typeof window !== "undefined") {
+        (window as any).previewReceipt = null;
+        (window as any).orderForPayment = null;
+      }
     }
   }, [isOpen, receipt, isPreview, cartItems, total, onConfirm, isTitle]);
 
@@ -1143,9 +1149,6 @@ export function ReceiptModal({
       (window as any).orderForPayment = orderDataForPayment;
     }
 
-    // Close preview modal first
-    onClose();
-
     // Call onConfirm with order data if provided
     if (onConfirm) {
       console.log(
@@ -1153,6 +1156,9 @@ export function ReceiptModal({
       );
       onConfirm(orderDataForPayment);
     }
+
+    // Close preview modal first
+    onClose();
   };
 
   // Placeholder for handlePaymentMethodSelect, assuming it's defined elsewhere or in a parent component

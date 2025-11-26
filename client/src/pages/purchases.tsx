@@ -82,11 +82,23 @@ export default function PurchasesPage({ onLogout }: PurchasesPageProps) {
   // State for delete confirmation dialog
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
-  // Fetch purchase receipts with filters
+  // Fetch purchase receipts with filters and backend pagination
   const {
-    data: purchaseReceiptsResponse = { data: [] },
+    data: purchaseReceiptsResponse = { data: [], pagination: { totalPages: 1, totalCount: 0 } },
     isLoading: isOrdersLoading,
-  } = useQuery<{ data: PurchaseOrder[]; success: boolean; message: string }>({
+  } = useQuery<{ 
+    data: PurchaseOrder[]; 
+    success: boolean; 
+    message: string;
+    pagination: {
+      currentPage: number;
+      totalPages: number;
+      totalCount: number;
+      pageSize: number;
+      hasNext: boolean;
+      hasPrevious: boolean;
+    };
+  }>({
     queryKey: [
       "https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/purchase-receipts",
       {
@@ -96,10 +108,16 @@ export default function PurchasesPage({ onLogout }: PurchasesPageProps) {
         searchTerm,
         supplierFilter,
         poNumberFilter,
+        page: currentPage,
+        limit: pageSize,
       },
     ],
     queryFn: async () => {
       const params = new URLSearchParams();
+
+      // Add pagination parameters
+      params.append("page", currentPage.toString());
+      params.append("limit", pageSize.toString());
 
       if (startDate) {
         params.append("startDate", startDate);
@@ -120,7 +138,7 @@ export default function PurchasesPage({ onLogout }: PurchasesPageProps) {
         console.log("🔍 Adding PO number search:", poNumberFilter.trim());
       }
 
-      const url = `https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/purchase-receipts${params.toString() ? `?${params.toString()}` : ""}`;
+      const url = `https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/purchase-receipts?${params.toString()}`;
       console.log("🔍 Fetching purchase receipts with filters:", url);
 
       const response = await fetch(url);
@@ -131,19 +149,7 @@ export default function PurchasesPage({ onLogout }: PurchasesPageProps) {
       const responseData = await response.json();
       console.log("📦 Purchase receipts response:", responseData);
 
-      // The API returns { success: true, message: "OK", data: [] }
-      if (
-        responseData.success &&
-        responseData.data &&
-        Array.isArray(responseData.data)
-      ) {
-        return responseData;
-      } else if (Array.isArray(responseData)) {
-        return { data: responseData, success: true, message: "OK" };
-      } else {
-        console.warn("Unexpected response structure:", responseData);
-        return { data: [], success: false, message: "Invalid response" };
-      }
+      return responseData;
     },
     staleTime: 0, // Always consider data stale to ensure fresh data
     refetchOnWindowFocus: true, // Refetch when window gains focus
@@ -168,14 +174,19 @@ export default function PurchasesPage({ onLogout }: PurchasesPageProps) {
     },
   });
 
-  // Calculate dashboard statistics
+  // Use backend pagination data
+  const totalPages = purchaseReceiptsResponse?.pagination?.totalPages || 1;
+  const totalCount = purchaseReceiptsResponse?.pagination?.totalCount || 0;
+  const filteredOrders = purchaseOrders; // Already paginated by backend
+
+  // Calculate dashboard statistics from current page data
   const stats = useMemo(() => {
     const currentMonth = new Date().getMonth();
     const currentYear = new Date().getFullYear();
 
-    // Filter orders from current month
+    // Filter orders from current month (from current page)
     const thisMonthOrders = purchaseOrders.filter((order) => {
-      const orderDate = new Date(order.orderDate);
+      const orderDate = new Date(order.orderDate || order.purchaseDate || order.createdAt);
       return (
         orderDate.getMonth() === currentMonth &&
         orderDate.getFullYear() === currentYear
@@ -194,18 +205,12 @@ export default function PurchasesPage({ onLogout }: PurchasesPageProps) {
     );
 
     return {
-      totalOrders: thisMonthOrders.length, // Now correctly shows this month's orders
+      totalOrders: totalCount, // Use total count from backend
       pendingOrders: pending,
       completedOrders: completed,
       totalValue: totalValue,
     };
-  }, [purchaseOrders]);
-
-  // Apply pagination to filtered orders
-  const totalPages = Math.ceil(purchaseOrders.length / pageSize);
-  const startIndex = (currentPage - 1) * pageSize;
-  const endIndex = startIndex + pageSize;
-  const filteredOrders = purchaseOrders.slice(startIndex, endIndex);
+  }, [purchaseOrders, totalCount]);
 
   // Reset to page 1 when filters change
   useEffect(() => {

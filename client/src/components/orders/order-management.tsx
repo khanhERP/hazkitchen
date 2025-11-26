@@ -104,9 +104,6 @@ export function OrderManagement() {
   const [previewReceipt, setPreviewReceipt] = useState<any>(null);
   const [shouldOpenReceiptPreview, setShouldOpenReceiptPreview] =
     useState(false);
-  // Pagination states
-  const [currentPage, setCurrentPage] = useState(1);
-  const [ordersPerPage] = useState(12);
   const { toast } = useToast();
   const [calculatedTotals, setCalculatedTotals] = useState<Map<number, number>>(
     new Map(),
@@ -213,13 +210,14 @@ export function OrderManagement() {
     }
   }, [showReceiptModal, selectedReceipt, orderForPayment]);
 
-  // Query orders by date range - filter only table orders
+  // Query orders - load ALL orders at once with aggressive caching
   const { data: orders, isLoading: ordersLoading } = useQuery({
     queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders", "table"],
-    refetchInterval: 2000, // Faster polling - every 2 seconds
-    refetchOnWindowFocus: true, // Refetch when window regains focus
-    refetchIntervalInBackground: true, // Continue refetching in background
-    staleTime: 0, // Always consider data fresh to force immediate updates
+    refetchInterval: 5000, // Poll every 5 seconds (reduced frequency)
+    refetchOnWindowFocus: true,
+    refetchIntervalInBackground: true,
+    staleTime: 3000, // Cache for 3 seconds
+    gcTime: 60000, // Keep in memory for 1 minute
     queryFn: async () => {
       const response = await apiRequest(
         "GET",
@@ -229,22 +227,13 @@ export function OrderManagement() {
         throw new Error("Failed to fetch table orders");
       }
       const data = await response.json();
-      console.log(`🔍 DEBUG: Table orders query completed:`, {
+      console.log(`🔍 DEBUG: Table orders query completed (ALL LOADED):`, {
         ordersCount: data?.length || 0,
         timestamp: new Date().toISOString(),
         tableOrders:
           data?.filter((o: any) => o.salesChannel === "table").length || 0,
-        firstFewOrders: data?.slice(0, 3)?.map((o: any) => ({
-          id: o.id,
-          orderNumber: o.orderNumber,
-          status: o.status,
-          salesChannel: o.salesChannel,
-          tableId: o.tableId,
-          storedTotal: o.total,
-          calculatedTotal: o.total,
-        })),
       });
-      // Filter to ensure only table orders are returned
+      // Filter and return ALL table orders at once
       return Array.isArray(data)
         ? data.filter((order: any) => order.salesChannel === "table")
         : [];
@@ -258,11 +247,9 @@ export function OrderManagement() {
     queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/tables"],
   });
 
-  const { data: productsPaging } = useQuery({
-    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products"],
+  const { data: products } = useQuery({
+    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products/active"],
   });
-
-  const products = productsPaging?.products || [];
 
   const { data: customers } = useQuery({
     queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/customers"],
@@ -1242,15 +1229,16 @@ export function OrderManagement() {
         customerCount: order.customerCount || 1,
         status: order.status,
         salesChannel: order.salesChannel || "table",
-        // Use exact values from database
+        // Use exact values from database - keep as strings for consistency
         subtotal: order.subtotal,
         tax: order.tax,
         discount: order.discount,
         total: order.total,
-        exactSubtotal: Math.floor(Number(order.subtotal || 0)),
-        exactTax: Math.floor(Number(order.tax || 0)),
-        exactDiscount: Math.floor(Number(order.discount || 0)),
-        exactTotal: Math.floor(Number(order.total || 0)),
+        // Convert to numbers for exact calculations - use parseFloat to maintain precision
+        exactSubtotal: parseFloat(order.subtotal || "0"),
+        exactTax: parseFloat(order.tax || "0"),
+        exactDiscount: parseFloat(order.discount || "0"),
+        exactTotal: parseFloat(order.total || "0"),
         // Order items for payment processing
         items: cartItems,
         orderItems: orderItemsData.map((item: any) => ({
@@ -1326,11 +1314,11 @@ export function OrderManagement() {
         (window as any).orderForPayment = orderForPayment;
       }
 
-      // Open payment modal with correct props
+      // MATCH SHOPPING-CART FLOW: Show receipt preview first, then payment method
       setSelectedOrder(order);
       setOrderForPayment(orderForPayment);
       setPreviewReceipt(receiptData);
-      setShowPaymentMethodModal(true);
+      setShowReceiptPreview(true); // Show receipt preview first like shopping-cart
     } catch (error) {
       console.error("❌ Error preparing payment data:", error);
       toast({
@@ -1696,7 +1684,7 @@ export function OrderManagement() {
       );
     }) || [];
 
-  // Safe order processing with error handling and pagination - MOVE ALL HOOKS BEFORE CONDITIONAL RETURNS
+  // Process ALL orders at once - no pagination
   const allOrders = React.useMemo(() => {
     try {
       if (!orders || !Array.isArray(orders)) {
@@ -1704,11 +1692,10 @@ export function OrderManagement() {
         return [];
       }
 
-      return (orders as Order[])
-        .filter((order) => order && order.id && order.orderedAt) // Filter out invalid orders
+      const processedOrders = (orders as Order[])
+        .filter((order) => order && order.id && order.orderedAt)
         .sort((a: Order, b: Order) => {
           try {
-            // Sort by orderedAt descending (newest first)
             return (
               new Date(b.orderedAt).getTime() - new Date(a.orderedAt).getTime()
             );
@@ -1717,162 +1704,49 @@ export function OrderManagement() {
             return 0;
           }
         });
+
+      console.log(
+        `✅ Processed ${processedOrders.length} orders (ALL LOADED, NO PAGINATION)`,
+      );
+      return processedOrders;
     } catch (error) {
       console.error("Error processing orders:", error);
       return [];
     }
   }, [orders]);
 
-  // Pagination calculations
   const totalOrders = allOrders.length;
-  const totalPages = Math.ceil(totalOrders / ordersPerPage);
-  const startIndex = (currentPage - 1) * ordersPerPage;
-  const endIndex = startIndex + ordersPerPage;
-  const currentOrders = allOrders.slice(startIndex, endIndex);
 
-  // Reset to page 1 if current page exceeds total pages
-  React.useEffect(() => {
-    if (currentPage > totalPages && totalPages > 0) {
-      setCurrentPage(1);
-    }
-  }, [currentPage, totalPages]);
-
-  // Preload totals for next/previous pages for better UX (optional background loading)
+  // Calculate totals for ALL orders at once - no lazy loading
   useEffect(() => {
     if (allOrders && allOrders.length > 0 && products && products.length > 0) {
-      // Calculate range for preloading (current page + 1 page before and after)
-      const preloadStartIndex = Math.max(0, (currentPage - 2) * ordersPerPage);
-      const preloadEndIndex = Math.min(
-        allOrders.length,
-        (currentPage + 1) * ordersPerPage,
-      );
-      const preloadOrders = allOrders.slice(preloadStartIndex, preloadEndIndex);
-
       console.log(
-        `🔄 Preloading totals for ${preloadOrders.length} orders around current page ${currentPage}`,
+        `🧮 Calculating totals for ALL ${allOrders.length} orders (NO PAGINATION)`,
       );
 
-      // Batch preload in background with low priority
-      const preloadBatch = preloadOrders.filter(
-        (order) =>
-          !calculatedTotals.has(order.id) &&
-          order.status !== "cancelled" &&
-          !currentOrders.some((currentOrder) => currentOrder.id === order.id), // Don't duplicate current page
-      );
-
-      if (preloadBatch.length > 0) {
-        // Use setTimeout to make this low priority
-        setTimeout(() => {
-          preloadBatch.forEach((order) => {
-            // Note: We are no longer calling calculateOrderTotal here,
-            // as the API now provides the calculated total.
-            // This section can be removed or adapted if pre-calculating from API response is needed.
-          });
-        }, 500); // 500ms delay to not interfere with current page loading
-      }
-    }
-  }, [
-    allOrders,
-    products,
-    currentPage,
-    ordersPerPage,
-    currentOrders,
-    calculatedTotals,
-  ]);
-
-  // Cleanup calculated totals for orders no longer in the dataset
-  useEffect(() => {
-    if (allOrders && allOrders.length > 0 && calculatedTotals.size > 0) {
-      const currentOrderIds = new Set(allOrders.map((order) => order.id));
-      const calculatedOrderIds = Array.from(calculatedTotals.keys());
-
-      // Remove calculated totals for orders that no longer exist
-      const toRemove = calculatedOrderIds.filter(
-        (id) => !currentOrderIds.has(id),
-      );
-
-      if (toRemove.length > 0) {
-        console.log(
-          `🧹 Cleaning up calculated totals for ${toRemove.length} removed orders`,
-        );
-        setCalculatedTotals((prev) => {
-          const newMap = new Map(prev);
-          toRemove.forEach((id) => newMap.delete(id));
-          return newMap;
-        });
-      }
-
-      // Also limit memory usage - keep only last 100 calculated totals
-      if (calculatedTotals.size > 100) {
-        console.log(
-          `🧹 Memory cleanup: Removing old calculated totals (current: ${calculatedTotals.size})`,
-        );
-        const entries = Array.from(calculatedTotals.entries());
-        const toKeep = entries.slice(-50); // Keep last 50 entries
-        setCalculatedTotals(new Map(toKeep));
-      }
-    }
-  }, [allOrders, calculatedTotals]);
-
-  // Trigger total calculations when current page orders data changes
-  useEffect(() => {
-    if (
-      currentOrders &&
-      currentOrders.length > 0 &&
-      products &&
-      products.length > 0
-    ) {
-      console.log(
-        `🧮 Current page orders changed, triggering total calculations for ${currentOrders.length} displayed orders (page ${currentPage})`,
-      );
-
-      // Calculate totals for orders that don't have API calculated totals
-      currentOrders.forEach(async (order) => {
-        const apiCalculatedTotal = (order as any).calculatedTotal;
-
-        // Skip if we already have a valid API calculated total or cached total
+      // Calculate totals for orders that need it
+      allOrders.forEach(async (order) => {
+        // Skip if already calculated or if order is cancelled/paid
         if (
-          (apiCalculatedTotal && Number(apiCalculatedTotal) > 0) ||
-          calculatedTotals.has(order.id)
+          calculatedTotals.has(order.id) ||
+          order.status === "cancelled" ||
+          order.status === "paid"
         ) {
           return;
         }
 
-        // IMPORTANT: Skip calculation for cancelled and paid orders completely
-        // These orders must use stored totals only to maintain consistency
-        if (order.status === "cancelled" || order.status === "paid") {
-          console.log(
-            `⏭️ SKIPPING calculation for ${order.status} order ${order.orderNumber} - stored total is final`,
-          );
-          return;
-        }
-
-        console.log(
-          `🧮 Calculating total for order ${order.orderNumber} (ID: ${order.id})`,
-        );
-
         try {
-          // Fetch order items for calculation
           const response = await apiRequest(
             "GET",
             `https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/order-items/${order.id}`,
           );
-          if (!response.ok) {
-            console.warn(
-              `❌ Failed to fetch order items for order ${order.id}`,
-            );
-            return;
-          }
+          if (!response.ok) return;
 
           const orderItemsData = await response.json();
           if (!Array.isArray(orderItemsData) || orderItemsData.length === 0) {
-            console.log(
-              `⚪ No items found for order ${order.id}, using stored total`,
-            );
             return;
           }
 
-          // Calculate total using same logic as Order Details
           let subtotal = 0;
           let taxAmount = 0;
 
@@ -1881,10 +1755,8 @@ export function OrderManagement() {
             const quantity = Number(item.quantity || 0);
             const product = products.find((p: any) => p.id === item.productId);
 
-            // Calculate subtotal
             subtotal += unitPrice * quantity;
 
-            // Calculate tax using same logic as order details
             if (
               product?.afterTaxPrice &&
               product.afterTaxPrice !== null &&
@@ -1897,15 +1769,6 @@ export function OrderManagement() {
           });
 
           const calculatedTotal = Math.floor(subtotal + taxAmount);
-
-          console.log(`💰 Calculated total for order ${order.orderNumber}:`, {
-            subtotal,
-            taxAmount,
-            calculatedTotal,
-            itemsCount: orderItemsData.length,
-          });
-
-          // Cache the calculated total
           setCalculatedTotals(
             (prev) => new Map(prev.set(order.id, calculatedTotal)),
           );
@@ -1917,7 +1780,7 @@ export function OrderManagement() {
         }
       });
     }
-  }, [currentOrders, products, currentPage, calculatedTotals]);
+  }, [allOrders, products, calculatedTotals]);
 
   // CONDITIONAL RENDER AFTER ALL HOOKS - Show loading state only if really needed
   if (ordersLoading && (!orders || orders.length === 0)) {
@@ -1954,16 +1817,9 @@ export function OrderManagement() {
           </h2>
           <p className="text-gray-600">{t("orders.realTimeOrderStatus")}</p>
         </div>
-        <div className="flex items-center gap-4">
-          <Badge variant="secondary" className="text-lg px-4 py-2">
-            {totalOrders} {t("orders.ordersInProgress")}
-          </Badge>
-          {totalPages > 1 && (
-            <Badge variant="outline" className="text-sm px-3 py-1">
-              {t("common.page")} {currentPage}/{totalPages}
-            </Badge>
-          )}
-        </div>
+        <Badge variant="secondary" className="text-lg px-4 py-2">
+          {totalOrders} {t("orders.ordersInProgress")}
+        </Badge>
       </div>
 
       {/* Orders Grid */}
@@ -1982,7 +1838,7 @@ export function OrderManagement() {
       ) : (
         <>
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {currentOrders.map((order: Order) => {
+            {allOrders.map((order: Order) => {
               const statusConfig = getOrderStatusBadge(order.status);
               const tableInfo = getTableInfo(order.tableId);
 
@@ -2172,89 +2028,6 @@ export function OrderManagement() {
               );
             })}
           </div>
-
-          {/* Pagination Controls */}
-          {totalPages > 1 && (
-            <div className="flex items-center justify-between mt-6">
-              <div className="text-sm text-gray-600">
-                {t("common.showing")} {startIndex + 1}-
-                {Math.min(endIndex, totalOrders)} {t("common.of")} {totalOrders}{" "}
-                {t("orders.title")}
-              </div>
-
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() =>
-                    setCurrentPage((prev) => Math.max(1, prev - 1))
-                  }
-                  disabled={currentPage === 1}
-                  className="flex items-center gap-1"
-                >
-                  <ChevronLeft className="w-4 h-4" />
-                  {t("common.previous")}
-                </Button>
-
-                <div className="flex items-center gap-1">
-                  {/* Show page numbers */}
-                  {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                    let pageNumber;
-                    if (totalPages <= 5) {
-                      pageNumber = i + 1;
-                    } else if (currentPage <= 3) {
-                      pageNumber = i + 1;
-                    } else if (currentPage >= totalPages - 2) {
-                      pageNumber = totalPages - 4 + i;
-                    } else {
-                      pageNumber = currentPage - 2 + i;
-                    }
-
-                    return (
-                      <Button
-                        key={pageNumber}
-                        variant={
-                          currentPage === pageNumber ? "default" : "outline"
-                        }
-                        size="sm"
-                        onClick={() => setCurrentPage(pageNumber)}
-                        className="w-8 h-8 p-0"
-                      >
-                        {pageNumber}
-                      </Button>
-                    );
-                  })}
-
-                  {totalPages > 5 && currentPage < totalPages - 2 && (
-                    <>
-                      <span className="px-2 text-gray-500">...</span>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setCurrentPage(totalPages)}
-                        className="w-8 h-8 p-0"
-                      >
-                        {totalPages}
-                      </Button>
-                    </>
-                  )}
-                </div>
-
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() =>
-                    setCurrentPage((prev) => Math.min(totalPages, prev + 1))
-                  }
-                  disabled={currentPage === totalPages}
-                  className="flex items-center gap-1"
-                >
-                  {t("common.next")}
-                  <ChevronRight className="w-4 h-4" />
-                </Button>
-              </div>
-            </div>
-          )}
         </>
       )}
 
@@ -2640,6 +2413,15 @@ export function OrderManagement() {
                         const paymentOrderData = {
                           ...selectedOrder,
                           id: selectedOrder.id,
+                          // Add exact values using parseFloat for precision
+                          exactSubtotal: parseFloat(
+                            selectedOrder.subtotal || "0",
+                          ),
+                          exactTax: parseFloat(selectedOrder.tax || "0"),
+                          exactDiscount: parseFloat(
+                            selectedOrder.discount || "0",
+                          ),
+                          exactTotal: parseFloat(selectedOrder.total || "0"),
                           orderItems: processedItems.map((item) => {
                             console.log(
                               "💰 Order Management: Processing item for payment:",
@@ -2679,14 +2461,10 @@ export function OrderManagement() {
                             };
                           }),
                           // Use EXACT database values
-                          subtotal: exactSubtotal.toString(),
-                          tax: exactTax.toString(),
-                          discount: exactDiscount.toString(),
-                          total: exactTotal.toString(),
-                          exactSubtotal: exactSubtotal,
-                          exactTax: exactTax,
-                          exactDiscount: exactDiscount,
-                          exactTotal: exactTotal,
+                          subtotal: selectedOrder.subtotal,
+                          tax: selectedOrder.tax,
+                          discount: selectedOrder.discount,
+                          total: selectedOrder.total,
                           tableNumber: selectedOrder.tableId
                             ? `T${selectedOrder.tableId}`
                             : "N/A",
@@ -3282,43 +3060,45 @@ export function OrderManagement() {
       )}
 
       {/* Payment Method Modal */}
-      <PaymentMethodModal
-        isOpen={showPaymentMethodModal}
-        onClose={() => {
-          console.log("🔴 Payment Method Modal closed");
-          setShowPaymentMethodModal(false);
-          setPreviewReceipt(null);
-        }}
-        onSelectMethod={(method, data) => {
-          console.log(
-            "🎯 Order Management payment method selected:",
-            method,
-            data,
-          );
-          console.log("🔍 Current orderForPayment state:", {
-            orderForPayment: !!orderForPayment,
-            orderForPaymentId: orderForPayment?.id,
-            calculatedTotal: orderForPayment?.calculatedTotal,
-            itemsCount: orderForPayment?.processedItems?.length || 0,
-          });
-          setShowEInvoiceModal(true);
-        }}
-        total={orderForPayment?.total ? Math.round(orderForPayment.total) : 0}
-        cartItems={
-          orderForPayment?.processedItems?.map((item: any) => ({
-            id: item.productId,
-            name: item.productName,
-            price: item.price,
-            quantity: item.quantity,
-            sku: item.sku,
-            taxRate: item.taxRate,
-            afterTaxPrice: item.afterTaxPrice,
-          })) || []
-        }
-        orderForPayment={orderForPayment}
-        products={products}
-        receipt={previewReceipt}
-      />
+      {showPaymentMethodModal && orderForPayment && (
+        <PaymentMethodModal
+          isOpen={showPaymentMethodModal}
+          onClose={() => {
+            console.log("🔴 Payment Method Modal closed");
+            setShowPaymentMethodModal(false);
+            setPreviewReceipt(null);
+          }}
+          onSelectMethod={(method, data) => {
+            console.log(
+              "🎯 Order Management payment method selected:",
+              method,
+              data,
+            );
+            console.log("🔍 Current orderForPayment state:", {
+              orderForPayment: !!orderForPayment,
+              orderForPaymentId: orderForPayment?.id,
+              calculatedTotal: orderForPayment?.calculatedTotal,
+              itemsCount: orderForPayment?.processedItems?.length || 0,
+            });
+            setShowEInvoiceModal(true);
+          }}
+          total={orderForPayment?.total ? Math.round(orderForPayment.total) : 0}
+          cartItems={
+            orderForPayment?.processedItems?.map((item: any) => ({
+              id: item.productId,
+              name: item.productName,
+              price: item.price,
+              quantity: item.quantity,
+              sku: item.sku,
+              taxRate: item.taxRate,
+              afterTaxPrice: item.afterTaxPrice,
+            })) || []
+          }
+          orderForPayment={orderForPayment}
+          products={products}
+          receipt={previewReceipt}
+        />
+      )}
 
       {/* E-Invoice Modal */}
       {showEInvoiceModal && orderForPayment && (

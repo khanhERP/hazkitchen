@@ -87,10 +87,12 @@ export default function IncomeVoucherModal({
     console.log("📋 All payment methods from API:", paymentMethods);
 
     // Filter to only return enabled payment methods
-    const enabledMethods = paymentMethods.filter((method: any) => method.enabled === true);
-    
+    const enabledMethods = paymentMethods.filter(
+      (method: any) => method.enabled === true,
+    );
+
     console.log("✅ Enabled payment methods:", enabledMethods);
-    
+
     return enabledMethods;
   };
 
@@ -117,11 +119,18 @@ export default function IncomeVoucherModal({
       const today = new Date();
       const dateStr = today.toISOString().split("T")[0].replace(/-/g, "");
       const timeStr = Date.now().toString().slice(-3);
-      setFormData((prev) => ({
-        ...prev,
-        voucherNumber: `PT${dateStr}${timeStr}`,
+      setFormData({
+        voucherNumber: "",
+        date: new Date().toISOString().split("T")[0],
+        amount: 0,
         account: "cash", // Use nameKey instead of hardcoded Vietnamese
-      }));
+        recipient: "",
+        receiverName: "",
+        phone: "",
+        category: "other",
+        description: "",
+      });
+
       setIsEditing(true);
     }
   }, [voucher, mode]);

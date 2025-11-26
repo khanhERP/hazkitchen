@@ -1708,15 +1708,15 @@ export function PaymentMethodModal({
 
     // Use exact total from previous screen with correct logic
     const exactSubtotal =
-      receipt?.exactSubtotal ??
-      orderInfo?.exactSubtotal ??
-      orderForPayment?.subtotal ??
+      parseFloat(receipt?.exactSubtotal || "0") ??
+      parseFloat(orderInfo?.exactSubtotal || "0") ??
+      parseFloat(orderForPayment?.subtotal || "0") ??
       parseFloat(receipt?.subtotal || "0");
 
     const exactTax =
-      receipt?.exactTax ??
-      orderForPayment?.tax ??
-      orderInfo?.exactTax ??
+      parseFloat(receipt?.exactTax || "0") ??
+      parseFloat(orderForPayment?.tax || "0") ??
+      parseFloat(orderInfo?.exactTax || "0") ??
       parseFloat(receipt?.tax || "0");
 
     const discount = Math.floor(

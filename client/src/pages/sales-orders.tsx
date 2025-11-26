@@ -2288,14 +2288,13 @@ export default function SalesOrders() {
     if (!selectedInvoice) return { subtotal: 0, tax: 0, discount: 0, total: 0 };
 
     // Always recalculate if we have order items (either editing or viewing)
+    const priceIncludeTax =
+      (isEditing
+        ? editableInvoice?.priceIncludeTax
+        : selectedInvoice.priceIncludeTax) ??
+      storeSettings?.priceIncludesTax ??
+      false;
     if (orderItems && orderItems.length > 0) {
-      const priceIncludeTax =
-        (isEditing
-          ? editableInvoice?.priceIncludeTax
-          : selectedInvoice.priceIncludeTax) ??
-        storeSettings?.priceIncludesTax ??
-        false;
-
       const orderDiscount = parseFloat(
         (isEditing ? editableInvoice?.discount : selectedInvoice.discount) ||
           "0",

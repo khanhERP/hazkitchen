@@ -335,14 +335,17 @@ export function ProductGrid({
   };
 
   // Chỉ hiển thị loading khi đang loading page 1 và chưa có dữ liệu
-  const isInitialLoading = isLoading && currentPage === 1 && products.length === 0;
-  
+  const isInitialLoading =
+    isLoading && currentPage === 1 && products.length === 0;
+
   if (isInitialLoading) {
     return (
       <main className="flex-1 flex flex-col items-center justify-center">
         <div className="flex flex-col items-center gap-3">
           <div className="animate-spin rounded-full h-10 w-10 border-b-3 border-green-600"></div>
-          <span className="text-sm text-gray-600 font-medium">Đang tải sản phẩm...</span>
+          <span className="text-sm text-gray-600 font-medium">
+            Đang tải sản phẩm...
+          </span>
         </div>
       </main>
     );
@@ -375,15 +378,18 @@ export function ProductGrid({
 
   return (
     <main className="flex-1 flex flex-col">
-      <div className="bg-white p-4 border-b pos-border flex items-center justify-between pt-[22px] pb-[22px] mt-2">
-        <div>
-          <h2 className="font-medium pos-text-primary text-[14px]">
-            {getCategoryName()}
+      <div className="bg-white p-4 border-b pos-border mt-2">
+        {/* Dòng 1: Tên danh mục và số lượng sản phẩm */}
+        <div className="mb-3 flex items-center">
+          <h2 className="font-medium pos-text-primary text-[14px] pr-2">
+            {getCategoryName()}:
           </h2>
           <p className="text-sm pos-text-secondary">
             {pagination.totalCount} {t("pos.productsAvailable")}
           </p>
         </div>
+
+        {/* Dòng 2: View mode và sắp xếp */}
         <div className="flex items-center space-x-3">
           <Button
             variant={viewMode === "grid" ? "default" : "outline"}

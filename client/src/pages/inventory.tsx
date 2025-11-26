@@ -90,9 +90,21 @@ export default function InventoryPage({ onLogout }: InventoryPageProps) {
   const queryClient = useQueryClient();
 
   const { data: productsResponse, isLoading: productsLoading } = useQuery({
-    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products", { page: 1, limit: 1000 }],
+    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products", { page: currentPage, limit: pageSize, searchTerm, selectedCategory, stockFilter }],
     queryFn: async () => {
-      const response = await fetch("https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products?page=1&limit=1000");
+      // Construct URL with query parameters
+      const url = new URL("https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products", window.location.origin);
+      url.searchParams.append("page", currentPage.toString());
+      url.searchParams.append("limit", pageSize.toString());
+      if (searchTerm) url.searchParams.append("search", searchTerm);
+      if (selectedCategory !== "all") url.searchParams.append("categoryId", selectedCategory);
+      if (stockFilter !== "all") {
+        if (stockFilter === "low") url.searchParams.append("stockStatus", "low");
+        if (stockFilter === "out") url.searchParams.append("stockStatus", "out");
+        if (stockFilter === "in") url.searchParams.append("stockStatus", "in");
+      }
+
+      const response = await fetch(url.toString());
       return response.json();
     },
   });
@@ -308,12 +320,10 @@ export default function InventoryPage({ onLogout }: InventoryPageProps) {
     return matchesSearch && matchesCategory && matchesStock;
   });
 
-  // Pagination calculations
-  const totalPages = Math.ceil(filteredProducts.length / pageSize);
-  const paginatedProducts = filteredProducts.slice(
-    (currentPage - 1) * pageSize,
-    currentPage * pageSize
-  );
+  // Use backend pagination data directly
+  const paginatedProducts = filteredProducts;
+  const totalPages = productsResponse?.pagination?.totalPages || 1;
+  const totalCount = productsResponse?.pagination?.totalCount || 0;
 
   // Reset to page 1 when filters change
   useEffect(() => {
@@ -444,7 +454,7 @@ export default function InventoryPage({ onLogout }: InventoryPageProps) {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold text-gray-900">
-                  {products.length}
+                  {totalCount}
                 </div>
               </CardContent>
             </Card>

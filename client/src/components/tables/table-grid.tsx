@@ -2979,7 +2979,7 @@ export function TableGrid({ onTableSelect, selectedTableId }: TableGridProps) {
                   className="flex items-center gap-2 text-sm px-4 py-3 whitespace-nowrap data-[state=active]:bg-blue-500 data-[state=active]:text-white data-[state=active]:shadow-md hover:bg-blue-50 transition-all duration-200 rounded-md font-medium border border-transparent data-[state=active]:border-blue-600"
                 >
                   <span className="font-semibold">
-                    {floor === "takeaway" ? t("tables.takeaway") : `${t("common.floor")} ${floor}`}
+                    {t("common.floor")} {floor}
                   </span>
                 </TabsTrigger>
               ))}
@@ -3668,6 +3668,7 @@ export function TableGrid({ onTableSelect, selectedTableId }: TableGridProps) {
             console.log("🔴 Table: Closing receipt preview modal");
             setShowReceiptPreview(false);
             setPreviewReceipt(null);
+            setShowPaymentMethodModal(true);
           }}
           onConfirm={(itemReceipt: any) => {
             console.log(

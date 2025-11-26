@@ -83,7 +83,13 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { PrinterConfigModal } from "@/components/pos/printer-config-modal";
 import { POSHeader } from "@/components/pos/header";
 import { RightSidebar } from "@/components/ui/right-sidebar";
-import { FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form"; // Import Form components
+import {
+  FormField,
+  FormItem,
+  FormLabel,
+  FormControl,
+  FormMessage,
+} from "@/components/ui/form"; // Import Form components
 import JsBarcode from "jsbarcode";
 
 // E-invoice software providers mapping
@@ -337,18 +343,32 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
   });
 
   // Fetch products (include inactive products in settings) - with pagination
-  const {
-    data: productsResponse,
-    isLoading: productsLoading
-  } = useQuery({
-    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products", { page: productsCurrentPage, limit: productsPageSize }],
+  const { data: productsResponse, isLoading: productsLoading } = useQuery({
+    queryKey: [
+      "https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products",
+      productsCurrentPage,
+      productsPageSize,
+      selectedCategoryFilter,
+      productSearchTerm,
+    ],
     queryFn: async () => {
-      const response = await fetch(
-        `https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products?page=${productsCurrentPage}&limit=${productsPageSize}&includeInactive=true`
+      // Fetch products with pagination and include inactive products
+      console.log(
+        "Fetching products with pagination and include inactive products",
       );
+      const params = new URLSearchParams({
+        page: productsCurrentPage.toString(),
+        limit: productsPageSize.toString(),
+        includeInactive: "true",
+        category: selectedCategoryFilter,
+        search: productSearchTerm,
+      });
+      const response = await fetch(`https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products?${params.toString()}`);
       if (!response.ok) throw new Error("Failed to fetch products");
       return response.json();
     },
+    staleTime: 0,
+    gcTime: 0,
   });
 
   const products = productsResponse?.products || [];
@@ -770,7 +790,9 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
 
       // Refetch data immediately
       await queryClient.refetchQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/categories"] });
-      await queryClient.refetchQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products"] });
+      await queryClient.refetchQueries({
+        queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products", productsCurrentPage, productsPageSize],
+      });
 
       // toast({
       //   title: t("common.success"),
@@ -828,7 +850,9 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
 
       // Refetch data immediately
       await queryClient.refetchQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/categories"] });
-      await queryClient.refetchQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products"] });
+      await queryClient.refetchQueries({
+        queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products", productsCurrentPage, productsPageSize],
+      });
 
       // toast({
       //   title: t("common.success"),
@@ -884,7 +908,9 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
 
       // Refetch data immediately
       await queryClient.refetchQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/categories"] });
-      await queryClient.refetchQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products"] });
+      await queryClient.refetchQueries({
+        queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products", productsCurrentPage, productsPageSize],
+      });
 
       // toast({
       //   title: t("common.success"),
@@ -1005,7 +1031,9 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
         throw new Error(errorData.message || "Failed to create product");
       }
 
-      await queryClient.refetchQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products", { page: productsCurrentPage, limit: productsPageSize }] });
+      await queryClient.refetchQueries({
+        queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products", productsCurrentPage, productsPageSize],
+      });
       setShowProductForm(false);
       resetProductForm();
       // toast({
@@ -1074,7 +1102,7 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
           console.error("파일 변환 오류:", error);
           toast({
             title: "오류",
-            description: "이미지 파일 처리 중 오류가 발생했습니다.",
+            description: "이미 �� 파일 처리 중 오류가 발생했습니다.",
             variant: "destructive",
           });
           return;
@@ -1097,7 +1125,9 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
         throw new Error(errorData.message || "Failed to update product");
       }
 
-      await queryClient.refetchQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products", { page: productsCurrentPage, limit: productsPageSize }] });
+      await queryClient.refetchQueries({
+        queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products", productsCurrentPage, productsPageSize],
+      });
       setShowProductForm(false);
       setEditingProduct(null);
       resetProductForm();
@@ -1197,7 +1227,9 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
     try {
       await apiRequest("DELETE", `https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products/${productToDelete.id}`);
 
-      await queryClient.refetchQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products", { page: productsCurrentPage, limit: productsPageSize }] });
+      await queryClient.refetchQueries({
+        queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products", productsCurrentPage, productsPageSize],
+      });
 
       // toast({
       //   title: t("common.success"),
@@ -1680,7 +1712,9 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
   };
 
   const refetchProducts = () => {
-    queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products", { page: productsCurrentPage, limit: productsPageSize }] });
+    queryClient.invalidateQueries({
+      queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products", productsCurrentPage, productsPageSize],
+    });
   };
 
   const handleOpenCategoryDialog = () => {
@@ -1700,9 +1734,8 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
     }
 
     // Get selected products data
-    const selectedProductsData = products?.filter((p: Product) =>
-      selectedProducts.includes(p.id),
-    ) || [];
+    const selectedProductsData =
+      products?.filter((p: Product) => selectedProducts.includes(p.id)) || [];
 
     // Create print window
     const printWindow = window.open("", "_blank");
@@ -3245,7 +3278,9 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
                                 {t("settings.totalProducts")}
                               </p>
                               <p className="text-2xl font-bold text-blue-600">
-                                {productsPagination ? productsPagination.totalCount : 0}
+                                {productsPagination
+                                  ? productsPagination.totalCount
+                                  : 0}
                               </p>
                             </div>
                             <ShoppingCart className="w-8h-8 text-blue-600" />
@@ -3396,23 +3431,32 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
                                             filteredProducts.length > 0 &&
                                             filteredProducts
                                               .slice(
-                                                (productsCurrentPage - 1) * productsPageSize,
-                                                productsCurrentPage * productsPageSize,
+                                                (productsCurrentPage - 1) *
+                                                  productsPageSize,
+                                                productsCurrentPage *
+                                                  productsPageSize,
                                               )
-                                              .every((p) => selectedProducts.includes(p.id))
+                                              .every((p) =>
+                                                selectedProducts.includes(p.id),
+                                              )
                                           }
                                           onCheckedChange={(checked) => {
                                             const currentPageProducts =
                                               filteredProducts.slice(
-                                                (productsCurrentPage - 1) * productsPageSize,
-                                                productsCurrentPage * productsPageSize,
+                                                (productsCurrentPage - 1) *
+                                                  productsPageSize,
+                                                productsCurrentPage *
+                                                  productsPageSize,
                                               );
                                             if (checked) {
                                               setSelectedProducts([
                                                 ...selectedProducts,
                                                 ...currentPageProducts
                                                   .filter(
-                                                    (p) => !selectedProducts.includes(p.id),
+                                                    (p) =>
+                                                      !selectedProducts.includes(
+                                                        p.id,
+                                                      ),
                                                   )
                                                   .map((p) => p.id),
                                               ]);
@@ -3480,12 +3524,14 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
                                         );
                                         return (
                                           <tr
-                                            key={product.id}
+                                            key={index}
                                             className="border-b border-gray-200 hover:bg-gray-50"
                                           >
                                             <td className="py-3 px-2 text-center">
                                               <Checkbox
-                                                checked={selectedProducts.includes(product.id)}
+                                                checked={selectedProducts.includes(
+                                                  product.id,
+                                                )}
                                                 onCheckedChange={(checked) => {
                                                   if (checked) {
                                                     setSelectedProducts([
@@ -3495,7 +3541,8 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
                                                   } else {
                                                     setSelectedProducts(
                                                       selectedProducts.filter(
-                                                        (id) => id !== product.id,
+                                                        (id) =>
+                                                          id !== product.id,
                                                       ),
                                                     );
                                                   }
@@ -3625,7 +3672,9 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
                             {products.length > 0 && (
                               <div className="flex items-center justify-between space-x-6 py-4 px-4 border-t border-gray-200 mt-4">
                                 <div className="flex items-center space-x-2">
-                                  <p className="text-sm font-medium">{t("common.show")}</p>
+                                  <p className="text-sm font-medium">
+                                    {t("common.show")}
+                                  </p>
                                   <Select
                                     value={productsPageSize.toString()}
                                     onValueChange={(value) => {
@@ -3644,26 +3693,36 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
                                       <SelectItem value="100">100</SelectItem>
                                     </SelectContent>
                                   </Select>
-                                  <p className="text-sm font-medium">{t("common.rows")}</p>
+                                  <p className="text-sm font-medium">
+                                    {t("common.rows")}
+                                  </p>
                                 </div>
 
                                 <div className="flex items-center space-x-2">
                                   <p className="text-sm font-medium">
-                                    {t("common.page")} {productsPagination.currentPage} / {productsPagination.totalPages}
+                                    {t("common.page")}{" "}
+                                    {productsPagination.currentPage} /{" "}
+                                    {productsPagination.totalPages}
                                   </p>
                                   <div className="flex items-center space-x-1">
                                     <button
                                       onClick={() => setProductsCurrentPage(1)}
-                                      disabled={productsPagination.currentPage === 1}
+                                      disabled={
+                                        productsPagination.currentPage === 1
+                                      }
                                       className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-8 w-8"
                                     >
                                       «
                                     </button>
                                     <button
                                       onClick={() =>
-                                        setProductsCurrentPage((prev) => Math.max(prev - 1, 1))
+                                        setProductsCurrentPage((prev) =>
+                                          Math.max(prev - 1, 1),
+                                        )
                                       }
-                                      disabled={productsPagination.currentPage === 1}
+                                      disabled={
+                                        productsPagination.currentPage === 1
+                                      }
                                       className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-8 w-8"
                                     >
                                       ‹
@@ -3671,17 +3730,30 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
                                     <button
                                       onClick={() =>
                                         setProductsCurrentPage((prev) =>
-                                          Math.min(prev + 1, productsPagination.totalPages)
+                                          Math.min(
+                                            prev + 1,
+                                            productsPagination.totalPages,
+                                          ),
                                         )
                                       }
-                                      disabled={productsPagination.currentPage === productsPagination.totalPages}
+                                      disabled={
+                                        productsPagination.currentPage ===
+                                        productsPagination.totalPages
+                                      }
                                       className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-8 w-8"
                                     >
                                       ›
                                     </button>
                                     <button
-                                      onClick={() => setProductsCurrentPage(productsPagination.totalPages)}
-                                      disabled={productsPagination.currentPage === productsPagination.totalPages}
+                                      onClick={() =>
+                                        setProductsCurrentPage(
+                                          productsPagination.totalPages,
+                                        )
+                                      }
+                                      disabled={
+                                        productsPagination.currentPage ===
+                                        productsPagination.totalPages
+                                      }
                                       className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-8 w-8"
                                     >
                                       »
@@ -4286,7 +4358,7 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
           />
 
           {/* Category Form Modal */}
-          <Dialog open={showCategoryForm} onOpenOpenChange={setShowCategoryForm}>
+          <Dialog open={showCategoryForm} onOpenChange={setShowCategoryForm}>
             <DialogContent className="sm:max-w-[425px]">
               <DialogHeader>
                 <DialogTitle>

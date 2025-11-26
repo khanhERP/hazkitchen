@@ -928,6 +928,11 @@ export function ShoppingCart({
         setShowReceiptModal(true);
       }
 
+      // CRITICAL: Invalidate product queries to refresh stock after payment
+      console.log("🔄 POS: Refreshing product list after successful payment");
+      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products"] });
+      queryClient.invalidateQueries({ queryKey: ["products"] });
+      
       // Send WebSocket signal for refresh
       try {
         const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
