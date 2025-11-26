@@ -1149,6 +1149,9 @@ export function ReceiptModal({
       (window as any).orderForPayment = orderDataForPayment;
     }
 
+    // Close preview modal first
+    onClose();
+
     // Call onConfirm with order data if provided
     if (onConfirm) {
       console.log(
@@ -1156,9 +1159,6 @@ export function ReceiptModal({
       );
       onConfirm(orderDataForPayment);
     }
-
-    // Close preview modal first
-    onClose();
   };
 
   // Placeholder for handlePaymentMethodSelect, assuming it's defined elsewhere or in a parent component
