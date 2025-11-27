@@ -2354,7 +2354,7 @@ export default function SalesOrders() {
         0,
         priceIncludeTax
           ? calculatedSubtotal
-          : calculatedSubtotal + calculatedTax - orderDiscount,
+          : calculatedSubtotal + calculatedTax,
       );
 
       return {
