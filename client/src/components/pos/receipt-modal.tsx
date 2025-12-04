@@ -730,16 +730,10 @@ export function ReceiptModal({
             box-sizing: border-box;
           }
 
-          @page {
-            margin: 0;
-            size: 80mm auto;
-          }
-
           body {
-            margin: 0;
-            font-family: "Arial", sans-serif;
-            font-size: 12px;
-            line-height: 1.1;
+            font-family: 'Noto Sans KR', 'Arial Unicode MS', sans-serif;
+            font-size: 18px;
+            line-height: 1.4;
             width: 100%;
             max-width: 576px;
             margin: 0 auto;
@@ -777,7 +771,7 @@ export function ReceiptModal({
             text-align: right;
           }
           p, div, span {
-            font-size: 16px !important;
+            font-size: 18px !important;
             font-weight: bold !important;
           }
           h2 {
@@ -821,7 +815,7 @@ export function ReceiptModal({
             width: 100%;
             max-width: 576px;
             margin: 0 auto;
-            padding: ${domainName == "0318671828.edpos.vn" ? "52px" : "16px"};
+            padding: 16px;
             box-sizing: border-box;
             background: #ffffff;
           }
