@@ -815,7 +815,7 @@ export function ReceiptModal({
             width: 100%;
             max-width: 576px;
             margin: 0 auto;
-            padding: 16px;
+            padding: ${domainName == "0318671828.edpos.vn" ? "10%" : "16px"};
             box-sizing: border-box;
             background: #ffffff;
           }
