@@ -730,10 +730,16 @@ export function ReceiptModal({
             box-sizing: border-box;
           }
 
+          @page {
+            margin: 0;
+            size: 80mm auto;
+          }
+
           body {
-            font-family: 'Noto Sans KR', 'Arial Unicode MS', sans-serif;
-            font-size: 16px;
-            line-height: 1.4;
+            margin: 0;
+            font-family: "Arial", sans-serif;
+            font-size: 12px;
+            line-height: 1.1;
             width: 100%;
             max-width: 576px;
             margin: 0 auto;
