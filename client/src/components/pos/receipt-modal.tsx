@@ -731,9 +731,9 @@ export function ReceiptModal({
           }
 
           body {
-            font-family: 'Noto Sans KR', 'Arial Unicode MS', sans-serif;
-            font-size: 18px;
-            line-height: 1.4;
+            font-family: "Courier New", monospace;
+            font-size: 12px;
+            line-height: 1.2;
             width: 100%;
             max-width: 576px;
             margin: 0 auto;
@@ -815,7 +815,7 @@ export function ReceiptModal({
             width: 100%;
             max-width: 576px;
             margin: 0 auto;
-            padding: ${domainName == "0318671828.edpos.vn" ? "10%" : "16px"};
+            padding: ${domainName == "0318671828.edpos.vn" ? "52px" : "16px"};
             box-sizing: border-box;
             background: #ffffff;
           }
