@@ -732,7 +732,7 @@ export function ReceiptModal({
 
           body {
             font-family: "Courier New", monospace;
-            font-size: 12px;
+            font-size: 18px;
             line-height: 1.2;
             width: 100%;
             max-width: 576px;
@@ -740,7 +740,6 @@ export function ReceiptModal({
             padding: 0;
             background: #ffffff;
             color: #000000;
-            font-weight: bold;
           }
 
           table {
