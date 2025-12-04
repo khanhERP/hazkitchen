@@ -731,9 +731,9 @@ export function ReceiptModal({
           }
 
           body {
-            font-family: "Courier New", monospace;
+            font-family: 'Noto Sans KR', 'Arial Unicode MS', sans-serif;
             font-size: 18px;
-            line-height: 1.2;
+            line-height: 1.4;
             width: 100%;
             max-width: 576px;
             margin: 0 auto;
@@ -770,7 +770,7 @@ export function ReceiptModal({
             text-align: right;
           }
           p, div, span {
-            font-size: 18px !important;
+            font-size: 16px !important;
             font-weight: bold !important;
           }
           h2 {
