@@ -386,7 +386,19 @@ export function PaymentMethodModal({
             // VietQR format - using VietQR API
             const qrUrl = `https://img.vietqr.io/image/${bankId}-${accountNo}-compact2.jpg?amount=${amount}&addInfo=${encodeURIComponent(description)}&accountName=${encodeURIComponent(accountName)}`;
             setQrCodeUrl(qrUrl);
-          } else {
+          }
+          else if (domainName === "0318671828.edpos.vn") {
+            const bankId = "970424"; // Shinhan Bank as default
+            const accountNo = "700038488132";
+            const accountName = "CONG TY TNHH JANG SU CHON";
+            const amount = Math.floor(parseFloat(receipt.total || "0"));
+            const description = `THANH TOAN ${receipt.orderNumber}`;
+
+            // VietQR format - using VietQR API
+            const qrUrl = `https://img.vietqr.io/image/${bankId}-${accountNo}-compact2.jpg?amount=${amount}&addInfo=${encodeURIComponent(description)}&accountName=${encodeURIComponent(accountName)}`;
+            setQrCodeUrl(qrUrl);
+          }
+          else {
             // Use the raw qrData directly - it's already in the correct format for VietQR
             const qrUrl = await QRCodeLib.toDataURL(qrResponse.qrData, {
               width: 256,
