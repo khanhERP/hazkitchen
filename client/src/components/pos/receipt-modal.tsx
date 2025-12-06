@@ -55,6 +55,15 @@ export function ReceiptModal({
     receiptIsPreview: receipt?.isPreview,
   });
 
+  const lstBank = [
+    {
+      bankId: "970424",
+      bankAccountNo: "966000000001727",
+      bankAccountName: "NHA HANG JANG SU CHON",
+      domain: "0318671828.edpos.vn",
+    },
+  ];
+
   // CRITICAL: Always use prop isPreview, completely ignore receipt.isPreview
   console.log("🔍 ReceiptModal mode:", {
     propIsPreview: isPreview,
@@ -129,10 +138,14 @@ export function ReceiptModal({
 
   // Log receipt modal state for debugging - ALWAYS CALL THIS HOOK
   useEffect(() => {
-    const domainConnect = window.location.hostname;
-    setDomainName(domainConnect);
-
     if (isOpen) {
+      const domainConnect = window.location.hostname;
+      setDomainName(domainConnect);
+      let selectBank = lstBank.find((item) => item.domain === domainConnect);
+      if (selectBank) {
+        setBankAccounts(selectBank);
+      }
+
       console.log("=== RECEIPT MODAL RENDERED ===");
       console.log(
         "Receipt Modal Mode:",
@@ -740,6 +753,7 @@ export function ReceiptModal({
             padding: 0;
             background: #ffffff;
             color: #000000;
+            font-weight: bold;
           }
 
           table {
@@ -770,7 +784,7 @@ export function ReceiptModal({
             text-align: right;
           }
           p, div, span {
-            font-size: 16px !important;
+            font-size: 18px !important;
             font-weight: bold !important;
           }
           h2 {
@@ -814,7 +828,7 @@ export function ReceiptModal({
             width: 100%;
             max-width: 576px;
             margin: 0 auto;
-            padding: ${domainName == "0318671828.edpos.vn" ? "52px" : "16px"};
+            padding: 16px;
             box-sizing: border-box;
             background: #ffffff;
           }
@@ -1675,23 +1689,52 @@ export function ReceiptModal({
               </tbody>
             </table>
 
-            {/* QR Code - Optional - HIDDEN */}
-            <div className="text-center my-4" style={{ display: "none" }}>
-              <div
-                style={{
-                  width: "100px",
-                  height: "100px",
-                  margin: "0 auto",
-                  border: "2px solid #000",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
-              >
-                {/* QR Code placeholder - you can add actual QR code library here */}
-                <span style={{ fontSize: "10px" }}>QR CODE</span>
-              </div>
-            </div>
+            {/* QR Code - Bank Transfer */}
+            {domainName === "0318671828.edpos.vn" && (
+              <>
+                <div
+                  style={{ borderTop: "1px dashed #000", margin: "8px 0" }}
+                ></div>
+                <div className="text-center my-4">
+                  <div
+                    style={{
+                      width: "300px",
+                      height: "300px",
+                      margin: "0 auto",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
+                  >
+                    <img
+                      src={(() => {
+                        // Generate VietQR URL with bank account info from store settings
+                        const bankId = bankAccounts?.bankId; // Shinhan Bank as default
+                        const accountNo = bankAccounts?.bankAccountNo;
+                        const accountName = bankAccounts?.bankAccountName;
+                        const amount = Math.floor(
+                          parseFloat(receipt.total || "0"),
+                        );
+                        const description = `THANH TOAN ${receipt.orderNumber}`;
+
+                        // VietQR format - using VietQR API
+                        const qrUrl = `https://img.vietqr.io/image/${bankId}-${accountNo}-compact2.jpg?amount=${amount}&addInfo=${encodeURIComponent(description)}&accountName=${encodeURIComponent(accountName)}`;
+
+                        return qrUrl;
+                      })()}
+                      alt="Hệ thống đang chưa sinh được QR code. Vui lòng vào danh sách đơn hàng để in hóa đơn"
+                      style={{
+                        width: "100%",
+                        height: "100%",
+                        display: "block",
+                        margin: "0 auto",
+                        objectFit: "contain",
+                      }}
+                    />
+                  </div>
+                </div>
+              </>
+            )}
 
             {/* Footer */}
             <div style={{ borderTop: "1px dashed #000", paddingTop: "8px" }}>
