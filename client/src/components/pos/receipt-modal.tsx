@@ -42,6 +42,7 @@ export function ReceiptModal({
   const [showPaymentMethodModal, setShowPaymentMethodModal] = useState(false);
   const [hasAutoOpened, setHasAutoOpened] = useState(false);
   const [printers, setPrinters] = useState([]);
+  const [bankAccounts, setBankAccounts] = useState([]);
   const [domainName, setDomainName] = useState("");
   const { t } = useTranslation();
   const { toast } = useToast();
