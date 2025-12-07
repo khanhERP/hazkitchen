@@ -1725,8 +1725,8 @@ export function ReceiptModal({
                       })()}
                       alt="Hệ thống đang chưa sinh được QR code. Vui lòng vào danh sách đơn hàng để in hóa đơn"
                       style={{
-                        minWidth: "300px",
-                        minHeight: "300px",
+                        minWidth: "250px",
+                        minHeight: "250px",
                         display: "block",
                         margin: "0 auto",
                         objectFit: "contain",
