@@ -1699,8 +1699,8 @@ export function ReceiptModal({
                 <div className="text-center my-4">
                   <div
                     style={{
-                      width: "500px",
-                      height: "500px",
+                      width: "300px",
+                      height: "300px",
                       margin: "0 auto",
                       display: "flex",
                       alignItems: "center",
@@ -1725,8 +1725,8 @@ export function ReceiptModal({
                       })()}
                       alt="Hệ thống đang chưa sinh được QR code. Vui lòng vào danh sách đơn hàng để in hóa đơn"
                       style={{
-                        width: "100%",
-                        height: "100%",
+                        width: "300px",
+                        height: "300px",
                         display: "block",
                         margin: "0 auto",
                         objectFit: "contain",
