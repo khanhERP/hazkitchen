@@ -1699,8 +1699,8 @@ export function ReceiptModal({
                 <div className="text-center my-4">
                   <div
                     style={{
-                      width: "300px",
-                      height: "300px",
+                      width: "500px",
+                      height: "500px",
                       margin: "0 auto",
                       display: "flex",
                       alignItems: "center",
