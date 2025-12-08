@@ -13,7 +13,7 @@ interface LanguageStore {
 export const useLanguageStore = create<LanguageStore>()(
   persist(
     (set) => ({
-      currentLanguage: "ko",
+      currentLanguage: "vi",
       renderTrigger: 0,
       setLanguage: (language: Language) => set((state) => ({ 
         currentLanguage: language,

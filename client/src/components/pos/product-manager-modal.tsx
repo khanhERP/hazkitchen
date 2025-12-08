@@ -871,6 +871,14 @@ export function ProductManagerModal({
     ];
 
     products.forEach((product, index) => {
+      let imageUrl = "";
+      if (
+        product.imageUrl &&
+        !product.imageUrl.startsWith("data:image/png;base64,")
+      ) {
+        imageUrl = product.imageUrl;
+      }
+
       exportData.push([
         (index + 1).toString(),
         product.name,
@@ -879,7 +887,7 @@ export function ProductManagerModal({
         parseFloat(product.price).toString(),
         product.taxRate || "0",
         product.stock.toString(),
-        product.imageUrl || "",
+        imageUrl,
       ]);
     });
 

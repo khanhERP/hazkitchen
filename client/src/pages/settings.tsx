@@ -68,6 +68,7 @@ import {
   Tag,
   ShoppingCart,
   Printer,
+  Download,
   Receipt,
   Upload,
   Link,
@@ -91,6 +92,8 @@ import {
   FormMessage,
 } from "@/components/ui/form"; // Import Form components
 import JsBarcode from "jsbarcode";
+import { BulkImportModal } from "@/components/pos/bulk-import-modal";
+import * as XLSX from "xlsx";
 
 // E-invoice software providers mapping
 const EINVOICE_PROVIDERS = [
@@ -122,6 +125,7 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
   const [showPrinterConfig, setShowPrinterConfig] = useState(false);
 
   // Customer management state
+  const [showBulkImport, setShowBulkImport] = useState(false);
   const [showCustomerForm, setShowCustomerForm] = useState(false);
   const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
   const [customerSearchTerm, setCustomerSearchTerm] = useState("");
@@ -403,13 +407,13 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
   useEffect(() => {
     if (storeData) {
       setStoreSettings({
-        storeName: storeData.storeName || "EDPOS 레스토랑",
-        storeCode: storeData.storeCode || "STORE001",
+        storeName: storeData.storeName || "",
+        storeCode: storeData.storeCode || "",
         address: storeData.address || "",
         phone: storeData.phone || "",
         email: storeData.email || "",
         taxId: storeData.taxId || "",
-        businessType: storeData.businessType || "restaurant",
+        businessType: storeData.businessType || "",
         pinCode: storeData.pinCode || "",
         openTime: storeData.openTime || "09:00",
         closeTime: storeData.closeTime || "22:00",
@@ -1099,10 +1103,10 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
           );
           finalProductData.imageUrl = base64Image;
         } catch (error) {
-          console.error("파일 변환 오류:", error);
+          console.error("파일 변환 :��류:", error);
           toast({
             title: "오류",
-            description: "이미 �� 파일 처리 중 오류가 발생했습니다.",
+            description: "이미 �� 파일 처리 중 오류가 2��생했습니다.",
             variant: "destructive",
           });
           return;
@@ -1883,6 +1887,80 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
       title: "Thông báo",
       description: `Đang in mã vạch cho ${selectedProducts.length} sản phẩm`,
     });
+  };
+
+  const getCategoryName = (categoryId: number) => {
+    return categoriesData.find((c) => c.id === categoryId)?.name || "Unknown";
+  };
+
+  // Employee management functions
+  const exportProductsToExcel = () => {
+    const exportData = [
+      [
+        "STT",
+        "Tên sản phẩm",
+        "SKU",
+        "Danh mục",
+        "Giá bán",
+        "% Thuế",
+        "Tồn kho",
+        "Hình ảnh (URL)",
+      ],
+    ];
+
+    products.forEach((product, index) => {
+      let imageUrl = "";
+      if (
+        product.imageUrl &&
+        !product.imageUrl.startsWith("data:image/png;base64,")
+      ) {
+        imageUrl = product.imageUrl;
+      }
+
+      exportData.push([
+        (index + 1).toString(),
+        product.name,
+        product.sku,
+        getCategoryName(product.categoryId),
+        parseFloat(product.price).toString(),
+        product.taxRate || "0",
+        product.stock.toString(),
+        imageUrl,
+      ]);
+    });
+
+    const ws = XLSX.utils.aoa_to_sheet(exportData);
+
+    // Auto-fit column widths
+    const colWidths = [
+      { wch: 5 }, // STT
+      { wch: 25 }, // Tên sản phẩm
+      { wch: 15 }, // SKU
+      { wch: 15 }, // Danh mục
+      { wch: 12 }, // Giá bán
+      { wch: 10 }, // % Thuế
+      { wch: 10 }, // Tồn kho
+      { wch: 30 }, // Hình ảnh URL
+    ];
+    ws["!cols"] = colWidths;
+
+    // Style header row
+    const range = XLSX.utils.decode_range(ws["!ref"] || "A1");
+    for (let col = range.s.c; col <= range.e.c; col++) {
+      const cellAddress = XLSX.utils.encode_cell({ r: 0, c: col });
+      if (!ws[cellAddress]) continue;
+      ws[cellAddress].s = {
+        font: { bold: true, color: { rgb: "FFFFFF" } },
+        fill: { fgColor: { rgb: "059669" } }, // Green background
+        alignment: { horizontal: "center" },
+      };
+    }
+
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Danh sách sản phẩm");
+
+    const timestamp = new Date().toISOString().slice(0, 19).replace(/:/g, "-");
+    XLSX.writeFile(wb, `danh_sach_san_pham_${timestamp}.xlsx`);
   };
 
   return (
@@ -3403,6 +3481,26 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
                                 >
                                   <Plus className="w-4 h-4 mr-2" />
                                   {t("settings.addProduct")}
+                                </Button>
+                              </div>
+                            </div>
+                            <div className="flex justify-between items-center mb-6">
+                              <div className="flex gap-2">
+                                <Button
+                                  variant="outline"
+                                  className="border-orange-500 text-orange-700 hover:bg-orange-100 hover:border-orange-600"
+                                  onClick={() => setShowBulkImport(true)}
+                                >
+                                  <Upload className="mr-2" size={16} />
+                                  {t("tables.bulkImport")}
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  className="border-green-500 text-green-700 hover:bg-green-100 hover:border-green-600"
+                                  onClick={exportProductsToExcel}
+                                >
+                                  <Download className="mr-2" size={16} />
+                                  {t("tables.export")}
                                 </Button>
                               </div>
                             </div>
@@ -5787,6 +5885,10 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
               onClose={() => setShowPrinterConfig(false)}
             />
           )}
+          <BulkImportModal
+            isOpen={showBulkImport}
+            onClose={() => setShowBulkImport(false)}
+          />
         </div>
       </div>
     </>
