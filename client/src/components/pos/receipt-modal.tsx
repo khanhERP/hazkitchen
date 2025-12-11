@@ -748,7 +748,6 @@ export function ReceiptModal({
             font-family: 'Noto Sans KR', 'Arial Unicode MS', sans-serif;
             font-size: 18px;
             line-height: 1.4;
-            width: 100%;
             max-width: 576px;
             margin: 0 auto;
             padding: 0;
@@ -832,23 +831,6 @@ export function ReceiptModal({
             padding: 16px;
             box-sizing: border-box;
             background: #ffffff;
-          }
-
-          @media print {
-            * {
-              transform: none !important;
-              zoom: 1 !important;
-            }
-            body {
-              width: 576px;
-              max-width: 576px;
-              -webkit-print-color-adjust: exact;
-              image-rendering: crisp-edges;
-            }
-            .receipt-container {
-              width: 576px;
-              max-width: 576px;
-            }
           }
         </style>
       </head>
@@ -1388,7 +1370,7 @@ export function ReceiptModal({
                   const unitPrice = parseFloat(
                     item.unitPrice || item.price || "0",
                   );
-                  const quantity = item.quantity || 1;
+                  const quantity = parseFloat(item.quantity) || 1;
                   const itemSubtotal = unitPrice * quantity;
 
                   return (
