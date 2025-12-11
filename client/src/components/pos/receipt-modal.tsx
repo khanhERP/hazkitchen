@@ -1359,14 +1359,14 @@ export function ReceiptModal({
                       borderBottom: "1px dashed #000",
                     }}
                   >
-                    {t("common.itemName")}
+                    {t("common.unitPrice")}
                   </th>
                   <th
                     style={{
                       textAlign: "center",
                       padding: "4px 2px",
                       borderBottom: "1px dashed #000",
-                      width: "40px",
+                      width: "60px",
                     }}
                   >
                     {t("common.quantity")}
@@ -1376,20 +1376,10 @@ export function ReceiptModal({
                       textAlign: "right",
                       padding: "4px 2px",
                       borderBottom: "1px dashed #000",
-                      width: "70px",
+                      width: "100px",
                     }}
                   >
-                    {t("common.unitPrice")}
-                  </th>
-                  <th
-                    style={{
-                      textAlign: "right",
-                      padding: "4px 2px",
-                      borderBottom: "1px dashed #000",
-                      width: "80px",
-                    }}
-                  >
-                    {t("common.totalAmount")}
+                    {t("common.totalAmountSubtotal")}
                   </th>
                 </tr>
               </thead>
@@ -1402,38 +1392,48 @@ export function ReceiptModal({
                   const itemSubtotal = unitPrice * quantity;
 
                   return (
-                    <tr key={item.id || index}>
-                      <td style={{ padding: "4px 2px", verticalAlign: "top" }}>
-                        {item.productName || item.name || "Sản phẩm"}
-                      </td>
-                      <td
-                        style={{
-                          padding: "4px 2px",
-                          textAlign: "center",
-                          verticalAlign: "top",
-                        }}
-                      >
-                        {parseFloat(quantity)}
-                      </td>
-                      <td
-                        style={{
-                          padding: "4px 2px",
-                          textAlign: "right",
-                          verticalAlign: "top",
-                        }}
-                      >
-                        {Math.floor(unitPrice).toLocaleString("vi-VN")}
-                      </td>
-                      <td
-                        style={{
-                          padding: "4px 2px",
-                          textAlign: "right",
-                          verticalAlign: "top",
-                        }}
-                      >
-                        {Math.floor(itemSubtotal).toLocaleString("vi-VN")}
-                      </td>
-                    </tr>
+                    <>
+                      <tr key={item.id || index}>
+                        <td
+                          style={{
+                            padding: "4px 2px",
+                            verticalAlign: "top",
+                            textAlign: "justify",
+                          }}
+                          colspan={3}
+                        >
+                          {item.productName || item.name}
+                        </td>
+                      </tr>
+                      <tr>
+                        <td
+                          style={{
+                            padding: "4px 2px",
+                            verticalAlign: "top",
+                          }}
+                        >
+                          {Math.floor(unitPrice).toLocaleString("vi-VN")}
+                        </td>
+                        <td
+                          style={{
+                            padding: "4px 2px",
+                            textAlign: "center",
+                            verticalAlign: "top",
+                          }}
+                        >
+                          {quantity.toLocaleString("vi-VN")}
+                        </td>
+                        <td
+                          style={{
+                            padding: "4px 2px",
+                            textAlign: "right",
+                            verticalAlign: "top",
+                          }}
+                        >
+                          {Math.floor(itemSubtotal).toLocaleString("vi-VN")}
+                        </td>
+                      </tr>
+                    </>
                   );
                 })}
               </tbody>
