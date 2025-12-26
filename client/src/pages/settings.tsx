@@ -4859,6 +4859,16 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
                         <SelectItem value="Kg">Kg</SelectItem>
                         <SelectItem value="Gói">Gói</SelectItem>
                         <SelectItem value="Hộp">Hộp</SelectItem>
+                        <SelectItem value="Quyển">Quyển</SelectItem>
+                        <SelectItem value="Cuốn">Cuốn</SelectItem>
+                        <SelectItem value="Bộ">Bộ</SelectItem>
+                        <SelectItem value="Thỏi">Thỏi</SelectItem>
+                        <SelectItem value="Lọ">Lọ</SelectItem>
+                        <SelectItem value="Chiếc">Chiếc</SelectItem>
+                        <SelectItem value="Cây">Cây</SelectItem>
+                        <SelectItem value="Tờ">Tờ</SelectItem>
+                        <SelectItem value="Tập">Tập</SelectItem>
+                        <SelectItem value="Đôi">Đôi</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>

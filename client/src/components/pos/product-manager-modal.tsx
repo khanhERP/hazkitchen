@@ -137,22 +137,25 @@ export function ProductManagerModal({
     isLoading: productsLoading,
     refetch,
   } = useQuery<any>({
-    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products", { 
-      page: currentPage, 
-      limit: pageSize,
-      search: searchTerm
-    }],
+    queryKey: [
+      "https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products",
+      {
+        page: currentPage,
+        limit: pageSize,
+        search: searchTerm,
+      },
+    ],
     queryFn: async () => {
       const params = new URLSearchParams({
         page: currentPage.toString(),
         limit: pageSize.toString(),
-        includeInactive: 'true'
+        includeInactive: "true",
       });
-      
+
       if (searchTerm && searchTerm.trim()) {
-        params.append('search', searchTerm.trim());
+        params.append("search", searchTerm.trim());
       }
-      
+
       const response = await fetch(`https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products?${params.toString()}`);
       if (!response.ok) throw new Error("Failed to fetch products");
       return response.json();
@@ -815,7 +818,8 @@ export function ProductManagerModal({
                 const sku = product.sku || `ITEM-${product.id}`;
                 return Array.from({ length: barcodeDuplicateCount })
                   .map((_, copyIndex) => {
-                    const uniqueIndex = productIndex * barcodeDuplicateCount + copyIndex;
+                    const uniqueIndex =
+                      productIndex * barcodeDuplicateCount + copyIndex;
                     return `
                       try {
                         JsBarcode("#barcode-${uniqueIndex}", "${sku}", {
@@ -1059,7 +1063,14 @@ export function ProductManagerModal({
                       min="1"
                       max="100"
                       value={barcodeDuplicateCount}
-                      onChange={(e) => setBarcodeDuplicateCount(Math.max(1, Math.min(100, parseInt(e.target.value) || 1)))}
+                      onChange={(e) =>
+                        setBarcodeDuplicateCount(
+                          Math.max(
+                            1,
+                            Math.min(100, parseInt(e.target.value) || 1),
+                          ),
+                        )
+                      }
                       className="w-20 h-9"
                       placeholder="Số lần"
                     />
@@ -1683,6 +1694,42 @@ export function ProductManagerModal({
                               <SelectItem value="Hộp">
                                 {t("common.units.box")}
                               </SelectItem>
+
+                              <SelectItem value="Quyển">
+                                {t("common.units.Book")}
+                              </SelectItem>
+                              <SelectItem value="Cuốn">
+                                {t("common.units.roll")}
+                              </SelectItem>
+                              <SelectItem value="Bản">
+                                {t("common.units.Version")}
+                              </SelectItem>
+                              <SelectItem value="Bộ">
+                                {t("common.units.Set")}
+                              </SelectItem>
+                              <SelectItem value="Thỏi">
+                                {t("common.units.Stick")}
+                              </SelectItem>
+
+                              <SelectItem value="Lọ">
+                                {t("common.units.Jar")}
+                              </SelectItem>
+                              <SelectItem value="Chiếc">
+                                {t("common.units.item")}
+                              </SelectItem>
+                              <SelectItem value="Cây">
+                                {t("common.units.Tree")}
+                              </SelectItem>
+                              <SelectItem value="Tờ">
+                                {t("common.units.Sheet")}
+                              </SelectItem>
+                              <SelectItem value="Tập">
+                                {t("common.units.Collection")}
+                              </SelectItem>
+                              <SelectItem value="Đôi">
+                                {t("common.units.Pairof")}
+                              </SelectItem>
+                              
                             </SelectContent>
                           </Select>
                           <FormMessage />
