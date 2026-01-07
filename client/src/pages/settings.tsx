@@ -526,6 +526,13 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
       enabled: false,
       icon: "🚗",
     },
+    {
+      id: 10,
+      nameKey: "transfer",
+      type: "digital",
+      enabled: true,
+      icon: "💳",
+    },
   ]);
 
   // Payment method editing state
