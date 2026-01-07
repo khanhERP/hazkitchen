@@ -209,6 +209,7 @@ export function PaymentMethodModal({
         return Banknote;
       case "card":
       case "debit":
+      case "transfer":
       case "digital":
         return CreditCard;
       case "qr":
@@ -229,6 +230,7 @@ export function PaymentMethodModal({
       qrCode: t("common.qrCode"),
       shopeepay: t("common.shopeepay"),
       grabpay: t("common.grabpay"),
+      transfer: t("common.transfer"),
     };
     return (
       names[nameKey as keyof typeof names] || t("common.paymentMethodGeneric")
@@ -246,6 +248,7 @@ export function PaymentMethodModal({
       qrCode: t("common.qrBanking"),
       shopeepay: t("common.shopeepayWallet"),
       grabpay: t("common.grabpayWallet"),
+      transfer: t("common.transfer"),
     };
     return (
       descriptions[nameKey as keyof typeof descriptions] ||
