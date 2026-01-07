@@ -968,6 +968,8 @@ export default function SalesOrders() {
         return t("common.creditNote");
       case "unpaid":
         return t("common.unpaid");
+      case "transfer":
+        return t("common.transfer");
       default:
         return t("common.unpaid"); // Changed default from "Tiền mặt" to "Chưa thanh toán"
     }
