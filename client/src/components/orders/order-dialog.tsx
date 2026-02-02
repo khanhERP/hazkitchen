@@ -395,8 +395,8 @@ export function OrderDialog({
             "PUT",
             `https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders/${existingOrder.id}`,
             {
-              customerName: orderData.order.customerName,
-              customerCount: orderData.order.customerCount,
+              customerName: orderData.order?.customerName ?? "",
+              customerCount: orderData.order?.customerCount,
               subtotal: displayedSubtotal.toString(),
               tax: displayedTax.toString(),
               discount: displayedDiscount.toString(),
@@ -409,6 +409,36 @@ export function OrderDialog({
               "✅ Order updated successfully with current totals:",
               updateResult,
             );
+
+            if (existingOrder) {
+              try {
+                await apiRequest("POST", "https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/order-change-history", {
+                  orderId: existingOrder.id,
+                  orderNumber: existingOrder.orderNumber,
+                  ipAddress: window.location.hostname || "unknown",
+                  userName: "Nhân viên",
+                  action: "update_order",
+                  detailedDescription: JSON.stringify({
+                    oldOrder: existingOrder,
+                    newOrderUpdate: {
+                      customerName: orderData.order.customerName,
+                      customerCount: orderData.order.customerCount,
+                      subtotal: displayedSubtotal.toString(),
+                      tax: displayedTax.toString(),
+                      discount: displayedDiscount.toString(),
+                      total: displayedTotal.toString(),
+                    },
+                  }),
+                  storeCode: existingOrder?.storeCode || null,
+                });
+                console.log(`✅ Print change saved to order_change_history`);
+              } catch (error) {
+                console.error(
+                  `❌ Error saving Print change to order_change_history:`,
+                  error,
+                );
+              }
+            }
 
             // Return the final result (prioritize the order update result)
             return updateResult;

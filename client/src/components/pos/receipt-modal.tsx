@@ -360,6 +360,24 @@ export function ReceiptModal({
     }
 
     try {
+      await apiRequest("POST", "https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/order-change-history", {
+        orderId: receipt.id,
+        orderNumber: receipt.orderNumber,
+        ipAddress: window.location.hostname || "unknown",
+        userName: "Nhân viên",
+        action: "print_invoice",
+        detailedDescription: JSON.stringify(receipt),
+        storeCode: receipt?.storeCode || null,
+      });
+      console.log(`✅ Print change saved to order_change_history`);
+    } catch (error) {
+      console.error(
+        `❌ Error saving Print change to order_change_history:`,
+        error,
+      );
+    }
+
+    try {
       console.log("📤 Đang gửi lệnh in đến máy in...");
       console.log(
         `📦 Dữ liệu gửi đi: ${printers.length} máy in, ${content.length} ký tự nội dung`,
@@ -388,10 +406,6 @@ export function ReceiptModal({
         );
       });
       console.log("🖨️ ============ KẾT THÚC IN HÓA ĐƠN ============\n");
-      // toast({
-      //   title: `${t("common.success")}`,
-      //   description: `${t("common.success")}`,
-      // });
 
       onClose();
     } catch (error) {
@@ -475,6 +489,24 @@ export function ReceiptModal({
           isMobile: isMobile,
         },
       };
+
+      try {
+        await apiRequest("POST", "https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/order-change-history", {
+          orderId: receipt.id,
+          orderNumber: receipt.orderNumber,
+          ipAddress: window.location.hostname || "unknown",
+          userName: "Nhân viên",
+          action: "print_invoice",
+          detailedDescription: JSON.stringify(receipt),
+          storeCode: receipt?.storeCode || null,
+        });
+        console.log(`✅ Print change saved to order_change_history`);
+      } catch (error) {
+        console.error(
+          `❌ Error saving Print change to order_change_history:`,
+          error,
+        );
+      }
 
       // Step 3: Try configured printers first (POS API with active configs)
       if (activePrinterConfigs.length > 0) {
