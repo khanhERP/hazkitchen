@@ -15,10 +15,11 @@ export const useLanguageStore = create<LanguageStore>()(
     (set) => ({
       currentLanguage: "vi",
       renderTrigger: 0,
-      setLanguage: (language: Language) => set((state) => ({ 
-        currentLanguage: language,
-        renderTrigger: state.renderTrigger + 1
-      })),
+      setLanguage: (language: Language) =>
+        set((state) => ({
+          currentLanguage: language,
+          renderTrigger: state.renderTrigger + 1,
+        })),
     }),
     {
       name: "pos-language",

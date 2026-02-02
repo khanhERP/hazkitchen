@@ -299,7 +299,6 @@ export const commonTranslations: { [key: string]: CommonTranslations } = {
       Sheet: "Tờ",
       Collection: "Tập",
       Pairof: "Đôi",
-      
     },
 
     // Payment method modal
@@ -893,7 +892,6 @@ export const commonTranslations: { [key: string]: CommonTranslations } = {
       Sheet: "Tờ",
       Collection: "Tập",
       Pairof: "Đôi",
-      
     },
     table: "Table",
     orderManagement: "Order Management",
@@ -1495,7 +1493,6 @@ export const commonTranslations: { [key: string]: CommonTranslations } = {
       Sheet: "Tờ",
       Collection: "Tập",
       Pairof: "Đôi",
-      
     },
     table: "Bàn",
     orderManagement: "Quản lý đơn hàng",

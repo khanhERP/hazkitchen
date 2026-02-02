@@ -1477,6 +1477,7 @@ export function ReceiptModal({
                       </td>
                     </tr>
                   ) : (
+                    <>
                       <tr>
                         <td style={{ padding: "2px 0" }}>
                           {t("common.discount")}:
@@ -1485,6 +1486,7 @@ export function ReceiptModal({
                           0
                         </td>
                       </tr>
+                    </>
                   );
                 })()}
 
@@ -1832,9 +1834,9 @@ export function ReceiptModal({
                       previousDiscounts +=
                         totalBeforeDiscount > 0
                           ? Math.round(
-                            (orderDiscount * prevSubtotal) /
-                            totalBeforeDiscount,
-                          )
+                              (orderDiscount * prevSubtotal) /
+                                totalBeforeDiscount,
+                            )
                           : 0;
                     }
                     itemDiscount = orderDiscount - previousDiscounts;
@@ -1843,9 +1845,9 @@ export function ReceiptModal({
                     itemDiscount =
                       totalBeforeDiscount > 0
                         ? Math.round(
-                          (orderDiscount * itemSubtotal) /
-                          totalBeforeDiscount,
-                        )
+                            (orderDiscount * itemSubtotal) /
+                              totalBeforeDiscount,
+                          )
                         : 0;
                   }
                 }
@@ -1967,9 +1969,9 @@ export function ReceiptModal({
                           previousDiscounts +=
                             totalBeforeDiscount > 0
                               ? Math.round(
-                                (orderDiscount * prevSubtotal) /
-                                totalBeforeDiscount,
-                              )
+                                  (orderDiscount * prevSubtotal) /
+                                    totalBeforeDiscount,
+                                )
                               : 0;
                         }
                         itemDiscount = orderDiscount - previousDiscounts;
@@ -1977,9 +1979,9 @@ export function ReceiptModal({
                         itemDiscount =
                           totalBeforeDiscount > 0
                             ? Math.round(
-                              (orderDiscount * itemSubtotal) /
-                              totalBeforeDiscount,
-                            )
+                                (orderDiscount * itemSubtotal) /
+                                  totalBeforeDiscount,
+                              )
                             : 0;
                       }
                     }
@@ -2031,29 +2033,29 @@ export function ReceiptModal({
                   orderDiscount > 0 ? orderDiscount : totalItemDiscount;
                 return totalDiscount > 0;
               })() && (
-                  <div className="flex justify-between text-sm text-red-600">
-                    <span>{t("reports.discount")}:</span>
-                    <span className="font-medium">
-                      -
-                      {(() => {
-                        const totalItemDiscount = cartItems.reduce(
-                          (sum, item) => {
-                            return sum + parseFloat(item.discount || "0");
-                          },
-                          0,
-                        );
-                        const orderDiscount = parseFloat(
-                          receipt?.discount || total?.discount || "0",
-                        );
-                        // Show either item discounts or order discount, not both
-                        const totalDiscount =
-                          orderDiscount > 0 ? orderDiscount : totalItemDiscount;
-                        return Math.floor(totalDiscount).toLocaleString("vi-VN");
-                      })()}{" "}
-                      ₫
-                    </span>
-                  </div>
-                )}
+                <div className="flex justify-between text-sm text-red-600">
+                  <span>{t("reports.discount")}:</span>
+                  <span className="font-medium">
+                    -
+                    {(() => {
+                      const totalItemDiscount = cartItems.reduce(
+                        (sum, item) => {
+                          return sum + parseFloat(item.discount || "0");
+                        },
+                        0,
+                      );
+                      const orderDiscount = parseFloat(
+                        receipt?.discount || total?.discount || "0",
+                      );
+                      // Show either item discounts or order discount, not both
+                      const totalDiscount =
+                        orderDiscount > 0 ? orderDiscount : totalItemDiscount;
+                      return Math.floor(totalDiscount).toLocaleString("vi-VN");
+                    })()}{" "}
+                    ₫
+                  </span>
+                </div>
+              )}
               <div className="flex justify-between font-bold">
                 <span>{t("reports.totalMoney")}:</span>
                 <span>
@@ -2132,37 +2134,37 @@ export function ReceiptModal({
             typeof window !== "undefined" && (window as any).orderForPayment
               ? (window as any).orderForPayment
               : {
-                id: receipt?.id,
-                orderNumber:
-                  receipt?.orderNumber ||
-                  receipt?.transactionId ||
-                  `ORD-${Date.now()}`,
-                tableId: receipt?.tableId || null,
-                customerName: receipt?.customerName || "Khách hàng lẻ",
-                status: "pending",
-                paymentStatus: "pending",
-                items: receipt?.items || cartItems || [],
-                subtotal:
-                  receipt?.exactSubtotal ||
-                  parseFloat(receipt?.subtotal || "0"),
-                tax: receipt?.exactTax || parseFloat(receipt?.tax || "0"),
-                discount:
-                  receipt?.exactDiscount ||
-                  parseFloat(receipt?.discount || "0"),
-                total:
-                  receipt?.exactTotal || parseFloat(receipt?.total || "0"),
-                exactSubtotal:
-                  receipt?.exactSubtotal ||
-                  parseFloat(receipt?.subtotal || "0"),
-                exactTax:
-                  receipt?.exactTax || parseFloat(receipt?.tax || "0"),
-                exactDiscount:
-                  receipt?.exactDiscount ||
-                  parseFloat(receipt?.discount || "0"),
-                exactTotal:
-                  receipt?.exactTotal || parseFloat(receipt?.total || "0"),
-                orderedAt: new Date().toISOString(),
-              }
+                  id: receipt?.id,
+                  orderNumber:
+                    receipt?.orderNumber ||
+                    receipt?.transactionId ||
+                    `ORD-${Date.now()}`,
+                  tableId: receipt?.tableId || null,
+                  customerName: receipt?.customerName || "Khách hàng lẻ",
+                  status: "pending",
+                  paymentStatus: "pending",
+                  items: receipt?.items || cartItems || [],
+                  subtotal:
+                    receipt?.exactSubtotal ||
+                    parseFloat(receipt?.subtotal || "0"),
+                  tax: receipt?.exactTax || parseFloat(receipt?.tax || "0"),
+                  discount:
+                    receipt?.exactDiscount ||
+                    parseFloat(receipt?.discount || "0"),
+                  total:
+                    receipt?.exactTotal || parseFloat(receipt?.total || "0"),
+                  exactSubtotal:
+                    receipt?.exactSubtotal ||
+                    parseFloat(receipt?.subtotal || "0"),
+                  exactTax:
+                    receipt?.exactTax || parseFloat(receipt?.tax || "0"),
+                  exactDiscount:
+                    receipt?.exactDiscount ||
+                    parseFloat(receipt?.discount || "0"),
+                  exactTotal:
+                    receipt?.exactTotal || parseFloat(receipt?.total || "0"),
+                  orderedAt: new Date().toISOString(),
+                }
           }
           receipt={receipt}
           onReceiptReady={(receiptData) => {

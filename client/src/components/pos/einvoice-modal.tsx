@@ -1312,7 +1312,7 @@ export function EInvoiceModal({
         custBankAccount: "",
         custBankName: "",
         email: formData.email || "",
-        emailCC: "",
+        emailCC: formData.email || "",
       },
       products: invoiceProducts, // Already calculated with discounts
     };

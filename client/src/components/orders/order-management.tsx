@@ -492,7 +492,7 @@ export function OrderManagement() {
     onError: () => {
       toast({
         title: "Lỗi",
-        description: "Không thể hoàn tất thanh toán hỗn hợp",
+        description: "Không thể hoàn tất thanh toán hr��n hợp",
         variant: "destructive",
       });
     },
@@ -3080,6 +3080,8 @@ export function OrderManagement() {
               calculatedTotal: orderForPayment?.calculatedTotal,
               itemsCount: orderForPayment?.processedItems?.length || 0,
             });
+            setShowPaymentMethodModal(false);
+            setOrderForPayment(null);
             setShowEInvoiceModal(true);
           }}
           total={orderForPayment?.total ? Math.round(orderForPayment.total) : 0}
@@ -3097,6 +3099,10 @@ export function OrderManagement() {
           orderForPayment={orderForPayment}
           products={products}
           receipt={previewReceipt}
+          onShowEInvoice={() => {
+            setShowPaymentMethodModal(false);
+            setShowEInvoiceModal(true);
+          }}
         />
       )}
 
@@ -3109,114 +3115,63 @@ export function OrderManagement() {
             setOrderForPayment(null);
           }}
           onConfirm={handleEInvoiceConfirm}
-          total={orderForPayment?.total ? Math.round(orderForPayment.total) : 0}
+          total={(() => {
+            // Use calculated total first, then fallback to stored total
+            const calculatedTotal = orderForPayment?.calculatedTotal;
+            const exactTotal = orderForPayment?.exactTotal;
+            const storedTotal = orderForPayment?.total;
+
+            const finalTotal =
+              calculatedTotal || exactTotal || storedTotal || 0;
+
+            console.log("🔍 Table Grid E-Invoice Modal: Total calculation:", {
+              calculatedTotal,
+              exactTotal,
+              storedTotal,
+              finalTotal,
+              orderForEInvoiceId: orderForPayment?.id,
+            });
+
+            return Math.floor(finalTotal);
+          })()}
           cartItems={
-            orderForPayment?.processedItems?.map((item: any) => ({
+            orderForPayment?.orderItems?.map((item: any) => ({
               id: item.productId,
               name: item.productName,
-              price: item.price,
+              price: parseFloat(item.unitPrice || "0"),
               quantity: item.quantity,
-              sku: item.sku,
-              taxRate: item.taxRate,
-              afterTaxPrice: item.afterTaxPrice,
-            })) || []
-          }
-          source="order-management"
-          orderId={orderForPayment.id}
-        />
-      )}
-
-      {/* Receipt Modal - Final receipt after payment */}
-      {showReceiptModal && selectedReceipt && (
-        <ReceiptModal
-          isOpen={showReceiptModal}
-          onClose={async () => {
-            console.log(
-              "🔴 Order Management: Closing final receipt modal safely",
-            );
-
-            try {
-              // Step 1: Close modal immediately
-              setShowReceiptModal(false);
-              setSelectedReceipt(null);
-
-              // Step 2: Force data refresh before clearing states
-              await Promise.all([
-                queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] }),
-                queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/tables"] }),
-                queryClient.refetchQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] }),
-                queryClient.refetchQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/tables"] }),
-              ]);
-
-              // Step 3: Clear modal states gradually to prevent white screen
-              setTimeout(() => {
-                setOrderForPayment(null);
-                setShowPaymentMethodModal(false);
-                setShowEInvoiceModal(false);
-              }, 50);
-
-              setTimeout(() => {
-                setShowReceiptPreview(false);
-                setPreviewReceipt(null);
-                setOrderDetailsOpen(false);
-              }, 100);
-
-              setTimeout(() => {
-                setSelectedOrder(null);
-                setPaymentMethodsOpen(false);
-                setShowQRPayment(false);
-                setPointsPaymentOpen(false);
-                setMixedPaymentOpen(false);
-              }, 150);
-
-              // Step 4: Send global refresh signal
-              if (typeof window !== "undefined") {
-                window.dispatchEvent(
-                  new CustomEvent("orderManagementRefresh", {
-                    detail: {
-                      source: "receipt_modal_close",
-                      timestamp: new Date().toISOString(),
-                    },
-                  }),
-                );
-              }
-
-              console.log(
-                "✅ Order Management: Receipt modal closed safely with gradual state clearing",
-              );
-            } catch (error) {
-              console.error("❌ Error during receipt modal close:", error);
-              // Fallback: just clear states without refresh
-              setOrderForPayment(null);
-              setShowPaymentMethodModal(false);
-              setShowEInvoiceModal(false);
-              setShowReceiptPreview(false);
-              setPreviewReceipt(null);
-              setOrderDetailsOpen(false);
-              setSelectedOrder(null);
-              setPaymentMethodsOpen(false);
-              setShowQRPayment(false);
-              setPointsPaymentOpen(false);
-              setMixedPaymentOpen(false);
-            }
-          }}
-          receipt={selectedReceipt}
-          cartItems={
-            selectedReceipt?.items?.map((item: any) => ({
-              id: item.productId || item.id,
-              name: item.productName || item.name,
-              price: parseFloat(item.price || item.unitPrice || "0"),
-              quantity: item.quantity,
-              sku: item.sku || `SP${item.productId}`,
+              sku: item.productSku || `SP${item.productId}`,
               taxRate: (() => {
                 const product = Array.isArray(products)
                   ? products.find((p: any) => p.id === item.productId)
                   : null;
                 return product?.taxRate ? parseFloat(product.taxRate) : 10;
               })(),
-              discount: item.discount || "0",
+              afterTaxPrice: (() => {
+                const product = Array.isArray(products)
+                  ? products.find((p: any) => p.id === item.productId)
+                  : null;
+                return product?.afterTaxPrice || null;
+              })(),
             })) || []
           }
+          source="order-management"
+          orderId={orderForPayment?.id}
+        />
+      )}
+
+      {/* Receipt Modal - Final receipt after payment - ENHANCED with aggressive refresh */}
+      {showReceiptModal && selectedReceipt && (
+        <ReceiptModal
+          isOpen={showReceiptModal}
+          onClose={() => {
+            console.log("🔒 Receipt Modal: Closing receipt modal from table");
+            setShowReceiptModal(false);
+            setSelectedReceipt(null);
+          }}
+          onConfirm={handleReceiptConfirm}
+          receipt={selectedReceipt}
+          isPreview={!!orderForPayment} // Show as preview if there's an order waiting for payment
         />
       )}
     </div>

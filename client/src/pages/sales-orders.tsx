@@ -5795,7 +5795,6 @@ export default function SalesOrders() {
                               <SelectItem value="30">30</SelectItem>
                               <SelectItem value="50">50</SelectItem>
                               <SelectItem value="100">100</SelectItem>
-                              <SelectItem value="99999">Tất cả</SelectItem>
                             </SelectContent>
                           </Select>
                           <p className="text-sm font-medium">

@@ -403,15 +403,23 @@ export function OrderDialog({
               total: displayedTotal.toString(),
             },
           );
+          if (updateResponse.ok) {
+            const updateResult = await updateResponse.json();
+            console.log(
+              "✅ Order updated successfully with current totals:",
+              updateResult,
+            );
 
-          const updateResult = await updateResponse.json();
-          console.log(
-            "✅ Order updated successfully with current totals:",
-            updateResult,
-          );
-
-          // Return the final result (prioritize the order update result)
-          return updateResult;
+            // Return the final result (prioritize the order update result)
+            return updateResult;
+          } else {
+            const errorText = await updateResponse.text();
+            console.error(
+              `❌ Failed to update order item ${item.id}:`,
+              errorText,
+            );
+            return errorText;
+          }
         } else {
           console.log("📝 Creating new order...");
 
@@ -440,84 +448,6 @@ export function OrderDialog({
           : "Order created successfully:",
         response,
       );
-
-      // // Print kitchen receipt for new or changed items
-      // try {
-      //   const tableNumber = table?.tableNumber || "N/A";
-      //   const tableFloor = table?.floor || "1";
-      //   const employeeName = customerName || "Nhân viên";
-      //   const orderNumber = response.orderNumber || response.order?.orderNumber || "N/A";
-
-      //   if (mode === "edit" && existingOrderItems) {
-      //     // Calculate changes for edit mode
-      //     const oldItems = existingOrderItems.map((item: any) => ({
-      //       productId: item.productId,
-      //       quantity: parseInt(item.quantity),
-      //       productName: item.productName
-      //     }));
-
-      //     const allCurrentItems = [
-      //       ...existingItems.map((item: any) => ({
-      //         productId: item.productId,
-      //         quantity: parseInt(item.quantity),
-      //         productName: item.productName,
-      //         notes: item.notes
-      //       })),
-      //       ...cart.map((item) => ({
-      //         productId: item.product.id,
-      //         quantity: item.quantity,
-      //         productName: item.product.name,
-      //         notes: item.notes
-      //       }))
-      //     ];
-
-      //     const { newItems, changedItems } = calculateOrderChanges(oldItems, allCurrentItems);
-
-      //     if (newItems.length > 0 || changedItems.length > 0) {
-      //       console.log("🍳 Printing kitchen receipt for order changes:", {
-      //         newItems: newItems.length,
-      //         changedItems: changedItems.length
-      //       });
-
-      //       await printKitchenReceipt(
-      //         orderNumber,
-      //         tableNumber,
-      //         tableFloor,
-      //         customerCount,
-      //         employeeName,
-      //         newItems,
-      //         changedItems
-      //       );
-      //     }
-      //   } else {
-      //     // For new orders, all items are new
-      //     const newItems = cart.map((item) => ({
-      //       productId: item.product.id,
-      //       productName: item.product.name,
-      //       quantity: item.quantity,
-      //       notes: item.notes
-      //     }));
-
-      //     if (newItems.length > 0) {
-      //       console.log("🍳 Printing kitchen receipt for new order:", {
-      //         itemCount: newItems.length
-      //       });
-
-      //       await printKitchenReceipt(
-      //         orderNumber,
-      //         tableNumber,
-      //         tableFloor,
-      //         customerCount,
-      //         employeeName,
-      //         newItems,
-      //         []
-      //       );
-      //     }
-      //   }
-      // } catch (printError) {
-      //   console.error("❌ Error printing kitchen receipt:", printError);
-      //   // Don't block order success if printing fails
-      // }
 
       // IMMEDIATE: Clear cache and force fresh data fetch
       console.log("🔄 Clearing cache and forcing fresh data fetch...");

@@ -6,8 +6,10 @@ export const settingsTranslations: { [key: string]: SettingsTranslations } = {
     description: "시스템 설정 관리",
     confirmDeleteCategoryTitle: "카테고리 삭제 확인",
     confirmDeleteCategoryDesc: "'{name}' 카테고리를 삭제하시겠습니까?",
-    deleteCategoryWarning: "경고: 이 작업은 되돌릴 수 없습니다. 카테고리가 시스템에서 영구적으로 삭제됩니다.",
-    deleteCategoryDetails: "삭제하기 전에 이 카테고리에 제품이 없는지 확인하세요.",
+    deleteCategoryWarning:
+      "경고: 이 작업은 되돌릴 수 없습니다. 카테고리가 시스템에서 영구적으로 삭제됩니다.",
+    deleteCategoryDetails:
+      "삭제하기 전에 이 카테고리에 제품이 없는지 확인하세요.",
     deleteCategoryAction: "카테고리 삭제",
     storeInfo: "매장 정보",
     categories: "품목관리",
@@ -390,9 +392,12 @@ export const settingsTranslations: { [key: string]: SettingsTranslations } = {
     title: "Settings",
     description: "Manage system settings",
     confirmDeleteCategoryTitle: "Confirm Category Deletion",
-    confirmDeleteCategoryDesc: "Are you sure you want to delete category '{name}'?",
-    deleteCategoryWarning: "Warning: This action cannot be undone. The category will be permanently deleted from the system.",
-    deleteCategoryDetails: "Please ensure there are no products in this category before deletion.",
+    confirmDeleteCategoryDesc:
+      "Are you sure you want to delete category '{name}'?",
+    deleteCategoryWarning:
+      "Warning: This action cannot be undone. The category will be permanently deleted from the system.",
+    deleteCategoryDetails:
+      "Please ensure there are no products in this category before deletion.",
     deleteCategoryAction: "Delete Category",
     storeInfo: "Store Info",
     categories: "Categories",
@@ -794,9 +799,12 @@ export const settingsTranslations: { [key: string]: SettingsTranslations } = {
     title: "Cài đặt",
     description: "Quản lý cài đặt hệ thống",
     confirmDeleteCategoryTitle: "Xác nhận xóa danh mục",
-    confirmDeleteCategoryDesc: 'Bạn có chắc chắn muốn xóa danh mục "{name}" không?',
-    deleteCategoryWarning: "Cảnh báo: Hành động này không thể hoàn tác. Danh mục sẽ bị xóa vĩnh viễn khỏi hệ thống.",
-    deleteCategoryDetails: "Vui lòng đảm bảo không có sản phẩm nào trong danh mục này trước khi xóa.",
+    confirmDeleteCategoryDesc:
+      'Bạn có chắc chắn muốn xóa danh mục "{name}" không?',
+    deleteCategoryWarning:
+      "Cảnh báo: Hành động này không thể hoàn tác. Danh mục sẽ bị xóa vĩnh viễn khỏi hệ thống.",
+    deleteCategoryDetails:
+      "Vui lòng đảm bảo không có sản phẩm nào trong danh mục này trước khi xóa.",
     deleteCategoryAction: "Xóa danh mục",
     storeInfo: "Thông tin cửa hàng",
     categories: "Danh mục sản phẩm",

@@ -4346,7 +4346,7 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                          {paymentMethods.map((method) => (
+                          {paymentMethodsData?.map((method) => (
                             <div
                               key={method.id}
                               className={`p-4 rounded-lg border-2 transition-all ${
@@ -4361,7 +4361,8 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
                                     {method.icon}
                                   </span>
                                   <span className="font-medium">
-                                    {t(`settings.payments.${method.nameKey}`)}
+                                    {method.name ??
+                                      t(`settings.payments.${method.nameKey}`)}
                                   </span>
                                 </div>
                                 <div className="flex items-center gap-2">

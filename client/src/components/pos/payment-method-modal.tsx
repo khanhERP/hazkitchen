@@ -76,6 +76,17 @@ export function PaymentMethodModal({
   onReceiptReady, // Receive receipt ready callback
 }: PaymentMethodModalProps) {
   const [domainName, setDomainName] = useState("");
+  const [postId, setPostId] = useState("");
+  const [transactionId, setTransactionId] = useState("");
+
+  const lstPostCard = [
+    { serial_number: "2840588938", domain: "0318671828.edpos.vn" },
+    {
+      serial_number: "2840588938",
+      domain:
+        "64071157-147f-4160-96cd-6dc099d777d2-00-1d0mzv8b48h7n.pike.replit.dev",
+    },
+  ];
   // CRITICAL DEBUG: Log all props when component mounts
   console.log(`🔍 PAYMENT MODAL PROPS DEBUG:`, {
     isOpen: isOpen,
@@ -258,6 +269,22 @@ export function PaymentMethodModal({
 
   const paymentMethods = getPaymentMethods();
 
+  const convertAmounts = (amount, factor = 100, length = 12) => {
+    if (amount === null || amount === undefined) return "";
+
+    // Remove commas if string
+    const numericAmount =
+      typeof amount === "string"
+        ? Number(amount.replace(/,/g, ""))
+        : Number(amount);
+
+    if (isNaN(numericAmount)) return "";
+
+    const smallestUnit = Math.round(numericAmount * factor);
+
+    return smallestUnit.toString().padStart(length, "0");
+  };
+
   const handleSelect = async (method: string) => {
     console.log(`🚀 ========================================`);
     console.log(`🚀 HANDLESELECT FUNCTION ENTRY POINT`);
@@ -389,8 +416,7 @@ export function PaymentMethodModal({
             // VietQR format - using VietQR API
             const qrUrl = `https://img.vietqr.io/image/${bankId}-${accountNo}-compact2.jpg?amount=${amount}&addInfo=${encodeURIComponent(description)}&accountName=${encodeURIComponent(accountName)}`;
             setQrCodeUrl(qrUrl);
-          }
-          else if (domainName === "0318671828.edpos.vn") {
+          } else if (domainName === "0318671828.edpos.vn") {
             const bankId = "970424"; // Shinhan Bank as default
             const accountNo = "700038488132";
             const accountName = "CONG TY TNHH JANG SU CHON";
@@ -400,8 +426,7 @@ export function PaymentMethodModal({
             // VietQR format - using VietQR API
             const qrUrl = `https://img.vietqr.io/image/${bankId}-${accountNo}-compact2.jpg?amount=${amount}&addInfo=${encodeURIComponent(description)}&accountName=${encodeURIComponent(accountName)}`;
             setQrCodeUrl(qrUrl);
-          }
-          else {
+          } else {
             // Use the raw qrData directly - it's already in the correct format for VietQR
             const qrUrl = await QRCodeLib.toDataURL(qrResponse.qrData, {
               width: 256,
@@ -771,6 +796,437 @@ export function PaymentMethodModal({
       } finally {
         setQrLoading(false);
       }
+    } else if (method === "creditCard") {
+      // Check if this is a real order or temporary order
+      const isTemporaryOrder = orderInfo.id.toString().startsWith("temp-");
+
+      if (isTemporaryOrder) {
+        console.log(`📝 Creating POS ${method} order`);
+
+        // SỬ DỤNG TRỰC TIẾP DỮ LIỆU TỪ RECEIPT PREVIEW - KHÔNG TÍNH TOÁN LẠI
+        const receiptSubtotal =
+          receipt?.exactSubtotal || orderInfo?.exactSubtotal || 0;
+        const receiptTax = receipt?.exactTax || orderInfo?.exactTax || 0;
+        const receiptTotal = receipt?.exactTotal || orderInfo?.exactTotal || 0;
+
+        if (receiptTotal < 5000) {
+          toast({
+            title: `${t("common.error")}`,
+            description: `${t("common.minInvoiceAmount")}`,
+            variant: "destructive",
+          });
+          return;
+        }
+
+        const checkCreditCard = handleCreditCardComplete(
+          orderData.orderNumber,
+          receiptTotal,
+        );
+
+        console.log(
+          `💰 ${method} Payment Complete: Using exact receipt preview data:`,
+          {
+            receiptSubtotal,
+            receiptTax,
+            receiptTotal,
+            method,
+            source: "receipt_preview_exact",
+          },
+        );
+
+        // Get discount amount from multiple sources
+        let discountAmount = parseFloat(
+          receipt?.discount || orderForPayment?.discount || "0",
+        );
+        // Add further logic for the payment
+        if (discountAmount < 0) {
+          discountAmount = 0; // Ensure discount is non-negative
+        }
+
+        console.log(`💰 ${method} Discount amount:`, discountAmount);
+
+        // Prepare order items with discount distribution
+        let orderItems = (orderInfo.items || cartItems || []).map(
+          (item: any) => ({
+            productId: item.productId || item.id,
+            quantity: item.quantity?.toString() || "1",
+            unitPrice: item.unitPrice || item.price?.toString() || "0",
+            total:
+              item.total ||
+              (
+                parseFloat(item.price || "0") * parseInt(item.quantity || "1")
+              ).toString(),
+            notes: null,
+            discount: item.discount.toString() || "0", // Will be calculated below
+          }),
+        );
+
+        const countProductDiscount = orderItems.reduce((acc: number, item) => {
+          return (acc += parseFloat(item.discount || "0"));
+        }, 0);
+        // Distribute discount among items if discount exists
+        if (
+          discountAmount > 0 &&
+          discountAmount != countProductDiscount &&
+          orderItems.length > 0
+        ) {
+          console.log("💰 Distributing discount among order items");
+
+          // Calculate total amount (subtotal before discount)
+          const totalAmount = orderItems.reduce((sum, item) => {
+            const unitPrice = Number(item.unitPrice || 0);
+            const quantity = Number(item.quantity || 0);
+            return sum + unitPrice * quantity;
+          }, 0);
+
+          if (totalAmount > 0) {
+            let allocatedDiscount = 0;
+
+            orderItems = orderItems.map((item, index) => {
+              const unitPrice = Number(item.unitPrice || 0);
+              const quantity = Number(item.quantity || 0);
+              const itemTotal = unitPrice * quantity;
+
+              let itemDiscount = parseFloat(item.discount || "0");
+
+              if (index === orderItems.length - 1) {
+                // Last item gets remaining discount to ensure total matches exactly
+                itemDiscount = Math.max(0, discountAmount - allocatedDiscount);
+              } else {
+                // Calculate proportional discount
+                const proportionalDiscount =
+                  (discountAmount * itemTotal) / totalAmount;
+                itemDiscount = Math.round(proportionalDiscount);
+                allocatedDiscount += itemDiscount;
+              }
+
+              return {
+                ...item,
+                quantity: item.quantity.toString(),
+                discount: itemDiscount.toFixed(2),
+              };
+            });
+
+            console.log("💰 Discount distribution completed:", {
+              totalDiscount: discountAmount,
+              itemsWithDiscount: orderItems.map((item) => ({
+                productId: item.productId,
+                unitPrice: item.unitPrice,
+                quantity: item.quantity,
+                discount: item.discount,
+              })),
+            });
+          }
+        }
+
+        const orderData = {
+          orderNumber: `ORD-${Date.now()}`,
+          tableId: null, // POS orders don't have tables
+          salesChannel: "pos", // Mark as POS order
+          customerName: orderInfo.customerName || "Khách hàng lẻ",
+          customerCount: 1,
+          status: "paid", // Mark as paid immediately
+          paymentMethod: method, // Explicitly set payment method
+          paymentStatus: "paid",
+          subtotal: receiptSubtotal.toString(),
+          tax: receiptTax.toString(),
+          total: receiptTotal.toString(),
+          notes: `POS ${method} Payment`,
+          paidAt: new Date().toISOString(),
+          discount: discountAmount.toString(),
+        };
+
+        console.log(`📝 Creating POS ${method} order:`, orderData);
+        console.log(`📦 Order items:`, orderItems);
+
+        if (checkCreditCard.success) {
+          // Create order via API
+          const checkStatusCreditCard = await fetch("https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/poll", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              serial: postId,
+              transactionId: checkCreditCard.transactionId,
+            }),
+          });
+
+          const data = await checkStatusCreditCard.json();
+          if (data.response_code !== "00") {
+            console.log(`❌ Check status credit card failed`);
+            console.log("check status Creditcard", `❌ ${data}`);
+            return;
+          } else {
+            console.log(`✅ Check status credit card success`);
+            console.log("check status Creditcard", `✅ ${data}`);
+          }
+        } else {
+          console.log(`❌ Check credit card failed`);
+          return;
+        }
+        // Create order via API
+        const createResponse = await fetch("https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            order: orderData,
+            items: orderItems,
+          }),
+        });
+
+        if (createResponse.ok) {
+          const createdOrder = await createResponse.json();
+          console.log(
+            `✅ POS ${method} order created successfully:`,
+            createdOrder,
+          );
+
+          // Update orderInfo with the real order ID for E-Invoice
+          orderInfo.id = createdOrder.id;
+          receipt.id = createdOrder.id;
+          orderForPayment.id = createdOrder.id;
+          orderInfo.orderNumber = createdOrder.orderNumber;
+
+          setSelectedPaymentMethod(method);
+          setShowEInvoice(true);
+          console.log(
+            `🔥 SHOWING E-INVOICE MODAL for created POS ${method} order ${createdOrder.id}`,
+          );
+        } else {
+          const errorText = await createResponse.text();
+          console.error(`❌ Failed to create POS ${method} order:`, errorText);
+          toast({
+            title: "Lỗi",
+            description: `Không thể tạo đơn hàng với phương thức ${method}`,
+            variant: "destructive",
+          });
+        }
+      } else {
+        // check thanh toán credit card
+        if (orderInfo.total < 5000) {
+          toast({
+            title: `${t("common.error")}`,
+            description: `${t("common.minInvoiceAmount")}`,
+            variant: "destructive",
+          });
+          return;
+        }
+        const checkCreditCard = await handleCreditCardComplete(
+          orderInfo.orderNumber,
+          orderInfo.total,
+        );
+
+        // For other payment methods (card, digital wallets) on real orders, update order AND payment method
+        console.log(
+          `🚀 REAL ORDER ${method.toUpperCase()} PAYMENT - updating order for order ${orderInfo.id}`,
+        );
+        try {
+          if (checkCreditCard.success) {
+            // Create order via API
+            const checkStatusCreditCard = await fetch("https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/poll", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                serial: postId,
+                transactionId: checkCreditCard.transactionId,
+              }),
+            });
+
+            const data = await checkStatusCreditCard.json();
+            if (data.response_code !== "00") {
+              console.log(`❌ Check status credit card failed`);
+              console.log("check status Creditcard", `❌ ${data}`);
+              return;
+            } else {
+              console.log(`✅ Check status credit card success`);
+              console.log("check status Creditcard", `✅ ${data}`);
+            }
+          } else {
+            console.log(`❌ Check credit card failed`);
+            return;
+          }
+
+          // First update the payment method and status
+          const updateResponse = await fetch(`https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders/${orderInfo.id}`, {
+            method: "PUT",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              status: "paid",
+              paymentMethod: method, // This ensures payment method is saved
+              paymentStatus: "paid",
+              paidAt: new Date().toISOString(),
+            }),
+          });
+
+          if (updateResponse.ok) {
+            const updatedOrder = await updateResponse.json();
+            console.log(
+              `✅ Order updated with ${method} payment successfully:`,
+              {
+                orderId: updatedOrder.id,
+                orderNumber: updatedOrder.orderNumber,
+                status: updatedOrder.status,
+                paymentMethod: updatedOrder.paymentMethod,
+                paymentStatus: updatedOrder.paymentStatus,
+                paidAt: updatedOrder.paidAt,
+                tableId: updatedOrder.tableId,
+              },
+            );
+
+            // ALWAYS update table status if order has a table - regardless of payment method
+            if (updatedOrder.tableId) {
+              console.log(
+                `🔄 Starting table status update for table ${updatedOrder.tableId} after ${method} payment`,
+              );
+
+              try {
+                // Check if there are any other unpaid orders on this table
+                const ordersResponse = await fetch("https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders", {
+                  method: "GET",
+                  headers: {
+                    "Content-Type": "application/json",
+                  },
+                });
+
+                if (!ordersResponse.ok) {
+                  throw new Error(
+                    "Failed to fetch orders for table status check",
+                  );
+                }
+
+                const allOrders = await ordersResponse.json();
+
+                const otherActiveOrders = Array.isArray(allOrders)
+                  ? allOrders.filter(
+                      (o: any) =>
+                        o.tableId === updatedOrder.tableId &&
+                        o.id !== updatedOrder.id &&
+                        !["paid", "cancelled"].includes(o.status),
+                    )
+                  : [];
+
+                console.log(
+                  `🔍 Other active orders on table ${updatedOrder.tableId}:`,
+                  {
+                    otherOrdersCount: otherActiveOrders.length,
+                    otherOrders: otherActiveOrders.map((o) => ({
+                      id: o.id,
+                      orderNumber: o.orderNumber,
+                      status: o.status,
+                    })),
+                  },
+                );
+
+                // If no other unpaid orders, update table to available
+                if (otherActiveOrders.length === 0) {
+                  console.log(
+                    `🔄 No other active orders - updating table ${updatedOrder.tableId} to available`,
+                  );
+
+                  const tableUpdateResponse = await fetch(
+                    `https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/tables/${updatedOrder.tableId}/status`,
+                    {
+                      method: "PUT",
+                      headers: {
+                        "Content-Type": "application/json",
+                      },
+                      body: JSON.stringify({
+                        status: "available",
+                      }),
+                    },
+                  );
+
+                  if (!tableUpdateResponse.ok) {
+                    const errorText = await tableUpdateResponse.text();
+                    throw new Error(`Table update failed: ${errorText}`);
+                  }
+
+                  console.log(
+                    `✅ Table ${updatedOrder.tableId} updated to available after ${method} payment`,
+                  );
+
+                  // Send refresh signal via WebSocket
+                  try {
+                    const protocol =
+                      window.location.protocol === "https:" ? "wss:" : "ws:";
+                    const wsUrl = `https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/ws`;
+                    const ws = new WebSocket(wsUrl);
+
+                    ws.onopen = () => {
+                      console.log(
+                        `📡 Sending table status refresh signal for table ${updatedOrder.tableId}`,
+                      );
+                      ws.send(
+                        JSON.stringify({
+                          type: "force_refresh",
+                          source: "payment-method-modal",
+                          reason: `table_status_updated_after_${method}_payment`,
+                          tableId: updatedOrder.tableId,
+                          timestamp: new Date().toISOString(),
+                        }),
+                      );
+                      setTimeout(() => ws.close(), 100);
+                    };
+                  } catch (wsError) {
+                    console.warn(
+                      "⚠️ WebSocket refresh signal failed (non-critical):",
+                      wsError,
+                    );
+                  }
+                } else {
+                  console.log(
+                    `⏳ Table ${updatedOrder.tableId} still has ${otherActiveOrders.length} active orders, keeping occupied status`,
+                  );
+                }
+              } catch (tableError) {
+                console.error(
+                  `❌ Error updating table status after ${method} payment:`,
+                  tableError,
+                );
+              }
+            } else {
+              console.log(
+                "ℹ️ Order has no table, skipping table status update",
+              );
+            }
+
+            // Set payment method and show E-Invoice modal
+            setSelectedPaymentMethod(method);
+            setShowEInvoice(true);
+            console.log(
+              `🔥 SHOWING E-INVOICE MODAL after successful ${method} payment`,
+            );
+          } else {
+            const errorText = await updateResponse.text();
+            console.error(
+              `❌ Failed to update order with ${method} payment:`,
+              errorText,
+            );
+            toast({
+              title: "Lỗi",
+              description: `Không thể cập nhật phương thức thanh toán ${method}`,
+              variant: "destructive",
+            });
+          }
+        } catch (error) {
+          console.error(
+            `❌ Error updating order with ${method} payment:`,
+            error,
+          );
+          toast({
+            title: "Lỗi",
+            description: `Lỗi khi xử lý thanh toán ${method}`,
+            variant: "destructive",
+          });
+        }
+      }
     } else {
       // Check if this is a real order or temporary order
       const isTemporaryOrder = orderInfo.id.toString().startsWith("temp-");
@@ -1122,6 +1578,91 @@ export function PaymentMethodModal({
           });
         }
       }
+    }
+  };
+
+  const handleCreditCardComplete = async (orderNumber, amount) => {
+    if (transactionId) {
+      return {
+        transactionId: transactionIdRef.current,
+        success: true,
+      };
+    }
+    const getDevices = await fetch("https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/devices", {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+
+    if (getDevices.ok) {
+      const devices = await getDevices.json();
+      const lstDevices = devices?.msg?.devices ?? [];
+      console.log(`✅ Devices:`, lstDevices);
+
+      if (lstDevices?.length > 0) {
+        const findDevices = lstDevices.find(
+          (item) => item.serial_number === postId,
+        );
+        if (findDevices) {
+          console.log(`✅ Device found:`, findDevices);
+          const amountSend = Math.round(parseFloat(amount || "0"));
+          const amountConvert = convertAmounts(amountSend);
+          const sendToDevices = await fetch("https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/sale", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              event: "sale",
+              serial: postId,
+              amount: amountConvert.toString(),
+              invoice: orderNumber,
+            }),
+          });
+
+          const data = await sendToDevices.json();
+          console.log(`✅ Send to device:`, data);
+          if (sendToDevices.ok) {
+            console.log(`✅ Send to device success`);
+            if (data.response_code === "7000" || data.response_code === "00") {
+              setTransactionId(data.transaction_id);
+              return {
+                transactionId: data.transaction_id,
+                success: true,
+              };
+            }
+            return {
+              transactionId: null,
+              success: false,
+            };
+          } else {
+            console.error(`❌ Send to device failed`);
+            return {
+              transactionId: null,
+              success: false,
+            };
+          }
+        } else {
+          console.error(`❌ Device not found`);
+          return {
+            transactionId: null,
+            success: false,
+          };
+        }
+      } else {
+        console.error(`❌ Devices not found`);
+        return {
+          transactionId: null,
+          success: false,
+        };
+      }
+    } else {
+      console.error(`❌ Failed to fetch devices`);
+      return {
+        transactionId: null,
+        success: false,
+      };
     }
   };
 
@@ -2323,6 +2864,12 @@ export function PaymentMethodModal({
   useEffect(() => {
     const domainConnect = window.location.hostname;
     setDomainName(domainConnect);
+    const findPostCard = lstPostCard.find(
+      (item) => item.domain === domainConnect,
+    );
+    if (findPostCard) {
+      setPostId(findPostCard.serial_number);
+    }
     if (showQRCode) {
       setWasShowingQRCode(true);
     }
