@@ -404,12 +404,6 @@ export function OrderDialog({
             },
           );
           if (updateResponse.ok) {
-            const updateResult = await updateResponse.json();
-            console.log(
-              "✅ Order updated successfully with current totals:",
-              updateResult,
-            );
-
             if (existingOrder) {
               try {
                 await apiRequest("POST", "https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/order-change-history", {
@@ -439,9 +433,14 @@ export function OrderDialog({
                 );
               }
             }
+            // const updateResult = await updateResponse.json();
+            // console.log(
+            //   "✅ Order updated successfully with current totals:",
+            //   updateResult,
+            // );
 
             // Return the final result (prioritize the order update result)
-            return updateResult;
+            return true;
           } else {
             const errorText = await updateResponse.text();
             console.error(
