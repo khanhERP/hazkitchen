@@ -197,7 +197,7 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
     if (!employeeToDelete) return;
 
     try {
-      const response = await fetch(`https://api-pos.edpos.vn/employees/${employeeToDelete.id}`, {
+      const response = await fetch(`https://api-pos.edpos.vn/api/employees/${employeeToDelete.id}`, {
         method: "DELETE",
       });
 
@@ -237,7 +237,7 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
       }
 
       await queryClient.refetchQueries({
-        queryKey: ["https://api-pos.edpos.vn/employees"],
+        queryKey: ["https://api-pos.edpos.vn/api/employees"],
       });
 
       toast({
@@ -285,21 +285,21 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
 
   // Fetch store settings
   const { data: storeData, isLoading } = useQuery<StoreSettings>({
-    queryKey: ["https://api-pos.edpos.vn/store-settings"],
+    queryKey: ["https://api-pos.edpos.vn/api/store-settings"],
   });
 
   // Fetch customers
   const { data: customersData, isLoading: customersLoading } = useQuery<
     Customer[]
   >({
-    queryKey: ["https://api-pos.edpos.vn/customers"],
+    queryKey: ["https://api-pos.edpos.vn/api/customers"],
   });
 
   // Fetch employees
   const { data: employeesRawData, isLoading: employeesLoading } = useQuery<
     any[]
   >({
-    queryKey: ["https://api-pos.edpos.vn/employees"],
+    queryKey: ["https://api-pos.edpos.vn/api/employees"],
   });
 
   // Sort employees by ID descending (newest first)
@@ -343,13 +343,13 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
   const { data: categoriesData, isLoading: categoriesLoading } = useQuery<
     any[]
   >({
-    queryKey: ["https://api-pos.edpos.vn/categories"],
+    queryKey: ["https://api-pos.edpos.vn/api/categories"],
   });
 
   // Fetch products (include inactive products in settings) - with pagination
   const { data: productsResponse, isLoading: productsLoading } = useQuery({
     queryKey: [
-      "https://api-pos.edpos.vn/products",
+      "https://api-pos.edpos.vn/api/products",
       productsCurrentPage,
       productsPageSize,
       selectedCategoryFilter,
@@ -367,7 +367,7 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
         category: selectedCategoryFilter,
         search: productSearchTerm,
       });
-      const response = await fetch(`https://api-pos.edpos.vn/products?${params.toString()}`);
+      const response = await fetch(`https://api-pos.edpos.vn/api/products?${params.toString()}`);
       if (!response.ok) throw new Error("Failed to fetch products");
       return response.json();
     },
@@ -431,7 +431,7 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
   // Fetch payment methods from API
   const { data: paymentMethodsData, isLoading: paymentMethodsLoading } =
     useQuery<any[]>({
-      queryKey: ["https://api-pos.edpos.vn/payment-methods"],
+      queryKey: ["https://api-pos.edpos.vn/api/payment-methods"],
     });
 
   // Update local state when data is loaded
@@ -444,11 +444,11 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
   // Mutation to update store settings
   const updateStoreSettingsMutation = useMutation({
     mutationFn: async (settings: Partial<InsertStoreSettings>) => {
-      const response = await apiRequest("PUT", "https://api-pos.edpos.vn/store-settings", settings);
+      const response = await apiRequest("PUT", "https://api-pos.edpos.vn/api/store-settings", settings);
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["https://api-pos.edpos.vn/store-settings"] });
+      queryClient.invalidateQueries({ queryKey: ["https://api-pos.edpos.vn/api/store-settings"] });
       // toast({
       //   title: t("common.success"),
       //   description: t("settings.storeUpdated"),
@@ -561,11 +561,11 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
   // Mutation to create payment method
   const createPaymentMethodMutation = useMutation({
     mutationFn: async (data: any) => {
-      const response = await apiRequest("POST", "https://api-pos.edpos.vn/payment-methods", data);
+      const response = await apiRequest("POST", "https://api-pos.edpos.vn/api/payment-methods", data);
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["https://api-pos.edpos.vn/payment-methods"] });
+      queryClient.invalidateQueries({ queryKey: ["https://api-pos.edpos.vn/api/payment-methods"] });
       // toast({
       //   title: t("common.success"),
       //   description: "Đã thêm phương thức thanh toán mới",
@@ -585,13 +585,13 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
     mutationFn: async ({ id, data }: { id: number; data: any }) => {
       const response = await apiRequest(
         "PUT",
-        `https://api-pos.edpos.vn/payment-methods/${id}`,
+        `https://api-pos.edpos.vn/api/payment-methods/${id}`,
         data,
       );
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["https://api-pos.edpos.vn/payment-methods"] });
+      queryClient.invalidateQueries({ queryKey: ["https://api-pos.edpos.vn/api/payment-methods"] });
       // toast({
       //   title: t("common.success"),
       //   description: t("settings.paymentUpdateSuccessDesc"),
@@ -609,11 +609,11 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
   // Mutation to delete payment method
   const deletePaymentMethodMutation = useMutation({
     mutationFn: async (id: number) => {
-      const response = await apiRequest("DELETE", `https://api-pos.edpos.vn/payment-methods/${id}`);
+      const response = await apiRequest("DELETE", `https://api-pos.edpos.vn/api/payment-methods/${id}`);
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["https://api-pos.edpos.vn/payment-methods"] });
+      queryClient.invalidateQueries({ queryKey: ["https://api-pos.edpos.vn/api/payment-methods"] });
       // toast({
       //   title: t("common.success"),
       //   description: "Đã xóa phương thức thanh toán",
@@ -698,7 +698,7 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
     if (!customerToDelete) return;
 
     try {
-      const response = await fetch(`https://api-pos.edpos.vn/customers/${customerToDelete.id}`, {
+      const response = await fetch(`https://api-pos.edpos.vn/api/customers/${customerToDelete.id}`, {
         method: "DELETE",
       });
 
@@ -706,7 +706,7 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
-      await queryClient.refetchQueries({ queryKey: ["https://api-pos.edpos.vn/customers"] });
+      await queryClient.refetchQueries({ queryKey: ["https://api-pos.edpos.vn/api/customers"] });
 
       // toast({
       //   title: t("common.success"),
@@ -787,7 +787,7 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
     }
 
     try {
-      const response = await fetch("https://api-pos.edpos.vn/categories", {
+      const response = await fetch("https://api-pos.edpos.vn/api/categories", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -802,9 +802,9 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
       const result = await response.json();
 
       // Refetch data immediately
-      await queryClient.refetchQueries({ queryKey: ["https://api-pos.edpos.vn/categories"] });
+      await queryClient.refetchQueries({ queryKey: ["https://api-pos.edpos.vn/api/categories"] });
       await queryClient.refetchQueries({
-        queryKey: ["https://api-pos.edpos.vn/products", productsCurrentPage, productsPageSize],
+        queryKey: ["https://api-pos.edpos.vn/api/products", productsCurrentPage, productsPageSize],
       });
 
       // toast({
@@ -843,7 +843,7 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
     }
 
     try {
-      const response = await fetch(`https://api-pos.edpos.vn/categories/${editingCategory.id}`, {
+      const response = await fetch(`https://api-pos.edpos.vn/api/categories/${editingCategory.id}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -862,9 +862,9 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
       resetCategoryForm();
 
       // Refetch data immediately
-      await queryClient.refetchQueries({ queryKey: ["https://api-pos.edpos.vn/categories"] });
+      await queryClient.refetchQueries({ queryKey: ["https://api-pos.edpos.vn/api/categories"] });
       await queryClient.refetchQueries({
-        queryKey: ["https://api-pos.edpos.vn/products", productsCurrentPage, productsPageSize],
+        queryKey: ["https://api-pos.edpos.vn/api/products", productsCurrentPage, productsPageSize],
       });
 
       // toast({
@@ -908,7 +908,7 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
     if (!categoryToDelete) return;
 
     try {
-      const response = await fetch(`https://api-pos.edpos.vn/categories/${categoryToDelete.id}`, {
+      const response = await fetch(`https://api-pos.edpos.vn/api/categories/${categoryToDelete.id}`, {
         method: "DELETE",
       });
 
@@ -920,9 +920,9 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
       }
 
       // Refetch data immediately
-      await queryClient.refetchQueries({ queryKey: ["https://api-pos.edpos.vn/categories"] });
+      await queryClient.refetchQueries({ queryKey: ["https://api-pos.edpos.vn/api/categories"] });
       await queryClient.refetchQueries({
-        queryKey: ["https://api-pos.edpos.vn/products", productsCurrentPage, productsPageSize],
+        queryKey: ["https://api-pos.edpos.vn/api/products", productsCurrentPage, productsPageSize],
       });
 
       // toast({
@@ -1031,7 +1031,7 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
         finalProductData.imageUrl = productForm.imageUrl;
       }
 
-      const response = await fetch("https://api-pos.edpos.vn/products", {
+      const response = await fetch("https://api-pos.edpos.vn/api/products", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(finalProductData),
@@ -1045,7 +1045,7 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
       }
 
       await queryClient.refetchQueries({
-        queryKey: ["https://api-pos.edpos.vn/products", productsCurrentPage, productsPageSize],
+        queryKey: ["https://api-pos.edpos.vn/api/products", productsCurrentPage, productsPageSize],
       });
       setShowProductForm(false);
       resetProductForm();
@@ -1125,7 +1125,7 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
         finalProductData.imageUrl = productForm.imageUrl;
       }
 
-      const response = await fetch(`https://api-pos.edpos.vn/products/${editingProduct.id}`, {
+      const response = await fetch(`https://api-pos.edpos.vn/api/products/${editingProduct.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(finalProductData),
@@ -1139,7 +1139,7 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
       }
 
       await queryClient.refetchQueries({
-        queryKey: ["https://api-pos.edpos.vn/products", productsCurrentPage, productsPageSize],
+        queryKey: ["https://api-pos.edpos.vn/api/products", productsCurrentPage, productsPageSize],
       });
       setShowProductForm(false);
       setEditingProduct(null);
@@ -1238,10 +1238,10 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
     if (!productToDelete) return;
 
     try {
-      await apiRequest("DELETE", `https://api-pos.edpos.vn/products/${productToDelete.id}`);
+      await apiRequest("DELETE", `https://api-pos.edpos.vn/api/products/${productToDelete.id}`);
 
       await queryClient.refetchQueries({
-        queryKey: ["https://api-pos.edpos.vn/products", productsCurrentPage, productsPageSize],
+        queryKey: ["https://api-pos.edpos.vn/api/products", productsCurrentPage, productsPageSize],
       });
 
       // toast({
@@ -1295,7 +1295,7 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
   // Fetch E-invoice connections
   const { data: eInvoiceConnections = [], isLoading: eInvoiceLoading } =
     useQuery<any[]>({
-      queryKey: ["https://api-pos.edpos.vn/einvoice-connections"],
+      queryKey: ["https://api-pos.edpos.vn/api/einvoice-connections"],
     });
 
   // E-invoice mutations
@@ -1303,14 +1303,14 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
     mutationFn: async (data: any) => {
       const response = await apiRequest(
         "POST",
-        "https://api-pos.edpos.vn/einvoice-connections",
+        "https://api-pos.edpos.vn/api/einvoice-connections",
         data,
       );
       return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: ["https://api-pos.edpos.vn/einvoice-connections"],
+        queryKey: ["https://api-pos.edpos.vn/api/einvoice-connections"],
       });
       // toast({
       //   title: t("common.success"),
@@ -1332,14 +1332,14 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
     mutationFn: async ({ id, data }: { id: number; data: any }) => {
       const response = await apiRequest(
         "PUT",
-        `https://api-pos.edpos.vn/einvoice-connections/${id}`,
+        `https://api-pos.edpos.vn/api/einvoice-connections/${id}`,
         data,
       );
       return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: ["https://api-pos.edpos.vn/einvoice-connections"],
+        queryKey: ["https://api-pos.edpos.vn/api/einvoice-connections"],
       });
       // toast({
       //   title: t("common.success"),
@@ -1361,13 +1361,13 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
     mutationFn: async (id: number) => {
       const response = await apiRequest(
         "DELETE",
-        `https://api-pos.edpos.vn/einvoice-connections/${id}`,
+        `https://api-pos.edpos.vn/api/einvoice-connections/${id}`,
       );
       return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: ["https://api-pos.edpos.vn/einvoice-connections"],
+        queryKey: ["https://api-pos.edpos.vn/api/einvoice-connections"],
       });
       // toast({
       //   title: t("common.success"),
@@ -1558,17 +1558,17 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
   const { data: invoiceTemplates = [], isLoading: templatesLoading } = useQuery<
     any[]
   >({
-    queryKey: ["https://api-pos.edpos.vn/invoice-templates"],
+    queryKey: ["https://api-pos.edpos.vn/api/invoice-templates"],
   });
 
   // Invoice template mutations
   const createTemplateMutation = useMutation({
     mutationFn: async (data: any) => {
-      const response = await apiRequest("POST", "https://api-pos.edpos.vn/invoice-templates", data);
+      const response = await apiRequest("POST", "https://api-pos.edpos.vn/api/invoice-templates", data);
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["https://api-pos.edpos.vn/invoice-templates"] });
+      queryClient.invalidateQueries({ queryKey: ["https://api-pos.edpos.vn/api/invoice-templates"] });
       // toast({
       //   title: t("common.success"),
       //   description: t("settings.einvoiceTemplateCreateSuccess"),
@@ -1589,13 +1589,13 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
     mutationFn: async ({ id, data }: { id: number; data: any }) => {
       const response = await apiRequest(
         "PUT",
-        `https://api-pos.edpos.vn/invoice-templates/${id}`,
+        `https://api-pos.edpos.vn/api/invoice-templates/${id}`,
         data,
       );
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["https://api-pos.edpos.vn/invoice-templates"] });
+      queryClient.invalidateQueries({ queryKey: ["https://api-pos.edpos.vn/api/invoice-templates"] });
       // toast({
       //   title: t("common.success"),
       //   description: t("settings.einvoiceTemplateUpdateSuccess"),
@@ -1616,12 +1616,12 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
     mutationFn: async (id: number) => {
       const response = await apiRequest(
         "DELETE",
-        `https://api-pos.edpos.vn/invoice-templates/${id}`,
+        `https://api-pos.edpos.vn/api/invoice-templates/${id}`,
       );
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["https://api-pos.edpos.vn/invoice-templates"] });
+      queryClient.invalidateQueries({ queryKey: ["https://api-pos.edpos.vn/api/invoice-templates"] });
       // toast({
       //   title: t("common.success"),
       //   description: t("settings.einvoiceTemplateDeleteSuccess"),
@@ -1726,7 +1726,7 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
 
   const refetchProducts = () => {
     queryClient.invalidateQueries({
-      queryKey: ["https://api-pos.edpos.vn/products", productsCurrentPage, productsPageSize],
+      queryKey: ["https://api-pos.edpos.vn/api/products", productsCurrentPage, productsPageSize],
     });
   };
 

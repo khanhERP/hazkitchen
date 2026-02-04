@@ -103,9 +103,9 @@ export function PaymentMethodModal({
 
   // Query store settings to get dynamic address - ALWAYS CALL THIS HOOK
   const { data: storeSettings } = useQuery({
-    queryKey: ["https://api-pos.edpos.vn/store-settings"],
+    queryKey: ["https://api-pos.edpos.vn/api/store-settings"],
     queryFn: async () => {
-      const response = await apiRequest("GET", "https://api-pos.edpos.vn/store-settings");
+      const response = await apiRequest("GET", "https://api-pos.edpos.vn/api/store-settings");
       return response.json();
     },
     enabled: isOpen, // Only fetch when modal is open
@@ -188,9 +188,9 @@ export function PaymentMethodModal({
 
   // Query payment methods from API
   const { data: paymentMethodsData } = useQuery({
-    queryKey: ["https://api-pos.edpos.vn/payment-methods/active"],
+    queryKey: ["https://api-pos.edpos.vn/api/payment-methods/active"],
     queryFn: async () => {
-      const response = await apiRequest("GET", "https://api-pos.edpos.vn/payment-methods/active");
+      const response = await apiRequest("GET", "https://api-pos.edpos.vn/api/payment-methods/active");
       return response.json();
     },
     enabled: isOpen, // Only fetch when modal is open
@@ -949,7 +949,7 @@ export function PaymentMethodModal({
         if (storeSettings.isCreditCard) {
           if (checkCreditCard.success) {
             // Create order via API
-            const checkStatusCreditCard = await fetch("https://api-pos.edpos.vn/poll", {
+            const checkStatusCreditCard = await fetch("https://api-pos.edpos.vn/api/poll", {
               method: "POST",
               headers: {
                 "Content-Type": "application/json",
@@ -976,7 +976,7 @@ export function PaymentMethodModal({
         }
 
         // Create order via API
-        const createResponse = await fetch("https://api-pos.edpos.vn/orders", {
+        const createResponse = await fetch("https://api-pos.edpos.vn/api/orders", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -1045,7 +1045,7 @@ export function PaymentMethodModal({
           if (storeSettings.isCreditCard) {
             if (checkCreditCard.success) {
               // Create order via API
-              const checkStatusCreditCard = await fetch("https://api-pos.edpos.vn/poll", {
+              const checkStatusCreditCard = await fetch("https://api-pos.edpos.vn/api/poll", {
                 method: "POST",
                 headers: {
                   "Content-Type": "application/json",
@@ -1072,7 +1072,7 @@ export function PaymentMethodModal({
           }
 
           // First update the payment method and status
-          const updateResponse = await fetch(`https://api-pos.edpos.vn/orders/${orderInfo.id}`, {
+          const updateResponse = await fetch(`https://api-pos.edpos.vn/api/orders/${orderInfo.id}`, {
             method: "PUT",
             headers: {
               "Content-Type": "application/json",
@@ -1108,7 +1108,7 @@ export function PaymentMethodModal({
 
               try {
                 // Check if there are any other unpaid orders on this table
-                const ordersResponse = await fetch("https://api-pos.edpos.vn/orders", {
+                const ordersResponse = await fetch("https://api-pos.edpos.vn/api/orders", {
                   method: "GET",
                   headers: {
                     "Content-Type": "application/json",
@@ -1151,7 +1151,7 @@ export function PaymentMethodModal({
                   );
 
                   const tableUpdateResponse = await fetch(
-                    `https://api-pos.edpos.vn/tables/${updatedOrder.tableId}/status`,
+                    `https://api-pos.edpos.vn/api/tables/${updatedOrder.tableId}/status`,
                     {
                       method: "PUT",
                       headers: {
@@ -1377,7 +1377,7 @@ export function PaymentMethodModal({
         console.log(`📦 Order items:`, orderItems);
 
         // Create order via API
-        const createResponse = await fetch("https://api-pos.edpos.vn/orders", {
+        const createResponse = await fetch("https://api-pos.edpos.vn/api/orders", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -1423,7 +1423,7 @@ export function PaymentMethodModal({
 
         try {
           // First update the payment method and status
-          const updateResponse = await fetch(`https://api-pos.edpos.vn/orders/${orderInfo.id}`, {
+          const updateResponse = await fetch(`https://api-pos.edpos.vn/api/orders/${orderInfo.id}`, {
             method: "PUT",
             headers: {
               "Content-Type": "application/json",
@@ -1459,7 +1459,7 @@ export function PaymentMethodModal({
 
               try {
                 // Check if there are any other unpaid orders on this table
-                const ordersResponse = await fetch("https://api-pos.edpos.vn/orders", {
+                const ordersResponse = await fetch("https://api-pos.edpos.vn/api/orders", {
                   method: "GET",
                   headers: {
                     "Content-Type": "application/json",
@@ -1502,7 +1502,7 @@ export function PaymentMethodModal({
                   );
 
                   const tableUpdateResponse = await fetch(
-                    `https://api-pos.edpos.vn/tables/${updatedOrder.tableId}/status`,
+                    `https://api-pos.edpos.vn/api/tables/${updatedOrder.tableId}/status`,
                     {
                       method: "PUT",
                       headers: {
@@ -1608,7 +1608,7 @@ export function PaymentMethodModal({
         success: true,
       };
     }
-    const getDevices = await fetch("https://api-pos.edpos.vn/devices", {
+    const getDevices = await fetch("https://api-pos.edpos.vn/api/devices", {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
@@ -1628,7 +1628,7 @@ export function PaymentMethodModal({
           console.log(`✅ Device found:`, findDevices);
           const amountSend = Math.round(parseFloat(amount || "0"));
           const amountConvert = convertAmounts(amountSend);
-          const sendToDevices = await fetch("https://api-pos.edpos.vn/sale", {
+          const sendToDevices = await fetch("https://api-pos.edpos.vn/api/sale", {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
@@ -1814,7 +1814,7 @@ export function PaymentMethodModal({
       console.log("📦 Order items:", orderItems);
 
       // Create order via API
-      const createResponse = await fetch("https://api-pos.edpos.vn/orders", {
+      const createResponse = await fetch("https://api-pos.edpos.vn/api/orders", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -1856,7 +1856,7 @@ export function PaymentMethodModal({
       try {
         console.log(`🔥 MAKING API CALL: PUT /api/orders/${orderInfo.id}`);
 
-        const statusResponse = await fetch(`https://api-pos.edpos.vn/orders/${orderInfo.id}`, {
+        const statusResponse = await fetch(`https://api-pos.edpos.vn/api/orders/${orderInfo.id}`, {
           method: "PUT",
           headers: {
             "Content-Type": "application/json",
@@ -1884,7 +1884,7 @@ export function PaymentMethodModal({
 
             try {
               // Check if there are any other unpaid orders on this table
-              const ordersResponse = await fetch("https://api-pos.edpos.vn/orders", {
+              const ordersResponse = await fetch("https://api-pos.edpos.vn/api/orders", {
                 method: "GET",
                 headers: {
                   "Content-Type": "application/json",
@@ -1911,7 +1911,7 @@ export function PaymentMethodModal({
                 // If no other unpaid orders, update table to available
                 if (otherActiveOrders.length === 0) {
                   const tableUpdateResponse = await fetch(
-                    `https://api-pos.edpos.vn/tables/${data.tableId}/status`,
+                    `https://api-pos.edpos.vn/api/tables/${data.tableId}/status`,
                     {
                       method: "PUT",
                       headers: {
@@ -2123,7 +2123,7 @@ export function PaymentMethodModal({
         discount: discountAmount.toString(),
       };
 
-      const createResponse = await fetch("https://api-pos.edpos.vn/orders", {
+      const createResponse = await fetch("https://api-pos.edpos.vn/api/orders", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ order: orderData, items: orderItems }),
@@ -2142,7 +2142,7 @@ export function PaymentMethodModal({
       }
     } else {
       // Update existing order
-      const updateResponse = await fetch(`https://api-pos.edpos.vn/orders/${orderInfo.id}`, {
+      const updateResponse = await fetch(`https://api-pos.edpos.vn/api/orders/${orderInfo.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -2165,7 +2165,7 @@ export function PaymentMethodModal({
 
           try {
             // Check if there are any other unpaid orders on this table
-            const ordersResponse = await fetch("https://api-pos.edpos.vn/orders", {
+            const ordersResponse = await fetch("https://api-pos.edpos.vn/api/orders", {
               method: "GET",
               headers: {
                 "Content-Type": "application/json",
@@ -2206,7 +2206,7 @@ export function PaymentMethodModal({
               );
 
               const tableUpdateResponse = await fetch(
-                `https://api-pos.edpos.vn/tables/${updatedOrder.tableId}/status`,
+                `https://api-pos.edpos.vn/api/tables/${updatedOrder.tableId}/status`,
                 {
                   method: "PUT",
                   headers: { "Content-Type": "application/json" },
@@ -2456,7 +2456,7 @@ export function PaymentMethodModal({
       console.log("📦 Order items:", orderItems);
 
       // Create order via API
-      const createResponse = await fetch("https://api-pos.edpos.vn/orders", {
+      const createResponse = await fetch("https://api-pos.edpos.vn/api/orders", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -2539,7 +2539,7 @@ export function PaymentMethodModal({
       try {
         console.log(`🔥 MAKING API CALL: PUT /api/orders/${orderInfo.id}`);
 
-        const statusResponse = await fetch(`https://api-pos.edpos.vn/orders/${orderInfo.id}`, {
+        const statusResponse = await fetch(`https://api-pos.edpos.vn/api/orders/${orderInfo.id}`, {
           method: "PUT",
           headers: {
             "Content-Type": "application/json",
@@ -2567,7 +2567,7 @@ export function PaymentMethodModal({
 
             try {
               // Check if there are any other unpaid orders on this table
-              const ordersResponse = await fetch("https://api-pos.edpos.vn/orders", {
+              const ordersResponse = await fetch("https://api-pos.edpos.vn/api/orders", {
                 method: "GET",
                 headers: {
                   "Content-Type": "application/json",
@@ -2610,7 +2610,7 @@ export function PaymentMethodModal({
                 );
 
                 const tableUpdateResponse = await fetch(
-                  `https://api-pos.edpos.vn/tables/${updatedOrder.tableId}/status`,
+                  `https://api-pos.edpos.vn/api/tables/${updatedOrder.tableId}/status`,
                   {
                     method: "PUT",
                     headers: {
