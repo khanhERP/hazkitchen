@@ -15,7 +15,7 @@ export async function apiRequest(
 ) {
   // Log payment method tracking for order status updates
   if (
-    url.includes("https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders/") &&
+    url.includes("https://api-laundry-web.edpos.vn/api/orders/") &&
     url.includes("/status") &&
     method === "PUT"
   ) {
@@ -51,7 +51,7 @@ export async function apiRequest(
 
     // Additional logging for payment method requests
     if (
-      url.includes("https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders/") &&
+      url.includes("https://api-laundry-web.edpos.vn/api/orders/") &&
       url.includes("/status") &&
       method === "PUT"
     ) {

@@ -138,7 +138,7 @@ export function ProductManagerModal({
     refetch,
   } = useQuery<any>({
     queryKey: [
-      "https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products",
+      "https://api-laundry-web.edpos.vn/api/products",
       {
         page: currentPage,
         limit: pageSize,
@@ -156,7 +156,7 @@ export function ProductManagerModal({
         params.append("search", searchTerm.trim());
       }
 
-      const response = await fetch(`https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products?${params.toString()}`);
+      const response = await fetch(`https://api-laundry-web.edpos.vn/api/products?${params.toString()}`);
       if (!response.ok) throw new Error("Failed to fetch products");
       return response.json();
     },
@@ -167,14 +167,14 @@ export function ProductManagerModal({
   const totalPages = productsResponse?.pagination?.totalPages || 1;
 
   const { data: categories = [] } = useQuery<Category[]>({
-    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/categories"],
+    queryKey: ["https://api-laundry-web.edpos.vn/api/categories"],
     enabled: isOpen,
   });
 
   const createProductMutation = useMutation({
     mutationFn: async (data: z.infer<typeof productFormSchema>) => {
       console.log("Sending product data:", data);
-      const response = await fetch("https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products", {
+      const response = await fetch("https://api-laundry-web.edpos.vn/api/products", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
@@ -188,8 +188,8 @@ export function ProductManagerModal({
       return response.json();
     },
     onSuccess: (newProduct) => {
-      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products"] });
-      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products/active"] });
+      queryClient.invalidateQueries({ queryKey: ["https://api-laundry-web.edpos.vn/api/products"] });
+      queryClient.invalidateQueries({ queryKey: ["https://api-laundry-web.edpos.vn/api/products/active"] });
 
       // toast({
       //   title: "✅ Tạo sản phẩm thành công",
@@ -244,7 +244,7 @@ export function ProductManagerModal({
           : "null",
       });
 
-      const response = await fetch(`https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products/${id}`, {
+      const response = await fetch(`https://api-laundry-web.edpos.vn/api/products/${id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
@@ -265,8 +265,8 @@ export function ProductManagerModal({
       return result;
     },
     onSuccess: (updatedProduct) => {
-      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products"] });
-      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products/active"] });
+      queryClient.invalidateQueries({ queryKey: ["https://api-laundry-web.edpos.vn/api/products"] });
+      queryClient.invalidateQueries({ queryKey: ["https://api-laundry-web.edpos.vn/api/products/active"] });
 
       // toast({
       //   title: `${t("tables.updatedProduct")}`,
@@ -296,15 +296,15 @@ export function ProductManagerModal({
 
   const deleteProductMutation = useMutation({
     mutationFn: async (id: number) => {
-      const response = await fetch(`https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products/${id}`, {
+      const response = await fetch(`https://api-laundry-web.edpos.vn/api/products/${id}`, {
         method: "DELETE",
       });
       if (!response.ok) throw new Error("Failed to delete product");
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products"] });
-      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products/active"] });
+      queryClient.invalidateQueries({ queryKey: ["https://api-laundry-web.edpos.vn/api/products"] });
+      queryClient.invalidateQueries({ queryKey: ["https://api-laundry-web.edpos.vn/api/products/active"] });
       // toast({
       //   title: "Success",
       //   description: "Product deleted successfully",

@@ -90,10 +90,10 @@ export default function InventoryPage({ onLogout }: InventoryPageProps) {
   const queryClient = useQueryClient();
 
   const { data: productsResponse, isLoading: productsLoading } = useQuery({
-    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products", { page: currentPage, limit: pageSize, searchTerm, selectedCategory, stockFilter }],
+    queryKey: ["https://api-laundry-web.edpos.vn/api/products", { page: currentPage, limit: pageSize, searchTerm, selectedCategory, stockFilter }],
     queryFn: async () => {
       // Construct URL with query parameters
-      const url = new URL("https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products", window.location.origin);
+      const url = new URL("https://api-laundry-web.edpos.vn/api/products", window.location.origin);
       url.searchParams.append("page", currentPage.toString());
       url.searchParams.append("limit", pageSize.toString());
       if (searchTerm) url.searchParams.append("search", searchTerm);
@@ -115,7 +115,7 @@ export default function InventoryPage({ onLogout }: InventoryPageProps) {
   }, [productsResponse]);
 
   const { data: categories = [] } = useQuery<Category[]>({
-    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/categories"],
+    queryKey: ["https://api-laundry-web.edpos.vn/api/categories"],
   });
 
   const stockUpdateForm = useForm<StockUpdateForm>({
@@ -129,7 +129,7 @@ export default function InventoryPage({ onLogout }: InventoryPageProps) {
   const updateStockMutation = useMutation({
     mutationFn: async (data: StockUpdateForm) => {
       console.log("Updating stock:", data);
-      const response = await fetch("https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/inventory/update-stock", {
+      const response = await fetch("https://api-laundry-web.edpos.vn/api/inventory/update-stock", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -143,8 +143,8 @@ export default function InventoryPage({ onLogout }: InventoryPageProps) {
     },
     onSuccess: () => {
       // Force refresh products data
-      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products"] });
-      queryClient.refetchQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products"] });
+      queryClient.invalidateQueries({ queryKey: ["https://api-laundry-web.edpos.vn/api/products"] });
+      queryClient.refetchQueries({ queryKey: ["https://api-laundry-web.edpos.vn/api/products"] });
       setShowStockDialog(false);
       stockUpdateForm.reset();
     },
@@ -168,7 +168,7 @@ export default function InventoryPage({ onLogout }: InventoryPageProps) {
       id: number;
       trackInventory: boolean;
     }) => {
-      const response = await fetch(`https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products/${id}/track-inventory`, {
+      const response = await fetch(`https://api-laundry-web.edpos.vn/api/products/${id}/track-inventory`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
@@ -181,7 +181,7 @@ export default function InventoryPage({ onLogout }: InventoryPageProps) {
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products"] });
+      queryClient.invalidateQueries({ queryKey: ["https://api-laundry-web.edpos.vn/api/products"] });
     },
     onError: () => {
       toast({
@@ -195,7 +195,7 @@ export default function InventoryPage({ onLogout }: InventoryPageProps) {
   const createProductMutation = useMutation({
     mutationFn: async (data: any) => {
       console.log("Sending product data:", data);
-      const response = await fetch("https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products", {
+      const response = await fetch("https://api-laundry-web.edpos.vn/api/products", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -208,7 +208,7 @@ export default function InventoryPage({ onLogout }: InventoryPageProps) {
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products"] });
+      queryClient.invalidateQueries({ queryKey: ["https://api-laundry-web.edpos.vn/api/products"] });
       setShowStockDialog(false);
       stockUpdateForm.reset();
     },
@@ -241,7 +241,7 @@ export default function InventoryPage({ onLogout }: InventoryPageProps) {
 
   const deleteProductMutation = useMutation({
     mutationFn: async (productId: number) => {
-      const response = await fetch(`https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products/${productId}`, {
+      const response = await fetch(`https://api-laundry-web.edpos.vn/api/products/${productId}`, {
         method: "DELETE",
       });
       if (!response.ok) {
@@ -251,7 +251,7 @@ export default function InventoryPage({ onLogout }: InventoryPageProps) {
       return response;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products"] });
+      queryClient.invalidateQueries({ queryKey: ["https://api-laundry-web.edpos.vn/api/products"] });
     },
     onError: (error) => {
       console.error("Delete product error:", error);
@@ -283,7 +283,7 @@ export default function InventoryPage({ onLogout }: InventoryPageProps) {
 
   const cleanupMutation = useMutation({
     mutationFn: async () => {
-      const response = await fetch("https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products/cleanup/inactive", {
+      const response = await fetch("https://api-laundry-web.edpos.vn/api/products/cleanup/inactive", {
         method: "DELETE",
       });
       if (!response.ok) {
@@ -292,7 +292,7 @@ export default function InventoryPage({ onLogout }: InventoryPageProps) {
       return response.json();
     },
     onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products"] });
+      queryClient.invalidateQueries({ queryKey: ["https://api-laundry-web.edpos.vn/api/products"] });
     },
     onError: (error) => {
       console.error("Cleanup error:", error);

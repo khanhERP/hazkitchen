@@ -45,7 +45,7 @@ export function BulkImportModal({ isOpen, onClose }: BulkImportModalProps) {
 
   const bulkCreateMutation = useMutation({
     mutationFn: async (products: ProductRow[]) => {
-      const response = await fetch("https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products/bulk", {
+      const response = await fetch("https://api-laundry-web.edpos.vn/api/products/bulk", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ products }),
@@ -63,7 +63,7 @@ export function BulkImportModal({ isOpen, onClose }: BulkImportModalProps) {
       console.log("Error count:", data.errors);
       console.log("Results array:", data.results);
 
-      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products"] });
+      queryClient.invalidateQueries({ queryKey: ["https://api-laundry-web.edpos.vn/api/products"] });
 
       if (data.errors > 0) {
         console.log("=== ERRORS FOUND ===");
