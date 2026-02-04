@@ -39,7 +39,7 @@ export function SpendingReport() {
     isLoading: isLoadingReceipts,
     refetch: refetchPurchaseReceipts,
   } = useQuery({
-    queryKey: ["https://api-laundry-web.edpos.vn/api/purchase-receipts", { startDate, endDate }],
+    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/purchase-receipts", { startDate, endDate }],
     queryFn: async () => {
       const params = new URLSearchParams();
 
@@ -54,11 +54,11 @@ export function SpendingReport() {
       console.log("📊 Fetching purchase receipts with date filter:", {
         startDate,
         endDate,
-        url: `https://api-laundry-web.edpos.vn/api/purchase-receipts?${params.toString()}`,
+        url: `https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/purchase-receipts?${params.toString()}`,
       });
 
       const response = await fetch(
-        `https://api-laundry-web.edpos.vn/api/purchase-receipts?${params.toString()}`,
+        `https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/purchase-receipts?${params.toString()}`,
       );
       if (!response.ok) throw new Error("Failed to fetch purchase receipts");
       const result = await response.json();
@@ -75,23 +75,23 @@ export function SpendingReport() {
 
   // Fetch categories
   const { data: categories = [] } = useQuery({
-    queryKey: ["https://api-laundry-web.edpos.vn/api/categories"],
+    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/categories"],
   });
 
   // Fetch products to get category information
   const { data: products = [] } = useQuery({
-    queryKey: ["https://api-laundry-web.edpos.vn/api/products"],
+    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products"],
   });
 
   // Fetch suppliers
   const { data: suppliers = [] } = useQuery({
-    queryKey: ["https://api-laundry-web.edpos.vn/api/suppliers"],
+    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/suppliers"],
   });
 
   // Fetch expense vouchers for debt calculation with date filter
   const { data: expenseVouchers = [], refetch: refetchExpenseVouchers } =
     useQuery({
-      queryKey: ["https://api-laundry-web.edpos.vn/api/expense-vouchers", { startDate, endDate }],
+      queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/expense-vouchers", { startDate, endDate }],
       queryFn: async () => {
         const params = new URLSearchParams();
 
@@ -105,11 +105,11 @@ export function SpendingReport() {
         console.log("💰 Fetching expense vouchers with date filter:", {
           startDate,
           endDate,
-          url: `https://api-laundry-web.edpos.vn/api/expense-vouchers?${params.toString()}`,
+          url: `https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/expense-vouchers?${params.toString()}`,
         });
 
         const response = await fetch(
-          `https://api-laundry-web.edpos.vn/api/expense-vouchers?${params.toString()}`,
+          `https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/expense-vouchers?${params.toString()}`,
         );
         if (!response.ok) throw new Error("Failed to fetch expense vouchers");
         const result = await response.json();
@@ -125,10 +125,10 @@ export function SpendingReport() {
 
   // Fetch orders for revenue calculation
   const { data: orders = [], refetch: refetchOrders } = useQuery({
-    queryKey: ["https://api-laundry-web.edpos.vn/api/orders/date-range", startDate, endDate],
+    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders/date-range", startDate, endDate],
     queryFn: async () => {
       const response = await fetch(
-        `https://api-laundry-web.edpos.vn/api/orders/date-range/${startDate}/${endDate}/all`,
+        `https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders/date-range/${startDate}/${endDate}/all`,
       );
       if (!response.ok) throw new Error("Failed to fetch orders");
       return response.json();

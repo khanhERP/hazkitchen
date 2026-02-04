@@ -29,33 +29,33 @@ export default function SuppliersPage({ onLogout }: SuppliersPageProps) {
   const queryClient = useQueryClient();
 
   const { data: suppliers, isLoading } = useQuery({
-    queryKey: ['https://api-laundry-web.edpos.vn/api/suppliers', { status: selectedStatus, search: searchQuery }],
+    queryKey: ['https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/suppliers', { status: selectedStatus, search: searchQuery }],
     queryFn: async () => {
       const params = new URLSearchParams();
       if (selectedStatus !== 'all') params.append('status', selectedStatus);
       if (searchQuery) params.append('search', searchQuery);
       
-      const response = await apiRequest('GET', `https://api-laundry-web.edpos.vn/api/suppliers?${params}`);
+      const response = await apiRequest('GET', `https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/suppliers?${params}`);
       return response.json();
     },
   });
 
   // Fetch purchase order statistics for suppliers
   const { data: supplierStats } = useQuery({
-    queryKey: ['https://api-laundry-web.edpos.vn/api/purchase-orders/supplier-stats'],
+    queryKey: ['https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/purchase-orders/supplier-stats'],
     queryFn: async () => {
-      const response = await apiRequest('GET', 'https://api-laundry-web.edpos.vn/api/purchase-orders/supplier-stats');
+      const response = await apiRequest('GET', 'https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/purchase-orders/supplier-stats');
       return response.json();
     },
   });
 
   const deleteSupplierMutation = useMutation({
     mutationFn: async (id: number) => {
-      const response = await apiRequest('DELETE', `https://api-laundry-web.edpos.vn/api/suppliers/${id}`);
+      const response = await apiRequest('DELETE', `https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/suppliers/${id}`);
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['https://api-laundry-web.edpos.vn/api/suppliers'] });
+      queryClient.invalidateQueries({ queryKey: ['https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/suppliers'] });
     },
     onError: () => {
       toast({

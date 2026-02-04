@@ -232,13 +232,13 @@ export default function PurchaseFormPage({
 
   // Fetch suppliers
   const { data: suppliers = [] } = useQuery({
-    queryKey: ["https://api-laundry-web.edpos.vn/api/suppliers"],
+    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/suppliers"],
     select: (data: any) => data || [],
   });
 
   // Fetch employees for assignment
   const { data: employees = [] } = useQuery({
-    queryKey: ["https://api-laundry-web.edpos.vn/api/employees"],
+    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/employees"],
     select: (data: any[]) =>
       (data || []).map((emp: any) => ({
         id: emp.id,
@@ -251,13 +251,13 @@ export default function PurchaseFormPage({
 
   // Fetch categories for new product form
   const { data: categories = [] } = useQuery({
-    queryKey: ["https://api-laundry-web.edpos.vn/api/categories"],
+    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/categories"],
     select: (data: any) => data || [],
   });
 
   // Fetch payment methods
   const { data: paymentMethods = [] } = useQuery({
-    queryKey: ["https://api-laundry-web.edpos.vn/api/payment-methods"],
+    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/payment-methods"],
     select: (data: any[]) =>
       (data || [])
         .filter((method: any) => method.enabled === true) // Only show enabled payment methods
@@ -272,7 +272,7 @@ export default function PurchaseFormPage({
 
   // Fetch products for selection - only active products, exclude expenses
   const { data: productsResponse, isLoading: isLoadingProducts, isFetching: isFetchingProducts } = useQuery({
-    queryKey: ["https://api-laundry-web.edpos.vn/api/products", { page: productPage, limit: productPageSize, search: productSearch }],
+    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products", { page: productPage, limit: productPageSize, search: productSearch }],
     queryFn: async () => {
       const params = new URLSearchParams({
         page: productPage.toString(),
@@ -281,7 +281,7 @@ export default function PurchaseFormPage({
       if (productSearch) {
         params.append('search', productSearch);
       }
-      const response = await fetch(`https://api-laundry-web.edpos.vn/api/products?${params.toString()}`);
+      const response = await fetch(`https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products?${params.toString()}`);
       return response.json();
     },
     keepPreviousData: true,
@@ -413,7 +413,7 @@ export default function PurchaseFormPage({
 
   // Fetch existing purchase order for edit mode
   const { data: existingOrder, isLoading: isLoadingOrder } = useQuery({
-    queryKey: [`https://api-laundry-web.edpos.vn/api/purchase-orders/${id}`],
+    queryKey: [`https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/purchase-orders/${id}`],
     enabled: Boolean(id),
     select: (data: any) => {
       console.log("📊 Purchase order API response:", data);
@@ -423,7 +423,7 @@ export default function PurchaseFormPage({
 
   // Fetch existing documents for edit mode
   const { data: existingDocuments } = useQuery({
-    queryKey: [`https://api-laundry-web.edpos.vn/api/purchase-orders/${id}/documents`],
+    queryKey: [`https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/purchase-orders/${id}/documents`],
     enabled: Boolean(id),
     select: (data: any) => data || [],
   });
@@ -434,14 +434,14 @@ export default function PurchaseFormPage({
     error: nextPOError,
     isLoading: isLoadingPONumber,
   } = useQuery({
-    queryKey: ["https://api-laundry-web.edpos.vn/api/purchase-orders/next-po-number"],
+    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/purchase-orders/next-po-number"],
     enabled: !isEditMode,
     queryFn: async () => {
       try {
         console.log("🔍 Fetching next PO number...");
         const response = await apiRequest(
           "GET",
-          "https://api-laundry-web.edpos.vn/api/purchase-orders/next-po-number",
+          "https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/purchase-orders/next-po-number",
         );
         if (!response.ok) {
           throw new Error(`HTTP ${response.status}: ${response.statusText}`);
@@ -680,13 +680,13 @@ export default function PurchaseFormPage({
   // Create new product mutation
   const createProductMutation = useMutation({
     mutationFn: async (data: any) => {
-      const response = await apiRequest("POST", "https://api-laundry-web.edpos.vn/api/products", data);
+      const response = await apiRequest("POST", "https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products", data);
       return response.json();
     },
     onSuccess: (newProduct) => {
 
       // Update products query cache
-      queryClient.setQueryData(["https://api-laundry-web.edpos.vn/api/products"], (old: any[]) => {
+      queryClient.setQueryData(["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products"], (old: any[]) => {
         return [
           ...(old || []),
           { ...newProduct, unitPrice: Number(newProduct.price) || 0 },
@@ -694,7 +694,7 @@ export default function PurchaseFormPage({
       });
 
       // Invalidate queries for cache consistency
-      queryClient.invalidateQueries({ queryKey: ["https://api-laundry-web.edpos.vn/api/products"] });
+      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products"] });
 
       // Add new product to selected items automatically
       addProduct({
@@ -1343,12 +1343,12 @@ export default function PurchaseFormPage({
 
       // Submit data
       const response = isEditMode
-        ? await fetch(`https://api-laundry-web.edpos.vn/api/purchase-receipts/${id}`, {
+        ? await fetch(`https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/purchase-receipts/${id}`, {
             method: "PUT",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(submissionData),
           })
-        : await fetch("https://api-laundry-web.edpos.vn/api/purchase-receipts", {
+        : await fetch("https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/purchase-receipts", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(submissionData),
@@ -1449,7 +1449,7 @@ export default function PurchaseFormPage({
 
             // Send file data as JSON with original filename preserved
             const uploadResponse = await fetch(
-              `https://api-laundry-web.edpos.vn/api/purchase-receipts/${result.id}/documents`,
+              `https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/purchase-receipts/${result.id}/documents`,
               {
                 method: "POST",
                 headers: {
@@ -1506,8 +1506,8 @@ export default function PurchaseFormPage({
       }
 
       // Refresh queries and navigate
-      queryClient.invalidateQueries({ queryKey: ["https://api-laundry-web.edpos.vn/api/purchase-receipts"] });
-      queryClient.invalidateQueries({ queryKey: ["https://api-laundry-web.edpos.vn/api/suppliers"] });
+      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/purchase-receipts"] });
+      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/suppliers"] });
 
       setTimeout(() => {
         navigate("/purchases");

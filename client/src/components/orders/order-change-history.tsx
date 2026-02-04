@@ -55,7 +55,7 @@ export function OrderChangeHistory() {
   // Query order change history
   const { data: historyResponse, isLoading } = useQuery({
     queryKey: [
-      "https://api-laundry-web.edpos.vn/api/order-change-history",
+      "https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/order-change-history",
       currentPage,
       itemsPerPage,
       searchTerm,
@@ -78,7 +78,7 @@ export function OrderChangeHistory() {
 
       const response = await apiRequest(
         "GET",
-        `https://api-laundry-web.edpos.vn/api/order-change-history?${params.toString()}`
+        `https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/order-change-history?${params.toString()}`
       );
       if (!response.ok) throw new Error("Failed to fetch history");
       return response.json();

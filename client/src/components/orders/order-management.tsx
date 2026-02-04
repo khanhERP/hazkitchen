@@ -129,8 +129,8 @@ export function OrderManagement() {
       setSelectedReceipt(null);
 
       // Refresh data
-      queryClient.invalidateQueries({ queryKey: ["https://api-laundry-web.edpos.vn/api/orders"] });
-      queryClient.invalidateQueries({ queryKey: ["https://api-laundry-web.edpos.vn/api/tables"] });
+      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] });
+      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/tables"] });
     };
 
     window.addEventListener(
@@ -212,7 +212,7 @@ export function OrderManagement() {
 
   // Query orders - load ALL orders at once with aggressive caching
   const { data: orders, isLoading: ordersLoading } = useQuery({
-    queryKey: ["https://api-laundry-web.edpos.vn/api/orders", "table"],
+    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders", "table"],
     refetchInterval: 5000, // Poll every 5 seconds (reduced frequency)
     refetchOnWindowFocus: true,
     refetchIntervalInBackground: true,
@@ -221,7 +221,7 @@ export function OrderManagement() {
     queryFn: async () => {
       const response = await apiRequest(
         "GET",
-        "https://api-laundry-web.edpos.vn/api/orders?salesChannel=table",
+        "https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders?salesChannel=table",
       );
       if (!response.ok) {
         throw new Error("Failed to fetch table orders");
@@ -244,28 +244,28 @@ export function OrderManagement() {
   });
 
   const { data: tables } = useQuery({
-    queryKey: ["https://api-laundry-web.edpos.vn/api/tables"],
+    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/tables"],
   });
 
   const { data: products } = useQuery({
-    queryKey: ["https://api-laundry-web.edpos.vn/api/products/active"],
+    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products/active"],
   });
 
   const { data: customers } = useQuery({
-    queryKey: ["https://api-laundry-web.edpos.vn/api/customers"],
+    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/customers"],
     enabled: pointsPaymentOpen,
   });
 
   const { data: storeSettings } = useQuery({
-    queryKey: ["https://api-laundry-web.edpos.vn/api/store-settings"],
+    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/store-settings"],
     queryFn: async () => {
-      const response = await apiRequest("GET", "https://api-laundry-web.edpos.vn/api/store-settings");
+      const response = await apiRequest("GET", "https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/store-settings");
       return response.json();
     },
   });
 
   const { data: orderItems, isLoading: orderItemsLoading } = useQuery({
-    queryKey: ["https://api-laundry-web.edpos.vn/api/order-items", selectedOrder?.id],
+    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/order-items", selectedOrder?.id],
     enabled: !!selectedOrder?.id && orderDetailsOpen,
     refetchOnWindowFocus: false,
     refetchOnMount: false,
@@ -277,7 +277,7 @@ export function OrderManagement() {
       try {
         const response = await apiRequest(
           "GET",
-          `https://api-laundry-web.edpos.vn/api/order-items/${selectedOrder.id}`,
+          `https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/order-items/${selectedOrder.id}`,
         );
         if (!response.ok) {
           console.error(
@@ -296,10 +296,10 @@ export function OrderManagement() {
 
   const updateOrderStatusMutation = useMutation({
     mutationFn: ({ orderId, status }: { orderId: number; status: string }) =>
-      apiRequest("PUT", `https://api-laundry-web.edpos.vn/api/orders/${orderId}/status`, { status }),
+      apiRequest("PUT", `https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders/${orderId}/status`, { status }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["https://api-laundry-web.edpos.vn/api/orders"] });
-      queryClient.invalidateQueries({ queryKey: ["https://api-laundry-web.edpos.vn/api/tables"] });
+      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] });
+      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/tables"] });
     },
     onError: () => {
       toast({
@@ -346,10 +346,10 @@ export function OrderManagement() {
 
       // Force immediate refresh
       await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ["https://api-laundry-web.edpos.vn/api/orders"] }),
-        queryClient.invalidateQueries({ queryKey: ["https://api-laundry-web.edpos.vn/api/tables"] }),
-        queryClient.refetchQueries({ queryKey: ["https://api-laundry-web.edpos.vn/api/orders"] }),
-        queryClient.refetchQueries({ queryKey: ["https://api-laundry-web.edpos.vn/api/tables"] }),
+        queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] }),
+        queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/tables"] }),
+        queryClient.refetchQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] }),
+        queryClient.refetchQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/tables"] }),
       ]);
 
       // Dispatch UI refresh events
@@ -421,13 +421,13 @@ export function OrderManagement() {
       remainingAmount?: number;
     }) => {
       // First redeem points
-      await apiRequest("POST", "https://api-laundry-web.edpos.vn/api/customers/redeem-points", {
+      await apiRequest("POST", "https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/customers/redeem-points", {
         customerId,
         points,
       });
 
       // Then mark order as paid
-      await apiRequest("PUT", `https://api-laundry-web.edpos.vn/api/orders/${orderId}/status`, {
+      await apiRequest("PUT", `https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders/${orderId}/status`, {
         status: "paid",
         paymentMethod: paymentMethod || "points",
         customerId,
@@ -435,9 +435,9 @@ export function OrderManagement() {
       });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["https://api-laundry-web.edpos.vn/api/orders"] });
-      queryClient.invalidateQueries({ queryKey: ["https://api-laundry-web.edpos.vn/api/tables"] });
-      queryClient.invalidateQueries({ queryKey: ["https://api-laundry-web.edpos.vn/api/customers"] });
+      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] });
+      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/tables"] });
+      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/customers"] });
       setOrderDetailsOpen(false);
       setPointsPaymentOpen(false);
       setSelectedCustomer(null);
@@ -466,22 +466,22 @@ export function OrderManagement() {
       paymentMethod: string;
     }) => {
       // First redeem all available points
-      await apiRequest("POST", "https://api-laundry-web.edpos.vn/api/customers/redeem-points", {
+      await apiRequest("POST", "https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/customers/redeem-points", {
         customerId,
         points,
       });
 
       // Then mark order as paid with mixed payment
-      await apiRequest("PUT", `https://api-laundry-web.edpos.vn/api/orders/${orderId}/status`, {
+      await apiRequest("PUT", `https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders/${orderId}/status`, {
         status: "paid",
         paymentMethod: `points + ${paymentMethod}`,
         customerId,
       });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["https://api-laundry-web.edpos.vn/api/orders"] });
-      queryClient.invalidateQueries({ queryKey: ["https://api-laundry-web.edpos.vn/api/tables"] });
-      queryClient.invalidateQueries({ queryKey: ["https://api-laundry-web.edpos.vn/api/customers"] });
+      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] });
+      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/tables"] });
+      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/customers"] });
       setOrderDetailsOpen(false);
       setMixedPaymentOpen(false);
       setMixedPaymentData(null);
@@ -571,7 +571,7 @@ export function OrderManagement() {
       );
 
       console.log("🔍 API Call Details:", {
-        url: `https://api-laundry-web.edpos.vn/api/orders/${orderId}/status`,
+        url: `https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders/${orderId}/status`,
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status: "paid" }),
@@ -579,7 +579,7 @@ export function OrderManagement() {
 
       const statusResponse = await apiRequest(
         "PUT",
-        `https://api-laundry-web.edpos.vn/api/orders/${orderId}/status`,
+        `https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders/${orderId}/status`,
         { status: "paid" },
       );
 
@@ -609,7 +609,7 @@ export function OrderManagement() {
       // Step 2: Update additional payment details
       console.log("📋 Step 2: Updating payment details for order:", orderId);
 
-      const paymentDetailsResponse = await fetch(`https://api-laundry-web.edpos.vn/api/orders/${orderId}`, {
+      const paymentDetailsResponse = await fetch(`https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders/${orderId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -636,10 +636,10 @@ export function OrderManagement() {
       // Force immediate refresh with multiple attempts (5 times)
       for (let i = 0; i < 5; i++) {
         await Promise.all([
-          queryClient.invalidateQueries({ queryKey: ["https://api-laundry-web.edpos.vn/api/orders"] }),
-          queryClient.invalidateQueries({ queryKey: ["https://api-laundry-web.edpos.vn/api/tables"] }),
-          queryClient.refetchQueries({ queryKey: ["https://api-laundry-web.edpos.vn/api/orders"] }),
-          queryClient.refetchQueries({ queryKey: ["https://api-laundry-web.edpos.vn/api/tables"] }),
+          queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] }),
+          queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/tables"] }),
+          queryClient.refetchQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] }),
+          queryClient.refetchQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/tables"] }),
         ]);
 
         if (i < 4) {
@@ -652,8 +652,8 @@ export function OrderManagement() {
       intervals.forEach((delay, index) => {
         setTimeout(async () => {
           await Promise.all([
-            queryClient.refetchQueries({ queryKey: ["https://api-laundry-web.edpos.vn/api/orders"] }),
-            queryClient.refetchQueries({ queryKey: ["https://api-laundry-web.edpos.vn/api/tables"] }),
+            queryClient.refetchQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] }),
+            queryClient.refetchQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/tables"] }),
           ]);
           console.log(
             `🔄 Delayed refresh ${index + 1} completed after ${delay}ms`,
@@ -761,7 +761,7 @@ export function OrderManagement() {
         try {
           const response = await apiRequest(
             "GET",
-            `https://api-laundry-web.edpos.vn/api/order-items/${currentOrderId}`,
+            `https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/order-items/${currentOrderId}`,
           );
           currentOrderItems = await response.json();
           console.log(
@@ -1062,7 +1062,7 @@ export function OrderManagement() {
       const startTime = Date.now();
       const response = await apiRequest(
         "PUT",
-        `https://api-laundry-web.edpos.vn/api/orders/${orderId}/status`,
+        `https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders/${orderId}/status`,
         { status: newStatus },
       );
       const endTime = Date.now();
@@ -1099,10 +1099,10 @@ export function OrderManagement() {
 
         // Invalidate and refetch queries immediately
         await Promise.all([
-          queryClient.invalidateQueries({ queryKey: ["https://api-laundry-web.edpos.vn/api/orders"] }),
-          queryClient.invalidateQueries({ queryKey: ["https://api-laundry-web.edpos.vn/api/tables"] }),
-          queryClient.refetchQueries({ queryKey: ["https://api-laundry-web.edpos.vn/api/orders"] }),
-          queryClient.refetchQueries({ queryKey: ["https://api-laundry-web.edpos.vn/api/tables"] }),
+          queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] }),
+          queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/tables"] }),
+          queryClient.refetchQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] }),
+          queryClient.refetchQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/tables"] }),
         ]);
 
         console.log(`✅ Queries refreshed after status update`);
@@ -1177,7 +1177,7 @@ export function OrderManagement() {
       // Fetch order items
       const orderItemsResponse = await apiRequest(
         "GET",
-        `https://api-laundry-web.edpos.vn/api/order-items/${order.id}`,
+        `https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/order-items/${order.id}`,
       );
 
       if (!orderItemsResponse.ok) {
@@ -1341,10 +1341,10 @@ export function OrderManagement() {
       try {
         // Force immediate refresh
         await Promise.all([
-          queryClient.invalidateQueries({ queryKey: ["https://api-laundry-web.edpos.vn/api/orders"] }),
-          queryClient.invalidateQueries({ queryKey: ["https://api-laundry-web.edpos.vn/api/tables"] }),
-          queryClient.refetchQueries({ queryKey: ["https://api-laundry-web.edpos.vn/api/orders"] }),
-          queryClient.refetchQueries({ queryKey: ["https://api-laundry-web.edpos.vn/api/tables"] }),
+          queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] }),
+          queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/tables"] }),
+          queryClient.refetchQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] }),
+          queryClient.refetchQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/tables"] }),
         ]);
 
         // Close all modals immediately and prevent any reopening
@@ -1401,10 +1401,10 @@ export function OrderManagement() {
 
       // Force immediate UI refresh
       await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ["https://api-laundry-web.edpos.vn/api/orders"] }),
-        queryClient.invalidateQueries({ queryKey: ["https://api-laundry-web.edpos.vn/api/tables"] }),
-        queryClient.refetchQueries({ queryKey: ["https://api-laundry-web.edpos.vn/api/orders"] }),
-        queryClient.refetchQueries({ queryKey: ["https://api-laundry-web.edpos.vn/api/tables"] }),
+        queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] }),
+        queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/tables"] }),
+        queryClient.refetchQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] }),
+        queryClient.refetchQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/tables"] }),
       ]);
 
       // Close all modals immediately - no receipt display for direct payments
@@ -1738,7 +1738,7 @@ export function OrderManagement() {
         try {
           const response = await apiRequest(
             "GET",
-            `https://api-laundry-web.edpos.vn/api/order-items/${order.id}`,
+            `https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/order-items/${order.id}`,
           );
           if (!response.ok) return;
 

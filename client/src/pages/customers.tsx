@@ -36,7 +36,7 @@ export default function CustomersPage({ onLogout }: CustomersPageProps) {
 
   // Fetch customers
   const { data: customersData, isLoading: customersLoading } = useQuery<Customer[]>({
-    queryKey: ["https://api-laundry-web.edpos.vn/api/customers"],
+    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/customers"],
   });
 
   const handleEditCustomer = (customer: Customer) => {
@@ -48,7 +48,7 @@ export default function CustomersPage({ onLogout }: CustomersPageProps) {
     if (!confirm(t("customers.confirmDelete"))) return;
 
     try {
-      const response = await fetch(`https://api-laundry-web.edpos.vn/api/customers/${customerId}`, {
+      const response = await fetch(`https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/customers/${customerId}`, {
         method: "DELETE",
       });
 
@@ -56,7 +56,7 @@ export default function CustomersPage({ onLogout }: CustomersPageProps) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
-      await queryClient.refetchQueries({ queryKey: ["https://api-laundry-web.edpos.vn/api/customers"] });
+      await queryClient.refetchQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/customers"] });
     } catch (error) {
       console.error("Customer delete error:", error);
       toast({

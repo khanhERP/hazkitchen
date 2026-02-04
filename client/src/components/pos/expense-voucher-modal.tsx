@@ -79,9 +79,9 @@ export default function ExpenseVoucherModal({
   // Load payment methods from localStorage (same as cash-book page)
   // Query payment methods from API
   const { data: paymentMethodsData } = useQuery({
-    queryKey: ["https://api-laundry-web.edpos.vn/api/payment-methods"],
+    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/payment-methods"],
     queryFn: async () => {
-      const response = await fetch("https://api-laundry-web.edpos.vn/api/payment-methods");
+      const response = await fetch("https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/payment-methods");
       return response.json();
     },
   });
@@ -97,10 +97,10 @@ export default function ExpenseVoucherModal({
 
   // Fetch customers
   const { data: customers = [] } = useQuery({
-    queryKey: ["https://api-laundry-web.edpos.vn/api/customers"],
+    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/customers"],
     queryFn: async () => {
       try {
-        const response = await fetch("https://api-laundry-web.edpos.vn/api/customers");
+        const response = await fetch("https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/customers");
         if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
         const data = await response.json();
         return Array.isArray(data) ? data : [];
@@ -113,10 +113,10 @@ export default function ExpenseVoucherModal({
 
   // Fetch employees
   const { data: employees = [] } = useQuery({
-    queryKey: ["https://api-laundry-web.edpos.vn/api/employees"],
+    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/employees"],
     queryFn: async () => {
       try {
-        const response = await fetch("https://api-laundry-web.edpos.vn/api/employees");
+        const response = await fetch("https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/employees");
         if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
         const data = await response.json();
         return Array.isArray(data) ? data : [];
@@ -129,10 +129,10 @@ export default function ExpenseVoucherModal({
 
   // Fetch suppliers
   const { data: suppliers = [] } = useQuery({
-    queryKey: ["https://api-laundry-web.edpos.vn/api/suppliers"],
+    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/suppliers"],
     queryFn: async () => {
       try {
-        const response = await fetch("https://api-laundry-web.edpos.vn/api/suppliers");
+        const response = await fetch("https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/suppliers");
         if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
         const data = await response.json();
         return Array.isArray(data) ? data : [];
@@ -190,7 +190,7 @@ export default function ExpenseVoucherModal({
   const createVoucherMutation = useMutation({
     mutationFn: async (data: ExpenseVoucher) => {
       console.log("Creating expense voucher with data:", data);
-      const response = await fetch("https://api-laundry-web.edpos.vn/api/expense-vouchers", {
+      const response = await fetch("https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/expense-vouchers", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
@@ -206,8 +206,8 @@ export default function ExpenseVoucherModal({
     },
     onSuccess: (data) => {
       console.log("Expense voucher created successfully:", data);
-      queryClient.invalidateQueries({ queryKey: ["https://api-laundry-web.edpos.vn/api/expense-vouchers"] });
-      queryClient.invalidateQueries({ queryKey: ["https://api-laundry-web.edpos.vn/api/orders"] });
+      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/expense-vouchers"] });
+      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] });
       onClose();
     },
     onError: (error) => {
@@ -224,7 +224,7 @@ export default function ExpenseVoucherModal({
   const updateVoucherMutation = useMutation({
     mutationFn: async (data: ExpenseVoucher) => {
       console.log("Updating expense voucher with data:", data);
-      const response = await fetch(`https://api-laundry-web.edpos.vn/api/expense-vouchers/${data.id}`, {
+      const response = await fetch(`https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/expense-vouchers/${data.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
@@ -240,8 +240,8 @@ export default function ExpenseVoucherModal({
     },
     onSuccess: (data) => {
       console.log("Expense voucher updated successfully:", data);
-      queryClient.invalidateQueries({ queryKey: ["https://api-laundry-web.edpos.vn/api/expense-vouchers"] });
-      queryClient.invalidateQueries({ queryKey: ["https://api-laundry-web.edpos.vn/api/orders"] });
+      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/expense-vouchers"] });
+      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] });
       setIsEditing(false);
     },
     onError: (error) => {
@@ -257,15 +257,15 @@ export default function ExpenseVoucherModal({
 
   const deleteVoucherMutation = useMutation({
     mutationFn: async (id: string) => {
-      const response = await fetch(`https://api-laundry-web.edpos.vn/api/expense-vouchers/${id}`, {
+      const response = await fetch(`https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/expense-vouchers/${id}`, {
         method: "DELETE",
       });
       if (!response.ok) throw new Error("Failed to delete expense voucher");
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["https://api-laundry-web.edpos.vn/api/expense-vouchers"] });
-      queryClient.invalidateQueries({ queryKey: ["https://api-laundry-web.edpos.vn/api/orders"] });
+      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/expense-vouchers"] });
+      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] });
       setShowDeleteDialog(false);
       onClose();
     },

@@ -46,9 +46,9 @@ export function CategorySidebar({
 
   // Fetch category counts using new optimized API
   const { data: categoryCountsData } = useQuery({
-    queryKey: ["https://api-laundry-web.edpos.vn/api/categories/product-counts"],
+    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/categories/product-counts"],
     queryFn: async () => {
-      const response = await fetch(`https://api-laundry-web.edpos.vn/api/categories/product-counts`);
+      const response = await fetch(`https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/categories/product-counts`);
       if (!response.ok) throw new Error("Failed to fetch category counts");
       return await response.json();
     },
@@ -80,7 +80,7 @@ export function CategorySidebar({
     const sampleSkus = ["BEV001", "BEV002", "SNK001", "ELC001"];
     const randomSku = sampleSkus[Math.floor(Math.random() * sampleSkus.length)];
 
-    fetch(`https://api-laundry-web.edpos.vn/api/products/barcode/${randomSku}`)
+    fetch(`https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products/barcode/${randomSku}`)
       .then((res) => res.json())
       .then((product) => {
         if (product.id) {

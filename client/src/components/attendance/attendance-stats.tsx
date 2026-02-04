@@ -15,11 +15,11 @@ export function AttendanceStats() {
   );
 
   const { data: employees } = useQuery({
-    queryKey: ['https://api-laundry-web.edpos.vn/api/employees'],
+    queryKey: ['https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/employees'],
   });
 
   const { data: attendanceRecords } = useQuery({
-    queryKey: ['https://api-laundry-web.edpos.vn/api/attendance'],
+    queryKey: ['https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/attendance'],
   });
 
   const getMonthlyStats = () => {

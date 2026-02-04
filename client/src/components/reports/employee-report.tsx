@@ -59,28 +59,28 @@ export function EmployeeReport() {
   const [salesChannel, setSalesChannel] = useState("all");
 
   const { data: employees } = useQuery({
-    queryKey: ["https://api-laundry-web.edpos.vn/api/employees"],
+    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/employees"],
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
 
   const { data: transactions } = useQuery({
-    queryKey: ["https://api-laundry-web.edpos.vn/api/transactions", startDate, endDate],
+    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/transactions", startDate, endDate],
     staleTime: 1 * 60 * 1000, // 1 minute
   });
 
   const { data: products } = useQuery({
-    queryKey: ["https://api-laundry-web.edpos.vn/api/products"],
+    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products"],
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
 
   const { data: categories } = useQuery({
-    queryKey: ["https://api-laundry-web.edpos.vn/api/categories"],
+    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/categories"],
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
 
   // Employee sales data query
   const { data: employeeSalesData } = useQuery({
-    queryKey: ["https://api-laundry-web.edpos.vn/api/employee-sales", startDate, endDate, selectedEmployee],
+    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/employee-sales", startDate, endDate, selectedEmployee],
     staleTime: 1 * 60 * 1000, // 1 minute
   });
 
