@@ -20,21 +20,21 @@ export default function AttendanceQRPage() {
   const { t } = useTranslation();
 
   const { data: employees } = useQuery({
-    queryKey: ['https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/employees'],
+    queryKey: ['https://api-pos.edpos.vn/api/employees'],
   });
 
   const { data: todayAttendance, refetch: refetchTodayAttendance } = useQuery({
-    queryKey: ['https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/attendance/today', selectedEmployeeId],
+    queryKey: ['https://api-pos.edpos.vn/api/attendance/today', selectedEmployeeId],
     enabled: !!selectedEmployeeId,
   });
 
   const clockInMutation = useMutation({
-    mutationFn: () => apiRequest('POST', 'https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/attendance/clock-in', {
+    mutationFn: () => apiRequest('POST', 'https://api-pos.edpos.vn/api/attendance/clock-in', {
       employeeId: parseInt(selectedEmployeeId),
       notes
     }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/attendance'] });
+      queryClient.invalidateQueries({ queryKey: ['https://api-pos.edpos.vn/api/attendance'] });
       refetchTodayAttendance();
       setNotes("");
     },
@@ -48,9 +48,9 @@ export default function AttendanceQRPage() {
   });
 
   const clockOutMutation = useMutation({
-    mutationFn: () => apiRequest('POST', `https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/attendance/clock-out/${(todayAttendance as AttendanceRecord)?.id}`, {}),
+    mutationFn: () => apiRequest('POST', `https://api-pos.edpos.vn/api/attendance/clock-out/${(todayAttendance as AttendanceRecord)?.id}`, {}),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/attendance'] });
+      queryClient.invalidateQueries({ queryKey: ['https://api-pos.edpos.vn/api/attendance'] });
       refetchTodayAttendance();
     },
     onError: () => {
@@ -63,9 +63,9 @@ export default function AttendanceQRPage() {
   });
 
   const breakStartMutation = useMutation({
-    mutationFn: () => apiRequest('POST', `https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/attendance/break-start/${(todayAttendance as AttendanceRecord)?.id}`, {}),
+    mutationFn: () => apiRequest('POST', `https://api-pos.edpos.vn/api/attendance/break-start/${(todayAttendance as AttendanceRecord)?.id}`, {}),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/attendance'] });
+      queryClient.invalidateQueries({ queryKey: ['https://api-pos.edpos.vn/api/attendance'] });
       refetchTodayAttendance();
     },
     onError: () => {
@@ -78,9 +78,9 @@ export default function AttendanceQRPage() {
   });
 
   const breakEndMutation = useMutation({
-    mutationFn: () => apiRequest('POST', `https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/attendance/break-end/${(todayAttendance as AttendanceRecord)?.id}`, {}),
+    mutationFn: () => apiRequest('POST', `https://api-pos.edpos.vn/api/attendance/break-end/${(todayAttendance as AttendanceRecord)?.id}`, {}),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/attendance'] });
+      queryClient.invalidateQueries({ queryKey: ['https://api-pos.edpos.vn/api/attendance'] });
       refetchTodayAttendance();
     },
     onError: () => {

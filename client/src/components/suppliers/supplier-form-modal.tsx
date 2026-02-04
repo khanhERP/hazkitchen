@@ -72,11 +72,11 @@ export function SupplierFormModal({ isOpen, onClose, supplier }: SupplierFormMod
 
   const createMutation = useMutation({
     mutationFn: async (data: InsertSupplier) => {
-      const response = await apiRequest('POST', 'https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/suppliers', data);
+      const response = await apiRequest('POST', 'https://api-pos.edpos.vn/api/suppliers', data);
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/suppliers'] });
+      queryClient.invalidateQueries({ queryKey: ['https://api-pos.edpos.vn/api/suppliers'] });
       onClose();
     },
     onError: () => {
@@ -90,11 +90,11 @@ export function SupplierFormModal({ isOpen, onClose, supplier }: SupplierFormMod
 
   const updateMutation = useMutation({
     mutationFn: async (data: Partial<InsertSupplier>) => {
-      const response = await apiRequest('PUT', `https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/suppliers/${supplier!.id}`, data);
+      const response = await apiRequest('PUT', `https://api-pos.edpos.vn/api/suppliers/${supplier!.id}`, data);
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/suppliers'] });
+      queryClient.invalidateQueries({ queryKey: ['https://api-pos.edpos.vn/api/suppliers'] });
       onClose();
     },
     onError: () => {

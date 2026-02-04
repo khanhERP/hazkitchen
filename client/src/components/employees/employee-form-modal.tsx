@@ -71,7 +71,7 @@ export function EmployeeFormModal({
   // Generate employee ID for new employees
   const generateEmployeeId = async () => {
     try {
-      const response = await apiRequest("GET", "https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/employees/next-id");
+      const response = await apiRequest("GET", "https://api-pos.edpos.vn/api/employees/next-id");
       const data = await response.json();
       return data.nextId;
     } catch (error) {
@@ -123,7 +123,7 @@ export function EmployeeFormModal({
 
   const createMutation = useMutation({
     mutationFn: async (data: InsertEmployee) => {
-      const response = await apiRequest("POST", "https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/employees", data);
+      const response = await apiRequest("POST", "https://api-pos.edpos.vn/api/employees", data);
       if (!response.ok) {
         const errorData = await response.json();
         throw errorData;
@@ -131,7 +131,7 @@ export function EmployeeFormModal({
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/employees"] });
+      queryClient.invalidateQueries({ queryKey: ["https://api-pos.edpos.vn/api/employees"] });
       onClose();
       generateEmployeeId().then((nextId) => {
         form.reset({
@@ -173,7 +173,7 @@ export function EmployeeFormModal({
     mutationFn: async (data: InsertEmployee) => {
       const response = await apiRequest(
         "PUT",
-        `https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/employees/${employee?.id}`,
+        `https://api-pos.edpos.vn/api/employees/${employee?.id}`,
         data,
       );
       if (!response.ok) {
@@ -183,7 +183,7 @@ export function EmployeeFormModal({
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/employees"] });
+      queryClient.invalidateQueries({ queryKey: ["https://api-pos.edpos.vn/api/employees"] });
       onClose();
     },
     onError: (error: any) => {

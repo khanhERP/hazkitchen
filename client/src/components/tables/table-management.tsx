@@ -94,7 +94,7 @@ export function TableManagement() {
   const [previewReceipt, setPreviewReceipt] = useState<any>(null);
 
   const { data: tables, isLoading } = useQuery({
-    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/tables"],
+    queryKey: ["https://api-pos.edpos.vn/api/tables"],
     staleTime: 5 * 60 * 1000, // Cache for 5 minutes
     gcTime: 10 * 60 * 1000, // Keep in cache for 10 minutes
     refetchOnWindowFocus: false,
@@ -117,9 +117,9 @@ export function TableManagement() {
 
   const createTableMutation = useMutation({
     mutationFn: (data: TableFormData) =>
-      apiRequest("POST", "https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/tables", data),
+      apiRequest("POST", "https://api-pos.edpos.vn/api/tables", data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/tables"] });
+      queryClient.invalidateQueries({ queryKey: ["https://api-pos.edpos.vn/api/tables"] });
       handleCloseDialog();
     },
     onError: () => {
@@ -133,9 +133,9 @@ export function TableManagement() {
 
   const updateTableMutation = useMutation({
     mutationFn: ({ id, data }: { id: number; data: TableFormData }) =>
-      apiRequest("PUT", `https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/tables/${id}`, data),
+      apiRequest("PUT", `https://api-pos.edpos.vn/api/tables/${id}`, data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/tables"] });
+      queryClient.invalidateQueries({ queryKey: ["https://api-pos.edpos.vn/api/tables"] });
       handleCloseDialog();
     },
     onError: () => {
@@ -148,9 +148,9 @@ export function TableManagement() {
   });
 
   const deleteTableMutation = useMutation({
-    mutationFn: (id: number) => apiRequest("DELETE", `https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/tables/${id}`, {}),
+    mutationFn: (id: number) => apiRequest("DELETE", `https://api-pos.edpos.vn/api/tables/${id}`, {}),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/tables"] });
+      queryClient.invalidateQueries({ queryKey: ["https://api-pos.edpos.vn/api/tables"] });
     },
     onError: () => {
       toast({

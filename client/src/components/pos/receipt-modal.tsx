@@ -81,9 +81,9 @@ export function ReceiptModal({
 
   // Query store settings
   const { data: storeSettings } = useQuery({
-    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/store-settings"],
+    queryKey: ["https://api-pos.edpos.vn/api/store-settings"],
     queryFn: async () => {
-      const response = await apiRequest("GET", "https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/store-settings");
+      const response = await apiRequest("GET", "https://api-pos.edpos.vn/api/store-settings");
       console.log("🏢 Store settings fetched:", response.json());
       return response.json();
     },
@@ -92,19 +92,19 @@ export function ReceiptModal({
 
   // Query products to get tax rates
   const { data: products } = useQuery({
-    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products/active"],
+    queryKey: ["https://api-pos.edpos.vn/api/products/active"],
   });
 
   // Query to get table info based on orderId
   const { data: tableInfo } = useQuery({
-    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/tables/by-order", receipt?.id],
+    queryKey: ["https://api-pos.edpos.vn/api/tables/by-order", receipt?.id],
     queryFn: async () => {
       if (!receipt?.id) return null;
 
       // First get the order to find tableId
       const orderResponse = await apiRequest(
         "GET",
-        `https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders/${receipt.id}`,
+        `https://api-pos.edpos.vn/api/orders/${receipt.id}`,
       );
       const order = await orderResponse.json();
       receipt.orderNumber = order.orderNumber;
@@ -114,7 +114,7 @@ export function ReceiptModal({
       // Then get the table info
       const tableResponse = await apiRequest(
         "GET",
-        `https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/tables/${order.tableId}`,
+        `https://api-pos.edpos.vn/api/tables/${order.tableId}`,
       );
       const table = await tableResponse.json();
 
@@ -197,7 +197,7 @@ export function ReceiptModal({
   useEffect(() => {
     async function fetchPrinterConfigs() {
       try {
-        const printerResponse = await fetch("https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/printer-configs");
+        const printerResponse = await fetch("https://api-pos.edpos.vn/api/printer-configs");
         if (!printerResponse.ok) {
           console.error("Failed to fetch printer configs");
           return;
@@ -210,7 +210,7 @@ export function ReceiptModal({
         let tableFloor = null;
         if (receipt?.tableId) {
           try {
-            const tableResponse = await fetch(`https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/tables/${receipt.tableId}`);
+            const tableResponse = await fetch(`https://api-pos.edpos.vn/api/tables/${receipt.tableId}`);
             if (tableResponse.ok) {
               const tableData = await tableResponse.json();
               tableFloor = tableData.floor;
@@ -360,7 +360,7 @@ export function ReceiptModal({
     }
 
     try {
-      await apiRequest("POST", "https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/order-change-history", {
+      await apiRequest("POST", "https://api-pos.edpos.vn/api/order-change-history", {
         orderId: receipt.id,
         orderNumber: receipt.orderNumber,
         ipAddress: window.location.hostname || "unknown",
@@ -456,7 +456,7 @@ export function ReceiptModal({
       let activePrinterConfigs = [];
       try {
         console.log("🖨️ Fetching active printer configurations...");
-        const printerResponse = await fetch("https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/printer-configs");
+        const printerResponse = await fetch("https://api-pos.edpos.vn/api/printer-configs");
         if (printerResponse.ok) {
           const allConfigs = await printerResponse.json();
           activePrinterConfigs = allConfigs.filter(
@@ -491,7 +491,7 @@ export function ReceiptModal({
       };
 
       try {
-        await apiRequest("POST", "https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/order-change-history", {
+        await apiRequest("POST", "https://api-pos.edpos.vn/api/order-change-history", {
           orderId: receipt.id,
           orderNumber: receipt.orderNumber,
           ipAddress: window.location.hostname || "unknown",
@@ -513,7 +513,7 @@ export function ReceiptModal({
         console.log("🖨️ Trying configured POS printers for all platforms...");
 
         try {
-          const printResponse = await fetch("https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/pos/print-receipt", {
+          const printResponse = await fetch("https://api-pos.edpos.vn/api/pos/print-receipt", {
             method: "POST",
             headers: {
               "Content-Type": "application/json",

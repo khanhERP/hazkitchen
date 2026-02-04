@@ -101,7 +101,7 @@ export async function printKitchenReceipt(
       console.log("📝 No items to print for kitchen");
       return;
     }
-    const printerResponse = await fetch("https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/printer-configs");
+    const printerResponse = await fetch("https://api-pos.edpos.vn/api/printer-configs");
     if (!printerResponse.ok) {
       console.error("Failed to fetch printer configs");
       return;
@@ -117,7 +117,7 @@ export async function printKitchenReceipt(
         try {
           const response = await apiRequest(
             "GET",
-            `https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products/${item.productId}`,
+            `https://api-pos.edpos.vn/api/products/${item.productId}`,
           );
           const product = await response.json();
           const productFloor = product.floor;
@@ -191,7 +191,7 @@ export async function printKitchenReceipt(
           });
           // const printResponse = await apiRequest(
           //   "POST",
-          //   "https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/pos/print-kitchen-receipt",
+          //   "https://api-pos.edpos.vn/api/pos/print-kitchen-receipt",
           //   {
           //     content: receiptContent,
           //     floor,

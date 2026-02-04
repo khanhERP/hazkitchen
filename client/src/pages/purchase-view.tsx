@@ -38,15 +38,15 @@ export default function PurchaseViewPage({ onLogout }: PurchaseViewPageProps) {
 
   // Fetch categories for new product form
   const { data: categories = [] } = useQuery({
-    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/categories"],
+    queryKey: ["https://api-pos.edpos.vn/api/categories"],
     select: (data: any) => data || [],
   });
 
   // Fetch payment methods from API
   const { data: paymentMethodsData } = useQuery({
-    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/payment-methods"],
+    queryKey: ["https://api-pos.edpos.vn/api/payment-methods"],
     queryFn: async () => {
-      const response = await fetch("https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/payment-methods");
+      const response = await fetch("https://api-pos.edpos.vn/api/payment-methods");
       return response.json();
     },
   });
@@ -90,12 +90,12 @@ export default function PurchaseViewPage({ onLogout }: PurchaseViewPageProps) {
 
   // Fetch purchase receipt details
   const { data: purchaseOrder, isLoading: isOrderLoading, error: orderError } = useQuery<PurchaseOrder>({
-    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/purchase-receipts", purchaseId],
+    queryKey: ["https://api-pos.edpos.vn/api/purchase-receipts", purchaseId],
     queryFn: async () => {
       if (!purchaseId) throw new Error("Purchase ID not found");
 
       console.log('🔍 Fetching purchase receipt with ID:', purchaseId);
-      const response = await fetch(`https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/purchase-receipts/${purchaseId}`);
+      const response = await fetch(`https://api-pos.edpos.vn/api/purchase-receipts/${purchaseId}`);
 
       if (!response.ok) {
         if (response.status === 404) {
@@ -114,11 +114,11 @@ export default function PurchaseViewPage({ onLogout }: PurchaseViewPageProps) {
 
   // Fetch purchase receipt items
   const { data: purchaseItems = [], isLoading: isItemsLoading } = useQuery<PurchaseReceiptItem[]>({
-    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/purchase-receipts", purchaseId, "items"],
+    queryKey: ["https://api-pos.edpos.vn/api/purchase-receipts", purchaseId, "items"],
     queryFn: async () => {
       if (!purchaseId) throw new Error("Purchase ID not found");
 
-      const response = await fetch(`https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/purchase-receipts/${purchaseId}/items`);
+      const response = await fetch(`https://api-pos.edpos.vn/api/purchase-receipts/${purchaseId}/items`);
       if (!response.ok) {
         throw new Error('Failed to fetch purchase receipt items');
       }
@@ -132,11 +132,11 @@ export default function PurchaseViewPage({ onLogout }: PurchaseViewPageProps) {
 
   // Fetch attached documents
   const { data: attachedDocuments = [] } = useQuery({
-    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/purchase-receipts", purchaseId, "documents"],
+    queryKey: ["https://api-pos.edpos.vn/api/purchase-receipts", purchaseId, "documents"],
     queryFn: async () => {
       if (!purchaseId) throw new Error("Purchase ID not found");
 
-      const response = await fetch(`https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/purchase-receipts/${purchaseId}/documents`);
+      const response = await fetch(`https://api-pos.edpos.vn/api/purchase-receipts/${purchaseId}/documents`);
       if (!response.ok) {
         return [];
       }
@@ -150,7 +150,7 @@ export default function PurchaseViewPage({ onLogout }: PurchaseViewPageProps) {
 
   // Fetch suppliers for name lookup
   const { data: suppliers = [] } = useQuery<Supplier[]>({
-    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/suppliers"],
+    queryKey: ["https://api-pos.edpos.vn/api/suppliers"],
   });
 
   // Initialize form data when purchase order loads
@@ -255,7 +255,7 @@ export default function PurchaseViewPage({ onLogout }: PurchaseViewPageProps) {
 
   // Fetch employees for display
   const { data: employees = [] } = useQuery({
-    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/employees"],
+    queryKey: ["https://api-pos.edpos.vn/api/employees"],
     select: (data: any[]) =>
       (data || []).map((emp: any) => ({
         id: emp.id,
@@ -265,7 +265,7 @@ export default function PurchaseViewPage({ onLogout }: PurchaseViewPageProps) {
 
   // Fetch products for selection
   const { data: allProducts = [] } = useQuery({
-    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/products"],
+    queryKey: ["https://api-pos.edpos.vn/api/products"],
     select: (data: any[]) =>
       (data || []).map((product: any) => ({
         ...product,
@@ -476,7 +476,7 @@ export default function PurchaseViewPage({ onLogout }: PurchaseViewPageProps) {
 
     // Update purchaseItems with synced data and new item
     queryClient.setQueryData(
-      ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/purchase-receipts", purchaseId, "items"],
+      ["https://api-pos.edpos.vn/api/purchase-receipts", purchaseId, "items"],
       [...syncedItems, newItem]
     );
 
@@ -537,7 +537,7 @@ export default function PurchaseViewPage({ onLogout }: PurchaseViewPageProps) {
         const fileContent = await fileContentPromise;
 
         // Upload file with original filename preserved
-        const response = await fetch(`https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/purchase-receipts/${purchaseId}/documents`, {
+        const response = await fetch(`https://api-pos.edpos.vn/api/purchase-receipts/${purchaseId}/documents`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -563,7 +563,7 @@ export default function PurchaseViewPage({ onLogout }: PurchaseViewPageProps) {
 
       // Refresh documents list
       await queryClient.invalidateQueries({
-        queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/purchase-receipts", purchaseId, "documents"]
+        queryKey: ["https://api-pos.edpos.vn/api/purchase-receipts", purchaseId, "documents"]
       });
     } catch (error) {
       console.error('Error uploading files:', error);
@@ -582,7 +582,7 @@ export default function PurchaseViewPage({ onLogout }: PurchaseViewPageProps) {
     try {
       console.log('📥 Starting file download:', document);
 
-      const response = await fetch(`https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/purchase-receipts/documents/${document.id}/download`, {
+      const response = await fetch(`https://api-pos.edpos.vn/api/purchase-receipts/documents/${document.id}/download`, {
         method: 'GET',
         headers: {
           'Cache-Control': 'no-cache',
@@ -633,7 +633,7 @@ export default function PurchaseViewPage({ onLogout }: PurchaseViewPageProps) {
     try {
       console.log('🗑️ Deleting document:', documentId);
 
-      const response = await fetch(`https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/purchase-receipts/documents/${documentId}`, {
+      const response = await fetch(`https://api-pos.edpos.vn/api/purchase-receipts/documents/${documentId}`, {
         method: 'DELETE',
       });
 
@@ -647,7 +647,7 @@ export default function PurchaseViewPage({ onLogout }: PurchaseViewPageProps) {
 
       // Refresh documents list
       await queryClient.invalidateQueries({
-        queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/purchase-receipts", purchaseId, "documents"]
+        queryKey: ["https://api-pos.edpos.vn/api/purchase-receipts", purchaseId, "documents"]
       });
     } catch (error) {
       console.error('Error deleting file:', error);
@@ -972,7 +972,7 @@ export default function PurchaseViewPage({ onLogout }: PurchaseViewPageProps) {
       console.log("📝 Updating purchase receipt with payment info:", orderUpdateData);
 
       // Update purchase receipt
-      const receiptResponse = await fetch(`https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/purchase-receipts/${purchaseId}`, {
+      const receiptResponse = await fetch(`https://api-pos.edpos.vn/api/purchase-receipts/${purchaseId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(orderUpdateData)
@@ -1012,7 +1012,7 @@ export default function PurchaseViewPage({ onLogout }: PurchaseViewPageProps) {
         for (const itemId of existingItemIds) {
           try {
             console.log(`🗑️ Deleting old item: ${itemId}`);
-            const response = await fetch(`https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/purchase-order-items/${itemId}`, {
+            const response = await fetch(`https://api-pos.edpos.vn/api/purchase-order-items/${itemId}`, {
               method: 'DELETE'
             });
 
@@ -1088,7 +1088,7 @@ export default function PurchaseViewPage({ onLogout }: PurchaseViewPageProps) {
         try {
           console.log(`📝 Creating item at position ${index + 1}:`, newItemData);
 
-          const response = await fetch('https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/purchase-order-items', {
+          const response = await fetch('https://api-pos.edpos.vn/api/purchase-order-items', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(newItemData)
@@ -1118,10 +1118,10 @@ export default function PurchaseViewPage({ onLogout }: PurchaseViewPageProps) {
 
       // Refresh the data
       await queryClient.invalidateQueries({ 
-        queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/purchase-receipts", purchaseId] 
+        queryKey: ["https://api-pos.edpos.vn/api/purchase-receipts", purchaseId] 
       });
       await queryClient.invalidateQueries({ 
-        queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/purchase-receipts", purchaseId, "items"] 
+        queryKey: ["https://api-pos.edpos.vn/api/purchase-receipts", purchaseId, "items"] 
       });
     } catch (error: any) {
       console.error('❌ Frontend: Error updating purchase receipt:', error);
@@ -2034,7 +2034,7 @@ export default function PurchaseViewPage({ onLogout }: PurchaseViewPageProps) {
                                       // Only allow deletion if the item has a valid ID (i.e., it's not a new, unsaved item)
                                       if (item.id && item.id < 1000000000) { // Assuming valid IDs are smaller than temporary IDs
                                         try {
-                                          const response = await fetch(`https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/purchase-order-items/${item.id}`, {
+                                          const response = await fetch(`https://api-pos.edpos.vn/api/purchase-order-items/${item.id}`, {
                                             method: 'DELETE',
                                           });
 
@@ -2044,7 +2044,7 @@ export default function PurchaseViewPage({ onLogout }: PurchaseViewPageProps) {
 
                                           // Refresh the items list
                                           await queryClient.invalidateQueries({ 
-                                            queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/purchase-receipts", purchaseId, "items"] 
+                                            queryKey: ["https://api-pos.edpos.vn/api/purchase-receipts", purchaseId, "items"] 
                                           });
                                         } catch (error) {
                                           console.error('Error deleting item:', error);
@@ -2180,21 +2180,21 @@ export default function PurchaseViewPage({ onLogout }: PurchaseViewPageProps) {
                 onClick={async () => {
                   // Tải lại dữ liệu từ server trước khi cho phép chỉnh sửa
                   await queryClient.invalidateQueries({ 
-                    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/purchase-receipts", purchaseId] 
+                    queryKey: ["https://api-pos.edpos.vn/api/purchase-receipts", purchaseId] 
                   });
                   await queryClient.invalidateQueries({ 
-                    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/purchase-receipts", purchaseId, "items"] 
+                    queryKey: ["https://api-pos.edpos.vn/api/purchase-receipts", purchaseId, "items"] 
                   });
                   await queryClient.invalidateQueries({ 
-                    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/purchase-receipts", purchaseId, "documents"] 
+                    queryKey: ["https://api-pos.edpos.vn/api/purchase-receipts", purchaseId, "documents"] 
                   });
 
                   // Đợi dữ liệu load xong (refetch data)
                   await queryClient.refetchQueries({ 
-                    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/purchase-receipts", purchaseId] 
+                    queryKey: ["https://api-pos.edpos.vn/api/purchase-receipts", purchaseId] 
                   });
                   await queryClient.refetchQueries({ 
-                    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/purchase-receipts", purchaseId, "items"] 
+                    queryKey: ["https://api-pos.edpos.vn/api/purchase-receipts", purchaseId, "items"] 
                   });
 
                   // Bật chế độ chỉnh sửa
@@ -2214,13 +2214,13 @@ export default function PurchaseViewPage({ onLogout }: PurchaseViewPageProps) {
 
                     // Reload all data from server
                     await queryClient.invalidateQueries({ 
-                      queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/purchase-receipts", purchaseId] 
+                      queryKey: ["https://api-pos.edpos.vn/api/purchase-receipts", purchaseId] 
                     });
                     await queryClient.invalidateQueries({ 
-                      queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/purchase-receipts", purchaseId, "items"] 
+                      queryKey: ["https://api-pos.edpos.vn/api/purchase-receipts", purchaseId, "items"] 
                     });
                     await queryClient.invalidateQueries({ 
-                      queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/purchase-receipts", purchaseId, "documents"] 
+                      queryKey: ["https://api-pos.edpos.vn/api/purchase-receipts", purchaseId, "documents"] 
                     });
 
                     // Reset form data to original values

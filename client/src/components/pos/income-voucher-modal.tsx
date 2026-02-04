@@ -74,9 +74,9 @@ export default function IncomeVoucherModal({
   // Load payment methods from localStorage (same as expense voucher)
   // Query payment methods from API
   const { data: paymentMethodsData } = useQuery({
-    queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/payment-methods"],
+    queryKey: ["https://api-pos.edpos.vn/api/payment-methods"],
     queryFn: async () => {
-      const response = await fetch("https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/payment-methods");
+      const response = await fetch("https://api-pos.edpos.vn/api/payment-methods");
       return response.json();
     },
   });
@@ -137,7 +137,7 @@ export default function IncomeVoucherModal({
 
   const createVoucherMutation = useMutation({
     mutationFn: async (data: IncomeVoucher) => {
-      const response = await fetch("https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/income-vouchers", {
+      const response = await fetch("https://api-pos.edpos.vn/api/income-vouchers", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
@@ -146,8 +146,8 @@ export default function IncomeVoucherModal({
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/income-vouchers"] });
-      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] });
+      queryClient.invalidateQueries({ queryKey: ["https://api-pos.edpos.vn/api/income-vouchers"] });
+      queryClient.invalidateQueries({ queryKey: ["https://api-pos.edpos.vn/api/orders"] });
       onClose();
     },
     onError: (error) => {
@@ -162,7 +162,7 @@ export default function IncomeVoucherModal({
   const updateVoucherMutation = useMutation({
     mutationFn: async (data: IncomeVoucher) => {
       console.log("Updating income voucher with data:", data);
-      const response = await fetch(`https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/income-vouchers/${data.id}`, {
+      const response = await fetch(`https://api-pos.edpos.vn/api/income-vouchers/${data.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
@@ -179,8 +179,8 @@ export default function IncomeVoucherModal({
     },
     onSuccess: (data) => {
       console.log("Income voucher updated successfully:", data);
-      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/income-vouchers"] });
-      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] });
+      queryClient.invalidateQueries({ queryKey: ["https://api-pos.edpos.vn/api/income-vouchers"] });
+      queryClient.invalidateQueries({ queryKey: ["https://api-pos.edpos.vn/api/orders"] });
       setIsEditing(false);
     },
     onError: (error) => {
@@ -197,15 +197,15 @@ export default function IncomeVoucherModal({
 
   const deleteVoucherMutation = useMutation({
     mutationFn: async (id: string) => {
-      const response = await fetch(`https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/income-vouchers/${id}`, {
+      const response = await fetch(`https://api-pos.edpos.vn/api/income-vouchers/${id}`, {
         method: "DELETE",
       });
       if (!response.ok) throw new Error("Failed to delete income voucher");
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/income-vouchers"] });
-      queryClient.invalidateQueries({ queryKey: ["https://bad07204-3e0d-445f-a72e-497c63c9083a-00-3i4fcyhnilzoc.pike.replit.dev/api/orders"] });
+      queryClient.invalidateQueries({ queryKey: ["https://api-pos.edpos.vn/api/income-vouchers"] });
+      queryClient.invalidateQueries({ queryKey: ["https://api-pos.edpos.vn/api/orders"] });
       setShowDeleteDialog(false);
       onClose();
     },
