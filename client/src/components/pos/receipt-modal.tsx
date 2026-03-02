@@ -44,6 +44,9 @@ export function ReceiptModal({
   const [printers, setPrinters] = useState([]);
   const [bankAccounts, setBankAccounts] = useState([]);
   const [domainName, setDomainName] = useState("");
+  const [customerName, setCustomerName] = useState("");
+  const [customerTaxCode, setCustomerTaxCode] = useState("");
+  const [customerAddress, setCustomerAddress] = useState("");
   const { t } = useTranslation();
   const { toast } = useToast();
 
@@ -864,6 +867,9 @@ export function ReceiptModal({
             box-sizing: border-box;
             background: #ffffff;
           }
+          .customer-info-inputs {
+            display: none !important;
+          }
         </style>
       </head>
       <body>
@@ -1294,6 +1300,115 @@ export function ReceiptModal({
               </h2>
             </div>
 
+            {domainName === "0109878794.edpos.vn" && (
+              <>
+                {/* Customer Info Input Fields - Only visible in modal, not printed */}
+                <div
+                  className="customer-info-inputs"
+                  style={{
+                    marginBottom: "12px",
+                    padding: "10px",
+                    border: "1px solid #e5e7eb",
+                    borderRadius: "6px",
+                    backgroundColor: "#f9fafb",
+                  }}
+                  data-print-hidden="true"
+                >
+                  <p style={{ fontSize: "13px", fontWeight: "600", color: "#374151", marginBottom: "8px" }}>
+                    {t("pos.customerInfoOptional")}
+                  </p>
+                  {/* Tên khách hàng */}
+                  <div style={{ display: "flex", alignItems: "center", marginBottom: "6px", gap: "8px" }}>
+                    <label style={{ fontSize: "12px", color: "#6b7280", minWidth: "90px", flexShrink: 0 }}>
+                      {t("pos.customerName")}
+                    </label>
+                    <input
+                      type="text"
+                      value={customerName}
+                      onChange={(e) => setCustomerName(e.target.value)}
+                      placeholder={t("pos.customerNamePlaceholder")}
+                      style={{
+                        flex: 1,
+                        padding: "6px 8px",
+                        border: "1px solid #d1d5db",
+                        borderRadius: "4px",
+                        fontSize: "13px",
+                        boxSizing: "border-box",
+                        backgroundColor: "#ffffff",
+                        outline: "none",
+                      }}
+                    />
+                  </div>
+                  {/* Mã số thuế */}
+                  <div style={{ display: "flex", alignItems: "center", marginBottom: "6px", gap: "8px" }}>
+                    <label style={{ fontSize: "12px", color: "#6b7280", minWidth: "90px", flexShrink: 0 }}>
+                      {t("pos.customerTaxCode")}
+                    </label>
+                    <input
+                      type="text"
+                      value={customerTaxCode}
+                      onChange={(e) => setCustomerTaxCode(e.target.value)}
+                      placeholder={t("pos.customerTaxCodePlaceholder")}
+                      style={{
+                        flex: 1,
+                        padding: "6px 8px",
+                        border: "1px solid #d1d5db",
+                        borderRadius: "4px",
+                        fontSize: "13px",
+                        boxSizing: "border-box",
+                        backgroundColor: "#ffffff",
+                        outline: "none",
+                      }}
+                    />
+                  </div>
+                  {/* Địa chỉ */}
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                    <label style={{ fontSize: "12px", color: "#6b7280", minWidth: "90px", flexShrink: 0 }}>
+                      {t("pos.customerAddress")}
+                    </label>
+                    <input
+                      type="text"
+                      value={customerAddress}
+                      onChange={(e) => setCustomerAddress(e.target.value)}
+                      placeholder={t("pos.customerAddressPlaceholder")}
+                      style={{
+                        flex: 1,
+                        padding: "6px 8px",
+                        border: "1px solid #d1d5db",
+                        borderRadius: "4px",
+                        fontSize: "13px",
+                        boxSizing: "border-box",
+                        backgroundColor: "#ffffff",
+                        outline: "none",
+                      }}
+                    />
+                  </div>
+                </div>
+
+                {/* Customer Info - Printed on receipt when filled */}
+                {(customerName || customerTaxCode || customerAddress) && (
+                  <div
+                    className="customer-info-print"
+                    style={{
+                      marginBottom: "8px",
+                      fontSize: "16px",
+                      fontWeight: "bold",
+                      lineHeight: "1.4",
+                    }}
+                  >
+                    {customerName && (
+                      <p style={{ margin: "2px 0" }}>{t("pos.customerName")}: {customerName}</p>
+                    )}
+                    {customerTaxCode && (
+                      <p style={{ margin: "2px 0" }}>{t("pos.customerTaxCode")}: {customerTaxCode}</p>
+                    )}
+                    {customerAddress && (
+                      <p style={{ margin: "2px 0" }}>{t("pos.customerAddress")}: {customerAddress}</p>
+                    )}
+                  </div>
+                )}
+              </>
+            )}
             {/* Invoice Info - Using Table */}
             <table
               style={{
@@ -1305,11 +1420,11 @@ export function ReceiptModal({
               }}
             >
               <tbody>
-                <tr>
-                  <td style={{ padding: "2px 0" }}>
+                <tr style={{ backgroundColor: "#f3f4f6" }}>
+                  <td style={{ padding: "4px 6px", fontWeight: "bold" }}>
                     {t("common.invoiceNumber")}:
                   </td>
-                  <td style={{ padding: "2px 0", textAlign: "right" }}>
+                  <td style={{ padding: "4px 6px", textAlign: "right", fontWeight: "bold" }}>
                     {receipt?.orderNumber || `ORD-${receipt?.id}`}
                   </td>
                 </tr>
@@ -1866,9 +1981,9 @@ export function ReceiptModal({
                       previousDiscounts +=
                         totalBeforeDiscount > 0
                           ? Math.round(
-                              (orderDiscount * prevSubtotal) /
-                                totalBeforeDiscount,
-                            )
+                            (orderDiscount * prevSubtotal) /
+                            totalBeforeDiscount,
+                          )
                           : 0;
                     }
                     itemDiscount = orderDiscount - previousDiscounts;
@@ -1877,9 +1992,9 @@ export function ReceiptModal({
                     itemDiscount =
                       totalBeforeDiscount > 0
                         ? Math.round(
-                            (orderDiscount * itemSubtotal) /
-                              totalBeforeDiscount,
-                          )
+                          (orderDiscount * itemSubtotal) /
+                          totalBeforeDiscount,
+                        )
                         : 0;
                   }
                 }
@@ -2001,9 +2116,9 @@ export function ReceiptModal({
                           previousDiscounts +=
                             totalBeforeDiscount > 0
                               ? Math.round(
-                                  (orderDiscount * prevSubtotal) /
-                                    totalBeforeDiscount,
-                                )
+                                (orderDiscount * prevSubtotal) /
+                                totalBeforeDiscount,
+                              )
                               : 0;
                         }
                         itemDiscount = orderDiscount - previousDiscounts;
@@ -2011,9 +2126,9 @@ export function ReceiptModal({
                         itemDiscount =
                           totalBeforeDiscount > 0
                             ? Math.round(
-                                (orderDiscount * itemSubtotal) /
-                                  totalBeforeDiscount,
-                              )
+                              (orderDiscount * itemSubtotal) /
+                              totalBeforeDiscount,
+                            )
                             : 0;
                       }
                     }
@@ -2065,29 +2180,29 @@ export function ReceiptModal({
                   orderDiscount > 0 ? orderDiscount : totalItemDiscount;
                 return totalDiscount > 0;
               })() && (
-                <div className="flex justify-between text-sm text-red-600">
-                  <span>{t("reports.discount")}:</span>
-                  <span className="font-medium">
-                    -
-                    {(() => {
-                      const totalItemDiscount = cartItems.reduce(
-                        (sum, item) => {
-                          return sum + parseFloat(item.discount || "0");
-                        },
-                        0,
-                      );
-                      const orderDiscount = parseFloat(
-                        receipt?.discount || total?.discount || "0",
-                      );
-                      // Show either item discounts or order discount, not both
-                      const totalDiscount =
-                        orderDiscount > 0 ? orderDiscount : totalItemDiscount;
-                      return Math.floor(totalDiscount).toLocaleString("vi-VN");
-                    })()}{" "}
-                    ₫
-                  </span>
-                </div>
-              )}
+                  <div className="flex justify-between text-sm text-red-600">
+                    <span>{t("reports.discount")}:</span>
+                    <span className="font-medium">
+                      -
+                      {(() => {
+                        const totalItemDiscount = cartItems.reduce(
+                          (sum, item) => {
+                            return sum + parseFloat(item.discount || "0");
+                          },
+                          0,
+                        );
+                        const orderDiscount = parseFloat(
+                          receipt?.discount || total?.discount || "0",
+                        );
+                        // Show either item discounts or order discount, not both
+                        const totalDiscount =
+                          orderDiscount > 0 ? orderDiscount : totalItemDiscount;
+                        return Math.floor(totalDiscount).toLocaleString("vi-VN");
+                      })()}{" "}
+                      ₫
+                    </span>
+                  </div>
+                )}
               <div className="flex justify-between font-bold">
                 <span>{t("reports.totalMoney")}:</span>
                 <span>
@@ -2166,37 +2281,37 @@ export function ReceiptModal({
             typeof window !== "undefined" && (window as any).orderForPayment
               ? (window as any).orderForPayment
               : {
-                  id: receipt?.id,
-                  orderNumber:
-                    receipt?.orderNumber ||
-                    receipt?.transactionId ||
-                    `ORD-${Date.now()}`,
-                  tableId: receipt?.tableId || null,
-                  customerName: receipt?.customerName || "Khách hàng lẻ",
-                  status: "pending",
-                  paymentStatus: "pending",
-                  items: receipt?.items || cartItems || [],
-                  subtotal:
-                    receipt?.exactSubtotal ||
-                    parseFloat(receipt?.subtotal || "0"),
-                  tax: receipt?.exactTax || parseFloat(receipt?.tax || "0"),
-                  discount:
-                    receipt?.exactDiscount ||
-                    parseFloat(receipt?.discount || "0"),
-                  total:
-                    receipt?.exactTotal || parseFloat(receipt?.total || "0"),
-                  exactSubtotal:
-                    receipt?.exactSubtotal ||
-                    parseFloat(receipt?.subtotal || "0"),
-                  exactTax:
-                    receipt?.exactTax || parseFloat(receipt?.tax || "0"),
-                  exactDiscount:
-                    receipt?.exactDiscount ||
-                    parseFloat(receipt?.discount || "0"),
-                  exactTotal:
-                    receipt?.exactTotal || parseFloat(receipt?.total || "0"),
-                  orderedAt: new Date().toISOString(),
-                }
+                id: receipt?.id,
+                orderNumber:
+                  receipt?.orderNumber ||
+                  receipt?.transactionId ||
+                  `ORD-${Date.now()}`,
+                tableId: receipt?.tableId || null,
+                customerName: receipt?.customerName || "Khách hàng lẻ",
+                status: "pending",
+                paymentStatus: "pending",
+                items: receipt?.items || cartItems || [],
+                subtotal:
+                  receipt?.exactSubtotal ||
+                  parseFloat(receipt?.subtotal || "0"),
+                tax: receipt?.exactTax || parseFloat(receipt?.tax || "0"),
+                discount:
+                  receipt?.exactDiscount ||
+                  parseFloat(receipt?.discount || "0"),
+                total:
+                  receipt?.exactTotal || parseFloat(receipt?.total || "0"),
+                exactSubtotal:
+                  receipt?.exactSubtotal ||
+                  parseFloat(receipt?.subtotal || "0"),
+                exactTax:
+                  receipt?.exactTax || parseFloat(receipt?.tax || "0"),
+                exactDiscount:
+                  receipt?.exactDiscount ||
+                  parseFloat(receipt?.discount || "0"),
+                exactTotal:
+                  receipt?.exactTotal || parseFloat(receipt?.total || "0"),
+                orderedAt: new Date().toISOString(),
+              }
           }
           receipt={receipt}
           onReceiptReady={(receiptData) => {

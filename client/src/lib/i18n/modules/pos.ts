@@ -181,6 +181,13 @@ export interface POSTranslations {
   noData: string;
   noDataDescription: string;
   productNotFoundWithCode: string;
+  // Customer info section on receipt
+  customerInfoOptional: string;
+  customerAddress: string;
+  customerTaxCode: string;
+  customerNamePlaceholder: string;
+  customerTaxCodePlaceholder: string;
+  customerAddressPlaceholder: string;
 }
 
 export const posTranslations: { [key: string]: POSTranslations } = {
@@ -378,6 +385,12 @@ export const posTranslations: { [key: string]: POSTranslations } = {
     noDataDescription: "표시할 데이터가 없습니다",
     productNotFound: "제품을 찾을 수 없습니다",
     productNotFoundWithCode: "'{code}' 제품을 찾을 수 없습니다",
+    customerInfoOptional: "고객 정보 (선택 사항)",
+    customerAddress: "주소",
+    customerTaxCode: "사업자 번호",
+    customerNamePlaceholder: "고객 이름 입력...",
+    customerTaxCodePlaceholder: "사업자 번호 입력...",
+    customerAddressPlaceholder: "고객 주소 입력...",
   },
   en: {
     title: "POS System",
@@ -571,6 +584,12 @@ export const posTranslations: { [key: string]: POSTranslations } = {
     noDataDescription: "No data to display",
     productNotFound: "Product not found",
     productNotFoundWithCode: "No product found with code '{code}'",
+    customerInfoOptional: "Customer Info (optional)",
+    customerAddress: "Address",
+    customerTaxCode: "Tax Code",
+    customerNamePlaceholder: "Enter customer name...",
+    customerTaxCodePlaceholder: "Enter tax code...",
+    customerAddressPlaceholder: "Enter customer address...",
   },
   vi: {
     title: "Hệ thống POS",
@@ -764,5 +783,11 @@ export const posTranslations: { [key: string]: POSTranslations } = {
     noDataDescription: "Không có dữ liệu để hiển thị",
     productNotFound: "Không tìm thấy sản phẩm",
     productNotFoundWithCode: "Không có sản phẩm nào với mã '{code}'",
+    customerInfoOptional: "Thông tin khách hàng (tùy chọn)",
+    customerAddress: "Địa chỉ",
+    customerTaxCode: "Mã số thuế",
+    customerNamePlaceholder: "Nhập tên khách hàng...",
+    customerTaxCodePlaceholder: "Nhập mã số thuế...",
+    customerAddressPlaceholder: "Nhập địa chỉ khách hàng...",
   },
 };
