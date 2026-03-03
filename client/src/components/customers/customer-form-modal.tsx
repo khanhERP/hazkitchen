@@ -39,9 +39,10 @@ interface CustomerFormModalProps {
   onClose: () => void;
   customer?: any | null;
   initialPhone?: string;
+  onSuccess?: (customer: any) => void;
 }
 
-export function CustomerFormModal({ isOpen, onClose, customer, initialPhone }: CustomerFormModalProps) {
+export function CustomerFormModal({ isOpen, onClose, customer, initialPhone, onSuccess }: CustomerFormModalProps) {
   const { toast } = useToast();
   const { t } = useTranslation();
   const queryClient = useQueryClient();
@@ -139,8 +140,9 @@ export function CustomerFormModal({ isOpen, onClose, customer, initialPhone }: C
       const response = await apiRequest("POST", "https://api-pos.edpos.vn/api/customers", data);
       return response.json();
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["https://api-pos.edpos.vn/api/customers"] });
+      if (onSuccess) onSuccess(data);
       onClose();
       form.reset();
     },
@@ -161,8 +163,9 @@ export function CustomerFormModal({ isOpen, onClose, customer, initialPhone }: C
       const response = await apiRequest("PUT", `https://api-pos.edpos.vn/api/customers/${customer.id}`, data);
       return response.json();
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["https://api-pos.edpos.vn/api/customers"] });
+      if (onSuccess) onSuccess(data);
       onClose();
       form.reset();
     },

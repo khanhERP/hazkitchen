@@ -628,6 +628,7 @@ export function ShoppingCart({
     setNewCustomerName("");
     setNewCustomerPhone("");
     setNewCustomerAddress("");
+    setNewCustomerTaxCode("");
 
     // Save customer to orderCustomers state
     if (activeOrderId) {
@@ -1126,7 +1127,7 @@ export function ShoppingCart({
           : discountAmount || "0",
       );
 
-      let itemDiscountAmount = parseFloat(item.discount || "0");
+      let itemDiscountAmount = parseFloat(String(item.discount || "0"));
       let discountPerUnit = 0;
 
       if (orderDiscount > 0) {
@@ -1828,9 +1829,9 @@ export function ShoppingCart({
                               <span className="text-xs text-gray-600">
                                 📞 {customer.phone}
                               </span>
-                              {customer.customerTaxCode && (
+                              {(customer.taxCode || customer.customerTaxCode) && (
                                 <span className="text-xs text-gray-500 px-2 py-0.5 bg-gray-100 rounded">
-                                  MST: {customer.customerTaxCode}
+                                  MST: {customer.taxCode || customer.customerTaxCode}
                                 </span>
                               )}
                             </div>
@@ -3444,6 +3445,28 @@ export function ShoppingCart({
             }}
             customer={editingCustomer}
             initialPhone={editingCustomer ? undefined : customerSearchTerm}
+            onSuccess={(updatedCustomer) => {
+              console.log("👤 Shopping Cart: Customer updated, refreshing selectedCustomer:", updatedCustomer);
+              handleCustomerSelect(updatedCustomer);
+
+              // Update other orders that might be using this same customer
+              setOrderCustomers((prev) => {
+                const updated = { ...prev };
+                let hasChanges = false;
+                Object.keys(updated).forEach((id) => {
+                  if (updated[id] && updated[id].id === updatedCustomer.id) {
+                    updated[id] = updatedCustomer;
+                    hasChanges = true;
+                  }
+                });
+                return hasChanges ? updated : prev;
+              });
+
+              // Refresh customer search after creating/updating customer
+              if (customerSearchTerm.length > 0) {
+                fetchCustomers(customerSearchTerm);
+              }
+            }}
           />
         )
       }
