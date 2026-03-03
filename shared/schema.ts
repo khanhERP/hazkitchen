@@ -147,6 +147,7 @@ export const storeSettings = pgTable("store_settings", {
   floorPrefix: text("floor_prefix").default("층"),
   zonePrefix: text("zone_prefix").default("구역"),
   isEdit: boolean("is_edit").notNull().default(false),
+  isCreditCard: boolean("is_credit_card").notNull().default(false),
   isCancelled: boolean("is_cancelled").notNull().default(false),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
@@ -520,7 +521,10 @@ export const insertOrderItemSchema = createInsertSchema(orderItems)
   })
   .extend({
     discount: z.string().optional().default("0.00"),
-    status: z.enum(["", "pending", "progress", "completed"]).optional().default(""),
+    status: z
+      .enum(["", "pending", "progress", "completed"])
+      .optional()
+      .default(""),
   });
 
 export const insertStoreSettingsSchema = createInsertSchema(storeSettings)
@@ -532,6 +536,7 @@ export const insertStoreSettingsSchema = createInsertSchema(storeSettings)
   .extend({
     domain: z.string().optional(), // Added domain to schema
     priceIncludesTax: z.boolean().optional().default(false),
+    isCreditCard: z.boolean().optional().default(false),
     defaultFloor: z.string().optional().default("1"),
     enableMultiFloor: z.boolean().optional().default(false),
     floorPrefix: z.string().optional().default("층"),
@@ -1134,6 +1139,22 @@ export const purchaseReceiptDocumentsRelations = relations(
 // Receipt data type
 export type Receipt = Transaction & {
   items: (TransactionItem & { productName: string })[];
+  orderNumber?: string;
+  tableId?: number;
+  tableNumber?: string;
+  customerId?: number;
+  customerName?: string;
+  customerPhone?: string;
+  customerTaxCode?: string;
+  customerAddress?: string;
+  customerEmail?: string;
+  orderedAt?: string;
+  isPreview?: boolean;
+  storeCode?: string | null;
+  subtotal?: string;
+  tax?: string;
+  total?: string;
+  discount?: string;
 };
 
 // Alias for backward compatibility - use purchase receipt schema
@@ -1368,3 +1389,130 @@ export const insertGeneralSettingSchema = createInsertSchema(generalSettings)
 
 export type GeneralSetting = typeof generalSettings.$inferSelect;
 export type InsertGeneralSetting = z.infer<typeof insertGeneralSettingSchema>;
+
+// Promotions table
+export const promotions = pgTable("promotions", {
+  id: serial("id").primaryKey(),
+  code: varchar("code", { length: 50 }).notNull(),
+  name: varchar("name", { length: 255 }).notNull(),
+  description: text("description"),
+  promotionType: varchar("promotion_type", { length: 50 })
+    .notNull()
+    .default("order"), // "order" or "product"
+  discountType: varchar("discount_type", { length: 50 })
+    .notNull()
+    .default("order_discount"), // "order_discount" or "product_discount"
+  discountValueType: varchar("discount_value_type", { length: 20 })
+    .notNull()
+    .default("percent"), // "percent" or "amount"
+  discountValue: decimal("discount_value", { precision: 10, scale: 2 })
+    .notNull()
+    .default("0"),
+  minOrderAmount: decimal("min_order_amount", {
+    precision: 10,
+    scale: 2,
+  }).default("0"),
+  maxDiscountAmount: decimal("max_discount_amount", {
+    precision: 10,
+    scale: 2,
+  }),
+  validFrom: date("valid_from").notNull(),
+  validTo: date("valid_to").notNull(),
+  isActive: boolean("is_active").notNull().default(true),
+  storeCode: varchar("store_code", { length: 50 }),
+  conditions: text("conditions"), // Lưu các điều kiện dưới dạng JSON
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .defaultNow()
+    .notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .defaultNow()
+    .notNull(),
+});
+
+export const insertPromotionSchema = createInsertSchema(promotions)
+  .omit({
+    id: true,
+    createdAt: true,
+    updatedAt: true,
+  })
+  .extend({
+    storeCode: z.string().min(1, "Vui lòng chọn ít nhất một cửa hàng"),
+    code: z.preprocess(
+      (val) => (val === "" ? undefined : val),
+      z.string().optional(),
+    ),
+    name: z.string().min(1, "Tên chương trình khuyến mãi là bắt buộc"),
+    description: z.preprocess(
+      (val) => (val === "" ? null : val),
+      z.string().optional().nullable(),
+    ),
+    promotionType: z.enum(["order", "product"]).default("order"),
+    discountType: z
+      .enum(["order_discount", "product_discount"])
+      .default("order_discount"),
+    discountValueType: z.enum(["percent", "amount"]).default("percent"),
+    discountValue: z.preprocess(
+      (val) => {
+        if (val === "" || val === null || val === undefined) return "0";
+        return String(val);
+      },
+      z.string().refine((val) => !isNaN(Number(val)) && Number(val) >= 0, {
+        message: "Giá trị khuyến mãi phải là số dương",
+      }),
+    ),
+    minOrderAmount: z.preprocess((val) => {
+      if (val === "" || val === null || val === undefined) return "0";
+      return String(val);
+    }, z.string()),
+    maxDiscountAmount: z.preprocess((val) => {
+      if (val === "" || val === null || val === undefined) return null;
+      return String(val);
+    }, z.string().nullable()),
+    validFrom: z.string().min(1, "Ngày bắt đầu là bắt buộc"),
+    validTo: z.string().min(1, "Ngày kết thúc là bắt buộc"),
+    isActive: z.boolean().optional().default(true),
+  });
+
+export type Promotion = typeof promotions.$inferSelect;
+export type InsertPromotion = z.infer<typeof insertPromotionSchema>;
+
+// POS Transactions table (for card terminal transactions)
+export const posTransactions = pgTable("pos_transactions", {
+  id: text("id").primaryKey(), // UUID v4
+  serialNumber: varchar("serial_number", { length: 100 }).notNull(),
+  transactionId: varchar("transaction_id", { length: 100 }),
+  invoice: varchar("invoice", { length: 100 }),
+  amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
+  currencyCode: varchar("currency_code", { length: 3 }).notNull(),
+  event: varchar("event", { length: 100 }).notNull(),
+  appvCode: varchar("appv_code", { length: 100 }),
+  appId: varchar("app_id", { length: 100 }),
+  error: text("error"),
+  responseCode: varchar("response_code", { length: 100 }),
+  status: integer("status").notNull().default(0),
+  reconcileStatus: boolean("reconcile_status").default(false),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .defaultNow()
+    .notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
+});
+
+export const insertPosTransactionSchema = createInsertSchema(posTransactions)
+  .omit({
+    createdAt: true,
+    updatedAt: true,
+  })
+  .extend({
+    id: z.string().uuid().optional(),
+    serialNumber: z.string().min(1, "Số serial là bắt buộc"),
+    amount: z.string().refine((val) => !isNaN(Number(val)), {
+      message: "Số tiền phải là số",
+    }),
+    currencyCode: z.string().min(1, "Mã tiền tệ là bắt buộc"),
+    event: z.string().min(1, "Event là bắt buộc"),
+    status: z.number().optional().default(0),
+    reconcileStatus: z.boolean().optional().default(false),
+  });
+
+export type PosTransaction = typeof posTransactions.$inferSelect;
+export type InsertPosTransaction = z.infer<typeof insertPosTransactionSchema>;

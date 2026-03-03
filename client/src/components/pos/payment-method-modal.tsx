@@ -350,8 +350,8 @@ export function PaymentMethodModal({
           orderTotal = Math.max(
             0,
             parseFloat(subtotal || "0") -
-              parseFloat(tax || "0") -
-              discountAmount,
+            parseFloat(tax || "0") -
+            discountAmount,
           );
         } else {
           orderTotal = Math.max(0, baseTotal - discountAmount);
@@ -406,6 +406,7 @@ export function PaymentMethodModal({
             qrResponse.qrData,
           );
 
+          let qrUrl = "";
           if (domainName === "hazkitchen.edpos.vn") {
             const bankId = "970457"; // Shinhan Bank as default
             const accountNo = "100153067989";
@@ -414,7 +415,7 @@ export function PaymentMethodModal({
             const description = `THANH TOAN ${receipt.orderNumber}`;
 
             // VietQR format - using VietQR API
-            const qrUrl = `https://img.vietqr.io/image/${bankId}-${accountNo}-compact2.jpg?amount=${amount}&addInfo=${encodeURIComponent(description)}&accountName=${encodeURIComponent(accountName)}`;
+            qrUrl = `https://img.vietqr.io/image/${bankId}-${accountNo}-compact2.jpg?amount=${amount}&addInfo=${encodeURIComponent(description)}&accountName=${encodeURIComponent(accountName)}`;
             setQrCodeUrl(qrUrl);
           } else if (domainName === "0318671828.edpos.vn") {
             const bankId = "970424"; // Shinhan Bank as default
@@ -424,11 +425,11 @@ export function PaymentMethodModal({
             const description = `THANH TOAN ${receipt.orderNumber}`;
 
             // VietQR format - using VietQR API
-            const qrUrl = `https://img.vietqr.io/image/${bankId}-${accountNo}-compact2.jpg?amount=${amount}&addInfo=${encodeURIComponent(description)}&accountName=${encodeURIComponent(accountName)}`;
+            qrUrl = `https://img.vietqr.io/image/${bankId}-${accountNo}-compact2.jpg?amount=${amount}&addInfo=${encodeURIComponent(description)}&accountName=${encodeURIComponent(accountName)}`;
             setQrCodeUrl(qrUrl);
           } else {
             // Use the raw qrData directly - it's already in the correct format for VietQR
-            const qrUrl = await QRCodeLib.toDataURL(qrResponse.qrData, {
+            qrUrl = await QRCodeLib.toDataURL(qrResponse.qrData, {
               width: 256,
               margin: 2,
               color: {
@@ -448,7 +449,7 @@ export function PaymentMethodModal({
             try {
               const protocol =
                 window.location.protocol === "https:" ? "wss:" : "ws:";
-              const wsUrl = `https://api-pos.edpos.vn/ws`;
+              const wsUrl = `${protocol}//${window.location.host}/ws`;
               console.log(
                 "🎯 QR Payment: Connecting to WebSocket for customer display:",
                 wsUrl,
@@ -583,7 +584,7 @@ export function PaymentMethodModal({
             try {
               const protocol =
                 window.location.protocol === "https:" ? "wss:" : "ws:";
-              const wsUrl = `https://api-pos.edpos.vn/ws`;
+              const wsUrl = `${protocol}//${window.location.host}/ws`;
               console.log(
                 "Fallback QR Payment: Attempting to connect to WebSocket:",
                 wsUrl,
@@ -728,8 +729,8 @@ export function PaymentMethodModal({
           orderTotal = Math.max(
             0,
             parseFloat(subtotal || "0") -
-              parseFloat(tax || "0") -
-              discountAmount,
+            parseFloat(tax || "0") -
+            discountAmount,
           );
         } else {
           orderTotal = Math.max(0, baseTotal - discountAmount);
@@ -751,7 +752,7 @@ export function PaymentMethodModal({
         try {
           const protocol =
             window.location.protocol === "https:" ? "wss:" : "ws:";
-          const wsUrl = `https://api-pos.edpos.vn/ws`;
+          const wsUrl = `${protocol}//${window.location.host}/ws`;
           const ws = new WebSocket(wsUrl);
 
           ws.onopen = () => {
@@ -930,7 +931,12 @@ export function PaymentMethodModal({
           orderNumber: `ORD-${Date.now()}`,
           tableId: null, // POS orders don't have tables
           salesChannel: "pos", // Mark as POS order
+          customerId: orderInfo.customerId || null,
           customerName: orderInfo.customerName || "Khách hàng lẻ",
+          customerPhone: orderInfo.customerPhone || null,
+          customerTaxCode: orderInfo.customerTaxCode || null,
+          customerAddress: orderInfo.customerAddress || null,
+          customerEmail: orderInfo.customerEmail || null,
           customerCount: 1,
           status: "paid", // Mark as paid immediately
           paymentMethod: method, // Explicitly set payment method
@@ -1125,11 +1131,11 @@ export function PaymentMethodModal({
 
                 const otherActiveOrders = Array.isArray(allOrders)
                   ? allOrders.filter(
-                      (o: any) =>
-                        o.tableId === updatedOrder.tableId &&
-                        o.id !== updatedOrder.id &&
-                        !["paid", "cancelled"].includes(o.status),
-                    )
+                    (o: any) =>
+                      o.tableId === updatedOrder.tableId &&
+                      o.id !== updatedOrder.id &&
+                      !["paid", "cancelled"].includes(o.status),
+                  )
                   : [];
 
                 console.log(
@@ -1176,7 +1182,7 @@ export function PaymentMethodModal({
                   try {
                     const protocol =
                       window.location.protocol === "https:" ? "wss:" : "ws:";
-                    const wsUrl = `https://api-pos.edpos.vn/ws`;
+                    const wsUrl = `${protocol}//${window.location.host}/ws`;
                     const ws = new WebSocket(wsUrl);
 
                     ws.onopen = () => {
@@ -1360,7 +1366,12 @@ export function PaymentMethodModal({
           orderNumber: `ORD-${Date.now()}`,
           tableId: null, // POS orders don't have tables
           salesChannel: "pos", // Mark as POS order
+          customerId: orderInfo.customerId || null,
           customerName: orderInfo.customerName || "Khách hàng lẻ",
+          customerPhone: orderInfo.customerPhone || null,
+          customerTaxCode: orderInfo.customerTaxCode || null,
+          customerAddress: orderInfo.customerAddress || null,
+          customerEmail: orderInfo.customerEmail || null,
           customerCount: 1,
           status: "paid", // Mark as paid immediately
           paymentMethod: method, // Explicitly set payment method
@@ -1476,11 +1487,11 @@ export function PaymentMethodModal({
 
                 const otherActiveOrders = Array.isArray(allOrders)
                   ? allOrders.filter(
-                      (o: any) =>
-                        o.tableId === updatedOrder.tableId &&
-                        o.id !== updatedOrder.id &&
-                        !["paid", "cancelled"].includes(o.status),
-                    )
+                    (o: any) =>
+                      o.tableId === updatedOrder.tableId &&
+                      o.id !== updatedOrder.id &&
+                      !["paid", "cancelled"].includes(o.status),
+                  )
                   : [];
 
                 console.log(
@@ -1527,7 +1538,7 @@ export function PaymentMethodModal({
                   try {
                     const protocol =
                       window.location.protocol === "https:" ? "wss:" : "ws:";
-                    const wsUrl = `https://api-pos.edpos.vn/ws`;
+                    const wsUrl = `${protocol}//${window.location.host}/ws`;
                     const ws = new WebSocket(wsUrl);
 
                     ws.onopen = () => {
@@ -1703,10 +1714,10 @@ export function PaymentMethodModal({
       const discountAmount = Math.floor(
         parseFloat(
           receipt?.discount ||
-            receipt?.exactDiscount ||
-            orderForPayment?.discount ||
-            orderInfo?.discount ||
-            "0",
+          receipt?.exactDiscount ||
+          orderForPayment?.discount ||
+          orderInfo?.discount ||
+          "0",
         ),
       );
 
@@ -1797,7 +1808,12 @@ export function PaymentMethodModal({
         orderNumber: `ORD-${Date.now()}`,
         tableId: null, // POS orders don't have tables
         salesChannel: "pos", // Mark as POS order
+        customerId: orderInfo.customerId || null,
         customerName: orderInfo.customerName || "Khách hàng lẻ",
+        customerPhone: orderInfo.customerPhone || null,
+        customerTaxCode: orderInfo.customerTaxCode || null,
+        customerAddress: orderInfo.customerAddress || null,
+        customerEmail: orderInfo.customerEmail || null,
         customerCount: 1,
         status: "paid", // Mark as paid immediately for QR
         paymentMethod: "qrCode",
@@ -1896,11 +1912,11 @@ export function PaymentMethodModal({
 
                 const otherActiveOrders = Array.isArray(allOrders)
                   ? allOrders.filter(
-                      (o: any) =>
-                        o.tableId === data.tableId &&
-                        o.id !== orderInfo.id &&
-                        !["paid", "cancelled"].includes(o.status),
-                    )
+                    (o: any) =>
+                      o.tableId === data.tableId &&
+                      o.id !== orderInfo.id &&
+                      !["paid", "cancelled"].includes(o.status),
+                  )
                   : [];
 
                 console.log(
@@ -1932,7 +1948,7 @@ export function PaymentMethodModal({
                     try {
                       const protocol =
                         window.location.protocol === "https:" ? "wss:" : "ws:";
-                      const wsUrl = `https://api-pos.edpos.vn/ws`;
+                      const wsUrl = `${protocol}//${window.location.host}/ws`;
                       const ws = new WebSocket(wsUrl);
 
                       ws.onopen = () => {
@@ -1997,7 +2013,7 @@ export function PaymentMethodModal({
     // Send message to customer display to clear QR payment
     try {
       const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-      const wsUrl = `https://api-pos.edpos.vn/ws`;
+      const wsUrl = `${protocol}//${window.location.host}/ws`;
       const ws = new WebSocket(wsUrl);
 
       ws.onopen = () => {
@@ -2110,7 +2126,12 @@ export function PaymentMethodModal({
         orderNumber: `ORD-${Date.now()}`,
         tableId: null,
         salesChannel: "pos",
+        customerId: orderInfo.customerId || null,
         customerName: orderInfo.customerName || "Khách hàng lẻ",
+        customerPhone: orderInfo.customerPhone || null,
+        customerTaxCode: orderInfo.customerTaxCode || null,
+        customerAddress: orderInfo.customerAddress || null,
+        customerEmail: orderInfo.customerEmail || null,
         customerCount: 1,
         status: "paid",
         paymentMethod: JSON.stringify(selectedPaymentMethods), // Store as JSON
@@ -2180,11 +2201,11 @@ export function PaymentMethodModal({
 
             const otherActiveOrders = Array.isArray(allOrders)
               ? allOrders.filter(
-                  (o: any) =>
-                    o.tableId === updatedOrder.tableId &&
-                    o.id !== updatedOrder.id &&
-                    !["paid", "cancelled"].includes(o.status),
-                )
+                (o: any) =>
+                  o.tableId === updatedOrder.tableId &&
+                  o.id !== updatedOrder.id &&
+                  !["paid", "cancelled"].includes(o.status),
+              )
               : [];
 
             console.log(
@@ -2227,7 +2248,7 @@ export function PaymentMethodModal({
               try {
                 const protocol =
                   window.location.protocol === "https:" ? "wss:" : "ws:";
-                const wsUrl = `https://api-pos.edpos.vn/ws`;
+                const wsUrl = `${protocol}//${window.location.host}/ws`;
                 const ws = new WebSocket(wsUrl);
 
                 ws.onopen = () => {
@@ -2298,10 +2319,10 @@ export function PaymentMethodModal({
     const discount = Math.floor(
       parseFloat(
         receipt?.discount ||
-          receipt?.exactDiscount ||
-          orderForPayment?.discount ||
-          orderInfo?.discount ||
-          "0",
+        receipt?.exactDiscount ||
+        orderForPayment?.discount ||
+        orderInfo?.discount ||
+        "0",
       ),
     );
 
@@ -2318,10 +2339,10 @@ export function PaymentMethodModal({
     let discountAmount = Math.floor(
       parseFloat(
         receipt?.discount ||
-          receipt?.exactDiscount ||
-          orderForPayment?.discount ||
-          orderInfo?.discount ||
-          "0",
+        receipt?.exactDiscount ||
+        orderForPayment?.discount ||
+        orderInfo?.discount ||
+        "0",
       ),
     );
 
@@ -2437,7 +2458,12 @@ export function PaymentMethodModal({
         orderNumber: `ORD-${Date.now()}`,
         tableId: null, // POS orders don't have tables
         salesChannel: "pos", // Mark as POS order
+        customerId: orderInfo.customerId || null,
         customerName: orderInfo.customerName || "Khách hàng lẻ",
+        customerPhone: orderInfo.customerPhone || null,
+        customerTaxCode: orderInfo.customerTaxCode || null,
+        customerAddress: orderInfo.customerAddress || null,
+        customerEmail: orderInfo.customerEmail || null,
         customerCount: 1,
         status: "paid", // Mark as paid immediately for cash
         paymentMethod: "cash",
@@ -2584,11 +2610,11 @@ export function PaymentMethodModal({
 
               const otherActiveOrders = Array.isArray(allOrders)
                 ? allOrders.filter(
-                    (o: any) =>
-                      o.tableId === updatedOrder.tableId &&
-                      o.id !== updatedOrder.id &&
-                      !["paid", "cancelled"].includes(o.status),
-                  )
+                  (o: any) =>
+                    o.tableId === updatedOrder.tableId &&
+                    o.id !== updatedOrder.id &&
+                    !["paid", "cancelled"].includes(o.status),
+                )
                 : [];
 
               console.log(
@@ -2635,7 +2661,7 @@ export function PaymentMethodModal({
                 try {
                   const protocol =
                     window.location.protocol === "https:" ? "wss:" : "ws:";
-                  const wsUrl = `https://api-pos.edpos.vn/ws`;
+                  const wsUrl = `${protocol}//${window.location.host}/ws`;
                   const ws = new WebSocket(wsUrl);
 
                   ws.onopen = () => {
@@ -2935,7 +2961,7 @@ export function PaymentMethodModal({
         try {
           const protocol =
             window.location.protocol === "https:" ? "wss:" : "ws:";
-          const wsUrl = `https://api-pos.edpos.vn/ws`;
+          const wsUrl = `${protocol}//${window.location.host}/ws`;
           const ws = new WebSocket(wsUrl);
 
           ws.onopen = () => {
@@ -3040,7 +3066,7 @@ export function PaymentMethodModal({
             try {
               const protocol =
                 window.location.protocol === "https:" ? "wss:" : "ws:";
-              const wsUrl = `https://api-pos.edpos.vn/ws`;
+              const wsUrl = `${protocol}//${window.location.host}/ws`;
               const ws = new WebSocket(wsUrl);
 
               ws.onopen = () => {
@@ -3179,7 +3205,7 @@ export function PaymentMethodModal({
                     try {
                       const protocol =
                         window.location.protocol === "https:" ? "wss:" : "ws:";
-                      const wsUrl = `https://api-pos.edpos.vn/ws`;
+                      const wsUrl = `${protocol}//${window.location.host}/ws`;
                       const ws = new WebSocket(wsUrl);
 
                       ws.onopen = () => {
@@ -3415,7 +3441,7 @@ export function PaymentMethodModal({
                           window.location.protocol === "https:"
                             ? "wss:"
                             : "ws:";
-                        const wsUrl = `https://api-pos.edpos.vn/ws`;
+                        const wsUrl = `${protocol}//${window.location.host}/ws`;
                         const ws = new WebSocket(wsUrl);
 
                         ws.onopen = () => {
@@ -3461,7 +3487,7 @@ export function PaymentMethodModal({
                           window.location.protocol === "https:"
                             ? "wss:"
                             : "ws:";
-                        const wsUrl = `https://api-pos.edpos.vn/ws`;
+                        const wsUrl = `${protocol}//${window.location.host}/ws`;
                         const ws = new WebSocket(wsUrl);
 
                         ws.onopen = () => {
@@ -3647,7 +3673,7 @@ export function PaymentMethodModal({
                           window.location.protocol === "https:"
                             ? "wss:"
                             : "ws:";
-                        const wsUrl = `https://api-pos.edpos.vn/ws`;
+                        const wsUrl = `${protocol}//${window.location.host}/ws`;
                         const ws = new WebSocket(wsUrl);
 
                         ws.onopen = () => {
@@ -3684,7 +3710,7 @@ export function PaymentMethodModal({
                           window.location.protocol === "https:"
                             ? "wss:"
                             : "ws:";
-                        const wsUrl = `https://api-pos.edpos.vn/ws`;
+                        const wsUrl = `${protocol}//${window.location.host}/ws`;
                         const ws = new WebSocket(wsUrl);
 
                         ws.onopen = () => {
@@ -3857,8 +3883,8 @@ export function PaymentMethodModal({
                     `ITEM${String(item.productId || item.id).padStart(3, "0")}`,
                   taxRate: parseFloat(
                     product?.taxRate?.toString() ||
-                      item.taxRate?.toString() ||
-                      "0",
+                    item.taxRate?.toString() ||
+                    "0",
                   ),
                 };
               });

@@ -15,7 +15,6 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { useTranslation } from "@/lib/i18n";
 import { format } from "date-fns";
-import type { Customer, InsertCustomer } from "@shared/schema";
 import { z } from "zod";
 
 const customerFormSchema = z.object({
@@ -26,6 +25,7 @@ const customerFormSchema = z.object({
     message: "올바른 이메일 형식이 아닙니다"
   }),
   address: z.string().optional(),
+  taxCode: z.string().optional(),
   dateOfBirth: z.string().optional(),
   membershipLevel: z.enum(["Silver", "Gold", "VIP"]).optional(),
   notes: z.string().optional(),
@@ -37,7 +37,7 @@ type CustomerFormData = z.infer<typeof customerFormSchema>;
 interface CustomerFormModalProps {
   isOpen: boolean;
   onClose: () => void;
-  customer?: Customer | null;
+  customer?: any | null;
   initialPhone?: string;
 }
 
@@ -91,6 +91,7 @@ export function CustomerFormModal({ isOpen, onClose, customer, initialPhone }: C
       phone: customer?.phone || initialPhone || "",
       email: customer?.email || "",
       address: customer?.address || "",
+      taxCode: (customer as any)?.taxCode || "",
       dateOfBirth: customer?.dateOfBirth || "",
       membershipLevel: customer?.membershipLevel || "Silver",
       notes: customer?.notes || "",
@@ -108,6 +109,7 @@ export function CustomerFormModal({ isOpen, onClose, customer, initialPhone }: C
         phone: customer.phone || "",
         email: customer.email || "",
         address: customer.address || "",
+        taxCode: (customer as any)?.taxCode || "",
         dateOfBirth: customer.dateOfBirth || "",
         membershipLevel: customer.membershipLevel || "Silver",
         notes: customer.notes || "",
@@ -122,6 +124,7 @@ export function CustomerFormModal({ isOpen, onClose, customer, initialPhone }: C
           phone: initialPhone || "",
           email: "",
           address: "",
+          taxCode: "",
           dateOfBirth: "",
           membershipLevel: "Silver",
           notes: "",
@@ -197,9 +200,10 @@ export function CustomerFormModal({ isOpen, onClose, customer, initialPhone }: C
     const cleanData = {
       ...data,
       customerId: customerIdToUse,
-      phone: data.phone || undefined,
+      phone: data.phone || "",
       email: data.email || undefined,
       address: data.address || undefined,
+      taxCode: data.taxCode || undefined,
       dateOfBirth: data.dateOfBirth || undefined,
       notes: data.notes || undefined,
     };
@@ -323,6 +327,20 @@ export function CustomerFormModal({ isOpen, onClose, customer, initialPhone }: C
                       <FormLabel>{t('customers.address')}</FormLabel>
                       <FormControl>
                         <Textarea {...field} placeholder={t('customers.addressPlaceholder')} rows={2} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="taxCode"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Mã số thuế</FormLabel>
+                      <FormControl>
+                        <Input {...field} placeholder="Nhập mã số thuế (tùy chọn)" />
                       </FormControl>
                       <FormMessage />
                     </FormItem>

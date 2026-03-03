@@ -47,6 +47,7 @@ export function ReceiptModal({
   const [customerName, setCustomerName] = useState("");
   const [customerTaxCode, setCustomerTaxCode] = useState("");
   const [customerAddress, setCustomerAddress] = useState("");
+  const [customerPhone, setCustomerPhone] = useState("");
   const { t } = useTranslation();
   const { toast } = useToast();
 
@@ -185,6 +186,26 @@ export function ReceiptModal({
         console.log(
           "✅ Receipt Modal: Valid receipt data found - modal will display",
         );
+
+        // Clear existing states first
+        setCustomerName("");
+        setCustomerTaxCode("");
+        setCustomerAddress("");
+        setCustomerPhone("");
+
+        // Initialize customer info from receipt if available
+        if (receipt.customerName && receipt.customerName !== "Khách hàng lẻ") {
+          setCustomerName(receipt.customerName);
+        }
+        if (receipt.customerTaxCode) {
+          setCustomerTaxCode(receipt.customerTaxCode);
+        }
+        if (receipt.customerAddress) {
+          setCustomerAddress(receipt.customerAddress);
+        }
+        if (receipt.customerPhone) {
+          setCustomerPhone(receipt.customerPhone);
+        }
       }
     } else {
       // Clear window global data when modal closes to prevent reopening
@@ -1300,115 +1321,6 @@ export function ReceiptModal({
               </h2>
             </div>
 
-            {domainName === "0109878794.edpos.vn" && (
-              <>
-                {/* Customer Info Input Fields - Only visible in modal, not printed */}
-                <div
-                  className="customer-info-inputs"
-                  style={{
-                    marginBottom: "12px",
-                    padding: "10px",
-                    border: "1px solid #e5e7eb",
-                    borderRadius: "6px",
-                    backgroundColor: "#f9fafb",
-                  }}
-                  data-print-hidden="true"
-                >
-                  <p style={{ fontSize: "13px", fontWeight: "600", color: "#374151", marginBottom: "8px" }}>
-                    {t("pos.customerInfoOptional")}
-                  </p>
-                  {/* Tên khách hàng */}
-                  <div style={{ display: "flex", alignItems: "center", marginBottom: "6px", gap: "8px" }}>
-                    <label style={{ fontSize: "12px", color: "#6b7280", minWidth: "90px", flexShrink: 0 }}>
-                      {t("pos.customerName")}
-                    </label>
-                    <input
-                      type="text"
-                      value={customerName}
-                      onChange={(e) => setCustomerName(e.target.value)}
-                      placeholder={t("pos.customerNamePlaceholder")}
-                      style={{
-                        flex: 1,
-                        padding: "6px 8px",
-                        border: "1px solid #d1d5db",
-                        borderRadius: "4px",
-                        fontSize: "13px",
-                        boxSizing: "border-box",
-                        backgroundColor: "#ffffff",
-                        outline: "none",
-                      }}
-                    />
-                  </div>
-                  {/* Mã số thuế */}
-                  <div style={{ display: "flex", alignItems: "center", marginBottom: "6px", gap: "8px" }}>
-                    <label style={{ fontSize: "12px", color: "#6b7280", minWidth: "90px", flexShrink: 0 }}>
-                      {t("pos.customerTaxCode")}
-                    </label>
-                    <input
-                      type="text"
-                      value={customerTaxCode}
-                      onChange={(e) => setCustomerTaxCode(e.target.value)}
-                      placeholder={t("pos.customerTaxCodePlaceholder")}
-                      style={{
-                        flex: 1,
-                        padding: "6px 8px",
-                        border: "1px solid #d1d5db",
-                        borderRadius: "4px",
-                        fontSize: "13px",
-                        boxSizing: "border-box",
-                        backgroundColor: "#ffffff",
-                        outline: "none",
-                      }}
-                    />
-                  </div>
-                  {/* Địa chỉ */}
-                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                    <label style={{ fontSize: "12px", color: "#6b7280", minWidth: "90px", flexShrink: 0 }}>
-                      {t("pos.customerAddress")}
-                    </label>
-                    <input
-                      type="text"
-                      value={customerAddress}
-                      onChange={(e) => setCustomerAddress(e.target.value)}
-                      placeholder={t("pos.customerAddressPlaceholder")}
-                      style={{
-                        flex: 1,
-                        padding: "6px 8px",
-                        border: "1px solid #d1d5db",
-                        borderRadius: "4px",
-                        fontSize: "13px",
-                        boxSizing: "border-box",
-                        backgroundColor: "#ffffff",
-                        outline: "none",
-                      }}
-                    />
-                  </div>
-                </div>
-
-                {/* Customer Info - Printed on receipt when filled */}
-                {(customerName || customerTaxCode || customerAddress) && (
-                  <div
-                    className="customer-info-print"
-                    style={{
-                      marginBottom: "8px",
-                      fontSize: "16px",
-                      fontWeight: "bold",
-                      lineHeight: "1.4",
-                    }}
-                  >
-                    {customerName && (
-                      <p style={{ margin: "2px 0" }}>{t("pos.customerName")}: {customerName}</p>
-                    )}
-                    {customerTaxCode && (
-                      <p style={{ margin: "2px 0" }}>{t("pos.customerTaxCode")}: {customerTaxCode}</p>
-                    )}
-                    {customerAddress && (
-                      <p style={{ margin: "2px 0" }}>{t("pos.customerAddress")}: {customerAddress}</p>
-                    )}
-                  </div>
-                )}
-              </>
-            )}
             {/* Invoice Info - Using Table */}
             <table
               style={{
@@ -1420,11 +1332,39 @@ export function ReceiptModal({
               }}
             >
               <tbody>
-                <tr style={{ backgroundColor: "#f3f4f6" }}>
-                  <td style={{ padding: "4px 6px", fontWeight: "bold" }}>
+                {(domainName === "0109878794.edpos.vn" || domainName === "localhost") && (
+                  <>
+                    {customerName && (
+                      <tr>
+                        <td style={{ padding: "2px 0" }}>{t("pos.customerName")}:</td>
+                        <td style={{ padding: "2px 0", textAlign: "right" }}>{customerName}</td>
+                      </tr>
+                    )}
+                    {customerPhone && (
+                      <tr>
+                        <td style={{ padding: "2px 0" }}>SĐT:</td>
+                        <td style={{ padding: "2px 0", textAlign: "right" }}>{customerPhone}</td>
+                      </tr>
+                    )}
+                    {customerTaxCode && (
+                      <tr>
+                        <td style={{ padding: "2px 0" }}>{t("pos.customerTaxCode")}:</td>
+                        <td style={{ padding: "2px 0", textAlign: "right" }}>{customerTaxCode}</td>
+                      </tr>
+                    )}
+                    {customerAddress && (
+                      <tr>
+                        <td style={{ padding: "2px 0" }}>Địa chỉ:</td>
+                        <td style={{ padding: "2px 0", textAlign: "right" }}>{customerAddress}</td>
+                      </tr>
+                    )}
+                  </>
+                )}
+                <tr>
+                  <td style={{ padding: "2px 0" }}>
                     {t("common.invoiceNumber")}:
                   </td>
-                  <td style={{ padding: "4px 6px", textAlign: "right", fontWeight: "bold" }}>
+                  <td style={{ padding: "2px 0", textAlign: "right" }}>
                     {receipt?.orderNumber || `ORD-${receipt?.id}`}
                   </td>
                 </tr>
@@ -1449,18 +1389,17 @@ export function ReceiptModal({
                 <tr>
                   <td style={{ padding: "2px 0" }}>{t("common.cashier")}:</td>
                   <td style={{ padding: "2px 0", textAlign: "right" }}>
-                    {receipt.cashierName || t("common.cashier")}
+                    {receipt?.cashierName || t("common.cashier")}
                   </td>
                 </tr>
-                {storeSettings?.businessType === "laundry" &&
-                  receipt?.customerPhone && (
-                    <tr>
-                      <td style={{ padding: "2px 0" }}>SĐT khách hàng:</td>
-                      <td style={{ padding: "2px 0", textAlign: "right" }}>
-                        {receipt.customerPhone}
-                      </td>
-                    </tr>
-                  )}
+                {storeSettings?.businessType === "laundry" && receipt?.customerPhone && (
+                  <tr>
+                    <td style={{ padding: "2px 0" }}>SĐT khách hàng:</td>
+                    <td style={{ padding: "2px 0", textAlign: "right" }}>
+                      {receipt?.customerPhone}
+                    </td>
+                  </tr>
+                )}
               </tbody>
             </table>
 
@@ -1513,11 +1452,11 @@ export function ReceiptModal({
                 </tr>
               </thead>
               <tbody>
-                {(receipt.items || []).map((item, index) => {
+                {(receipt?.items || []).map((item: any, index: number) => {
                   const unitPrice = parseFloat(
-                    item.unitPrice || item.price || "0",
+                    item?.unitPrice || item?.price || "0",
                   );
-                  const quantity = parseFloat(item.quantity) || 1;
+                  const quantity = parseFloat(item?.quantity) || 1;
                   const itemSubtotal = unitPrice * quantity;
 
                   return (
@@ -1531,7 +1470,7 @@ export function ReceiptModal({
                           }}
                           colspan={3}
                         >
-                          {item.productName || item.name}
+                          {item.productName || (item as any).name || "-"}
                         </td>
                       </tr>
                       <tr>
@@ -1589,12 +1528,12 @@ export function ReceiptModal({
                   </td>
                   <td style={{ padding: "2px 0", textAlign: "right" }}>
                     {(() => {
-                      const itemsSubtotal = (receipt.items || []).reduce(
-                        (sum, item) => {
+                      const itemsSubtotal = (receipt?.items || []).reduce(
+                        (sum, item: any) => {
                           const unitPrice = parseFloat(
                             item.unitPrice || item.price || "0",
                           );
-                          const quantity = item.quantity || 1;
+                          const quantity = parseFloat(item.quantity) || 1;
                           return sum + unitPrice * quantity;
                         },
                         0,
@@ -1605,13 +1544,13 @@ export function ReceiptModal({
                 </tr>
 
                 {(() => {
-                  const totalItemDiscount = (receipt.items || []).reduce(
+                  const totalItemDiscount = (receipt?.items || []).reduce(
                     (sum, item) => {
-                      return sum + parseFloat(item.discount || "0");
+                      return sum + parseFloat((item as any).discount || "0");
                     },
                     0,
                   );
-                  const orderDiscount = parseFloat(receipt.discount || "0");
+                  const orderDiscount = parseFloat(receipt?.discount || "0");
                   const totalDiscount =
                     orderDiscount > 0 ? orderDiscount : totalItemDiscount;
                   return totalDiscount > 0 ? (
@@ -1639,12 +1578,12 @@ export function ReceiptModal({
 
                 {(() => {
                   const priceIncludeTax =
-                    receipt.priceIncludeTax ??
+                    receipt?.priceIncludeTax ??
                     storeSettings?.priceIncludesTax ??
                     false;
 
-                  const taxGroups = (receipt.items || []).reduce(
-                    (groups, item) => {
+                  const taxGroups = (receipt?.items || []).reduce(
+                    (groups, item: any) => {
                       // CRITICAL: Always get taxRate from item first (from database), then product, then default to 0
                       let taxRate = 0;
 

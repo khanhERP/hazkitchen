@@ -95,6 +95,15 @@ export function ShoppingCart({
     [orderId: string]: any | null;
   }>({});
 
+  // State for inline new customer form
+  const [showInlineNewCustomer, setShowInlineNewCustomer] = useState(false);
+  const [newCustomerName, setNewCustomerName] = useState("");
+  const [newCustomerPhone, setNewCustomerPhone] = useState("");
+  const [newCustomerAddress, setNewCustomerAddress] = useState("");
+  const [newCustomerTaxCode, setNewCustomerTaxCode] = useState("");
+  const [isCreatingCustomer, setIsCreatingCustomer] = useState(false);
+  const [domainName, setDomainName] = useState("");
+
   // State for SKU search
   const [skuSearch, setSkuSearch] = useState("");
   const [skuSearchResults, setSkuSearchResults] = useState<any[]>([]);
@@ -115,8 +124,29 @@ export function ShoppingCart({
     },
   });
 
+  // Fetch order history for selected customer
+  const { data: customerOrders, isLoading: customerOrdersLoading } = useQuery({
+    queryKey: ["customer-orders-pos", selectedCustomer?.id],
+    queryFn: async () => {
+      if (!selectedCustomer?.id) return [];
+      const response = await fetch(`https://api-pos.edpos.vn/api/orders`);
+      if (!response.ok) throw new Error("Failed to fetch orders");
+      const allOrders = await response.json();
+      return allOrders.filter((order: any) => {
+        const matchesId = order.customerId === selectedCustomer.id;
+        const matchesPhone = selectedCustomer.phone && order.customerPhone === selectedCustomer.phone;
+        const matchesName = selectedCustomer.name && order.customerName === selectedCustomer.name;
+        return matchesId || matchesPhone || matchesName;
+      }).slice(0, 10); // Chỉ lấy 10 đơn gần nhất
+    },
+    enabled: !!selectedCustomer?.id,
+  });
+
   // Auto-focus SKU search input on mount
   useEffect(() => {
+    const domainConnect = window.location.hostname;
+    setDomainName(domainConnect);
+    console.log("domainConnect", domainConnect);
     if (storeSettings?.businessType === "retail" && skuInputRef.current) {
       // Small delay to ensure component is fully rendered
       setTimeout(() => {
@@ -173,8 +203,8 @@ export function ShoppingCart({
             const prevItemDiscount =
               totalBeforeDiscount > 0
                 ? Math.round(
-                    (orderDiscount * prevItemTotal) / totalBeforeDiscount,
-                  )
+                  (orderDiscount * prevItemTotal) / totalBeforeDiscount,
+                )
                 : 0;
             previousDiscounts += prevItemDiscount;
           }
@@ -243,8 +273,8 @@ export function ShoppingCart({
               const prevItemDiscount =
                 totalBeforeDiscount > 0
                   ? Math.round(
-                      (orderDiscount * prevItemTotal) / totalBeforeDiscount,
-                    )
+                    (orderDiscount * prevItemTotal) / totalBeforeDiscount,
+                  )
                   : 0;
               previousDiscounts += prevItemDiscount;
             }
@@ -347,8 +377,8 @@ export function ShoppingCart({
               const prevItemDiscount =
                 totalBeforeDiscount > 0
                   ? Math.round(
-                      (orderDiscount * prevItemSubtotal) / totalBeforeDiscount,
-                    )
+                    (orderDiscount * prevItemSubtotal) / totalBeforeDiscount,
+                  )
                   : 0;
               previousDiscounts += prevItemDiscount;
             }
@@ -373,9 +403,9 @@ export function ShoppingCart({
             itemDiscountAmount =
               totalBeforeDiscount > 0
                 ? Math.round(
-                    (orderDiscount * (unitPrice * quantity)) /
-                      totalBeforeDiscount,
-                  )
+                  (orderDiscount * (unitPrice * quantity)) /
+                  totalBeforeDiscount,
+                )
                 : 0;
           }
         }
@@ -594,7 +624,10 @@ export function ShoppingCart({
     setSelectedCustomer(customer);
     setCustomerSearchTerm(`${customer.name} (${customer.phone})`); // Display name and phone
     setSuggestedCustomers([]); // Clear suggestions after selection
-    // Optionally, trigger other actions here if needed, e.g., updating cart with customer-specific info
+    setShowInlineNewCustomer(false);
+    setNewCustomerName("");
+    setNewCustomerPhone("");
+    setNewCustomerAddress("");
 
     // Save customer to orderCustomers state
     if (activeOrderId) {
@@ -605,10 +638,73 @@ export function ShoppingCart({
     }
   };
 
+  // Function to create new customer inline and select them
+  const handleCreateAndSelectCustomer = async () => {
+    if (!newCustomerPhone.trim() && !newCustomerName.trim()) {
+      toast({
+        title: "Thiếu thông tin",
+        description: "Vui lòng nhập ít nhất tên hoặc số điện thoại khách hàng",
+        variant: "destructive",
+      });
+      return;
+    }
+    setIsCreatingCustomer(true);
+    try {
+      // Generate customer ID
+      let nextId = "KH001";
+      try {
+        const idRes = await fetch("https://api-pos.edpos.vn/api/customers/next-id");
+        const idData = await idRes.json();
+        nextId = idData.nextId || "KH001";
+      } catch { }
+
+      const newCustomerData = {
+        customerId: nextId,
+        name: newCustomerName.trim() || newCustomerPhone.trim(),
+        phone: newCustomerPhone.trim() || undefined,
+        address: newCustomerAddress.trim() || undefined,
+        taxCode: newCustomerTaxCode.trim() || undefined,
+        status: "active",
+        membershipLevel: "Silver",
+      };
+
+      const response = await fetch("https://api-pos.edpos.vn/api/customers", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(newCustomerData),
+      });
+
+      if (!response.ok) {
+        const err = await response.json();
+        throw new Error(err.message || "Không thể tạo khách hàng");
+      }
+
+      const createdCustomer = await response.json();
+      handleCustomerSelect(createdCustomer);
+      setShowInlineNewCustomer(false);
+      setNewCustomerName("");
+      setNewCustomerPhone("");
+      setNewCustomerAddress("");
+      setNewCustomerTaxCode("");
+      toast({
+        title: "Tạo khách hàng thành công",
+        description: `Đã tạo khách hàng: ${createdCustomer.name}`,
+      });
+    } catch (error) {
+      toast({
+        title: "Lỗi tạo khách hàng",
+        description: error instanceof Error ? error.message : "Vui lòng thử lại",
+        variant: "destructive",
+      });
+    } finally {
+      setIsCreatingCustomer(false);
+    }
+  };
+
   useEffect(() => {
     console.log("📡 Shopping Cart: Initializing single WebSocket connection");
     const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-    const wsUrl = `https://api-pos.edpos.vn/ws`;
+    const wsUrl = `${protocol}//${window.location.host}/ws`;
 
     let reconnectTimer: NodeJS.Timeout | null = null;
     let shouldReconnect = true;
@@ -932,11 +1028,11 @@ export function ShoppingCart({
       console.log("🔄 POS: Refreshing product list after successful payment");
       queryClient.invalidateQueries({ queryKey: ["https://api-pos.edpos.vn/api/products"] });
       queryClient.invalidateQueries({ queryKey: ["products"] });
-      
+
       // Send WebSocket signal for refresh
       try {
         const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-        const wsUrl = `https://api-pos.edpos.vn/ws`;
+        const wsUrl = `${protocol}//${window.location.host}/ws`;
         const ws = new WebSocket(wsUrl);
 
         ws.onopen = () => {
@@ -982,13 +1078,21 @@ export function ShoppingCart({
       return;
     }
 
-    // Check if customer is selected
-    if (!selectedCustomer) {
+    // Check if customer is selected (allow placing order with inline new customer info too)
+    if (!selectedCustomer && !newCustomerPhone.trim() && !newCustomerName.trim()) {
       toast({
-        title: "Chưa chọn khách hàng",
-        description: "Vui lòng chọn khách hàng trước khi đặt hàng",
+        title: "Chưa có thông tin khách hàng",
+        description: "Vui lòng chọn hoặc nhập thông tin khách hàng trước khi đặt hàng",
         variant: "destructive",
       });
+      return;
+    }
+
+    // If there's inline new customer info but no selectedCustomer, create the customer first
+    if (!selectedCustomer && (newCustomerPhone.trim() || newCustomerName.trim())) {
+      await handleCreateAndSelectCustomer();
+      // After creation, selectedCustomer should be set - but since state update is async,
+      // we return and let user click again (or we can re-read from form)
       return;
     }
 
@@ -1044,8 +1148,8 @@ export function ShoppingCart({
             const prevItemDiscount =
               totalBeforeDiscount > 0
                 ? Math.round(
-                    (orderDiscount * prevItemTotal) / totalBeforeDiscount,
-                  )
+                  (orderDiscount * prevItemTotal) / totalBeforeDiscount,
+                )
                 : 0;
             previousDiscounts += prevItemDiscount;
           }
@@ -1097,12 +1201,12 @@ export function ShoppingCart({
     const orderData = {
       orderNumber: `ORD-${Date.now()}`,
       tableId: null,
-      customerId: selectedCustomer.id,
-      customerName: selectedCustomer.name,
-      customerPhone: selectedCustomer.phone || null,
-      customerTaxCode: selectedCustomer.customerTaxCode || null,
-      customerAddress: selectedCustomer.address || null,
-      customerEmail: selectedCustomer.email || null,
+      customerId: selectedCustomer?.id || null,
+      customerName: selectedCustomer?.name || newCustomerName.trim() || "Khách hàng lẻ",
+      customerPhone: selectedCustomer?.phone || newCustomerPhone.trim() || null,
+      customerTaxCode: selectedCustomer?.taxCode || selectedCustomer?.customerTaxCode || newCustomerTaxCode.trim() || null,
+      customerAddress: selectedCustomer?.address || newCustomerAddress.trim() || null,
+      customerEmail: selectedCustomer?.email || null,
       status: "pending", // Trạng thái: Đặt hàng
       paymentStatus: "pending", // Trạng thái thanh toán: Chưa thanh toán
       customerCount: 1,
@@ -1114,7 +1218,7 @@ export function ShoppingCart({
       salesChannel: "pos",
       priceIncludeTax: priceIncludesTax,
       einvoiceStatus: 0,
-      notes: `Đặt hàng tại POS - Khách hàng: ${selectedCustomer.name}`,
+      notes: `Đặt hàng tại POS - Khách hàng: ${selectedCustomer?.name || newCustomerName.trim() || "Khách hàng lẻ"}`,
     };
 
     try {
@@ -1223,8 +1327,8 @@ export function ShoppingCart({
             const prevItemDiscount =
               totalBeforeDiscount > 0
                 ? Math.round(
-                    (orderDiscount * prevItemTotal) / totalBeforeDiscount,
-                  )
+                  (orderDiscount * prevItemTotal) / totalBeforeDiscount,
+                )
                 : 0;
             previousDiscounts += prevItemDiscount;
           }
@@ -1293,10 +1397,10 @@ export function ShoppingCart({
       id: `temp-${Date.now()}`,
       orderNumber: `POS-${Date.now()}`,
       customerId: selectedCustomer?.id || null,
-      customerName: selectedCustomer?.name || "Khách hàng lẻ",
-      customerPhone: selectedCustomer?.phone || null,
-      customerTaxCode: selectedCustomer?.customerTaxCode || null,
-      customerAddress: selectedCustomer?.address || null,
+      customerName: selectedCustomer?.name || newCustomerName.trim() || "Khách hàng lẻ",
+      customerPhone: selectedCustomer?.phone || newCustomerPhone.trim() || null,
+      customerTaxCode: selectedCustomer?.taxCode || selectedCustomer?.customerTaxCode || newCustomerTaxCode.trim() || null,
+      customerAddress: selectedCustomer?.address || newCustomerAddress.trim() || null,
       customerEmail: selectedCustomer?.email || null,
       tableId: null,
       items: cartItemsForReceipt,
@@ -1320,10 +1424,10 @@ export function ShoppingCart({
       orderNumber: `POS-${Date.now()}`,
       tableId: null,
       customerId: selectedCustomer?.id || null,
-      customerName: selectedCustomer?.name || "Khách hàng lẻ",
-      customerPhone: selectedCustomer?.phone || null,
-      customerTaxCode: selectedCustomer?.customerTaxCode || null,
-      customerAddress: selectedCustomer?.address || null,
+      customerName: selectedCustomer?.name || newCustomerName.trim() || "Khách hàng lẻ",
+      customerPhone: selectedCustomer?.phone || newCustomerPhone.trim() || null,
+      customerTaxCode: selectedCustomer?.taxCode || selectedCustomer?.customerTaxCode || newCustomerTaxCode.trim() || null,
+      customerAddress: selectedCustomer?.address || newCustomerAddress.trim() || null,
       customerEmail: selectedCustomer?.email || null,
       status: "pending",
       paymentStatus: "pending",
@@ -1363,7 +1467,7 @@ export function ShoppingCart({
       customerPhone:
         invoiceData.customerPhone || selectedCustomer?.phone || null,
       customerTaxCode:
-        invoiceData.taxCode || selectedCustomer?.customerTaxCode || null,
+        invoiceData.taxCode || selectedCustomer?.taxCode || selectedCustomer?.customerTaxCode || null,
       paymentMethod: "einvoice",
       originalPaymentMethod:
         invoiceData.paymentMethod || selectedPaymentMethod || "cash",
@@ -1608,48 +1712,44 @@ export function ShoppingCart({
   return (
     <aside className="w-96 bg-white shadow-material border-l pos-border flex flex-col">
       {/* Customer Search Input - Only visible for laundry business type */}
-      {storeSettings?.businessType === "laundry" && (
-        <div className="p-4 border-b pos-border bg-gradient-to-r from-blue-50 to-indigo-50 mt-3">
-          <div className="flex items-center gap-2 mb-3">
-            <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center">
-              <svg
-                className="w-6 h-6 text-white"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-                />
-              </svg>
-            </div>
-            <div className="flex-1">
-              <h3 className="text-base font-semibold text-gray-900">
-                Thông tin khách hàng
-              </h3>
-              <p className="text-xs text-gray-500">
-                Tìm kiếm hoặc tạo mới khách hàng
-              </p>
-            </div>
-          </div>
-          <div className="relative">
+      {(storeSettings?.businessType === "laundry" || domainName === "0109878794.edpos.vn" || domainName === "localhost") && (
+        <div className="px-3 pt-3 pb-2 border-b pos-border bg-white">
+          {/* Unified customer bar: icon + input/selected info + action buttons */}
+          <div className="relative pt-5">
             <div className="relative">
-              <svg
-                className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
+              {/* Left icon: Eye (if selected) or Search (if not) */}
+              <div
+                className={`absolute left-3 top-1/2 -translate-y-1/2 z-10 flex items-center justify-center ${selectedCustomer ? "cursor-pointer text-blue-600 hover:text-blue-800" : "text-gray-400"
+                  }`}
+                onClick={() => {
+                  if (selectedCustomer) {
+                    setEditingCustomer(selectedCustomer);
+                    setShowCustomerForm(true);
+                  }
+                }}
+                title={selectedCustomer ? "Xem thông tin khách hàng" : ""}
               >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                />
-              </svg>
+                {selectedCustomer ? (
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                  </svg>
+                ) : (
+                  <svg
+                    className="w-5 h-5"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                    />
+                  </svg>
+                )}
+              </div>
               <Input
                 type="text"
                 value={customerSearchTerm}
@@ -1661,8 +1761,36 @@ export function ShoppingCart({
                   }
                 }}
                 placeholder="Nhập số điện thoại hoặc tên khách hàng..."
-                className="w-full pl-10 pr-4 py-2 border-2 border-gray-200 focus:border-blue-500 rounded-lg transition-colors"
+                className={`w-full pl-10 pr-10 py-2 border-2 rounded-lg transition-all duration-200 ${selectedCustomer
+                  ? "border-green-500 bg-green-50 font-semibold text-green-900 shadow-sm"
+                  : "border-gray-200 focus:border-blue-500"
+                  }`}
+                readOnly={!!selectedCustomer}
               />
+
+              {/* Right icon: X to deselect (only if selected) */}
+              {selectedCustomer && (
+                <button
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-red-500 transition-colors p-1"
+                  onClick={() => {
+                    setSelectedCustomer(null);
+                    setCustomerSearchTerm("");
+                    // Clear customer for the current order
+                    if (activeOrderId) {
+                      setOrderCustomers((prev) => {
+                        const updated = { ...prev };
+                        delete updated[activeOrderId];
+                        return updated;
+                      });
+                    }
+                  }}
+                  title="Bỏ chọn khách hàng"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              )}
             </div>
 
             {/* Dropdown suggestions */}
@@ -1685,11 +1813,10 @@ export function ShoppingCart({
                     {filteredSuggestedCustomers.map((customer, index) => (
                       <div
                         key={customer.id}
-                        className={`p-3 cursor-pointer hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 transition-all duration-200 ${
-                          index !== filteredSuggestedCustomers.length - 1
-                            ? "border-b border-gray-100"
-                            : ""
-                        }`}
+                        className={`p-3 cursor-pointer hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 transition-all duration-200 ${index !== filteredSuggestedCustomers.length - 1
+                          ? "border-b border-gray-100"
+                          : ""
+                          }`}
                         onClick={() => handleCustomerSelect(customer)}
                       >
                         <div className="flex justify-between items-start gap-3">
@@ -1732,199 +1859,174 @@ export function ShoppingCart({
               </div>
             )}
 
-            {/* No results message with quick create button */}
+            {/* No results message with quick create form */}
             {customerSearchTerm.length > 0 &&
               filteredSuggestedCustomers.length === 0 &&
               !selectedCustomer && (
-                <div className="absolute top-full left-0 right-0 bg-white border border-gray-300 rounded-md shadow-xl z-50 mt-1 p-4">
-                  <p className="text-sm text-gray-500 text-center mb-3">
+                <div className="absolute top-full left-0 right-0 bg-white border border-gray-300 rounded-md shadow-xl z-50 mt-1 p-3">
+                  <p className="text-xs text-gray-500 text-center mb-2">
                     {/^\d+$/.test(customerSearchTerm)
-                      ? `Không tìm thấy khách hàng có SĐT bắt đầu bằng "${customerSearchTerm}"`
+                      ? `Không tìm thấy khách hàng có SĐT "${customerSearchTerm}"`
                       : `Không tìm thấy khách hàng "${customerSearchTerm}"`}
                   </p>
-                  {/^\d+$/.test(customerSearchTerm) && (
-                    <Button
-                      onClick={() => {
-                        // Pre-fill phone number and open customer form
-                        setEditingCustomer(null); // Clear editing customer to create new
-                        setShowCustomerForm(true);
-                      }}
-                      className="w-full bg-blue-600 hover:bg-blue-700 text-white"
-                      size="sm"
-                    >
-                      + Tạo khách hàng mới với SĐT {customerSearchTerm}
-                    </Button>
+                  {!showInlineNewCustomer ? (
+                    <div className="flex gap-2">
+                      <Button
+                        onClick={() => {
+                          setShowInlineNewCustomer(true);
+                          if (/^\d+$/.test(customerSearchTerm)) {
+                            setNewCustomerPhone(customerSearchTerm);
+                          } else {
+                            setNewCustomerName(customerSearchTerm);
+                          }
+                        }}
+                        className="flex-1 bg-green-600 hover:bg-green-700 text-white"
+                        size="sm"
+                      >
+                        + Thêm khách hàng mới
+                      </Button>
+                      <Button
+                        onClick={() => {
+                          setEditingCustomer(null);
+                          setShowCustomerForm(true);
+                        }}
+                        variant="outline"
+                        size="sm"
+                        className="text-blue-600 border-blue-300"
+                      >
+                        Thêm đầy đủ
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      <p className="text-xs font-semibold text-gray-700">Thêm khách hàng mới nhanh:</p>
+                      <input
+                        type="text"
+                        placeholder="Tên khách hàng *"
+                        value={newCustomerName}
+                        onChange={(e) => setNewCustomerName(e.target.value)}
+                        className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm focus:outline-none focus:border-blue-400"
+                      />
+                      <input
+                        type="text"
+                        placeholder="Số điện thoại *"
+                        value={newCustomerPhone}
+                        onChange={(e) => setNewCustomerPhone(e.target.value)}
+                        className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm focus:outline-none focus:border-blue-400"
+                      />
+                      <input
+                        type="text"
+                        placeholder="Mã số thuế (tùy chọn)"
+                        value={newCustomerTaxCode}
+                        onChange={(e) => setNewCustomerTaxCode(e.target.value)}
+                        className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm focus:outline-none focus:border-blue-400"
+                      />
+                      <input
+                        type="text"
+                        placeholder="Địa chỉ (tùy chọn)"
+                        value={newCustomerAddress}
+                        onChange={(e) => setNewCustomerAddress(e.target.value)}
+                        className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm focus:outline-none focus:border-blue-400"
+                      />
+                      <div className="flex gap-2">
+                        <Button
+                          onClick={handleCreateAndSelectCustomer}
+                          disabled={isCreatingCustomer || (!newCustomerName.trim() && !newCustomerPhone.trim())}
+                          className="flex-1 bg-green-600 hover:bg-green-700 text-white"
+                          size="sm"
+                        >
+                          {isCreatingCustomer ? "Đang tạo..." : "✓ Lưu & Chọn"}
+                        </Button>
+                        <Button
+                          onClick={() => {
+                            setShowInlineNewCustomer(false);
+                            setNewCustomerName("");
+                            setNewCustomerPhone("");
+                            setNewCustomerAddress("");
+                            setNewCustomerTaxCode("");
+                          }}
+                          variant="outline"
+                          size="sm"
+                        >
+                          Hủy
+                        </Button>
+                      </div>
+                    </div>
                   )}
                 </div>
               )}
           </div>
 
-          {/* Selected customer display */}
-          {selectedCustomer && (
-            <div className="mt-3 p-4 bg-gradient-to-br from-green-50 to-emerald-50 border-2 border-green-200 rounded-lg shadow-sm">
-              <div className="flex items-start gap-3">
-                <div className="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center flex-shrink-0">
-                  <svg
-                    className="w-6 h-6 text-white"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M5 13l4 4L19 7"
-                    />
-                  </svg>
-                </div>
-                <div className="flex-1 min-w-0">
-                  <button
-                    onClick={() => {
-                      setEditingCustomer(selectedCustomer);
-                      setShowCustomerForm(true);
-                    }}
-                    className="text-sm font-bold text-green-900 hover:text-green-700 transition-colors inline-flex items-center gap-1 group"
-                    title="Xem chi tiết khách hàng"
-                  >
-                    {selectedCustomer.name}
-                    <svg
-                      className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M13 7l5 5m0 0l-5 5m5-7H6"
-                      />
-                    </svg>
-                  </button>
-                  <div className="flex flex-wrap items-center gap-2 mt-2">
-                    <span className="text-xs text-green-700 bg-white px-2 py-1 rounded-md flex items-center gap-1">
-                      <svg
-                        className="w-3 h-3"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"
-                        />
-                      </svg>
-                      {selectedCustomer.phone}
-                    </span>
-                    {selectedCustomer.customerTaxCode && (
-                      <span className="text-xs text-green-600 bg-white px-2 py-1 rounded-md">
-                        MST: {selectedCustomer.customerTaxCode}
-                      </span>
-                    )}
-                  </div>
-                </div>
-                <button
-                  onClick={() => {
-                    setSelectedCustomer(null);
-                    setCustomerSearchTerm("");
-                    // Clear customer for the current order
-                    if (activeOrderId) {
-                      setOrderCustomers((prev) => {
-                        const updated = { ...prev };
-                        delete updated[activeOrderId];
-                        return updated;
-                      });
-                    }
-                  }}
-                  className="w-7 h-7 flex items-center justify-center bg-red-100 hover:bg-red-200 text-red-600 rounded-full transition-colors flex-shrink-0"
-                  title="Xóa khách hàng"
-                >
-                  <svg
-                    className="w-4 h-4"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M6 18L18 6M6 6l12 12"
-                    />
-                  </svg>
-                </button>
-              </div>
-            </div>
-          )}
+
         </div>
-      )}
+      )
+      }
 
       {/* SKU Search Input */}
-      {storeSettings?.businessType === "retail" && (
-        <div className="p-4 border-b pos-border bg-gradient-to-r from-green-50 to-emerald-50 mt-3">
-          <div className="relative">
-            <Input
-              ref={skuInputRef}
-              type="text"
-              value={skuSearch}
-              onChange={(e) => {
-                // Chỉ set state, useEffect sẽ handle debounce search
-                setSkuSearch(e.target.value);
-              }}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  e.preventDefault();
-                  if (skuSearchResults.length > 0) {
-                    // Chỉ thêm nếu có nhiều hơn 1 kết quả (vì 1 kết quả đã tự động thêm)
-                    if (skuSearchResults.length > 1 && !isAddingProduct) {
-                      const productToAdd = skuSearchResults[selectedSkuIndex];
-                      if (productToAdd) {
-                        handleAddProductFromSku(productToAdd);
+      {
+        storeSettings?.businessType === "retail" && (
+          <div className="p-4 border-b pos-border bg-gradient-to-r from-green-50 to-emerald-50 mt-3">
+            <div className="relative">
+              <Input
+                ref={skuInputRef}
+                type="text"
+                value={skuSearch}
+                onChange={(e) => {
+                  // Chỉ set state, useEffect sẽ handle debounce search
+                  setSkuSearch(e.target.value);
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    if (skuSearchResults.length > 0) {
+                      // Chỉ thêm nếu có nhiều hơn 1 kết quả (vì 1 kết quả đã tự động thêm)
+                      if (skuSearchResults.length > 1 && !isAddingProduct) {
+                        const productToAdd = skuSearchResults[selectedSkuIndex];
+                        if (productToAdd) {
+                          handleAddProductFromSku(productToAdd);
+                        }
                       }
+                    } else if (skuSearch.trim().length > 0) {
+                      // Show notification when no products found
+                      toast({
+                        title: t("pos.productNotFound"),
+                        description: t("pos.productNotFoundWithCode").replace('{code}', skuSearch),
+                        variant: "destructive",
+                      });
                     }
-                  } else if (skuSearch.trim().length > 0) {
-                    // Show notification when no products found
-                    toast({
-                      title: t("pos.productNotFound"),
-                      description: t("pos.productNotFoundWithCode").replace('{code}', skuSearch),
-                      variant: "destructive",
-                    });
+                  } else if (
+                    e.key === "ArrowDown" &&
+                    skuSearchResults.length > 0
+                  ) {
+                    e.preventDefault();
+                    setSelectedSkuIndex((prev) =>
+                      Math.min(prev + 1, skuSearchResults.length - 1),
+                    );
+                  } else if (e.key === "ArrowUp" && skuSearchResults.length > 0) {
+                    e.preventDefault();
+                    setSelectedSkuIndex((prev) => Math.max(prev - 1, 0));
                   }
-                } else if (
-                  e.key === "ArrowDown" &&
-                  skuSearchResults.length > 0
-                ) {
-                  e.preventDefault();
-                  setSelectedSkuIndex((prev) =>
-                    Math.min(prev + 1, skuSearchResults.length - 1),
-                  );
-                } else if (e.key === "ArrowUp" && skuSearchResults.length > 0) {
-                  e.preventDefault();
-                  setSelectedSkuIndex((prev) => Math.max(prev - 1, 0));
-                }
-              }}
-              placeholder={t("pos.scanBarcode")}
-              className="pl-10 pr-4 py-2 border-2 border-green-300 focus:border-green-500 rounded-lg"
-            />
-            <svg
-              className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-green-600"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                }}
+                placeholder={t("pos.scanBarcode")}
+                className="pl-10 pr-4 py-2 border-2 border-green-300 focus:border-green-500 rounded-lg"
               />
-            </svg>
+              <svg
+                className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-green-600"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                />
+              </svg>
+            </div>
           </div>
-        </div>
-      )}
+        )
+      }
 
       {/* Purchase History Section */}
       <div className="p-4 border-b pos-border bg-gray-50 pt-6">
@@ -1964,11 +2066,10 @@ export function ShoppingCart({
             {orders.map((order) => (
               <div
                 key={order.id}
-                className={`flex items-center px-3 py-1.5 rounded-lg text-xs cursor-pointer transition-all duration-200 ${
-                  activeOrderId === order.id
-                    ? "bg-blue-500 text-white border-2 border-blue-600 shadow-md"
-                    : "bg-white text-gray-600 hover:bg-gray-100 border border-gray-200"
-                }`}
+                className={`flex items-center px-3 py-1.5 rounded-lg text-xs cursor-pointer transition-all duration-200 ${activeOrderId === order.id
+                  ? "bg-blue-500 text-white border-2 border-blue-600 shadow-md"
+                  : "bg-white text-gray-600 hover:bg-gray-100 border border-gray-200"
+                  }`}
                 onClick={() => onSwitchOrder?.(order.id)}
               >
                 <span className="truncate max-w-16 font-medium">
@@ -1983,11 +2084,10 @@ export function ShoppingCart({
                       e.stopPropagation();
                       removeOrder(order.id); // Use the new removeOrder function
                     }}
-                    className={`ml-2 w-4 h-4 flex items-center justify-center rounded-full transition-colors ${
-                      activeOrderId === order.id
-                        ? "bg-white/20 hover:bg-white/30 text-white"
-                        : "bg-red-100 hover:bg-red-200 text-red-600"
-                    }`}
+                    className={`ml-2 w-4 h-4 flex items-center justify-center rounded-full transition-colors ${activeOrderId === order.id
+                      ? "bg-white/20 hover:bg-white/30 text-white"
+                      : "bg-red-100 hover:bg-red-200 text-red-600"
+                      }`}
                   >
                     ×
                   </button>
@@ -2110,9 +2210,9 @@ export function ShoppingCart({
                                 const prevItemDiscount =
                                   totalBeforeDiscount > 0
                                     ? Math.round(
-                                        (orderDiscount * prevItemTotal) /
-                                          totalBeforeDiscount,
-                                      )
+                                      (orderDiscount * prevItemTotal) /
+                                      totalBeforeDiscount,
+                                    )
                                     : 0;
                                 previousDiscounts += prevItemDiscount;
                               }
@@ -2124,9 +2224,9 @@ export function ShoppingCart({
                               itemDiscountAmount =
                                 totalBeforeDiscount > 0
                                   ? Math.round(
-                                      (orderDiscount * itemTotal) /
-                                        totalBeforeDiscount,
-                                    )
+                                    (orderDiscount * itemTotal) /
+                                    totalBeforeDiscount,
+                                  )
                                   : 0;
                             }
                           }
@@ -2179,8 +2279,8 @@ export function ShoppingCart({
                             : item.discount &&
                               parseFloat(item.discount.toString()) > 0
                               ? Math.floor(
-                                  parseFloat(item.discount.toString()),
-                                ).toLocaleString("vi-VN")
+                                parseFloat(item.discount.toString()),
+                              ).toLocaleString("vi-VN")
                               : ""
                         }
                         onChange={(e) => {
@@ -2415,9 +2515,9 @@ export function ShoppingCart({
                               const prevItemDiscount =
                                 totalBeforeDiscount > 0
                                   ? Math.round(
-                                      (orderDiscount * prevItemTotal) /
-                                        totalBeforeDiscount,
-                                    )
+                                    (orderDiscount * prevItemTotal) /
+                                    totalBeforeDiscount,
+                                  )
                                   : 0;
                               previousDiscounts += prevItemDiscount;
                             }
@@ -2436,9 +2536,9 @@ export function ShoppingCart({
                             itemDiscountAmount =
                               totalBeforeDiscount > 0
                                 ? Math.round(
-                                    (orderDiscount * giaGomThue) /
-                                      totalBeforeDiscount,
-                                  )
+                                  (orderDiscount * giaGomThue) /
+                                  totalBeforeDiscount,
+                                )
                                 : 0;
                           }
                         } else {
@@ -2469,9 +2569,9 @@ export function ShoppingCart({
                               const prevItemDiscount =
                                 totalBeforeDiscount > 0
                                   ? Math.round(
-                                      (orderDiscount * prevItemTotal) /
-                                        totalBeforeDiscount,
-                                    )
+                                    (orderDiscount * prevItemTotal) /
+                                    totalBeforeDiscount,
+                                  )
                                   : 0;
                               previousDiscounts += prevItemDiscount;
                             }
@@ -2490,9 +2590,9 @@ export function ShoppingCart({
                             itemDiscountAmount =
                               totalBeforeDiscount > 0
                                 ? Math.round(
-                                    (orderDiscount * tamTinh) /
-                                      totalBeforeDiscount,
-                                  )
+                                  (orderDiscount * tamTinh) /
+                                  totalBeforeDiscount,
+                                )
                                 : 0;
                           }
                         }
@@ -2633,9 +2733,9 @@ export function ShoppingCart({
                             const prevItemDiscount =
                               totalBeforeDiscount > 0
                                 ? Math.round(
-                                    (orderDiscount * prevItemTotal) /
-                                      totalBeforeDiscount,
-                                  )
+                                  (orderDiscount * prevItemTotal) /
+                                  totalBeforeDiscount,
+                                )
                                 : 0;
                             previousDiscounts += prevItemDiscount;
                           }
@@ -2646,9 +2746,9 @@ export function ShoppingCart({
                           itemDiscountAmount =
                             totalBeforeDiscount > 0
                               ? Math.round(
-                                  (orderDiscount * itemTotal) /
-                                    totalBeforeDiscount,
-                                )
+                                (orderDiscount * itemTotal) /
+                                totalBeforeDiscount,
+                              )
                               : 0;
                         }
                       }
@@ -2688,587 +2788,596 @@ export function ShoppingCart({
         )}
       </div>
       {/* Cart Summary */}
-      {cart.length > 0 && (
-        <div className="border-t pos-border p-4 space-y-4">
-          <div className="space-y-2">
-            <div className="flex justify-between text-sm">
-              <span className="pos-text-secondary">{t("pos.totalAmount")}</span>
-              <span className="font-medium">
-                {Math.round(subtotal).toLocaleString("vi-VN")} ₫
-              </span>
-            </div>
-            <div className="flex justify-between text-sm">
-              <span className="pos-text-secondary">{t("pos.tax")}</span>
-              <span className="font-medium">
-                {Math.round(tax).toLocaleString("vi-VN")} ₫
-              </span>
-            </div>
-
-            {/* Discount Input */}
+      {
+        cart.length > 0 && (
+          <div className="border-t pos-border p-4 space-y-4">
             <div className="space-y-2">
-              <Label className="text-sm font-medium pos-text-primary">
-                {t("common.discount")} (₫)
-              </Label>
-              <Input
-                type="text"
-                value={
-                  currentOrderDiscount && parseFloat(currentOrderDiscount) > 0
-                    ? parseFloat(currentOrderDiscount).toLocaleString("vi-VN")
-                    : ""
-                }
-                onChange={(e) => {
-                  const value = Math.max(
-                    0,
-                    parseFloat(e.target.value.replace(/[^\d]/g, "")) || 0,
-                  );
+              <div className="flex justify-between text-sm">
+                <span className="pos-text-secondary">{t("pos.totalAmount")}</span>
+                <span className="font-medium">
+                  {Math.round(subtotal).toLocaleString("vi-VN")} ₫
+                </span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="pos-text-secondary">{t("pos.tax")}</span>
+                <span className="font-medium">
+                  {Math.round(tax).toLocaleString("vi-VN")} ₫
+                </span>
+              </div>
 
-                  // Update order discount state
-                  if (activeOrderId) {
-                    setOrderDiscounts((prev) => ({
-                      ...prev,
-                      [activeOrderId]: value.toString(),
-                    }));
-                  } else {
-                    setDiscountAmount(value.toString());
+              {/* Discount Input */}
+              <div className="space-y-2">
+                <Label className="text-sm font-medium pos-text-primary">
+                  {t("common.discount")} (₫)
+                </Label>
+                <Input
+                  type="text"
+                  value={
+                    currentOrderDiscount && parseFloat(currentOrderDiscount) > 0
+                      ? parseFloat(currentOrderDiscount).toLocaleString("vi-VN")
+                      : ""
                   }
-
-                  // Recalculate item discounts proportionally when total discount is entered
-                  if (value > 0) {
-                    const totalBeforeDiscount = cart.reduce(
-                      (total, cartItem) => {
-                        return (
-                          total + parseFloat(cartItem.price) * cartItem.quantity
-                        );
-                      },
+                  onChange={(e) => {
+                    const value = Math.max(
                       0,
+                      parseFloat(e.target.value.replace(/[^\d]/g, "")) || 0,
                     );
 
-                    // Update each item's discount proportionally
-                    cart.forEach((item, index) => {
-                      const itemTotal = parseFloat(item.price) * item.quantity;
-                      const isLastItem = index === cart.length - 1;
+                    // Update order discount state
+                    if (activeOrderId) {
+                      setOrderDiscounts((prev) => ({
+                        ...prev,
+                        [activeOrderId]: value.toString(),
+                      }));
+                    } else {
+                      setDiscountAmount(value.toString());
+                    }
 
-                      let itemDiscount = 0;
-                      if (isLastItem) {
-                        // Last item gets remaining discount to avoid rounding errors
-                        let previousDiscounts = 0;
-                        for (let i = 0; i < cart.length - 1; i++) {
-                          const prevItem = cart[i];
-                          const prevItemTotal =
-                            parseFloat(prevItem.price) * prevItem.quantity;
-                          previousDiscounts +=
-                            totalBeforeDiscount > 0
-                              ? Math.round(
+                    // Recalculate item discounts proportionally when total discount is entered
+                    if (value > 0) {
+                      const totalBeforeDiscount = cart.reduce(
+                        (total, cartItem) => {
+                          return (
+                            total + parseFloat(cartItem.price) * cartItem.quantity
+                          );
+                        },
+                        0,
+                      );
+
+                      // Update each item's discount proportionally
+                      cart.forEach((item, index) => {
+                        const itemTotal = parseFloat(item.price) * item.quantity;
+                        const isLastItem = index === cart.length - 1;
+
+                        let itemDiscount = 0;
+                        if (isLastItem) {
+                          // Last item gets remaining discount to avoid rounding errors
+                          let previousDiscounts = 0;
+                          for (let i = 0; i < cart.length - 1; i++) {
+                            const prevItem = cart[i];
+                            const prevItemTotal =
+                              parseFloat(prevItem.price) * prevItem.quantity;
+                            previousDiscounts +=
+                              totalBeforeDiscount > 0
+                                ? Math.round(
                                   (value * prevItemTotal) / totalBeforeDiscount,
                                 )
-                              : 0;
-                        }
-                        itemDiscount = value - previousDiscounts;
-                      } else {
-                        itemDiscount =
-                          totalBeforeDiscount > 0
-                            ? Math.round(
+                                : 0;
+                          }
+                          itemDiscount = value - previousDiscounts;
+                        } else {
+                          itemDiscount =
+                            totalBeforeDiscount > 0
+                              ? Math.round(
                                 (value * itemTotal) / totalBeforeDiscount,
                               )
-                            : 0;
-                      }
+                              : 0;
+                        }
 
-                      // Update item discount in cart
-                      item.discount = itemDiscount;
-                    });
-                  } else {
-                    // Clear all item discounts when total discount is 0
-                    cart.forEach((item) => {
-                      item.discount = 0;
-                    });
-                  }
+                        // Update item discount in cart
+                        item.discount = itemDiscount;
+                      });
+                    } else {
+                      // Clear all item discounts when total discount is 0
+                      cart.forEach((item) => {
+                        item.discount = 0;
+                      });
+                    }
 
-                  // Send discount update via WebSocket
-                  if (
-                    wsRef.current &&
-                    wsRef.current.readyState === WebSocket.OPEN
-                  ) {
-                    const validatedCart = cart.map((item) => ({
-                      ...item,
-                      name:
-                        item.name || item.productName || `Sản phẩm ${item.id}`,
-                      productName:
-                        item.name || item.productName || `Sản phẩm ${item.id}`,
-                      price: item.price || "0",
-                      quantity: item.quantity || 1,
-                      total: item.total || "0",
-                      discount: item.discount || 0,
-                    }));
+                    // Send discount update via WebSocket
+                    if (
+                      wsRef.current &&
+                      wsRef.current.readyState === WebSocket.OPEN
+                    ) {
+                      const validatedCart = cart.map((item) => ({
+                        ...item,
+                        name:
+                          item.name || item.productName || `Sản phẩm ${item.id}`,
+                        productName:
+                          item.name || item.productName || `Sản phẩm ${item.id}`,
+                        price: item.price || "0",
+                        quantity: item.quantity || 1,
+                        total: item.total || "0",
+                        discount: item.discount || 0,
+                      }));
 
-                    wsRef.current.send(
-                      JSON.stringify({
-                        type: "cart_update",
-                        cart: validatedCart,
-                        subtotal: Math.floor(subtotal),
-                        tax: Math.floor(tax),
-                        total: Math.floor(total),
-                        discount: value,
-                        orderNumber: activeOrderId || `ORD-${Date.now()}`,
-                        timestamp: new Date().toISOString(),
-                        updateType: "total_discount_update",
-                      }),
-                    );
-                  }
-                }}
-                placeholder="0"
-                className="text-right"
-              />
-            </div>
+                      wsRef.current.send(
+                        JSON.stringify({
+                          type: "cart_update",
+                          cart: validatedCart,
+                          subtotal: Math.floor(subtotal),
+                          tax: Math.floor(tax),
+                          total: Math.floor(total),
+                          discount: value,
+                          orderNumber: activeOrderId || `ORD-${Date.now()}`,
+                          timestamp: new Date().toISOString(),
+                          updateType: "total_discount_update",
+                        }),
+                      );
+                    }
+                  }}
+                  placeholder="0"
+                  className="text-right"
+                />
+              </div>
 
-            <div className="border-t pt-2">
-              <div className="flex justify-between">
-                <span className="text-lg font-bold pos-text-primary">
-                  {t("tables.total")}:
-                </span>
-                <span className="text-lg font-bold text-blue-600">
-                  {(() => {
-                    const baseTotal = Math.round(subtotal + tax);
-                    const finalTotal = baseTotal;
+              <div className="border-t pt-2">
+                <div className="flex justify-between">
+                  <span className="text-lg font-bold pos-text-primary">
+                    {t("tables.total")}:
+                  </span>
+                  <span className="text-lg font-bold text-blue-600">
+                    {(() => {
+                      const baseTotal = Math.round(subtotal + tax);
+                      const finalTotal = baseTotal;
 
-                    console.log("🔍 Total Calculation Debug:", {
-                      subtotal: subtotal,
-                      tax: tax,
-                      baseTotal: baseTotal,
-                      finalTotal: finalTotal,
-                      calculation: `${subtotal} + ${tax} = ${finalTotal}`,
-                    });
+                      console.log("🔍 Total Calculation Debug:", {
+                        subtotal: subtotal,
+                        tax: tax,
+                        baseTotal: baseTotal,
+                        finalTotal: finalTotal,
+                        calculation: `${subtotal} + ${tax} = ${finalTotal}`,
+                      });
 
-                    return finalTotal.toLocaleString("vi-VN");
-                  })()}{" "}
-                  ₫
-                </span>
+                      return finalTotal.toLocaleString("vi-VN");
+                    })()}{" "}
+                    ₫
+                  </span>
+                </div>
               </div>
             </div>
-          </div>
 
-          {/* Cash Payment */}
-          {paymentMethod === "cash" && (
-            <div className="space-y-2">
-              <Label className="text-sm font-medium pos-text-primary">
-                {t("tables.amountReceived")}
-              </Label>
-              <Input
-                type="number"
-                step="0.01"
-                placeholder="0.00"
-                value={amountReceived}
-                onChange={(e) => setAmountReceived(e.target.value)}
-              />
-              <div className="flex justify-between text-sm">
-                <span className="pos-text-secondary">
-                  {t("tables.change")}:
-                </span>
-                <span className="font-bold text-green-600">
-                  {change.toLocaleString("vi-VN", {
-                    minimumFractionDigits: 2,
-                    maximumFractionDigits: 2,
-                  })}{" "}
-                  ₫
-                </span>
+            {/* Cash Payment */}
+            {paymentMethod === "cash" && (
+              <div className="space-y-2">
+                <Label className="text-sm font-medium pos-text-primary">
+                  {t("tables.amountReceived")}
+                </Label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  placeholder="0.00"
+                  value={amountReceived}
+                  onChange={(e) => setAmountReceived(e.target.value)}
+                />
+                <div className="flex justify-between text-sm">
+                  <span className="pos-text-secondary">
+                    {t("tables.change")}:
+                  </span>
+                  <span className="font-bold text-green-600">
+                    {change.toLocaleString("vi-VN", {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2,
+                    })}{" "}
+                    ₫
+                  </span>
+                </div>
               </div>
-            </div>
-          )}
+            )}
 
-          <div className="flex gap-2">
-            {storeSettings?.businessType === "laundry" && (
+            <div className="flex gap-2">
+              {(storeSettings?.businessType === "laundry") && (
+                <Button
+                  onClick={handlePlaceOrder}
+                  disabled={
+                    cart.length === 0 || isProcessing || !selectedCustomer
+                  }
+                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 text-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                  title={
+                    !selectedCustomer
+                      ? "Vui lòng chọn khách hàng trước khi đặt hàng"
+                      : ""
+                  }
+                >
+                  {t("pos.placeOrder")}
+                </Button>
+              )}
               <Button
-                onClick={handlePlaceOrder}
+                onClick={handleCheckout}
                 disabled={
-                  cart.length === 0 || isProcessing || !selectedCustomer
+                  cart.length === 0 ||
+                  isProcessing ||
+                  ((storeSettings?.businessType === "laundry" || domainName === "0109878794.edpos.vn" || domainName === "localhost") && !selectedCustomer)
                 }
-                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 text-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                className={`${storeSettings?.businessType !== "laundry" ? "w-full" : "flex-1"} bg-green-600 hover:bg-green-700 text-white font-medium py-3 text-lg disabled:opacity-50 disabled:cursor-not-allowed`}
                 title={
-                  !selectedCustomer
-                    ? "Vui lòng chọn khách hàng trước khi đặt hàng"
+                  ((storeSettings?.businessType === "laundry" || domainName === "0109878794.edpos.vn" || domainName === "localhost") && !selectedCustomer)
+                    ? "Vui lòng chọn khách hàng trước khi thanh toán"
                     : ""
                 }
               >
-                {t("pos.placeOrder")}
+                {isProcessing ? t("tables.placing") : t("pos.checkout")}
               </Button>
-            )}
-            <Button
-              onClick={handleCheckout}
-              disabled={
-                cart.length === 0 ||
-                isProcessing ||
-                (storeSettings?.businessType === "laundry" && !selectedCustomer)
-              }
-              className={`${storeSettings?.businessType !== "laundry" ? "w-full" : "flex-1"} bg-green-600 hover:bg-green-700 text-white font-medium py-3 text-lg disabled:opacity-50 disabled:cursor-not-allowed`}
-              title={
-                storeSettings?.businessType === "laundry" && !selectedCustomer
-                  ? "Vui lòng chọn khách hàng trước khi thanh toán"
-                  : ""
-              }
-            >
-              {isProcessing ? t("tables.placing") : t("pos.checkout")}
-            </Button>
+            </div>
           </div>
-        </div>
-      )}
+        )
+      }
 
       {/* Receipt Preview Modal - Shows first like order management */}
-      {showReceiptPreview && previewReceipt && (
-        <ReceiptModal
-          isOpen={showReceiptPreview}
-          onClose={handleReceiptPreviewCancel}
-          receipt={{
-            ...previewReceipt,
-            orderForPayment: orderForPayment,
-            cartItems: lastCartItems,
-          }}
-          cartItems={lastCartItems}
-          total={previewReceipt?.exactTotal || 0}
-          isPreview={true}
-          onConfirm={(orderData) => {
-            console.log(
-              "📦 Shopping Cart: Received order data from receipt modal:",
-              orderData,
-            );
-            // Update orderForPayment with complete data
-            setOrderForPayment(orderData || previewReceipt);
-            handleReceiptPreviewConfirm();
-          }}
-        />
-      )}
+      {
+        showReceiptPreview && previewReceipt && (
+          <ReceiptModal
+            isOpen={showReceiptPreview}
+            onClose={handleReceiptPreviewCancel}
+            receipt={{
+              ...previewReceipt,
+              orderForPayment: orderForPayment,
+              cartItems: lastCartItems,
+            }}
+            cartItems={lastCartItems}
+            total={previewReceipt?.exactTotal || 0}
+            isPreview={true}
+            onConfirm={(orderData) => {
+              console.log(
+                "📦 Shopping Cart: Received order data from receipt modal:",
+                orderData,
+              );
+              // Update orderForPayment with complete data
+              setOrderForPayment(orderData || previewReceipt);
+              handleReceiptPreviewConfirm();
+            }}
+          />
+        )
+      }
 
       {/* Payment Method Modal - Shows after receipt preview confirmation */}
-      {showPaymentModal && orderForPayment && previewReceipt && (
-        <PaymentMethodModal
-          isOpen={showPaymentModal}
-          onClose={() => {
-            console.log("🔄 Closing Payment Method Modal");
-            setShowPaymentModal(false);
-            setPreviewReceipt(null);
-            setOrderForPayment(null);
-          }}
-          onSelectMethod={handlePaymentMethodSelect}
-          total={(() => {
-            console.log(
-              "🔍 Shopping Cart: Payment Modal Total Debug (VALIDATED):",
-              {
-                showPaymentModal: showPaymentModal,
-                orderForPayment: orderForPayment,
-                previewReceipt: previewReceipt,
-                orderExactTotal: orderForPayment?.exactTotal,
-                orderTotal: orderForPayment?.total,
-                previewTotal: previewReceipt?.exactTotal,
-                fallbackTotal: total,
-                cartItemsCount: cart.length,
-                hasValidOrderData: !!(orderForPayment && previewReceipt),
-              },
-            );
+      {
+        showPaymentModal && orderForPayment && previewReceipt && (
+          <PaymentMethodModal
+            isOpen={showPaymentModal}
+            onClose={() => {
+              console.log("🔄 Closing Payment Method Modal");
+              setShowPaymentModal(false);
+              setPreviewReceipt(null);
+              setOrderForPayment(null);
+            }}
+            onSelectMethod={handlePaymentMethodSelect}
+            total={(() => {
+              console.log(
+                "🔍 Shopping Cart: Payment Modal Total Debug (VALIDATED):",
+                {
+                  showPaymentModal: showPaymentModal,
+                  orderForPayment: orderForPayment,
+                  previewReceipt: previewReceipt,
+                  orderExactTotal: orderForPayment?.exactTotal,
+                  orderTotal: orderForPayment?.total,
+                  previewTotal: previewReceipt?.exactTotal,
+                  fallbackTotal: total,
+                  cartItemsCount: cart.length,
+                  hasValidOrderData: !!(orderForPayment && previewReceipt),
+                },
+              );
 
-            // If we have valid order data, use it, otherwise use current cart calculation
-            if (orderForPayment && previewReceipt) {
-              const finalTotal =
+              // If we have valid order data, use it, otherwise use current cart calculation
+              if (orderForPayment && previewReceipt) {
+                const finalTotal =
+                  orderForPayment?.exactTotal ||
+                  orderForPayment?.total ||
+                  previewReceipt?.exactTotal ||
+                  previewReceipt?.total ||
+                  0;
+
+                console.log(
+                  "💰 Shopping Cart: Using order/receipt total:",
+                  finalTotal,
+                );
+                return finalTotal;
+              } else {
+                // Fallback: Calculate from current cart
+                const cartTotal = cart.reduce((sum, item) => {
+                  const itemTotal = parseFloat(item.total);
+                  return sum + itemTotal;
+                }, 0);
+
+                const cartTax = cart.reduce((sum, item) => {
+                  if (item.taxRate && parseFloat(item.taxRate) > 0) {
+                    const basePrice = parseFloat(item.price);
+                    if (
+                      item.afterTaxPrice &&
+                      item.afterTaxPrice !== null &&
+                      item.afterTaxPrice !== ""
+                    ) {
+                      const afterTaxPrice = parseFloat(item.afterTaxPrice);
+                      const taxPerItem = afterTaxPrice - basePrice;
+                      return sum + Math.round(taxPerItem * item.quantity);
+                    }
+                  }
+                  return sum;
+                }, 0);
+
+                const finalTotal = Math.round(cartTotal + cartTax);
+                console.log(
+                  "💰 Shopping Cart: Using calculated cart total:",
+                  finalTotal,
+                );
+                return finalTotal;
+              }
+            })()}
+            orderForPayment={orderForPayment}
+            products={products}
+            receipt={previewReceipt}
+            cartItems={(() => {
+              console.log(
+                "📦 Shopping Cart: Cart Items Debug for Payment Modal (VALIDATED):",
+                {
+                  orderForPaymentItems: orderForPayment?.items?.length || 0,
+                  previewReceiptItems: previewReceipt?.items?.length || 0,
+                  currentCartItems: cart?.length || 0,
+                  lastCartItems: lastCartItems?.length || 0,
+                  hasValidOrderData: !!(orderForPayment && previewReceipt),
+                },
+              );
+
+              // If we have stored cart items from checkout process, use them first
+              if (lastCartItems && lastCartItems.length > 0) {
+                console.log(
+                  "📦 Shopping Cart: Using lastCartItems (most accurate):",
+                  lastCartItems,
+                );
+                return lastCartItems;
+              }
+
+              // If we have valid order data, use it
+              if (orderForPayment?.items && orderForPayment.items.length > 0) {
+                const mappedItems = orderForPayment.items.map((item) => ({
+                  id: item.id || item.productId,
+                  name: item.name || item.productName,
+                  price:
+                    typeof (item.price || item.unitPrice) === "string"
+                      ? parseFloat(item.price || item.unitPrice)
+                      : item.price || item.unitPrice,
+                  quantity: item.quantity.toString(),
+                  sku:
+                    item.sku ||
+                    `FOOD${String(item.id || item.productId).padStart(5, "0")}`,
+                  taxRate: item.taxRate || 0,
+                  afterTaxPrice: item.afterTaxPrice,
+                }));
+                console.log(
+                  "📦 Shopping Cart: Using orderForPayment items:",
+                  mappedItems,
+                );
+                return mappedItems;
+              }
+
+              // Fallback to current cart
+              if (cart && cart.length > 0) {
+                const mappedItems = cart.map((item) => ({
+                  id: item.id,
+                  name: item.name,
+                  price:
+                    typeof item.price === "string"
+                      ? parseFloat(item.price)
+                      : item.price,
+                  quantity: item.quantity.toString(),
+                  sku: item.sku || `FOOD${String(item.id).padStart(5, "0")}`,
+                  taxRate:
+                    typeof item.taxRate === "string"
+                      ? parseFloat(item.taxRate || "0")
+                      : item.taxRate || 0,
+                  afterTaxPrice: item.afterTaxPrice,
+                }));
+                console.log(
+                  "📦 Shopping Cart: Using current cart as fallback:",
+                  mappedItems,
+                );
+                return mappedItems;
+              }
+
+              console.error(
+                "❌ CRITICAL ERROR: No valid items found for Payment Modal",
+              );
+              return [];
+            })()}
+          />
+        )
+      }
+
+      {/* Final Receipt Modal - Shows after successful payment */}
+      {
+        (showReceiptModal || selectedReceipt) && (
+          <ReceiptModal
+            isOpen={showReceiptModal}
+            onClose={() => {
+              console.log(
+                "🔄 Shopping Cart: Receipt modal closing, clearing cart and sending comprehensive refresh signal",
+              );
+
+              // Close modal and clear states
+              setShowReceiptModal(false);
+              setSelectedReceipt(null);
+              setLastCartItems([]);
+              setOrderForPayment(null);
+              setPreviewReceipt(null);
+              setIsProcessingPayment(false);
+
+              // Clear cart immediately
+              clearCart(); // Use the memoized clearCart function
+
+              // Send comprehensive refresh signals
+              try {
+                if (
+                  wsRef.current &&
+                  wsRef.current.readyState === WebSocket.OPEN
+                ) {
+                  // Send multiple signals to ensure all components refresh
+                  wsRef.current.send(
+                    JSON.stringify({
+                      type: "popup_close",
+                      success: true,
+                      source: "shopping-cart-receipt",
+                      timestamp: new Date().toISOString(),
+                    }),
+                  );
+
+                  wsRef.current.send(
+                    JSON.stringify({
+                      type: "force_refresh",
+                      source: "shopping-cart-receipt-close",
+                      success: true,
+                      timestamp: new Date().toISOString(),
+                    }),
+                  );
+
+                  wsRef.current.send(
+                    JSON.stringify({
+                      type: "payment_success",
+                      source: "shopping-cart-receipt-complete",
+                      success: true,
+                      timestamp: new Date().toISOString(),
+                    }),
+                  );
+                } else {
+                  // Fallback WebSocket connection if main one is not available
+                  const protocol =
+                    window.location.protocol === "https:" ? "wss:" : "ws:";
+                  const wsUrl = `${protocol}//${window.location.host}/ws`;
+                  const fallbackWs = new WebSocket(wsUrl);
+
+                  fallbackWs.onopen = () => {
+                    fallbackWs.send(
+                      JSON.stringify({
+                        type: "popup_close",
+                        success: true,
+                        source: "shopping-cart-receipt-fallback",
+                        timestamp: new Date().toISOString(),
+                      }),
+                    );
+
+                    fallbackWs.send(
+                      JSON.stringify({
+                        type: "force_refresh",
+                        source: "shopping-cart-receipt-fallback",
+                        success: true,
+                        timestamp: new Date().toISOString(),
+                      }),
+                    );
+
+                    setTimeout(() => fallbackWs.close(), 100);
+                  };
+                }
+              } catch (error) {
+                console.error(
+                  "❌ Shopping Cart: Failed to send refresh signal:",
+                  error,
+                );
+              }
+
+              // Dispatch custom events for components that might not use WebSocket
+              if (typeof window !== "undefined") {
+                window.dispatchEvent(
+                  new CustomEvent("closeAllPopups", {
+                    detail: {
+                      source: "shopping_cart_receipt_close",
+                      success: true,
+                      action: "receipt_modal_closed",
+                      showSuccessNotification: true,
+                      message: "Thanh toán hoàn tất. Dữ liệu đã được cập nhật.",
+                      timestamp: new Date().toISOString(),
+                    },
+                  }),
+                );
+
+                window.dispatchEvent(
+                  new CustomEvent("refreshAllData", {
+                    detail: {
+                      source: "shopping_cart_receipt_close",
+                      timestamp: new Date().toISOString(),
+                    },
+                  }),
+                );
+              }
+
+              console.log(
+                "✅ Shopping Cart: Receipt modal closed with comprehensive refresh signals sent",
+              );
+            }}
+            receipt={selectedReceipt}
+            cartItems={
+              selectedReceipt?.items ||
+              lastCartItems.map((item) => ({
+                id: item.id,
+                name: item.name,
+                price: parseFloat(item.price),
+                quantity: item.quantity.toString(),
+                sku: `ITEM${String(item.id).padStart(3, "0")}`,
+                taxRate: parseFloat(item.taxRate || "0"),
+              })) ||
+              cart.map((item) => ({
+                id: item.id,
+                name: item.name,
+                price: parseFloat(item.price),
+                quantity: item.quantity.toString(),
+                sku: `ITEM${String(item.id).padStart(3, "0")}`,
+                taxRate: parseFloat(item.taxRate || "0"),
+              }))
+            }
+          />
+        )
+      }
+
+      {/* E-Invoice Modal for invoice processing */}
+      {
+        showEInvoiceModal && (
+          <EInvoiceModal
+            isOpen={showEInvoiceModal}
+            onClose={() => {
+              console.log("🔴 POS: Closing E-invoice modal");
+              setShowEInvoiceModal(false);
+              setIsProcessingPayment(false);
+
+              // Don't clear cart here - let the e-invoice modal handle it
+              console.log("🔴 POS: E-invoice modal closed without clearing cart");
+            }}
+            onConfirm={handleEInvoiceComplete}
+            total={(() => {
+              // Use the most accurate total available
+              const totalToUse =
                 orderForPayment?.exactTotal ||
                 orderForPayment?.total ||
                 previewReceipt?.exactTotal ||
                 previewReceipt?.total ||
-                0;
+                total;
 
-              console.log(
-                "💰 Shopping Cart: Using order/receipt total:",
-                finalTotal,
-              );
-              return finalTotal;
-            } else {
-              // Fallback: Calculate from current cart
-              const cartTotal = cart.reduce((sum, item) => {
-                const itemTotal = parseFloat(item.total);
-                return sum + itemTotal;
-              }, 0);
+              console.log("🔍 POS E-Invoice Modal - Total calculation debug:", {
+                orderForPaymentExactTotal: orderForPayment?.exactTotal,
+                orderForPaymentTotal: orderForPayment?.total,
+                previewReceiptExactTotal: previewReceipt?.exactTotal,
+                previewReceiptTotal: previewReceipt?.total,
+                fallbackTotal: total,
+                finalTotalToUse: totalToUse,
+              });
 
-              const cartTax = cart.reduce((sum, item) => {
-                if (item.taxRate && parseFloat(item.taxRate) > 0) {
-                  const basePrice = parseFloat(item.price);
-                  if (
-                    item.afterTaxPrice &&
-                    item.afterTaxPrice !== null &&
-                    item.afterTaxPrice !== ""
-                  ) {
-                    const afterTaxPrice = parseFloat(item.afterTaxPrice);
-                    const taxPerItem = afterTaxPrice - basePrice;
-                    return sum + Math.round(taxPerItem * item.quantity);
-                  }
-                }
-                return sum;
-              }, 0);
-
-              const finalTotal = Math.round(cartTotal + cartTax);
-              console.log(
-                "💰 Shopping Cart: Using calculated cart total:",
-                finalTotal,
-              );
-              return finalTotal;
-            }
-          })()}
-          orderForPayment={orderForPayment}
-          products={products}
-          receipt={previewReceipt}
-          cartItems={(() => {
-            console.log(
-              "📦 Shopping Cart: Cart Items Debug for Payment Modal (VALIDATED):",
-              {
-                orderForPaymentItems: orderForPayment?.items?.length || 0,
-                previewReceiptItems: previewReceipt?.items?.length || 0,
-                currentCartItems: cart?.length || 0,
-                lastCartItems: lastCartItems?.length || 0,
-                hasValidOrderData: !!(orderForPayment && previewReceipt),
-              },
-            );
-
-            // If we have stored cart items from checkout process, use them first
-            if (lastCartItems && lastCartItems.length > 0) {
-              console.log(
-                "📦 Shopping Cart: Using lastCartItems (most accurate):",
-                lastCartItems,
-              );
-              return lastCartItems;
-            }
-
-            // If we have valid order data, use it
-            if (orderForPayment?.items && orderForPayment.items.length > 0) {
-              const mappedItems = orderForPayment.items.map((item) => ({
-                id: item.id || item.productId,
-                name: item.name || item.productName,
-                price:
-                  typeof (item.price || item.unitPrice) === "string"
-                    ? parseFloat(item.price || item.unitPrice)
-                    : item.price || item.unitPrice,
-                quantity: item.quantity.toString(),
-                sku:
-                  item.sku ||
-                  `FOOD${String(item.id || item.productId).padStart(5, "0")}`,
-                taxRate: item.taxRate || 0,
-                afterTaxPrice: item.afterTaxPrice,
-              }));
-              console.log(
-                "📦 Shopping Cart: Using orderForPayment items:",
-                mappedItems,
-              );
-              return mappedItems;
-            }
-
-            // Fallback to current cart
-            if (cart && cart.length > 0) {
-              const mappedItems = cart.map((item) => ({
-                id: item.id,
-                name: item.name,
-                price:
-                  typeof item.price === "string"
-                    ? parseFloat(item.price)
-                    : item.price,
-                quantity: item.quantity.toString(),
-                sku: item.sku || `FOOD${String(item.id).padStart(5, "0")}`,
-                taxRate:
-                  typeof item.taxRate === "string"
-                    ? parseFloat(item.taxRate || "0")
-                    : item.taxRate || 0,
-                afterTaxPrice: item.afterTaxPrice,
-              }));
-              console.log(
-                "📦 Shopping Cart: Using current cart as fallback:",
-                mappedItems,
-              );
-              return mappedItems;
-            }
-
-            console.error(
-              "❌ CRITICAL ERROR: No valid items found for Payment Modal",
-            );
-            return [];
-          })()}
-        />
-      )}
-
-      {/* Final Receipt Modal - Shows after successful payment */}
-      {(showReceiptModal || selectedReceipt) && (
-        <ReceiptModal
-          isOpen={showReceiptModal}
-          onClose={() => {
-            console.log(
-              "🔄 Shopping Cart: Receipt modal closing, clearing cart and sending comprehensive refresh signal",
-            );
-
-            // Close modal and clear states
-            setShowReceiptModal(false);
-            setSelectedReceipt(null);
-            setLastCartItems([]);
-            setOrderForPayment(null);
-            setPreviewReceipt(null);
-            setIsProcessingPayment(false);
-
-            // Clear cart immediately
-            clearCart(); // Use the memoized clearCart function
-
-            // Send comprehensive refresh signals
-            try {
-              if (
-                wsRef.current &&
-                wsRef.current.readyState === WebSocket.OPEN
-              ) {
-                // Send multiple signals to ensure all components refresh
-                wsRef.current.send(
-                  JSON.stringify({
-                    type: "popup_close",
-                    success: true,
-                    source: "shopping-cart-receipt",
-                    timestamp: new Date().toISOString(),
-                  }),
-                );
-
-                wsRef.current.send(
-                  JSON.stringify({
-                    type: "force_refresh",
-                    source: "shopping-cart-receipt-close",
-                    success: true,
-                    timestamp: new Date().toISOString(),
-                  }),
-                );
-
-                wsRef.current.send(
-                  JSON.stringify({
-                    type: "payment_success",
-                    source: "shopping-cart-receipt-complete",
-                    success: true,
-                    timestamp: new Date().toISOString(),
-                  }),
-                );
-              } else {
-                // Fallback WebSocket connection if main one is not available
-                const protocol =
-                  window.location.protocol === "https:" ? "wss:" : "ws:";
-                const wsUrl = `https://api-pos.edpos.vn/ws`;
-                const fallbackWs = new WebSocket(wsUrl);
-
-                fallbackWs.onopen = () => {
-                  fallbackWs.send(
-                    JSON.stringify({
-                      type: "popup_close",
-                      success: true,
-                      source: "shopping-cart-receipt-fallback",
-                      timestamp: new Date().toISOString(),
-                    }),
-                  );
-
-                  fallbackWs.send(
-                    JSON.stringify({
-                      type: "force_refresh",
-                      source: "shopping-cart-receipt-fallback",
-                      success: true,
-                      timestamp: new Date().toISOString(),
-                    }),
-                  );
-
-                  setTimeout(() => fallbackWs.close(), 100);
-                };
-              }
-            } catch (error) {
-              console.error(
-                "❌ Shopping Cart: Failed to send refresh signal:",
-                error,
-              );
-            }
-
-            // Dispatch custom events for components that might not use WebSocket
-            if (typeof window !== "undefined") {
-              window.dispatchEvent(
-                new CustomEvent("closeAllPopups", {
-                  detail: {
-                    source: "shopping_cart_receipt_close",
-                    success: true,
-                    action: "receipt_modal_closed",
-                    showSuccessNotification: true,
-                    message: "Thanh toán hoàn tất. Dữ liệu đã được cập nhật.",
-                    timestamp: new Date().toISOString(),
-                  },
-                }),
-              );
-
-              window.dispatchEvent(
-                new CustomEvent("refreshAllData", {
-                  detail: {
-                    source: "shopping_cart_receipt_close",
-                    timestamp: new Date().toISOString(),
-                  },
-                }),
-              );
-            }
-
-            console.log(
-              "✅ Shopping Cart: Receipt modal closed with comprehensive refresh signals sent",
-            );
-          }}
-          receipt={selectedReceipt}
-          cartItems={
-            selectedReceipt?.items ||
-            lastCartItems.map((item) => ({
-              id: item.id,
-              name: item.name,
-              price: parseFloat(item.price),
-              quantity: item.quantity.toString(),
-              sku: `ITEM${String(item.id).padStart(3, "0")}`,
-              taxRate: parseFloat(item.taxRate || "0"),
-            })) ||
-            cart.map((item) => ({
-              id: item.id,
-              name: item.name,
-              price: parseFloat(item.price),
-              quantity: item.quantity.toString(),
-              sku: `ITEM${String(item.id).padStart(3, "0")}`,
-              taxRate: parseFloat(item.taxRate || "0"),
-            }))
-          }
-        />
-      )}
-
-      {/* E-Invoice Modal for invoice processing */}
-      {showEInvoiceModal && (
-        <EInvoiceModal
-          isOpen={showEInvoiceModal}
-          onClose={() => {
-            console.log("🔴 POS: Closing E-invoice modal");
-            setShowEInvoiceModal(false);
-            setIsProcessingPayment(false);
-
-            // Don't clear cart here - let the e-invoice modal handle it
-            console.log("🔴 POS: E-invoice modal closed without clearing cart");
-          }}
-          onConfirm={handleEInvoiceComplete}
-          total={(() => {
-            // Use the most accurate total available
-            const totalToUse =
-              orderForPayment?.exactTotal ||
-              orderForPayment?.total ||
-              previewReceipt?.exactTotal ||
-              previewReceipt?.total ||
-              total;
-
-            console.log("🔍 POS E-Invoice Modal - Total calculation debug:", {
-              orderForPaymentExactTotal: orderForPayment?.exactTotal,
-              orderForPaymentTotal: orderForPayment?.total,
-              previewReceiptExactTotal: previewReceipt?.exactTotal,
-              previewReceiptTotal: previewReceipt?.total,
-              fallbackTotal: total,
-              finalTotalToUse: totalToUse,
-            });
-
-            return Math.floor(totalToUse || 0);
-          })()}
-          selectedPaymentMethod={selectedPaymentMethod}
-          cartItems={(() => {
-            // Use the most accurate cart items available
-            const itemsToUse =
-              lastCartItems.length > 0
-                ? lastCartItems
-                : orderForPayment?.items?.length > 0
-                  ? orderForPayment.items.map((item) => ({
+              return Math.floor(totalToUse || 0);
+            })()}
+            selectedPaymentMethod={selectedPaymentMethod}
+            cartItems={(() => {
+              // Use the most accurate cart items available
+              const itemsToUse =
+                lastCartItems.length > 0
+                  ? lastCartItems
+                  : orderForPayment?.items?.length > 0
+                    ? orderForPayment.items.map((item) => ({
                       id: item.id || item.productId,
                       name: item.name || item.productName,
                       price:
@@ -3285,7 +3394,7 @@ export function ShoppingCart({
                           : item.taxRate || 0,
                       afterTaxPrice: item.afterTaxPrice,
                     }))
-                  : cart.map((item) => ({
+                    : cart.map((item) => ({
                       id: item.id,
                       name: item.name,
                       price:
@@ -3302,39 +3411,42 @@ export function ShoppingCart({
                       afterTaxPrice: item.afterTaxPrice,
                     }));
 
-            console.log(
-              "🔍 POS E-Invoice Modal - Cart items calculation debug:",
-              {
-                lastCartItemsLength: lastCartItems.length,
-                orderForPaymentItemsLength: orderForPayment?.items?.length || 0,
-                currentCartLength: cart.length,
-                finalItemsToUseLength: itemsToUse.length,
-                finalItemsToUse: itemsToUse,
-              },
-            );
+              console.log(
+                "🔍 POS E-Invoice Modal - Cart items calculation debug:",
+                {
+                  lastCartItemsLength: lastCartItems.length,
+                  orderForPaymentItemsLength: orderForPayment?.items?.length || 0,
+                  currentCartLength: cart.length,
+                  finalItemsToUseLength: itemsToUse.length,
+                  finalItemsToUse: itemsToUse,
+                },
+              );
 
-            return itemsToUse;
-          })()}
-          source="pos"
-        />
-      )}
+              return itemsToUse;
+            })()}
+            source="pos"
+          />
+        )
+      }
 
       {/* Customer Form Modal */}
-      {showCustomerForm && (
-        <CustomerFormModal
-          isOpen={showCustomerForm}
-          onClose={() => {
-            setShowCustomerForm(false);
-            setEditingCustomer(null);
-            // Refresh customer search after creating new customer
-            if (customerSearchTerm.length > 0) {
-              fetchCustomers(customerSearchTerm);
-            }
-          }}
-          customer={editingCustomer}
-          initialPhone={editingCustomer ? undefined : customerSearchTerm}
-        />
-      )}
-    </aside>
+      {
+        showCustomerForm && (
+          <CustomerFormModal
+            isOpen={showCustomerForm}
+            onClose={() => {
+              setShowCustomerForm(false);
+              setEditingCustomer(null);
+              // Refresh customer search after creating new customer
+              if (customerSearchTerm.length > 0) {
+                fetchCustomers(customerSearchTerm);
+              }
+            }}
+            customer={editingCustomer}
+            initialPhone={editingCustomer ? undefined : customerSearchTerm}
+          />
+        )
+      }
+    </aside >
   );
 }
