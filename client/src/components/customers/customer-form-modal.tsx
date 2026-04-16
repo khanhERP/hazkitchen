@@ -18,9 +18,10 @@ import { format } from "date-fns";
 import { z } from "zod";
 
 const customerFormSchema = z.object({
+  id: z.number().optional(),
   customerId: z.string().optional(),
   name: z.string().min(1, "Tên khách hàng là bắt buộc"),
-  phone: z.string().min(1, "Số điện thoại là bắt buộc"),
+  phone: z.string().optional(),
   email: z.string().optional().refine((email) => !email || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email), {
     message: "올바른 이메일 형식이 아닙니다"
   }),
@@ -216,8 +217,25 @@ export function CustomerFormModal({ isOpen, onClose, customer, initialPhone, onS
       console.log("Updating customer with ID:", customer.id, "Data:", cleanData);
       updateMutation.mutate(cleanData);
     } else {
-      console.log("Creating new customer with data:", cleanData);
-      createMutation.mutate(cleanData);
+      // Workaround for DB sequence desync: Fetch customers to find max id
+      try {
+        const response = await apiRequest("GET", "https://api-pos.edpos.vn/api/customers");
+        const customers = await response.json();
+
+        let maxId = 0;
+        if (Array.isArray(customers) && customers.length > 0) {
+          maxId = Math.max(...customers.map((c: any) => c.id || 0));
+        }
+
+        // Explicitly assign maxId + 1 to force insertion with this ID
+        const finalData = { ...cleanData, id: maxId + 1 };
+        console.log(`Creating new customer with explicit id (maxId + 1 = ${maxId + 1}):`, finalData);
+        createMutation.mutate(finalData);
+      } catch (error) {
+        console.error("Error fetching max id, proceeding normally:", error);
+        console.log("Creating new customer with data:", cleanData);
+        createMutation.mutate(cleanData);
+      }
     }
   };
 
@@ -298,7 +316,7 @@ export function CustomerFormModal({ isOpen, onClose, customer, initialPhone, onS
                     name="phone"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>{t('customers.phone')} *</FormLabel>
+                        <FormLabel>{t('customers.phone')}</FormLabel>
                         <FormControl>
                           <Input {...field} placeholder={t('customers.phonePlaceholder')} />
                         </FormControl>
@@ -395,7 +413,7 @@ export function CustomerFormModal({ isOpen, onClose, customer, initialPhone, onS
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>{t('customers.status')}</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
                           <SelectTrigger>
                             <SelectValue placeholder={t('common.select')} />

@@ -94,6 +94,7 @@ export function EInvoiceModal({
   const [activeInputField, setActiveInputField] = useState<string | null>(null);
 
   const inputRefs = useRef<Record<string, HTMLInputElement | null>>({});
+  const formInitializedRef = useRef(false);
 
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -231,7 +232,7 @@ export function EInvoiceModal({
   });
 
   // Query order data to get priceIncludeTax setting
-  const { data: orderData } = useQuery({
+  const { data: orderData, isLoading: isOrderLoading } = useQuery({
     queryKey: ["https://api-pos.edpos.vn/api/orders", orderId],
     queryFn: async () => {
       if (!orderId) return null;
@@ -250,9 +251,39 @@ export function EInvoiceModal({
     staleTime: 300000,
   });
 
+  // Fetch customer data if the order has a customerId
+  const { data: customerData, isLoading: isCustomerLoading } = useQuery({
+    queryKey: ["https://api-pos.edpos.vn/api/customers", orderData?.customerId],
+    queryFn: async () => {
+      if (!orderData?.customerId) return null;
+      try {
+        const response = await apiRequest("GET", `https://api-pos.edpos.vn/api/customers/${orderData.customerId}`);
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return await response.json();
+      } catch (error) {
+        console.error("Error fetching customer data:", error);
+        return null;
+      }
+    },
+    enabled: !!orderData?.customerId,
+    staleTime: 300000,
+  });
+
+  // Reset flag when modal closes
+  useEffect(() => {
+    if (!isOpen) {
+      formInitializedRef.current = false;
+    }
+  }, [isOpen]);
+
   // Reset form only when modal opens, not when cartItems/total changes
   useEffect(() => {
-    if (isOpen) {
+    if (isOpen && !formInitializedRef.current) {
+      if (orderId && isOrderLoading) return; // Wait for order to load
+      if (orderData?.customerId && isCustomerLoading) return; // Wait for customer to load
+
       console.log("🔥 E-INVOICE MODAL OPENING");
       console.log("🔥 cartItems when modal opens:", cartItems);
       console.log(
@@ -273,14 +304,16 @@ export function EInvoiceModal({
         invoiceProvider: "MInvoice", // Default provider
         invoiceTemplate: defaultTemplate?.name || "", // Use actual template name
         selectedTemplateId: defaultTemplate?.id?.toString() || "",
-        taxCode: "", // Default tax code
-        customerName: "Khách hàng lẻ", // Default customer name
-        address: "",
-        phoneNumber: "",
-        email: "",
+        taxCode: customerData?.taxCode || orderData?.customerTaxCode || "", // Default tax code
+        customerName: customerData?.name || orderData?.customerName || "", // Default customer name
+        address: customerData?.address || "",
+        phoneNumber: customerData?.phone || orderData?.customerPhone || "",
+        email: customerData?.email || "",
       });
+
+      formInitializedRef.current = true;
     }
-  }, [isOpen, invoiceTemplates]); // Add invoiceTemplates dependency
+  }, [isOpen, invoiceTemplates, orderId, isOrderLoading, orderData, isCustomerLoading, customerData]); // Add needed dependencies
 
   // Separate effect for debugging cartItems changes without resetting form
   useEffect(() => {
@@ -588,9 +621,9 @@ export function EInvoiceModal({
               const prevItemDiscount =
                 totalBeforeDiscount > 0
                   ? Math.round(
-                      (calculatedDiscount * prevItemTotal) /
-                        totalBeforeDiscount,
-                    )
+                    (calculatedDiscount * prevItemTotal) /
+                    totalBeforeDiscount,
+                  )
                   : 0;
               previousDiscounts += prevItemDiscount;
             }
@@ -600,8 +633,8 @@ export function EInvoiceModal({
             itemDiscountAmount =
               totalBeforeDiscount > 0
                 ? Math.round(
-                    (calculatedDiscount * itemTotal) / totalBeforeDiscount,
-                  )
+                  (calculatedDiscount * itemTotal) / totalBeforeDiscount,
+                )
                 : 0;
           }
         }
@@ -1095,13 +1128,13 @@ export function EInvoiceModal({
       });
       alert(
         "Không có sản phẩm nào trong giỏ hàng để tạo hóa đơn điện tử.\n\nDữ liệu nhận được:\n- Số sản phẩm: " +
-          (cartItems?.length || 0) +
-          "\n- Tổng tiền: " +
-          total.toLocaleString("vi-VN", {
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2,
-          }) +
-          " ₫\n\nVui lòng thử lại từ màn hình bán hàng.",
+        (cartItems?.length || 0) +
+        "\n- Tổng tiền: " +
+        total.toLocaleString("vi-VN", {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
+        }) +
+        " ₫\n\nVui lòng thử lại từ màn hình bán hàng.",
       );
       return;
     }
@@ -1335,7 +1368,7 @@ export function EInvoiceModal({
       const errorData = await response.json().catch(() => ({}));
       throw new Error(
         errorData.message ||
-          `API call failed: ${response.status} ${response.statusText}`,
+        `API call failed: ${response.status} ${response.statusText}`,
       );
     }
 
@@ -1805,7 +1838,7 @@ export function EInvoiceModal({
 
       // Send WebSocket signal to close customer display and refresh
       const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-      const wsUrl = `https://api-pos.edpos.vn/ws`;
+      const wsUrl = `${protocol}//${window.location.host}/ws`;
       const ws = new WebSocket(wsUrl);
 
       ws.onopen = () => {

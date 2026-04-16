@@ -308,15 +308,15 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
   // Filter employees based on search term
   const filteredEmployees = employeesData
     ? employeesData.filter(
-        (employee: any) =>
-          employee.name
-            .toLowerCase()
-            .includes(employeeSearchTerm.toLowerCase()) ||
-          employee.employeeId
-            .toLowerCase()
-            .includes(employeeSearchTerm.toLowerCase()) ||
-          (employee.phone && employee.phone.includes(employeeSearchTerm)),
-      )
+      (employee: any) =>
+        employee.name
+          .toLowerCase()
+          .includes(employeeSearchTerm.toLowerCase()) ||
+        employee.employeeId
+          .toLowerCase()
+          .includes(employeeSearchTerm.toLowerCase()) ||
+        (employee.phone && employee.phone.includes(employeeSearchTerm)),
+    )
     : [];
 
   // Handle URL parameter for auto-opening customer detail
@@ -738,15 +738,15 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
   // Filter customers based on search term
   const filteredCustomers = customersData
     ? customersData.filter(
-        (customer: Customer) =>
-          customer.name
-            .toLowerCase()
-            .includes(customerSearchTerm.toLowerCase()) ||
-          customer.customerId
-            .toLowerCase()
-            .includes(customerSearchTerm.toLowerCase()) ||
-          (customer.phone && customer.phone.includes(customerSearchTerm)),
-      )
+      (customer: Customer) =>
+        customer.name
+          .toLowerCase()
+          .includes(customerSearchTerm.toLowerCase()) ||
+        customer.customerId
+          .toLowerCase()
+          .includes(customerSearchTerm.toLowerCase()) ||
+        (customer.phone && customer.phone.includes(customerSearchTerm)),
+    )
     : [];
 
   // Product management functions
@@ -1274,22 +1274,22 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
   // Filter products based on category and search term
   const filteredProducts = products
     ? products.filter((product: any) => {
-        if (!product) return false;
+      if (!product) return false;
 
-        const matchesCategory =
-          selectedCategoryFilter === "all" ||
-          product.categoryId?.toString() === selectedCategoryFilter;
+      const matchesCategory =
+        selectedCategoryFilter === "all" ||
+        product.categoryId?.toString() === selectedCategoryFilter;
 
-        const productName = product.name || "";
-        const productSku = product.sku || "";
-        const searchTerm = productSearchTerm.toLowerCase();
+      const productName = product.name || "";
+      const productSku = product.sku || "";
+      const searchTerm = productSearchTerm.toLowerCase();
 
-        const matchesSearch =
-          productName.toLowerCase().includes(searchTerm) ||
-          productSku.toLowerCase().includes(searchTerm);
+      const matchesSearch =
+        productName.toLowerCase().includes(searchTerm) ||
+        productSku.toLowerCase().includes(searchTerm);
 
-        return matchesCategory && matchesSearch;
-      })
+      return matchesCategory && matchesSearch;
+    })
     : [];
 
   // Fetch E-invoice connections
@@ -1858,9 +1858,9 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
         <script>
           window.onload = function() {
             ${selectedProductsData
-              .map((product: Product, index: number) => {
-                const sku = product.sku || `ITEM-${product.id}`;
-                return `
+        .map((product: Product, index: number) => {
+          const sku = product.sku || `ITEM-${product.id}`;
+          return `
                   try {
                     JsBarcode("#barcode-${index}", "${sku}", {
                       format: "CODE128",
@@ -1876,8 +1876,8 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
                     console.error("Error generating barcode for ${sku}:", e);
                   }
                 `;
-              })
-              .join("\n")}
+        })
+        .join("\n")}
 
             // Auto print after barcodes are generated
             setTimeout(function() {
@@ -2810,13 +2810,13 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
                                                     className={`text-xs ${template.useCK ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-800"}`}
                                                   >
                                                     {template.useCK === true ||
-                                                    template.useCK === 1
+                                                      template.useCK === 1
                                                       ? t(
-                                                          "settings.usageStatusActive",
-                                                        )
+                                                        "settings.usageStatusActive",
+                                                      )
                                                       : t(
-                                                          "settings.usageStatusInactive",
-                                                        )}
+                                                        "settings.usageStatusInactive",
+                                                      )}
                                                   </Badge>
                                                 </td>
                                                 <td className="px-3 py-3">
@@ -3073,8 +3073,8 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
                               <p className="text-2xl font-bold text-green-600">
                                 {customersData
                                   ? new Intl.NumberFormat("vi-VN").format(
-                                      customersData.length,
-                                    )
+                                    customersData.length,
+                                  )
                                   : 0}
                               </p>
                             </div>
@@ -3093,10 +3093,10 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
                               <p className="text-2xl font-bold text-blue-600">
                                 {customersData
                                   ? new Intl.NumberFormat("vi-VN").format(
-                                      customersData.filter(
-                                        (c) => c.status === "active",
-                                      ).length,
-                                    )
+                                    customersData.filter(
+                                      (c) => c.status === "active",
+                                    ).length,
+                                  )
                                   : 0}
                               </p>
                             </div>
@@ -3115,11 +3115,11 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
                               <p className="text-2xl font-bold text-purple-600">
                                 {customersData
                                   ? customersData
-                                      .reduce(
-                                        (total, c) => total + (c.points || 0),
-                                        0,
-                                      )
-                                      .toLocaleString()
+                                    .reduce(
+                                      (total, c) => total + (c.points || 0),
+                                      0,
+                                    )
+                                    .toLocaleString()
                                   : 0}
                               </p>
                             </div>
@@ -3138,18 +3138,18 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
                               <p className="text-2xl font-bold text-orange-600">
                                 {customersData && customersData.length > 0
                                   ? new Intl.NumberFormat("vi-VN", {
-                                      minimumFractionDigits: 0,
-                                      maximumFractionDigits: 0,
-                                    }).format(
-                                      Math.floor(
-                                        customersData.reduce(
-                                          (total, c) =>
-                                            total +
-                                            parseFloat(c.totalSpent || "0"),
-                                          0,
-                                        ) / customersData.length,
-                                      ),
-                                    )
+                                    minimumFractionDigits: 0,
+                                    maximumFractionDigits: 0,
+                                  }).format(
+                                    Math.floor(
+                                      customersData.reduce(
+                                        (total, c) =>
+                                          total +
+                                          parseFloat(c.totalSpent || "0"),
+                                        0,
+                                      ) / customersData.length,
+                                    ),
+                                  )
                                   : "0"}{" "}
                                 ₫
                               </p>
@@ -3263,23 +3263,22 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
                                   <div>
                                     <Badge
                                       variant="default"
-                                      className={`${
-                                        customer.membershipLevel === "VIP"
-                                          ? "bg-purple-500"
-                                          : customer.membershipLevel === "GOLD"
-                                            ? "bg-yellow-500"
-                                            : customer.membershipLevel ===
-                                                "SILVER"
-                                              ? "bg-gray-300 text-black"
-                                              : "bg-gray-400"
-                                      } text-white`}
+                                      className={`${customer.membershipLevel === "VIP"
+                                        ? "bg-purple-500"
+                                        : customer.membershipLevel === "GOLD"
+                                          ? "bg-yellow-500"
+                                          : customer.membershipLevel ===
+                                            "SILVER"
+                                            ? "bg-gray-300 text-black"
+                                            : "bg-gray-400"
+                                        } text-white`}
                                     >
                                       {customer.membershipLevel === "VIP"
                                         ? `${t("customers.vip")} (${new Intl.NumberFormat("vi-VN").format(1000000)}₫)`
                                         : customer.membershipLevel === "GOLD"
                                           ? `${t("customers.gold")} (${new Intl.NumberFormat("vi-VN").format(300000)}₫)`
                                           : customer.membershipLevel ===
-                                              "SILVER"
+                                            "SILVER"
                                             ? t("customers.silver")
                                             : customer.membershipLevel}
                                     </Badge>
@@ -3409,12 +3408,12 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
                               <p className="text-2xl font-bold text-purple-600">
                                 {products
                                   ? new Intl.NumberFormat("vi-VN").format(
-                                      products.reduce(
-                                        (total: number, product: any) =>
-                                          total + (product.stock || 0),
-                                        0,
-                                      ),
-                                    )
+                                    products.reduce(
+                                      (total: number, product: any) =>
+                                        total + (product.stock || 0),
+                                      0,
+                                    ),
+                                  )
                                   : 0}
                               </p>
                             </div>
@@ -3563,9 +3562,9 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
                                             filteredProducts
                                               .slice(
                                                 (productsCurrentPage - 1) *
-                                                  productsPageSize,
+                                                productsPageSize,
                                                 productsCurrentPage *
-                                                  productsPageSize,
+                                                productsPageSize,
                                               )
                                               .every((p) =>
                                                 selectedProducts.includes(p.id),
@@ -3575,9 +3574,9 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
                                             const currentPageProducts =
                                               filteredProducts.slice(
                                                 (productsCurrentPage - 1) *
-                                                  productsPageSize,
+                                                productsPageSize,
                                                 productsCurrentPage *
-                                                  productsPageSize,
+                                                productsPageSize,
                                               );
                                             if (checked) {
                                               setSelectedProducts([
@@ -3732,11 +3731,10 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
                                                     ? "default"
                                                     : "destructive"
                                                 }
-                                                className={`text-xs ${
-                                                  product.stock > 0
-                                                    ? "bg-green-100 text-green-800"
-                                                    : ""
-                                                }`}
+                                                className={`text-xs ${product.stock > 0
+                                                  ? "bg-green-100 text-green-800"
+                                                  : ""
+                                                  }`}
                                               >
                                                 {product.stock > 0
                                                   ? t("common.inStock")
@@ -3747,19 +3745,18 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
                                               <Badge
                                                 variant={
                                                   product.isActive === true ||
-                                                  product.isActive === 1
+                                                    product.isActive === 1
                                                     ? "default"
                                                     : "secondary"
                                                 }
-                                                className={`text-xs ${
-                                                  product.isActive === true ||
+                                                className={`text-xs ${product.isActive === true ||
                                                   product.isActive === 1
-                                                    ? "bg-blue-100 text-blue-800"
-                                                    : "bg-gray-100 text-gray-800"
-                                                }`}
+                                                  ? "bg-blue-100 text-blue-800"
+                                                  : "bg-gray-100 text-gray-800"
+                                                  }`}
                                               >
                                                 {product.isActive === true ||
-                                                product.isActive === 1
+                                                  product.isActive === 1
                                                   ? t("settings.yes")
                                                   : t("common.no")}
                                               </Badge>
@@ -4021,7 +4018,7 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
                                         const matchesCategory =
                                           selectedCategoryFilter === "all" ||
                                           category.id.toString() ===
-                                            selectedCategoryFilter;
+                                          selectedCategoryFilter;
                                         const checkRequired =
                                           category.id !== 15 &&
                                           category.id !== 17;
@@ -4034,9 +4031,9 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
                                       .map((category: any, index) => {
                                         const productCount = products
                                           ? products.filter(
-                                              (p: any) =>
-                                                p.categoryId === category.id,
-                                            ).length
+                                            (p: any) =>
+                                              p.categoryId === category.id,
+                                          ).length
                                           : 0;
 
                                         return (
@@ -4057,22 +4054,22 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
                                                 <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
                                                   <span className="text-xl">
                                                     {category.icon ===
-                                                    "fas fa-utensils"
+                                                      "fas fa-utensils"
                                                       ? "🍽️"
                                                       : category.icon ===
-                                                          "fas fa-coffee"
+                                                        "fas fa-coffee"
                                                         ? "☕"
                                                         : category.icon ===
-                                                            "fas fa-cookie"
+                                                          "fas fa-cookie"
                                                           ? "🍪"
                                                           : category.icon ===
-                                                              "fas fa-ice-cream"
+                                                            "fas fa-ice-cream"
                                                             ? "🍨"
                                                             : category.icon ===
-                                                                "fas fa-beer"
+                                                              "fas fa-beer"
                                                               ? "🍺"
                                                               : category.icon ===
-                                                                  "fas fa-apple-alt"
+                                                                "fas fa-apple-alt"
                                                                 ? "🍎"
                                                                 : "🍽️"}
                                                   </span>
@@ -4289,11 +4286,10 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
                                             ? "default"
                                             : "secondary"
                                         }
-                                        className={`text-xs ${
-                                          employee.isActive
-                                            ? "bg-green-100 text-green-800"
-                                            : ""
-                                        }`}
+                                        className={`text-xs ${employee.isActive
+                                          ? "bg-green-100 text-green-800"
+                                          : ""
+                                          }`}
                                       >
                                         {employee.isActive
                                           ? t("employees.active")
@@ -4375,11 +4371,10 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
                           {paymentMethodsData?.map((method) => (
                             <div
                               key={method.id}
-                              className={`p-4 rounded-lg border-2 transition-all ${
-                                method.enabled
-                                  ? "border-green-200 bg-green-50"
-                                  : "border-gray-200 bg-gray-50"
-                              }`}
+                              className={`p-4 rounded-lg border-2 transition-all ${method.enabled
+                                ? "border-green-200 bg-green-50"
+                                : "border-gray-200 bg-gray-50"
+                                }`}
                             >
                               <div className="flex items-center justify-between mb-3">
                                 <div className="flex items-center gap-2">
@@ -5129,25 +5124,23 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
               <AlertDialogHeader>
                 <AlertDialogTitle className="flex items-center gap-2 text-red-600">
                   <Trash2 className="w-5 h-5" />
-                  {t("common.comboValues.confirmDeleteCustomerTitle")}
+                  {t("common.confirmDeleteCustomerTitle")}
                 </AlertDialogTitle>
                 <AlertDialogDescription className="text-left">
                   <div className="space-y-3">
                     <p>
-                      {t("common.comboValues.confirmDeleteCustomerDesc", {
-                        name: customerToDelete?.name,
-                      })}
+                      {t("common.confirmDeleteCustomerDesc").replace("{name}", customerToDelete?.name || "")}
                     </p>
                     <div className="bg-red-50 border border-red-200 rounded-lg p-3">
                       <div className="flex items-start gap-2">
                         <div className="w-2 h-2 bg-red-400 rounded-full mt-2 flex-shrink-0"></div>
                         <p className="text-sm text-red-700">
-                          {t("common.comboValues.deleteCustomerWarning")}
+                          {t("common.deleteCustomerWarning")}
                         </p>
                       </div>
                     </div>
                     <p className="text-sm text-gray-600">
-                      {t("common.comboValues.deleteCustomerDetails")}
+                      {t("common.deleteCustomerDetails")}
                     </p>
                   </div>
                 </AlertDialogDescription>
@@ -5160,14 +5153,14 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
                   }}
                   className="hover:bg-gray-100"
                 >
-                  {t("common.comboValues.cancelAction")}
+                  {t("common.cancelAction")}
                 </AlertDialogCancel>
                 <AlertDialogAction
                   onClick={confirmDeleteCustomer}
                   className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
                 >
                   <Trash2 className="w-4 h-4 mr-2" />
-                  {t("common.comboValues.deleteCustomerAction")}
+                  {t("common.deleteCustomerAction")}
                 </AlertDialogAction>
               </AlertDialogFooter>
             </AlertDialogContent>
@@ -5365,9 +5358,8 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
                         taxCode: e.target.value,
                       }))
                     }
-                    className={`col-span-3 ${
-                      eInvoiceFormErrors.taxCode ? "border-red-500" : ""
-                    }`}
+                    className={`col-span-3 ${eInvoiceFormErrors.taxCode ? "border-red-500" : ""
+                      }`}
                     placeholder={t("settings.taxIdPlaceholder")}
                   />
                   {eInvoiceFormErrors.taxCode && (
@@ -5389,9 +5381,8 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
                         loginId: e.target.value,
                       }))
                     }
-                    className={`col-span-3 ${
-                      eInvoiceFormErrors.loginId ? "border-red-500" : ""
-                    }`}
+                    className={`col-span-3 ${eInvoiceFormErrors.loginId ? "border-red-500" : ""
+                      }`}
                     placeholder={t("settings.loginIdLabel")}
                   />
                   {eInvoiceFormErrors.loginId && (
@@ -5414,9 +5405,8 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
                         password: e.target.value,
                       }))
                     }
-                    className={`col-span-3 ${
-                      eInvoiceFormErrors.password ? "border-red-500" : ""
-                    }`}
+                    className={`col-span-3 ${eInvoiceFormErrors.password ? "border-red-500" : ""
+                      }`}
                     placeholder={t("settings.passwordLabel")}
                   />
                   {eInvoiceFormErrors.password && (
@@ -5439,9 +5429,8 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
                     }
                   >
                     <SelectTrigger
-                      className={`col-span-3 ${
-                        eInvoiceFormErrors.softwareName ? "border-red-500" : ""
-                      }`}
+                      className={`col-span-3 ${eInvoiceFormErrors.softwareName ? "border-red-500" : ""
+                        }`}
                     >
                       <SelectValue
                         placeholder={t("settings.selectSoftwarePlaceholder")}
@@ -5474,9 +5463,8 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
                         loginUrl: e.target.value,
                       }))
                     }
-                    className={`col-span-3 ${
-                      eInvoiceFormErrors.loginUrl ? "border-red-500" : ""
-                    }`}
+                    className={`col-span-3 ${eInvoiceFormErrors.loginUrl ? "border-red-500" : ""
+                      }`}
                     placeholder="https://example.com/login"
                   />
                   {eInvoiceFormErrors.loginUrl && (
@@ -5791,7 +5779,7 @@ export default function SettingsPage({ onLogout }: SettingsPageProps) {
                   className="bg-green-600 hover:bg-green-700"
                 >
                   {createTemplateMutation.isPending ||
-                  updateTemplateMutation.isPending
+                    updateTemplateMutation.isPending
                     ? editingTemplate
                       ? t("common.updating")
                       : t("common.creating")
