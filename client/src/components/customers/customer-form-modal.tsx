@@ -28,7 +28,7 @@ const customerFormSchema = z.object({
   address: z.string().optional(),
   taxCode: z.string().optional(),
   dateOfBirth: z.string().optional(),
-  membershipLevel: z.enum(["Silver", "Gold", "VIP"]).optional(),
+  membershipLevel: z.enum(["SILVER", "GOLD", "VIP", "PLATINUM", "BRONZE"]).optional(),
   notes: z.string().optional(),
   status: z.enum(["active", "inactive"]).optional(),
 });
@@ -95,7 +95,7 @@ export function CustomerFormModal({ isOpen, onClose, customer, initialPhone, onS
       address: customer?.address || "",
       taxCode: (customer as any)?.taxCode || "",
       dateOfBirth: customer?.dateOfBirth || "",
-      membershipLevel: customer?.membershipLevel || "Silver",
+      membershipLevel: customer?.membershipLevel || "SILVER",
       notes: customer?.notes || "",
       status: customer?.status || "active",
     },
@@ -113,7 +113,7 @@ export function CustomerFormModal({ isOpen, onClose, customer, initialPhone, onS
         address: customer.address || "",
         taxCode: (customer as any)?.taxCode || "",
         dateOfBirth: customer.dateOfBirth || "",
-        membershipLevel: customer.membershipLevel || "Silver",
+        membershipLevel: customer.membershipLevel || "SILVER",
         notes: customer.notes || "",
         status: customer.status || "active",
       });
@@ -128,7 +128,7 @@ export function CustomerFormModal({ isOpen, onClose, customer, initialPhone, onS
           address: "",
           taxCode: "",
           dateOfBirth: "",
-          membershipLevel: "Silver",
+          membershipLevel: "SILVER",
           notes: "",
           status: "active",
         });
@@ -396,8 +396,10 @@ export function CustomerFormModal({ isOpen, onClose, customer, initialPhone, onS
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="Silver">{t('customers.silver')}</SelectItem>
-                            <SelectItem value="Gold">{t('customers.gold')}</SelectItem>
+                            <SelectItem value="BRONZE">{t('customers.bronze')}</SelectItem>
+                            <SelectItem value="SILVER">{t('customers.silver')}</SelectItem>
+                            <SelectItem value="GOLD">{t('customers.gold')}</SelectItem>
+                            <SelectItem value="PLATINUM">{t('customers.platinum')}</SelectItem>
                             <SelectItem value="VIP">{t('customers.vip')}</SelectItem>
                           </SelectContent>
                         </Select>
